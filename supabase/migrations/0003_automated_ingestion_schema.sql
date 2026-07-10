@@ -9,7 +9,7 @@
 -- job_sources: machine-readable approved source registry.
 -- Each row is anchored to an existing source_records row for provenance.
 -- A source may only be enabled once both terms_reviewed and robots_reviewed are true,
--- terms_review_date is set, and automatic scheduling is not paused.
+-- and terms_review_date is set.
 create table if not exists public.job_sources (
   id                              uuid primary key default gen_random_uuid(),
   source_record_id                uuid not null unique
@@ -39,26 +39,27 @@ create table if not exists public.job_sources (
   last_attempted_at               timestamptz,
   last_successful_at              timestamptz,
   consecutive_failures            integer not null default 0 check (consecutive_failures >= 0),
-  last_http_status                integer,
-  last_payload_hash               text,
+  last_http_status                integer
+                                    check (last_http_status is null or (last_http_status >= 100 and last_http_status <= 599)),
+  last_payload_hash               text
+                                    check (last_payload_hash is null or last_payload_hash ~ '^[0-9a-f]{64}$'),
   degraded_at                     timestamptz,
   automatic_scheduling_paused_at  timestamptz,
   notes                           text,
-  created_by                      uuid references auth.users(id),
-  updated_by                      uuid references auth.users(id),
+  created_by                      uuid references auth.users(id) on delete set null,
+  updated_by                      uuid references auth.users(id) on delete set null,
   created_at                      timestamptz not null default now(),
   updated_at                      timestamptz not null default now(),
   -- terms_review_date may only be set when terms_reviewed is true
   constraint job_sources_terms_date_requires_terms_review check (
     terms_review_date is null or terms_reviewed
   ),
-  -- enabled requires both policy reviews complete and scheduling not paused
+  -- enabled requires both policy reviews complete
   constraint job_sources_enablement_requires_policy_review check (
     not enabled or (
       terms_reviewed
       and robots_reviewed
       and terms_review_date is not null
-      and automatic_scheduling_paused_at is null
     )
   )
 );
@@ -157,7 +158,9 @@ create table if not exists public.source_postings (
                                'open','missing','closure_candidate','closed','reopened','unknown'
                              )
                            ),
-  relevance_score          integer,
+  relevance_score          integer check (
+                             relevance_score is null or (relevance_score >= 0 and relevance_score <= 100)
+                           ),
   relevance_score_version  smallint check (relevance_score_version is null or relevance_score_version > 0),
   score_breakdown_json     jsonb not null default '{}'::jsonb,
   uncertainty_flags        text[] not null default '{}',
@@ -173,6 +176,10 @@ create table if not exists public.source_postings (
   constraint source_postings_seen_window_valid check (last_seen_at >= first_seen_at),
   constraint source_postings_closes_after_posted check (
     closes_at is null or posted_at is null or closes_at >= posted_at
+  ),
+  constraint source_postings_relevance_score_pair check (
+    (relevance_score is null and relevance_score_version is null)
+    or (relevance_score is not null and relevance_score_version is not null)
   )
 );
 
@@ -268,7 +275,7 @@ begin
   foreach t in array array['job_sources', 'source_postings'] loop
     if not exists (
       select 1 from pg_trigger
-      where tgrelid = (quote_ident(t))::regclass
+      where tgrelid = to_regclass(format('public.%I', t))
         and tgname = format('trg_%s_updated', t)
     ) then
       execute format(
@@ -344,10 +351,17 @@ grant select on public.source_postings          to authenticated;
 grant select on public.source_posting_versions  to authenticated;
 grant select on public.opportunity_source_links to authenticated;
 
--- Grant all table privileges to service_role (service_role bypasses RLS).
-grant all on public.job_sources, public.source_fetch_runs, public.source_payloads,
+-- Grant explicit least-privilege table privileges to service_role.
+revoke all on public.job_sources, public.source_fetch_runs, public.source_payloads,
              public.source_postings, public.source_posting_versions,
-             public.opportunity_source_links to service_role;
+             public.opportunity_source_links from service_role;
+
+grant select, insert, update on public.job_sources to service_role;
+grant select, insert, update on public.source_fetch_runs to service_role;
+grant select, insert on public.source_payloads to service_role;
+grant select, insert, update on public.source_postings to service_role;
+grant select, insert on public.source_posting_versions to service_role;
+grant select, insert, update, delete on public.opportunity_source_links to service_role;
 
 -- RLS policies — authenticated officer SELECT on all six tables.
 do $$

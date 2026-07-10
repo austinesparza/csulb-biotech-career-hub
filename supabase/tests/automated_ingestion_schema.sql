@@ -1,9 +1,11 @@
+\set ON_ERROR_STOP on
+
 -- automated_ingestion_schema.sql
 -- Verification script for Phase 1 automated ingestion schema.
 -- All checks run inside a single transaction that is rolled back at the end,
 -- so this script is safe to run against any disposable test database after
--- applying 0001_init.sql, 0002_ingestion_task_types.sql, and 0003_automated_ingestion_schema.sql.
--- (0004_source_payload_bucket.sql requires a live Supabase project; see footer.)
+-- applying 0001_init.sql, 0002_ingestion_task_types.sql, 0003_automated_ingestion_schema.sql,
+-- and 0004_source_payload_bucket.sql.
 --
 -- WARNING: do NOT run supabase db push against a linked remote project for local
 -- verification.  Use the local stack only:
@@ -11,7 +13,9 @@
 --   npx supabase start
 --   npx supabase db reset --local
 --   npx supabase db lint --local
---   psql '******127.0.0.1:54322/postgres' \
+--   npx supabase status
+--   export LOCAL_DATABASE_URL='<DB URL from npx supabase status output>'
+--   psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 \
 --     -f supabase/tests/automated_ingestion_schema.sql
 --
 -- Exit codes: the script raises an exception on the first failed assertion and
@@ -225,7 +229,165 @@ end
 $$;
 
 -- ============================================================
--- 5. Duplicate source_record_id is rejected in job_sources
+-- 5. Score and source-health constraints
+-- ============================================================
+
+do $$
+declare v_js_id uuid := current_setting('test.fixture_js_id')::uuid;
+begin
+  begin
+    insert into public.source_postings (
+      job_source_id, canonical_url, identity_key, last_material_hash, relevance_score
+    ) values (
+      v_js_id, 'https://example.com/job/score-low', 'score-low',
+      lpad('1', 64, '1'), -1
+    );
+    perform _assert('reject_relevance_score_below_range', false, 'relevance_score -1 was accepted');
+  exception when check_violation then
+    perform _assert('reject_relevance_score_below_range', true);
+  end;
+
+  begin
+    insert into public.source_postings (
+      job_source_id, canonical_url, identity_key, last_material_hash, relevance_score
+    ) values (
+      v_js_id, 'https://example.com/job/score-high', 'score-high',
+      lpad('2', 64, '2'), 101
+    );
+    perform _assert('reject_relevance_score_above_range', false, 'relevance_score 101 was accepted');
+  exception when check_violation then
+    perform _assert('reject_relevance_score_above_range', true);
+  end;
+
+  begin
+    insert into public.source_postings (
+      job_source_id, canonical_url, identity_key, last_material_hash, relevance_score
+    ) values (
+      v_js_id, 'https://example.com/job/score-no-version', 'score-no-version',
+      lpad('3', 64, '3'), 50
+    );
+    perform _assert('reject_relevance_score_without_version', false, 'score without version was accepted');
+  exception when check_violation then
+    perform _assert('reject_relevance_score_without_version', true);
+  end;
+
+  begin
+    insert into public.source_postings (
+      job_source_id, canonical_url, identity_key, last_material_hash, relevance_score_version
+    ) values (
+      v_js_id, 'https://example.com/job/version-no-score', 'version-no-score',
+      lpad('4', 64, '4'), 1
+    );
+    perform _assert('reject_relevance_score_version_without_score', false, 'version without score was accepted');
+  exception when check_violation then
+    perform _assert('reject_relevance_score_version_without_score', true);
+  end;
+
+  insert into public.source_postings (
+    job_source_id, canonical_url, identity_key, last_material_hash, relevance_score, relevance_score_version
+  ) values (
+    v_js_id, 'https://example.com/job/score-valid', 'score-valid',
+    lpad('5', 64, '5'), 100, 1
+  );
+  perform _assert('accept_relevance_score_with_version', true);
+end
+$$;
+
+do $$
+declare
+  v_sr_id uuid;
+begin
+  insert into public.source_records (name, source_type)
+  values ('test-sr-http-status-low', 'website_page')
+  returning id into v_sr_id;
+
+  begin
+    insert into public.job_sources (
+      source_record_id, source_name, source_kind, careers_url, last_http_status
+    ) values (v_sr_id, 'http-low', 'rss', 'https://example.com/http-low', 99);
+    perform _assert('reject_last_http_status_below_range', false, 'last_http_status 99 was accepted');
+  exception when check_violation then
+    perform _assert('reject_last_http_status_below_range', true);
+  end;
+end
+$$;
+
+do $$
+declare
+  v_sr_id uuid;
+begin
+  insert into public.source_records (name, source_type)
+  values ('test-sr-http-status-high', 'website_page')
+  returning id into v_sr_id;
+
+  begin
+    insert into public.job_sources (
+      source_record_id, source_name, source_kind, careers_url, last_http_status
+    ) values (v_sr_id, 'http-high', 'rss', 'https://example.com/http-high', 600);
+    perform _assert('reject_last_http_status_above_range', false, 'last_http_status 600 was accepted');
+  exception when check_violation then
+    perform _assert('reject_last_http_status_above_range', true);
+  end;
+end
+$$;
+
+do $$
+declare
+  v_sr_id uuid;
+begin
+  insert into public.source_records (name, source_type)
+  values ('test-sr-hash-upper', 'website_page')
+  returning id into v_sr_id;
+
+  begin
+    insert into public.job_sources (
+      source_record_id, source_name, source_kind, careers_url, last_payload_hash
+    ) values (v_sr_id, 'hash-upper', 'rss', 'https://example.com/hash-upper', lpad('A', 64, 'A'));
+    perform _assert('reject_last_payload_hash_uppercase', false, 'uppercase hash was accepted');
+  exception when check_violation then
+    perform _assert('reject_last_payload_hash_uppercase', true);
+  end;
+end
+$$;
+
+do $$
+declare
+  v_sr_id uuid;
+begin
+  insert into public.source_records (name, source_type)
+  values ('test-sr-hash-short', 'website_page')
+  returning id into v_sr_id;
+
+  begin
+    insert into public.job_sources (
+      source_record_id, source_name, source_kind, careers_url, last_payload_hash
+    ) values (v_sr_id, 'hash-short', 'rss', 'https://example.com/hash-short', 'abc123');
+    perform _assert('reject_last_payload_hash_invalid_length', false, 'short hash was accepted');
+  exception when check_violation then
+    perform _assert('reject_last_payload_hash_invalid_length', true);
+  end;
+end
+$$;
+
+do $$
+declare
+  v_sr_id uuid;
+begin
+  insert into public.source_records (name, source_type)
+  values ('test-sr-hash-valid', 'website_page')
+  returning id into v_sr_id;
+
+  insert into public.job_sources (
+    source_record_id, source_name, source_kind, careers_url, last_http_status, last_payload_hash
+  ) values (
+    v_sr_id, 'hash-valid', 'rss', 'https://example.com/hash-valid', 200, lpad('a', 64, 'a')
+  );
+  perform _assert('accept_source_health_fields_valid', true);
+end
+$$;
+
+-- ============================================================
+-- 6. Duplicate source_record_id is rejected in job_sources
 -- ============================================================
 
 do $$
@@ -498,7 +660,57 @@ end
 $$;
 
 -- ============================================================
--- 11. Validate claim_source_fetch_runs input guardrails
+-- 11. Enabled + policy-reviewed sources may be paused and are skipped by claim
+-- ============================================================
+
+do $$
+declare
+  v_sr_id     uuid;
+  v_js_id     uuid;
+  v_run_id    uuid;
+  v_claimed_id uuid;
+begin
+  insert into public.source_records (name, source_type)
+  values ('test-sr-paused-enabled', 'website_page')
+  returning id into v_sr_id;
+
+  insert into public.job_sources (
+    source_record_id, source_name, source_kind, careers_url,
+    enabled, terms_reviewed, terms_review_date, robots_reviewed,
+    automatic_scheduling_paused_at
+  ) values (
+    v_sr_id, 'test-js-paused-enabled', 'rss', 'https://example.com/paused',
+    true, true, current_date, true,
+    now()
+  ) returning id into v_js_id;
+
+  perform _assert(
+    'enabled_source_can_be_paused',
+    exists (
+      select 1
+      from public.job_sources
+      where id = v_js_id
+        and enabled
+        and automatic_scheduling_paused_at is not null
+    ),
+    'enabled+paused source insert failed'
+  );
+
+  insert into public.source_fetch_runs (job_source_id, trigger_kind, status, scheduled_for)
+  values (v_js_id, 'scheduled', 'pending', now() - interval '1 minute')
+  returning id into v_run_id;
+
+  select id into v_claimed_id from public.claim_source_fetch_runs('worker-paused-check', 1);
+  perform _assert(
+    'claim_skips_paused_enabled_source',
+    v_claimed_id is null,
+    format('expected no claim for paused source run %s, got %s', v_run_id, v_claimed_id)
+  );
+end
+$$;
+
+-- ============================================================
+-- 12. Validate claim_source_fetch_runs input guardrails
 -- ============================================================
 
 do $$
@@ -745,28 +957,49 @@ $$;
 do $$
 declare
   t text;
+  expect_select boolean;
+  expect_insert boolean;
+  expect_update boolean;
+  expect_delete boolean;
   has_it boolean;
 begin
-  -- service_role must have SELECT, INSERT, UPDATE, DELETE on all six tables.
+  -- service_role must have explicit least-privilege grants.
+  foreach t, expect_select, expect_insert, expect_update, expect_delete in
+    select *
+    from (values
+      ('job_sources', true, true, true, false),
+      ('source_fetch_runs', true, true, true, false),
+      ('source_payloads', true, true, false, false),
+      ('source_postings', true, true, true, false),
+      ('source_posting_versions', true, true, false, false),
+      ('opportunity_source_links', true, true, true, true)
+    ) as expected(table_name, can_select, can_insert, can_update, can_delete)
+  loop
+    select has_table_privilege('service_role', format('public.%s', t), 'SELECT') into has_it;
+    perform _assert(format('service_role_select_%s', t), coalesce(has_it, false) = expect_select,
+                    format('service_role SELECT mismatch on public.%s', t));
+
+    select has_table_privilege('service_role', format('public.%s', t), 'INSERT') into has_it;
+    perform _assert(format('service_role_insert_%s', t), coalesce(has_it, false) = expect_insert,
+                    format('service_role INSERT mismatch on public.%s', t));
+
+    select has_table_privilege('service_role', format('public.%s', t), 'UPDATE') into has_it;
+    perform _assert(format('service_role_update_%s', t), coalesce(has_it, false) = expect_update,
+                    format('service_role UPDATE mismatch on public.%s', t));
+
+    select has_table_privilege('service_role', format('public.%s', t), 'DELETE') into has_it;
+    perform _assert(format('service_role_delete_%s', t), coalesce(has_it, false) = expect_delete,
+                    format('service_role DELETE mismatch on public.%s', t));
+  end loop;
+
+  -- service_role must not have TRUNCATE on any ingestion table.
   foreach t in array array[
     'job_sources','source_fetch_runs','source_payloads',
     'source_postings','source_posting_versions','opportunity_source_links'
   ] loop
-    select has_table_privilege('service_role', format('public.%s', t), 'SELECT') into has_it;
-    perform _assert(format('service_role_has_select_%s', t), coalesce(has_it, false),
-                    format('service_role missing SELECT on public.%s', t));
-
-    select has_table_privilege('service_role', format('public.%s', t), 'INSERT') into has_it;
-    perform _assert(format('service_role_has_insert_%s', t), coalesce(has_it, false),
-                    format('service_role missing INSERT on public.%s', t));
-
-    select has_table_privilege('service_role', format('public.%s', t), 'UPDATE') into has_it;
-    perform _assert(format('service_role_has_update_%s', t), coalesce(has_it, false),
-                    format('service_role missing UPDATE on public.%s', t));
-
-    select has_table_privilege('service_role', format('public.%s', t), 'DELETE') into has_it;
-    perform _assert(format('service_role_has_delete_%s', t), coalesce(has_it, false),
-                    format('service_role missing DELETE on public.%s', t));
+    select has_table_privilege('service_role', format('public.%s', t), 'TRUNCATE') into has_it;
+    perform _assert(format('service_role_no_truncate_%s', t), not coalesce(has_it, false),
+                    format('service_role has TRUNCATE on public.%s', t));
   end loop;
 end
 $$;
@@ -898,7 +1131,7 @@ end
 $$;
 
 -- ============================================================
--- 21. FORCE ROW SECURITY is NOT set (service_role must bypass RLS)
+-- 21. FORCE ROW SECURITY is NOT set
 -- ============================================================
 
 do $$
@@ -915,7 +1148,7 @@ begin
     join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'public' and c.relname = t;
     perform _assert(format('rls_not_forced_%s', t), not coalesce(force_rls, false),
-                    format('FORCE ROW SECURITY is set on %s — service_role would be blocked', t));
+                    format('FORCE ROW SECURITY is set on %s (unexpected for current schema design)', t));
   end loop;
 end
 $$;
@@ -928,6 +1161,7 @@ do $$
 declare
   schema_exists boolean;
   bucket_public boolean;
+  bucket_file_size_limit bigint;
 begin
   select exists (
     select 1 from information_schema.schemata where schema_name = 'storage'
@@ -935,16 +1169,25 @@ begin
 
   if schema_exists then
     execute $q$
-      select "public" from storage.buckets where id = 'source-payloads'
-    $q$ into bucket_public;
+      select "public", file_size_limit
+      from storage.buckets
+      where id = 'source-payloads'
+    $q$ into bucket_public, bucket_file_size_limit;
 
     perform _assert(
       'source_payloads_bucket_is_private',
       bucket_public is not distinct from false,
       format('bucket public flag: %s (expected false)', bucket_public)
     );
+
+    perform _assert(
+      'source_payloads_bucket_file_size_limit',
+      bucket_file_size_limit = 52428800,
+      format('bucket file_size_limit: %s (expected 52428800)', bucket_file_size_limit)
+    );
   else
     raise notice 'SKIP  source_payloads_bucket_is_private — storage schema not available';
+    raise notice 'SKIP  source_payloads_bucket_file_size_limit — storage schema not available';
   end if;
 end
 $$;
@@ -996,6 +1239,7 @@ rollback;
 -- C. source-payloads bucket is private (check 22 runs if storage schema is present)
 --    After applying 0004_source_payload_bucket.sql, verify:
 --    SELECT public FROM storage.buckets WHERE id = 'source-payloads';  -- expect false
+--    SELECT file_size_limit FROM storage.buckets WHERE id = 'source-payloads';  -- expect 52428800
 --
 -- D. Service-role worker writes (INSERT on source_fetch_runs, source_payloads, etc.)
 --    Requires a session authenticated as service_role to confirm inserts succeed.

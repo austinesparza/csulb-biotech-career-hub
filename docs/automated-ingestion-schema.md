@@ -40,10 +40,11 @@ A source may only be `enabled = true` once:
 - `terms_reviewed = true`
 - `terms_review_date` is set
 - `robots_reviewed = true`
-- `automatic_scheduling_paused_at IS NULL`
 
-Officers disable sources by setting `enabled = false` or
-`automatic_scheduling_paused_at = now()`.  Deletion is not granted.
+`enabled` controls whether a source is approved and active.
+`automatic_scheduling_paused_at` independently suppresses automatic queue claiming
+for that source while still allowing manual or administrative handling.
+Deletion is not granted.
 
 **Mutations** (INSERT, UPDATE) are performed server-side in Phase 7 via a
 server action that calls `requireOfficer()` and then uses the service-role Supabase
@@ -105,10 +106,12 @@ link per opportunity.
 
 | Table | Constraint | Rule |
 |---|---|---|
-| `job_sources` | `job_sources_enablement_requires_policy_review` | `enabled` may only be `true` when `terms_reviewed`, `robots_reviewed`, `terms_review_date IS NOT NULL`, and `automatic_scheduling_paused_at IS NULL` |
+| `job_sources` | `job_sources_enablement_requires_policy_review` | `enabled` may only be `true` when `terms_reviewed`, `robots_reviewed`, and `terms_review_date IS NOT NULL` |
 | `job_sources` | `job_sources_terms_date_requires_terms_review` | `terms_review_date` may only be set when `terms_reviewed = true` |
 | `job_sources` | `priority` range | `0 <= priority <= 100` |
 | `job_sources` | `consecutive_failures >= 0` | Non-negative counter |
+| `job_sources` | `last_http_status` range | `100 <= last_http_status <= 599` when present |
+| `job_sources` | `last_payload_hash` format | Exactly 64 lowercase hexadecimal characters when present |
 | `job_sources` | `source_name` nonempty | `trim(source_name) <> ''` |
 | `job_sources` | `careers_url` nonempty | `trim(careers_url) <> ''` |
 | `job_sources` | `config_json` object | `jsonb_typeof(config_json) = 'object'` |
@@ -129,6 +132,8 @@ link per opportunity.
 | `source_postings` | `source_postings_closes_after_posted` | `closes_at >= posted_at` when both are set |
 | `source_postings` | `closure_confidence` range | `0 <= closure_confidence <= 1` |
 | `source_postings` | `consecutive_misses >= 0` | Non-negative |
+| `source_postings` | `relevance_score` range | `0 <= relevance_score <= 100` when present |
+| `source_postings` | `source_postings_relevance_score_pair` | `relevance_score` and `relevance_score_version` are either both NULL or both non-NULL |
 | `source_postings` | `relevance_score_version` | `> 0` when non-null |
 | `source_posting_versions` | `connector_version` nonempty | `trim(connector_version) <> ''` |
 | `source_posting_versions` | `material_hash` format | Exactly 64 lowercase hexadecimal characters |
@@ -144,6 +149,8 @@ link per opportunity.
 |---|---|---|
 | `job_sources.source_record_id → source_records` | `RESTRICT` | Cannot delete a source record while a job source references it |
 | `job_sources.company_id → companies` | `SET NULL` | Company deletion nulls the reference; source survives |
+| `job_sources.created_by → auth.users` | `SET NULL` | Source history survives auth user deletion |
+| `job_sources.updated_by → auth.users` | `SET NULL` | Source history survives auth user deletion |
 | `source_fetch_runs.job_source_id → job_sources` | `RESTRICT` | Preserves run history when a source is disabled |
 | `source_payloads.source_fetch_run_id → source_fetch_runs` | `CASCADE` | Purging a run purges its payload metadata rows |
 | `source_postings.job_source_id → job_sources` | `RESTRICT` | Preserves posting history when a source is disabled |
@@ -178,7 +185,7 @@ that call `requireOfficer()` and then use the service-role Supabase client.
 | `anon` | — | — | — | — | — | — |
 | `authenticated` (non-officer) | blocked by RLS | blocked by RLS | blocked by RLS | blocked by RLS | blocked by RLS | blocked by RLS |
 | `authenticated` (officer) | SELECT | SELECT | SELECT | SELECT | SELECT | SELECT |
-| `service_role` | ALL | ALL | ALL | ALL | ALL | ALL |
+| `service_role` | SELECT, INSERT, UPDATE | SELECT, INSERT, UPDATE | SELECT, INSERT | SELECT, INSERT, UPDATE | SELECT, INSERT | SELECT, INSERT, UPDATE, DELETE |
 
 Note: `service_role` bypasses RLS.  The grants to `service_role` are explicit table
 grants but do not depend on RLS policies.
@@ -197,8 +204,9 @@ authorization boundary.
 ### Why officers cannot DELETE `job_sources`
 
 Deletion is not granted.  Sources should be disabled (`enabled = false`) or paused
-(`automatic_scheduling_paused_at = now()`).  This preserves run history and prevents
-accidental data loss.
+(`automatic_scheduling_paused_at = now()`). Pausing suppresses automatic queue
+claiming but does not revoke approval and does not block manual or administrative
+handling. This preserves run history and prevents accidental data loss.
 
 ---
 
@@ -316,8 +324,12 @@ npx supabase db reset --local
 # 6. Lint the schema (catches common issues)
 npx supabase db lint --local
 
-# 7. Run the verification script against the local database
-psql '******127.0.0.1:54322/postgres' \
+# 7. Get the local DB URL from the local Supabase status output
+npx supabase status
+export LOCAL_DATABASE_URL='<DB URL from npx supabase status output>'
+
+# 8. Run the verification script against the local database
+psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 \
   -f supabase/tests/automated_ingestion_schema.sql
 ```
 
