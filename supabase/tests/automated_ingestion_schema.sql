@@ -964,7 +964,7 @@ declare
   has_it boolean;
 begin
   -- service_role must have explicit least-privilege grants.
-  foreach t, expect_select, expect_insert, expect_update, expect_delete in
+  for t, expect_select, expect_insert, expect_update, expect_delete in
     select *
     from (values
       ('job_sources', true, true, true, false),
@@ -1057,7 +1057,6 @@ $$;
 do $$
 declare
   t           text;
-  view_name   text;
   view_refs   boolean;
 begin
   -- Verify no public_* view references any of the six ingestion tables
@@ -1067,10 +1066,11 @@ begin
     'source_postings','source_posting_versions','opportunity_source_links'
   ] loop
     select exists (
-      select 1 from information_schema.view_column_usage
-      where view_schema = 'public'
-        and view_name like 'public\_%'
-        and table_name = t
+      select 1
+      from information_schema.view_column_usage as vcu
+      where vcu.view_schema = 'public'
+        and vcu.view_name like 'public\_%'
+        and vcu.table_name = t
     ) into view_refs;
     perform _assert(
       format('ingestion_table_not_in_public_view_%s', t),
