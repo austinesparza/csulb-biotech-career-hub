@@ -28,10 +28,23 @@ export type EventType = 'workshop' | 'speaker_series' | 'other';
 export type ResourceType = 'guide' | 'template' | 'link' | 'recording' | 'post';
 export type TaskType =
   | 'new_import' | 'possible_duplicate' | 'possible_repost' | 'broken_link'
-  | 'expiring' | 'submission' | 'consent_check' | 'stale_record' | 'import_changed';
+  | 'expiring' | 'submission' | 'consent_check' | 'stale_record' | 'import_changed'
+  | 'source_new' | 'source_changed' | 'source_reopened' | 'source_health';
 export type TaskStatus = 'open' | 'in_progress' | 'done' | 'dismissed';
 export type SubmissionType = 'opportunity' | 'mentor_update' | 'resource' | 'correction';
 export type SubmissionStatus = 'new' | 'in_review' | 'approved' | 'rejected' | 'spam';
+export type SourceKind =
+  | 'greenhouse' | 'lever' | 'ashby' | 'usajobs' | 'nih_program' | 'nsf_program'
+  | 'nasa_program' | 'rss' | 'schema_org' | 'static_html' | 'other_api';
+export type SourceTriggerKind = 'scheduled' | 'manual' | 'retry' | 'recheck';
+export type SourceFetchRunStatus =
+  | 'pending' | 'running' | 'completed' | 'failed' | 'partial' | 'cancelled';
+export type SourceErrorClass =
+  | 'network' | 'timeout' | 'robots' | 'auth' | 'schema' | 'rate_limit' | 'unexpected';
+export type SourceRemoteType = 'remote' | 'hybrid' | 'onsite' | 'unknown';
+export type SourceClassification = 'internship' | 'entry_level' | 'fellowship' | 'research' | 'other';
+export type SourceDeadlineKind = 'hard' | 'rolling' | 'unknown';
+export type SourcePostingStatus = 'open' | 'missing' | 'closure_candidate' | 'closed' | 'reopened' | 'unknown';
 
 export interface SourceRecord {
   id: string;
@@ -64,6 +77,133 @@ export interface ImportRun {
   duplicate_count: number;
   error_count: number;
   notes: string | null;
+}
+
+export interface JobSource {
+  id: string;
+  source_record_id: string;
+  company_id: string | null;
+  source_name: string;
+  source_kind: SourceKind;
+  source_identifier: string | null;
+  careers_url: string;
+  api_endpoint: string | null;
+  config_json: Record<string, unknown>;
+  enabled: boolean;
+  priority: number;
+  fetch_interval_hours: number;
+  expected_geography: string[];
+  expected_audience: string[];
+  terms_reviewed: boolean;
+  terms_review_date: string | null;
+  robots_reviewed: boolean;
+  last_attempted_at: string | null;
+  last_successful_at: string | null;
+  consecutive_failures: number;
+  last_http_status: number | null;
+  last_payload_hash: string | null;
+  degraded_at: string | null;
+  automatic_scheduling_paused_at: string | null;
+  notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SourceFetchRun {
+  id: string;
+  job_source_id: string;
+  trigger_kind: SourceTriggerKind;
+  status: SourceFetchRunStatus;
+  scheduled_for: string;
+  started_at: string | null;
+  finished_at: string | null;
+  attempt_no: number;
+  worker_id: string | null;
+  http_status: number | null;
+  records_seen: number;
+  records_new: number;
+  records_changed: number;
+  records_unchanged: number;
+  records_reviewed: number;
+  records_closed_candidates: number;
+  payload_count: number;
+  error_class: SourceErrorClass | null;
+  error_message: string | null;
+  log_json: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface SourcePayload {
+  id: string;
+  source_fetch_run_id: string;
+  request_url: string;
+  final_url: string | null;
+  content_type: string | null;
+  etag: string | null;
+  last_modified: string | null;
+  status_code: number | null;
+  sha256: string;
+  size_bytes: number;
+  storage_path: string;
+  created_at: string;
+}
+
+export interface SourcePosting {
+  id: string;
+  job_source_id: string;
+  external_posting_id: string | null;
+  canonical_url: string;
+  identity_key: string;
+  employer_name_raw: string | null;
+  employer_name_normalized: string | null;
+  title_normalized: string | null;
+  location_normalized: string | null;
+  remote_type: SourceRemoteType | null;
+  employment_type: string | null;
+  classification: SourceClassification | null;
+  department: string | null;
+  focus_area: string | null;
+  posted_at: string | null;
+  closes_at: string | null;
+  deadline_kind: SourceDeadlineKind | null;
+  current_status: SourcePostingStatus;
+  relevance_score: number | null;
+  relevance_score_version: string | null;
+  score_breakdown_json: Record<string, unknown>;
+  uncertainty_flags: string[];
+  closure_confidence: number;
+  first_seen_at: string;
+  last_seen_at: string;
+  last_payload_id: string | null;
+  last_material_hash: string;
+  consecutive_misses: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SourcePostingVersion {
+  id: string;
+  source_posting_id: string;
+  source_fetch_run_id: string;
+  source_payload_id: string;
+  connector_version: string;
+  is_material_change: boolean;
+  material_hash: string;
+  normalized_json: Record<string, unknown>;
+  score_breakdown_json: Record<string, unknown>;
+  field_diff_json: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface OpportunitySourceLink {
+  id: string;
+  opportunity_id: string;
+  source_posting_id: string;
+  match_type: string;
+  is_primary: boolean;
+  created_at: string;
 }
 
 export interface RawImportRow {
