@@ -416,7 +416,7 @@ $$;
 --
 -- Parameters:
 --   p_worker_id  nonempty text identifying the caller (e.g. worker instance id)
---   p_limit      integer 1–50; values outside range are clamped, NULL defaults to 1
+--   p_limit      integer 1–50 inclusive; null or out-of-range values raise an exception
 --
 -- Concurrency: FOR UPDATE SKIP LOCKED ensures that two concurrent callers each
 -- receive a disjoint set of rows. The UPDATE is part of the same statement so no
@@ -431,15 +431,18 @@ language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
-declare
-  v_limit integer;
 begin
   if p_worker_id is null or trim(p_worker_id) = '' then
     raise exception 'claim_source_fetch_runs: p_worker_id must be a nonempty string';
   end if;
 
-  -- Clamp batch size to [1, 50].
-  v_limit := greatest(1, least(coalesce(p_limit, 1), 50));
+  if p_limit is null then
+    raise exception 'claim_source_fetch_runs: p_limit must not be null';
+  end if;
+
+  if p_limit < 1 or p_limit > 50 then
+    raise exception 'claim_source_fetch_runs: p_limit must be between 1 and 50 inclusive, got %', p_limit;
+  end if;
 
   return query
   with claimed as (
@@ -452,7 +455,7 @@ begin
       and js.automatic_scheduling_paused_at is null
     order by js.priority asc, sfr.scheduled_for asc, sfr.created_at asc
     for update of sfr skip locked
-    limit v_limit
+    limit p_limit
   )
   update public.source_fetch_runs sfr
      set status      = 'running',

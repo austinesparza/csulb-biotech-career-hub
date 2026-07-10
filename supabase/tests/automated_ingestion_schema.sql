@@ -461,6 +461,39 @@ begin
 end
 $$;
 
+do $$
+begin
+  begin
+    perform public.claim_source_fetch_runs('worker-test', 0);
+    perform _assert('claim_rejects_batch_size_zero', false, 'batch size 0 was accepted');
+  exception when others then
+    perform _assert('claim_rejects_batch_size_zero', true);
+  end;
+end
+$$;
+
+do $$
+begin
+  begin
+    perform public.claim_source_fetch_runs('worker-test', 51);
+    perform _assert('claim_rejects_batch_size_51', false, 'batch size 51 was accepted');
+  exception when others then
+    perform _assert('claim_rejects_batch_size_51', true);
+  end;
+end
+$$;
+
+do $$
+begin
+  begin
+    perform public.claim_source_fetch_runs('worker-test', null);
+    perform _assert('claim_rejects_null_batch_size', false, 'null batch size was accepted');
+  exception when others then
+    perform _assert('claim_rejects_null_batch_size', true);
+  end;
+end
+$$;
+
 -- ============================================================
 -- 12–16. RLS permission checks
 -- NOTE: These checks require SET ROLE and can only be executed if the test
