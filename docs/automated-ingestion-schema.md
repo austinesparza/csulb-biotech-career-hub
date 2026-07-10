@@ -335,24 +335,29 @@ psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 \
 
 ---
 
-## Tests not executed and why
+## Verification results
 
-A local Supabase instance is not running in the sandboxed CI environment used to
-produce this branch.  The verification script was authored and reviewed but not
-executed against a live database.
+Phase 1 was validated against a disposable local Supabase stack on July 10, 2026.
 
-The following checks in `supabase/tests/automated_ingestion_schema.sql` were **not**
-run:
-
-| Section | Reason |
+| Check | Result |
 |---|---|
-| All schema checks (tables, enum values, constraints, indexes, triggers, policies) | No local Supabase database available |
-| `anon` cannot read ingestion tables | Requires `SET ROLE anon`; needs superuser privilege |
-| Non-officer `authenticated` cannot read ingestion tables | Requires `SET ROLE authenticated` and a non-officer `auth.users` row |
-| Officer `authenticated` can SELECT ingestion tables | Requires officer `auth.users` row and `SET ROLE authenticated` |
-| `source-payloads` bucket is private | Requires local Supabase with storage schema |
-| True concurrent-worker duplicate-claim prevention | Requires two simultaneous database sessions |
-| Trigger fires for `service_role` | Requires a service-role session |
+| `npx supabase db reset --local` | Passed; migrations `0001` through `0004` and `supabase/seed.sql` applied successfully |
+| `npx supabase db lint --local --fail-on error` | Passed; no schema errors found |
+| `supabase/tests/automated_ingestion_schema.sql` | Passed; 163 checks passed and 0 failed |
+| `npm ci` | Passed |
+| `npm run typecheck` | Passed on final run |
+| `npm run build` | Passed on final run |
+
+The SQL verification transaction ended with `ROLLBACK` intentionally so that test
+fixtures were removed while the migrated local schema remained intact.
+
+### Remaining limitations
+
+The serial queue-claim test confirms that a claimed row cannot be claimed again.
+A true simultaneous two-session concurrency test remains deferred to the worker
+implementation phase.
+
+Production Supabase was not modified during Phase 1 local verification.
 
 ---
 
