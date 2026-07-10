@@ -8,7 +8,7 @@ import { sanitizeSearchTerm } from '@/lib/normalize';
 import type { PublicOpportunity } from '@/lib/types';
 import { Board } from './board';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 interface Search {
   q?: string;

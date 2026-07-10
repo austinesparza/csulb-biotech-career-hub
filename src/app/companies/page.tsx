@@ -1,7 +1,7 @@
 // Company Directory. Reads ONLY the public_companies view.
 import { createClient } from '@/lib/supabase/client';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 interface PublicCompany {
   id: string;

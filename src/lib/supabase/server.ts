@@ -2,9 +2,11 @@
 //
 // CONVENTION (enforced in code review): no admin server action may call
 // createServiceClient() before `await requireOfficer()` has succeeded.
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+
+type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
 /** Cookie-based client: respects the signed-in officer's session + RLS. */
 export async function createServerAuthClient() {
@@ -15,7 +17,8 @@ export async function createServerAuthClient() {
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
-        setAll: (list) => list.forEach(({ name, value, options }) => cookieStore.set(name, value, options)),
+        setAll: (list: CookieToSet[]) =>
+          list.forEach(({ name, value, options }) => cookieStore.set(name, value, options)),
       },
     },
   );
