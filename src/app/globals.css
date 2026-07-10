@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+
+/* Theme: minimal black-first with the club's brand green as the single accent,
+   on the club site's cream canvas ("C2-green, cream").
+   - --brand (bright green) is decorative only: rules, marks. Never body text.
+   - --brand-deep passes contrast on white/cream: links, badges, accents.
+   - --sand echoes the club logo's circle: used for the unverified badge. */
+:root {
+  --paper: #fbf9f0;       /* page canvas, sampled from the club site */
+  --ink: #1a1c20;         /* text + primary buttons */
+  --ink-soft: #5c5f6b;    /* secondary text; 4.5:1+ on white and cream (WCAG AA) */
+  --brand: #82bb41;       /* club green, decorative */
+  --brand-deep: #4a7a1e;  /* readable green for links/text */
+  --brand-soft: #edf5e0;  /* light green fill */
+  --sand: #f5f2e6;        /* muted sand fill */
+  --sand-deep: #7a6a35;   /* sand-family text */
+  --line: #e5e2d6;        /* hairlines on cream */
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
