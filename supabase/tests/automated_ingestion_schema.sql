@@ -5,13 +5,14 @@
 -- applying 0001_init.sql, 0002_ingestion_task_types.sql, and 0003_automated_ingestion_schema.sql.
 -- (0004_source_payload_bucket.sql requires a live Supabase project; see footer.)
 --
--- How to run locally:
---   supabase start                                  # starts local Supabase stack
---   supabase db push                                # applies all migrations
---   psql "$DATABASE_URL" -f supabase/tests/automated_ingestion_schema.sql
+-- WARNING: do NOT run supabase db push against a linked remote project for local
+-- verification.  Use the local stack only:
 --
--- If no local Supabase is available, these checks were CREATED but NOT EXECUTED.
--- See the footer for the full list of untested items.
+--   npx supabase start
+--   npx supabase db reset --local
+--   npx supabase db lint --local
+--   psql '******127.0.0.1:54322/postgres' \
+--     -f supabase/tests/automated_ingestion_schema.sql
 --
 -- Exit codes: the script raises an exception on the first failed assertion and
 -- prints a PASS/FAIL summary for each check attempted before the failure.
@@ -94,15 +95,41 @@ end
 $$;
 
 -- ============================================================
+-- Shared fixture for constraint tests (sections 3–4)
+-- ============================================================
+-- These rows are inserted once and reused by all inner test blocks.
+-- The outer BEGIN/ROLLBACK ensures nothing persists.
+
+do $$
+declare
+  v_sr_id uuid;
+  v_js_id uuid;
+begin
+  insert into public.source_records (name, source_type)
+  values ('_fixture_sr_constraints', 'website_page')
+  returning id into v_sr_id;
+
+  insert into public.job_sources (source_record_id, source_name, source_kind, careers_url)
+  values (v_sr_id, 'fixture-source', 'rss', 'https://example.com/feed')
+  returning id into v_js_id;
+
+  -- Store IDs in GUC for access from subsequent DO blocks in this transaction.
+  perform set_config('test.fixture_js_id', v_js_id::text, true);
+  perform set_config('test.fixture_sr_id', v_sr_id::text, true);
+end
+$$;
+
+-- ============================================================
 -- 3. Invalid statuses are rejected
 -- ============================================================
 
 -- source_fetch_runs.status
 do $$
+declare v_js_id uuid := current_setting('test.fixture_js_id')::uuid;
 begin
   begin
     insert into public.source_fetch_runs (job_source_id, trigger_kind, status, scheduled_for)
-    values (gen_random_uuid(), 'scheduled', 'bogus_status', now());
+    values (v_js_id, 'scheduled', 'bogus_status', now());
     perform _assert('reject_invalid_fetch_run_status', false, 'invalid status was accepted');
   exception when check_violation then
     perform _assert('reject_invalid_fetch_run_status', true);
@@ -112,11 +139,16 @@ $$;
 
 -- source_postings.current_status
 do $$
+declare v_js_id uuid := current_setting('test.fixture_js_id')::uuid;
 begin
   begin
     insert into public.source_postings (
-      job_source_id, canonical_url, identity_key, last_material_hash, current_status
-    ) values (gen_random_uuid(), 'https://example.com', 'key1', 'hash1', 'not_a_status');
+      job_source_id, canonical_url, identity_key,
+      last_material_hash, current_status
+    ) values (
+      v_js_id, 'https://example.com/job/bad-status', 'key-bad-status',
+      lpad('a', 64, 'a'), 'not_a_status'
+    );
     perform _assert('reject_invalid_posting_status', false, 'invalid status was accepted');
   exception when check_violation then
     perform _assert('reject_invalid_posting_status', true);
@@ -126,10 +158,12 @@ $$;
 
 -- source_fetch_runs.error_class
 do $$
+declare v_js_id uuid := current_setting('test.fixture_js_id')::uuid;
 begin
   begin
-    insert into public.source_fetch_runs (job_source_id, trigger_kind, status, scheduled_for, error_class)
-    values (gen_random_uuid(), 'manual', 'completed', now(), 'mystery_error');
+    insert into public.source_fetch_runs (
+      job_source_id, trigger_kind, status, scheduled_for, error_class
+    ) values (v_js_id, 'manual', 'completed', now(), 'mystery_error');
     perform _assert('reject_invalid_error_class', false, 'invalid error_class was accepted');
   exception when check_violation then
     perform _assert('reject_invalid_error_class', true);
@@ -142,10 +176,12 @@ $$;
 -- ============================================================
 
 do $$
+declare v_js_id uuid := current_setting('test.fixture_js_id')::uuid;
 begin
   begin
-    insert into public.source_fetch_runs (job_source_id, trigger_kind, status, scheduled_for, records_seen)
-    values (gen_random_uuid(), 'scheduled', 'pending', now(), -1);
+    insert into public.source_fetch_runs (
+      job_source_id, trigger_kind, status, scheduled_for, records_seen
+    ) values (v_js_id, 'scheduled', 'pending', now(), -1);
     perform _assert('reject_negative_records_seen', false, 'negative counter was accepted');
   exception when check_violation then
     perform _assert('reject_negative_records_seen', true);
@@ -154,11 +190,14 @@ end
 $$;
 
 do $$
+declare v_js_id uuid := current_setting('test.fixture_js_id')::uuid;
 begin
   begin
     insert into public.source_postings (
-      job_source_id, canonical_url, identity_key, last_material_hash, consecutive_misses
-    ) values (gen_random_uuid(), 'https://example.com', 'key2', 'hash2', -5);
+      job_source_id, canonical_url, identity_key,
+      last_material_hash, consecutive_misses
+    ) values (v_js_id, 'https://example.com/job/neg-miss', 'key-neg-miss',
+              lpad('b', 64, 'b'), -5);
     perform _assert('reject_negative_consecutive_misses', false, 'negative counter was accepted');
   exception when check_violation then
     perform _assert('reject_negative_consecutive_misses', true);
@@ -167,11 +206,17 @@ end
 $$;
 
 do $$
+declare
+  v_sr2 uuid;
 begin
+  -- source_record_id must be unique; use a fresh one to avoid duplicate-key error
+  insert into public.source_records (name, source_type)
+  values ('_fixture_sr_neg_fail', 'website_page') returning id into v_sr2;
+
   begin
     insert into public.job_sources (
       source_record_id, source_name, source_kind, careers_url, consecutive_failures
-    ) values (gen_random_uuid(), 'test', 'rss', 'https://example.com', -1);
+    ) values (v_sr2, 'neg-fail', 'rss', 'https://example.com/neg', -1);
     perform _assert('reject_negative_consecutive_failures', false, 'negative counter was accepted');
   exception when check_violation then
     perform _assert('reject_negative_consecutive_failures', true);
@@ -186,18 +231,14 @@ $$;
 do $$
 declare
   v_sr_id uuid;
-  v_company_id uuid;
 begin
-  -- Seed a minimal source_records row.
   insert into public.source_records (name, source_type)
   values ('test-sr-dup', 'website_page')
   returning id into v_sr_id;
 
-  -- First insert should succeed.
   insert into public.job_sources (source_record_id, source_name, source_kind, careers_url)
   values (v_sr_id, 'first', 'rss', 'https://example.com');
 
-  -- Second insert with same source_record_id should fail.
   begin
     insert into public.job_sources (source_record_id, source_name, source_kind, careers_url)
     values (v_sr_id, 'second', 'rss', 'https://example.com/2');
@@ -225,12 +266,14 @@ begin
   values (v_sr_id, 'test-js-identity', 'greenhouse', 'https://boards.greenhouse.io/test')
   returning id into v_js_id;
 
-  insert into public.source_postings (job_source_id, canonical_url, identity_key, last_material_hash)
-  values (v_js_id, 'https://boards.greenhouse.io/test/1', 'job-1', 'hash-a');
+  insert into public.source_postings (
+    job_source_id, canonical_url, identity_key, last_material_hash
+  ) values (v_js_id, 'https://boards.greenhouse.io/test/1', 'job-1', lpad('c', 64, 'c'));
 
   begin
-    insert into public.source_postings (job_source_id, canonical_url, identity_key, last_material_hash)
-    values (v_js_id, 'https://boards.greenhouse.io/test/1-dup', 'job-1', 'hash-b');
+    insert into public.source_postings (
+      job_source_id, canonical_url, identity_key, last_material_hash
+    ) values (v_js_id, 'https://boards.greenhouse.io/test/1-dup', 'job-1', lpad('d', 64, 'd'));
     perform _assert('reject_duplicate_identity_key', false, 'duplicate identity_key was accepted');
   exception when unique_violation then
     perform _assert('reject_duplicate_identity_key', true);
@@ -252,7 +295,7 @@ declare
 begin
   insert into public.companies (name, name_normalized)
   values ('Test Co Links', 'test co links')
-  returning id into v_opp_id;  -- reuse variable temporarily
+  returning id into v_opp_id;
 
   insert into public.opportunities (company_id, title, source_record_id)
   select v_opp_id, 'Test Opp', null
@@ -266,20 +309,24 @@ begin
   values (v_sr_id, 'test-js-links', 'lever', 'https://jobs.lever.co/test')
   returning id into v_js_id;
 
-  insert into public.source_postings (job_source_id, canonical_url, identity_key, last_material_hash)
-  values (v_js_id, 'https://jobs.lever.co/test/1', 'posting-1', 'h1')
+  insert into public.source_postings (
+    job_source_id, canonical_url, identity_key, last_material_hash
+  ) values (v_js_id, 'https://jobs.lever.co/test/1', 'posting-1', lpad('e', 64, 'e'))
   returning id into v_sp1_id;
 
-  insert into public.source_postings (job_source_id, canonical_url, identity_key, last_material_hash)
-  values (v_js_id, 'https://jobs.lever.co/test/2', 'posting-2', 'h2')
+  insert into public.source_postings (
+    job_source_id, canonical_url, identity_key, last_material_hash
+  ) values (v_js_id, 'https://jobs.lever.co/test/2', 'posting-2', lpad('f', 64, 'f'))
   returning id into v_sp2_id;
 
-  insert into public.opportunity_source_links (opportunity_id, source_posting_id, match_type, is_primary)
-  values (v_opp_id, v_sp1_id, 'exact', true);
+  insert into public.opportunity_source_links (
+    opportunity_id, source_posting_id, match_type, is_primary
+  ) values (v_opp_id, v_sp1_id, 'exact', true);
 
   begin
-    insert into public.opportunity_source_links (opportunity_id, source_posting_id, match_type, is_primary)
-    values (v_opp_id, v_sp2_id, 'exact', true);
+    insert into public.opportunity_source_links (
+      opportunity_id, source_posting_id, match_type, is_primary
+    ) values (v_opp_id, v_sp2_id, 'exact', true);
     perform _assert('reject_second_primary_link', false, 'second is_primary link was accepted');
   exception when unique_violation then
     perform _assert('reject_second_primary_link', true);
@@ -299,6 +346,7 @@ declare
   v_sfr_id  uuid;
   v_pay_id  uuid;
   v_spv_id  uuid;
+  v_msg     text;
 begin
   insert into public.source_records (name, source_type)
   values ('test-sr-immutable', 'website_page')
@@ -314,17 +362,20 @@ begin
 
   insert into public.source_payloads (
     source_fetch_run_id, request_url, sha256, size_bytes, storage_path
-  ) values (v_sfr_id, 'https://example.com/feed', 'abc123', 1024, 'source-payloads/test.json')
-  returning id into v_pay_id;
+  ) values (
+    v_sfr_id, 'https://example.com/feed',
+    lpad('a', 64, 'a'), 1024, 'source-payloads/test.json'
+  ) returning id into v_pay_id;
 
-  insert into public.source_postings (job_source_id, canonical_url, identity_key, last_material_hash)
-  values (v_js_id, 'https://example.com/job/1', 'immut-key', 'h-immut')
+  insert into public.source_postings (
+    job_source_id, canonical_url, identity_key, last_material_hash
+  ) values (v_js_id, 'https://example.com/job/1', 'immut-key', lpad('b', 64, 'b'))
   returning id into v_sp_id;
 
   insert into public.source_posting_versions (
     source_posting_id, source_fetch_run_id, source_payload_id,
     connector_version, is_material_change, material_hash, normalized_json
-  ) values (v_sp_id, v_sfr_id, v_pay_id, '1.0.0', true, 'h-immut', '{}')
+  ) values (v_sp_id, v_sfr_id, v_pay_id, '1.0.0', true, lpad('c', 64, 'c'), '{}')
   returning id into v_spv_id;
 
   begin
@@ -332,8 +383,14 @@ begin
        set connector_version = '1.0.1'
      where id = v_spv_id;
     perform _assert('reject_update_source_posting_versions', false, 'UPDATE was accepted');
-  exception when others then
-    perform _assert('reject_update_source_posting_versions', true);
+  exception when sqlstate 'P0001' then
+    -- Verify the trigger's specific message to confirm the right guard fired.
+    get stacked diagnostics v_msg = message_text;
+    perform _assert(
+      'reject_update_source_posting_versions',
+      position('append-only' in v_msg) > 0,
+      format('exception raised but wrong message: %s', v_msg)
+    );
   end;
 end
 $$;
@@ -350,6 +407,7 @@ declare
   v_sfr_id  uuid;
   v_pay_id  uuid;
   v_spv_id  uuid;
+  v_msg     text;
 begin
   insert into public.source_records (name, source_type)
   values ('test-sr-no-del', 'website_page')
@@ -365,24 +423,32 @@ begin
 
   insert into public.source_payloads (
     source_fetch_run_id, request_url, sha256, size_bytes, storage_path
-  ) values (v_sfr_id, 'https://example.com/feed2', 'def456', 512, 'source-payloads/test2.json')
-  returning id into v_pay_id;
+  ) values (
+    v_sfr_id, 'https://example.com/feed2',
+    lpad('d', 64, 'd'), 512, 'source-payloads/test2.json'
+  ) returning id into v_pay_id;
 
-  insert into public.source_postings (job_source_id, canonical_url, identity_key, last_material_hash)
-  values (v_js_id, 'https://example.com/job/2', 'nodeltkey', 'h-nodelt')
+  insert into public.source_postings (
+    job_source_id, canonical_url, identity_key, last_material_hash
+  ) values (v_js_id, 'https://example.com/job/2', 'nodeltkey', lpad('e', 64, 'e'))
   returning id into v_sp_id;
 
   insert into public.source_posting_versions (
     source_posting_id, source_fetch_run_id, source_payload_id,
     connector_version, is_material_change, material_hash, normalized_json
-  ) values (v_sp_id, v_sfr_id, v_pay_id, '1.0.0', true, 'h-nodelt', '{}')
+  ) values (v_sp_id, v_sfr_id, v_pay_id, '1.0.0', true, lpad('f', 64, 'f'), '{}')
   returning id into v_spv_id;
 
   begin
     delete from public.source_posting_versions where id = v_spv_id;
     perform _assert('reject_delete_source_posting_versions', false, 'DELETE was accepted');
-  exception when others then
-    perform _assert('reject_delete_source_posting_versions', true);
+  exception when sqlstate 'P0001' then
+    get stacked diagnostics v_msg = message_text;
+    perform _assert(
+      'reject_delete_source_posting_versions',
+      position('append-only' in v_msg) > 0,
+      format('exception raised but wrong message: %s', v_msg)
+    );
   end;
 end
 $$;
@@ -392,8 +458,8 @@ $$;
 -- ============================================================
 -- Two consecutive claims from different "workers" in the same session (serial,
 -- not truly concurrent) verify that a claimed run is not re-claimable.
--- True concurrent-worker isolation requires separate sessions; that test is noted
--- in the UNTESTED section below.
+-- True concurrent-worker isolation requires separate sessions; that test is
+-- documented in the UNTESTED section below.
 
 do $$
 declare
@@ -403,7 +469,6 @@ declare
   v_a_id   uuid;
   v_b_id   uuid;
 begin
-  -- Seed an enabled job_sources row with all policy requirements met.
   insert into public.source_records (name, source_type)
   values ('test-sr-claim', 'website_page')
   returning id into v_sr_id;
@@ -416,19 +481,16 @@ begin
     true, true, current_date, true
   ) returning id into v_js_id;
 
-  -- Single pending run scheduled in the past.
   insert into public.source_fetch_runs (job_source_id, trigger_kind, status, scheduled_for)
   values (v_js_id, 'scheduled', 'pending', now() - interval '1 minute')
   returning id into v_run_id;
 
-  -- First claim should return the run.
   select id into v_a_id from public.claim_source_fetch_runs('worker-A', 1);
   perform _assert('claim_returns_pending_run', v_a_id is not null,
                   'first claim returned no rows');
   perform _assert('claim_returns_correct_run', v_a_id = v_run_id,
                   format('expected %s, got %s', v_run_id, v_a_id));
 
-  -- Second claim should return nothing (run is now running).
   select id into v_b_id from public.claim_source_fetch_runs('worker-B', 1);
   perform _assert('second_claim_returns_nothing', v_b_id is null,
                   'second claim returned a row that should already be claimed');
@@ -436,74 +498,97 @@ end
 $$;
 
 -- ============================================================
--- 11. Validate function input guardrails
+-- 11. Validate claim_source_fetch_runs input guardrails
 -- ============================================================
 
 do $$
+declare v_msg text;
 begin
   begin
     perform public.claim_source_fetch_runs('', 1);
     perform _assert('claim_rejects_empty_worker_id', false, 'empty worker_id was accepted');
-  exception when others then
-    perform _assert('claim_rejects_empty_worker_id', true);
+  exception when sqlstate 'P0001' then
+    get stacked diagnostics v_msg = message_text;
+    perform _assert(
+      'claim_rejects_empty_worker_id',
+      position('p_worker_id must be a nonempty string' in v_msg) > 0,
+      format('wrong message: %s', v_msg)
+    );
   end;
 end
 $$;
 
 do $$
+declare v_msg text;
 begin
   begin
     perform public.claim_source_fetch_runs(null, 1);
     perform _assert('claim_rejects_null_worker_id', false, 'null worker_id was accepted');
-  exception when others then
-    perform _assert('claim_rejects_null_worker_id', true);
+  exception when sqlstate 'P0001' then
+    get stacked diagnostics v_msg = message_text;
+    perform _assert(
+      'claim_rejects_null_worker_id',
+      position('p_worker_id must be a nonempty string' in v_msg) > 0,
+      format('wrong message: %s', v_msg)
+    );
   end;
 end
 $$;
 
 do $$
+declare v_msg text;
 begin
   begin
     perform public.claim_source_fetch_runs('worker-test', 0);
     perform _assert('claim_rejects_batch_size_zero', false, 'batch size 0 was accepted');
-  exception when others then
-    perform _assert('claim_rejects_batch_size_zero', true);
+  exception when sqlstate 'P0001' then
+    get stacked diagnostics v_msg = message_text;
+    perform _assert(
+      'claim_rejects_batch_size_zero',
+      position('p_limit must be between 1 and 50' in v_msg) > 0,
+      format('wrong message: %s', v_msg)
+    );
   end;
 end
 $$;
 
 do $$
+declare v_msg text;
 begin
   begin
     perform public.claim_source_fetch_runs('worker-test', 51);
     perform _assert('claim_rejects_batch_size_51', false, 'batch size 51 was accepted');
-  exception when others then
-    perform _assert('claim_rejects_batch_size_51', true);
+  exception when sqlstate 'P0001' then
+    get stacked diagnostics v_msg = message_text;
+    perform _assert(
+      'claim_rejects_batch_size_51',
+      position('p_limit must be between 1 and 50' in v_msg) > 0,
+      format('wrong message: %s', v_msg)
+    );
   end;
 end
 $$;
 
 do $$
+declare v_msg text;
 begin
   begin
     perform public.claim_source_fetch_runs('worker-test', null);
     perform _assert('claim_rejects_null_batch_size', false, 'null batch size was accepted');
-  exception when others then
-    perform _assert('claim_rejects_null_batch_size', true);
+  exception when sqlstate 'P0001' then
+    get stacked diagnostics v_msg = message_text;
+    perform _assert(
+      'claim_rejects_null_batch_size',
+      position('p_limit must not be null' in v_msg) > 0,
+      format('wrong message: %s', v_msg)
+    );
   end;
 end
 $$;
 
 -- ============================================================
--- 12–16. RLS permission checks
--- NOTE: These checks require SET ROLE and can only be executed if the test
--- session has the SUPERUSER or CREATEROLE privilege.  When running as a
--- non-privileged user (e.g. default Supabase anon/service_role), the SET ROLE
--- statements will fail.  See UNTESTED section at the bottom for the full list.
+-- 12. RLS is enabled on all six tables
 -- ============================================================
-
--- These checks verify the schema (RLS enabled, policies present) without
--- switching roles, since role-switching requires elevated privileges.
 
 do $$
 declare
@@ -524,7 +609,10 @@ begin
 end
 $$;
 
--- Verify officer SELECT policies exist for all six tables.
+-- ============================================================
+-- 13. Officer SELECT policies exist for all six tables
+-- ============================================================
+
 do $$
 declare
   t text;
@@ -547,71 +635,35 @@ begin
 end
 $$;
 
--- Verify officer INSERT policy exists for job_sources only (not others).
+-- ============================================================
+-- 14. No INSERT or UPDATE policies exist for authenticated on any table
+-- ============================================================
+
 do $$
 declare
-  pol_exists boolean;
   t text;
+  pol_exists boolean;
 begin
-  select exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'job_sources'
-      and policyname = 'officer_insert_job_sources'
-      and cmd = 'INSERT'
-  ) into pol_exists;
-  perform _assert('officer_insert_policy_exists_job_sources', pol_exists,
-                  'officer_insert_job_sources policy missing');
-
-  -- None of the other five tables should have an INSERT policy for authenticated.
   foreach t in array array[
-    'source_fetch_runs','source_payloads',
+    'job_sources','source_fetch_runs','source_payloads',
     'source_postings','source_posting_versions','opportunity_source_links'
   ] loop
     select exists (
       select 1 from pg_policies
       where schemaname = 'public' and tablename = t
-        and cmd = 'INSERT'
+        and cmd in ('INSERT','UPDATE')
         and roles @> array['authenticated']::name[]
     ) into pol_exists;
-    perform _assert(format('no_officer_insert_policy_%s', t), not pol_exists,
-                    format('unexpected INSERT policy for authenticated on %s', t));
+    perform _assert(format('no_authenticated_mutate_policy_%s', t), not pol_exists,
+                    format('unexpected INSERT or UPDATE policy for authenticated on %s', t));
   end loop;
 end
 $$;
 
--- Verify officer UPDATE policy exists for job_sources only (not others).
-do $$
-declare
-  pol_exists boolean;
-  t text;
-begin
-  select exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'job_sources'
-      and policyname = 'officer_update_job_sources'
-      and cmd = 'UPDATE'
-  ) into pol_exists;
-  perform _assert('officer_update_policy_exists_job_sources', pol_exists,
-                  'officer_update_job_sources policy missing');
+-- ============================================================
+-- 15. No DELETE policy for authenticated on any table
+-- ============================================================
 
-  -- No UPDATE policy for authenticated on the other five tables.
-  foreach t in array array[
-    'source_fetch_runs','source_payloads',
-    'source_postings','source_posting_versions','opportunity_source_links'
-  ] loop
-    select exists (
-      select 1 from pg_policies
-      where schemaname = 'public' and tablename = t
-        and cmd = 'UPDATE'
-        and roles @> array['authenticated']::name[]
-    ) into pol_exists;
-    perform _assert(format('no_officer_update_policy_%s', t), not pol_exists,
-                    format('unexpected UPDATE policy for authenticated on %s', t));
-  end loop;
-end
-$$;
-
--- No DELETE policy for authenticated on any of the six tables.
 do $$
 declare
   t text;
@@ -634,7 +686,93 @@ end
 $$;
 
 -- ============================================================
--- 17. Existing public view columns remain unchanged
+-- 16. Table-level ACL checks (has_table_privilege)
+-- ============================================================
+
+do $$
+declare
+  t text;
+  priv text;
+  has_it boolean;
+begin
+  -- anon must have NO privileges on any of the six ingestion tables.
+  foreach t in array array[
+    'job_sources','source_fetch_runs','source_payloads',
+    'source_postings','source_posting_versions','opportunity_source_links'
+  ] loop
+    foreach priv in array array['SELECT','INSERT','UPDATE','DELETE'] loop
+      select has_table_privilege('anon', format('public.%s', t), priv)
+      into has_it;
+      perform _assert(
+        format('anon_no_%s_%s', lower(priv), t),
+        not coalesce(has_it, false),
+        format('anon has %s on public.%s', priv, t)
+      );
+    end loop;
+  end loop;
+end
+$$;
+
+do $$
+declare
+  t text;
+  has_it boolean;
+begin
+  -- authenticated must have SELECT only; no INSERT, UPDATE, or DELETE.
+  foreach t in array array[
+    'job_sources','source_fetch_runs','source_payloads',
+    'source_postings','source_posting_versions','opportunity_source_links'
+  ] loop
+    select has_table_privilege('authenticated', format('public.%s', t), 'SELECT') into has_it;
+    perform _assert(format('authenticated_has_select_%s', t), coalesce(has_it, false),
+                    format('authenticated missing SELECT on public.%s', t));
+
+    select has_table_privilege('authenticated', format('public.%s', t), 'INSERT') into has_it;
+    perform _assert(format('authenticated_no_insert_%s', t), not coalesce(has_it, false),
+                    format('authenticated has INSERT on public.%s', t));
+
+    select has_table_privilege('authenticated', format('public.%s', t), 'UPDATE') into has_it;
+    perform _assert(format('authenticated_no_update_%s', t), not coalesce(has_it, false),
+                    format('authenticated has UPDATE on public.%s', t));
+
+    select has_table_privilege('authenticated', format('public.%s', t), 'DELETE') into has_it;
+    perform _assert(format('authenticated_no_delete_%s', t), not coalesce(has_it, false),
+                    format('authenticated has DELETE on public.%s', t));
+  end loop;
+end
+$$;
+
+do $$
+declare
+  t text;
+  has_it boolean;
+begin
+  -- service_role must have SELECT, INSERT, UPDATE, DELETE on all six tables.
+  foreach t in array array[
+    'job_sources','source_fetch_runs','source_payloads',
+    'source_postings','source_posting_versions','opportunity_source_links'
+  ] loop
+    select has_table_privilege('service_role', format('public.%s', t), 'SELECT') into has_it;
+    perform _assert(format('service_role_has_select_%s', t), coalesce(has_it, false),
+                    format('service_role missing SELECT on public.%s', t));
+
+    select has_table_privilege('service_role', format('public.%s', t), 'INSERT') into has_it;
+    perform _assert(format('service_role_has_insert_%s', t), coalesce(has_it, false),
+                    format('service_role missing INSERT on public.%s', t));
+
+    select has_table_privilege('service_role', format('public.%s', t), 'UPDATE') into has_it;
+    perform _assert(format('service_role_has_update_%s', t), coalesce(has_it, false),
+                    format('service_role missing UPDATE on public.%s', t));
+
+    select has_table_privilege('service_role', format('public.%s', t), 'DELETE') into has_it;
+    perform _assert(format('service_role_has_delete_%s', t), coalesce(has_it, false),
+                    format('service_role missing DELETE on public.%s', t));
+  end loop;
+end
+$$;
+
+-- ============================================================
+-- 17. Public view column arrays (exact, ordered)
 -- ============================================================
 
 do $$
@@ -644,44 +782,68 @@ declare
     'deadline','deadline_text','start_date_text','paid_status','application_type',
     'status','public_notes','relevance_score','last_checked_at','first_seen_at','source_name'
   ];
-  col text;
-  col_exists boolean;
+  actual_cols text[];
 begin
-  foreach col in array expected_cols loop
-    select exists (
-      select 1 from information_schema.columns
-      where table_schema = 'public'
-        and table_name   = 'public_opportunities'
-        and column_name  = col
-    ) into col_exists;
-    perform _assert(format('public_opportunities_col_%s', col), col_exists,
-                    format('column %s missing from public_opportunities view', col));
-  end loop;
+  select array_agg(column_name::text order by ordinal_position)
+  into actual_cols
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'public_opportunities';
+
+  perform _assert(
+    'public_opportunities_exact_columns',
+    actual_cols = expected_cols,
+    format('expected %s, got %s', expected_cols, actual_cols)
+  );
+end
+$$;
+
+do $$
+declare
+  expected_cols text[] := array[
+    'id','name','website','location','industry_tags','description','open_count'
+  ];
+  actual_cols text[];
+begin
+  select array_agg(column_name::text order by ordinal_position)
+  into actual_cols
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'public_companies';
+
+  perform _assert(
+    'public_companies_exact_columns',
+    actual_cols = expected_cols,
+    format('expected %s, got %s', expected_cols, actual_cols)
+  );
 end
 $$;
 
 -- ============================================================
--- 18. No ingestion table appears in information_schema without RLS
---     (belt-and-suspenders: already covered by check 12, kept for clarity)
+-- 18. No ingestion table exposed through a public_* view
 -- ============================================================
 
 do $$
 declare
-  t text;
-  force_rls boolean;
+  t           text;
+  view_name   text;
+  view_refs   boolean;
 begin
+  -- Verify no public_* view references any of the six ingestion tables
+  -- (belt-and-suspenders: confirmed by schema inspection of view definitions).
   foreach t in array array[
     'job_sources','source_fetch_runs','source_payloads',
     'source_postings','source_posting_versions','opportunity_source_links'
   ] loop
-    select relforcerowsecurity into force_rls
-    from pg_class c
-    join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'public' and c.relname = t;
-    -- relrowsecurity was checked in block 12; this checks force_rls is not required
-    -- (service_role must bypass RLS, so force should be false).
-    perform _assert(format('rls_not_forced_%s', t), not coalesce(force_rls, false),
-                    format('FORCE ROW SECURITY is set on %s — service_role would be blocked', t));
+    select exists (
+      select 1 from information_schema.view_column_usage
+      where view_schema = 'public'
+        and view_name like 'public\_%'
+        and table_name = t
+    ) into view_refs;
+    perform _assert(
+      format('ingestion_table_not_in_public_view_%s', t),
+      not coalesce(view_refs, false),
+      format('public_* view references ingestion table %s', t)
+    );
   end loop;
 end
 $$;
@@ -692,12 +854,10 @@ $$;
 
 do $$
 declare
-  can_public    boolean;
-  can_anon      boolean;
-  can_authed    boolean;
-  can_svc       boolean;
+  can_anon   boolean;
+  can_authed boolean;
+  can_svc    boolean;
 begin
-  -- Check has_function_privilege for the three roles that must NOT have EXECUTE.
   select has_function_privilege('anon', 'public.claim_source_fetch_runs(text, integer)', 'EXECUTE')
   into can_anon;
   perform _assert('claim_fn_not_executable_by_anon', not coalesce(can_anon, false),
@@ -727,10 +887,65 @@ begin
     select 1 from pg_trigger
     where tgrelid = 'public.source_posting_versions'::regclass
       and tgname = 'trg_source_posting_versions_append_only'
-      and tgenabled = 'O'  -- 'O' = always (origin and local)
+      -- tgenabled values: 'O' = enabled for origin/local (default), 'A' = always,
+      --                   'R' = replica, 'D' = disabled.
+      -- 'O' is the standard enabled state; 'A' would also be acceptable.
+      and tgenabled in ('O', 'A')
   ) into trig_exists;
   perform _assert('append_only_trigger_exists', trig_exists,
                   'trg_source_posting_versions_append_only not found or disabled');
+end
+$$;
+
+-- ============================================================
+-- 21. FORCE ROW SECURITY is NOT set (service_role must bypass RLS)
+-- ============================================================
+
+do $$
+declare
+  t text;
+  force_rls boolean;
+begin
+  foreach t in array array[
+    'job_sources','source_fetch_runs','source_payloads',
+    'source_postings','source_posting_versions','opportunity_source_links'
+  ] loop
+    select relforcerowsecurity into force_rls
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relname = t;
+    perform _assert(format('rls_not_forced_%s', t), not coalesce(force_rls, false),
+                    format('FORCE ROW SECURITY is set on %s — service_role would be blocked', t));
+  end loop;
+end
+$$;
+
+-- ============================================================
+-- 22. source-payloads storage bucket (conditional on storage schema)
+-- ============================================================
+
+do $$
+declare
+  schema_exists boolean;
+  bucket_public boolean;
+begin
+  select exists (
+    select 1 from information_schema.schemata where schema_name = 'storage'
+  ) into schema_exists;
+
+  if schema_exists then
+    execute $q$
+      select "public" from storage.buckets where id = 'source-payloads'
+    $q$ into bucket_public;
+
+    perform _assert(
+      'source_payloads_bucket_is_private',
+      bucket_public is not distinct from false,
+      format('bucket public flag: %s (expected false)', bucket_public)
+    );
+  else
+    raise notice 'SKIP  source_payloads_bucket_is_private — storage schema not available';
+  end if;
 end
 $$;
 
@@ -764,36 +979,28 @@ rollback;
 -- The following behaviors require live capabilities not available in this
 -- verification script:
 --
--- A. Anon/authenticated role isolation (requires SET ROLE)
+-- A. Anon/authenticated role isolation (requires SET ROLE with superuser privilege)
 --    - anon cannot SELECT from any of the six tables
 --    - non-officer authenticated user cannot SELECT from any of the six tables
 --    - officer authenticated user can SELECT from all six tables
---    - officer can INSERT job_sources
---    - officer can UPDATE job_sources
---    - officer cannot INSERT source_fetch_runs, source_payloads, source_postings,
---      source_posting_versions, or opportunity_source_links
---    - officer cannot DELETE from job_sources
---    These require switching to the anon/authenticated roles via SET ROLE,
---    which requires SUPERUSER privilege.  Run manually or via pgTAP in a
---    test environment where set_config('role', ...) is available.
+--    - officer cannot INSERT or UPDATE any table (mutations are service-role server-side)
+--    - officer cannot DELETE from any ingestion table
+--    Run manually or via pgTAP in a test environment where SET ROLE is permitted.
 --
 -- B. True concurrent-worker duplicate-claim test
 --    Requires two simultaneous psql connections.  The serial claim test in
---    check 10 above approximates this but does not prove two concurrent
---    workers cannot each claim the same row.  Use pgbench or a test harness
---    with parallel sessions to verify FOR UPDATE SKIP LOCKED behavior.
+--    check 10 approximates this but does not prove two concurrent workers cannot
+--    each claim the same row.  Use pgbench or a test harness with parallel
+--    sessions to verify FOR UPDATE SKIP LOCKED behavior.
 --
--- C. source-payloads bucket is private
---    Requires a live Supabase project with 0004_source_payload_bucket.sql
---    applied.  After applying, verify in the Supabase Dashboard → Storage →
---    source-payloads that the bucket shows "Private" and no public access.
---    Or: SELECT public FROM storage.buckets WHERE id = 'source-payloads';
---    → should return false.
+-- C. source-payloads bucket is private (check 22 runs if storage schema is present)
+--    After applying 0004_source_payload_bucket.sql, verify:
+--    SELECT public FROM storage.buckets WHERE id = 'source-payloads';  -- expect false
 --
 -- D. Service-role worker writes (INSERT on source_fetch_runs, source_payloads, etc.)
 --    Requires a session authenticated as service_role to confirm inserts succeed.
 --
 -- E. Trigger fires for service_role (append-only enforcement)
---    The trigger function applies at the database layer and cannot be bypassed
---    by service_role.  Confirm by attempting an UPDATE on source_posting_versions
---    as service_role in a separate session.
+--    The trigger applies at the database layer and cannot be bypassed by service_role.
+--    Confirm by attempting an UPDATE on source_posting_versions as service_role
+--    in a separate session.

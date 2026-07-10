@@ -1,7 +1,6 @@
 -- Phase 1 automated ingestion schema foundation.
 -- Depends on 0001_init.sql (source_records, companies, opportunities, is_officer, set_updated_at)
 -- and 0002_ingestion_task_types.sql (task_type enum values must be committed first).
--- Apply: supabase db push, or paste into Supabase SQL editor on a disposable database.
 
 -- ============================================================
 -- TABLES
@@ -16,20 +15,21 @@ create table if not exists public.job_sources (
   source_record_id                uuid not null unique
                                     references public.source_records(id) on delete restrict,
   company_id                      uuid references public.companies(id) on delete set null,
-  source_name                     text not null,
+  source_name                     text not null check (trim(source_name) <> ''),
   source_kind                     text not null check (
                                     source_kind in (
-                                      'greenhouse','lever','ashby','usajobs','nih_program',
-                                      'nsf_program','nasa_program','rss','schema_org',
-                                      'static_html','other_api'
+                                      'greenhouse','lever','ashby','usajobs',
+                                      'schema_org','static_html','rss','other_api'
                                     )
                                   ),
   source_identifier               text,
-  careers_url                     text not null,
+  careers_url                     text not null check (trim(careers_url) <> ''),
   api_endpoint                    text,
-  config_json                     jsonb not null default '{}'::jsonb,
+  config_json                     jsonb not null default '{}'::jsonb
+                                    check (jsonb_typeof(config_json) = 'object'),
   enabled                         boolean not null default false,
-  priority                        smallint not null default 50 check (priority >= 0),
+  priority                        smallint not null default 50
+                                    check (priority >= 0 and priority <= 100),
   fetch_interval_hours            integer not null default 24 check (fetch_interval_hours > 0),
   expected_geography              text[] not null default '{}',
   expected_audience               text[] not null default '{}',
@@ -78,7 +78,7 @@ create table if not exists public.source_fetch_runs (
   finished_at              timestamptz,
   attempt_no               integer not null default 1 check (attempt_no >= 1),
   worker_id                text,
-  http_status              integer,
+  http_status              integer check (http_status is null or (http_status >= 100 and http_status <= 599)),
   records_seen             integer not null default 0 check (records_seen >= 0),
   records_new              integer not null default 0 check (records_new >= 0),
   records_changed          integer not null default 0 check (records_changed >= 0),
@@ -94,6 +94,11 @@ create table if not exists public.source_fetch_runs (
   error_message            text,
   log_json                 jsonb not null default '{}'::jsonb,
   created_at               timestamptz not null default now(),
+  -- finished_at may be set only when started_at is also set
+  constraint source_fetch_runs_finished_requires_started check (
+    finished_at is null or started_at is not null
+  ),
+  -- finished_at must not precede started_at
   constraint source_fetch_runs_finished_after_started check (
     finished_at is null or started_at is null or finished_at >= started_at
   )
@@ -105,15 +110,15 @@ create table if not exists public.source_fetch_runs (
 create table if not exists public.source_payloads (
   id                   uuid primary key default gen_random_uuid(),
   source_fetch_run_id  uuid not null references public.source_fetch_runs(id) on delete cascade,
-  request_url          text not null,
+  request_url          text not null check (trim(request_url) <> ''),
   final_url            text,
   content_type         text,
   etag                 text,
   last_modified        text,
-  status_code          integer,
-  sha256               text not null,
+  status_code          integer check (status_code is null or (status_code >= 100 and status_code <= 599)),
+  sha256               text not null check (sha256 ~ '^[0-9a-f]{64}$'),
   size_bytes           integer not null check (size_bytes >= 0),
-  storage_path         text not null,
+  storage_path         text not null check (trim(storage_path) <> ''),
   created_at           timestamptz not null default now()
 );
 
@@ -123,11 +128,13 @@ create table if not exists public.source_postings (
   id                       uuid primary key default gen_random_uuid(),
   job_source_id            uuid not null references public.job_sources(id) on delete restrict,
   external_posting_id      text,
-  canonical_url            text not null,
-  identity_key             text not null,
+  canonical_url            text not null check (trim(canonical_url) <> ''),
+  identity_key             text not null check (trim(identity_key) <> ''),
   employer_name_raw        text,
   employer_name_normalized text,
+  title_raw                text,
   title_normalized         text,
+  location_raw             text,
   location_normalized      text,
   remote_type              text check (
                              remote_type is null or remote_type in ('remote','hybrid','onsite','unknown')
@@ -151,7 +158,7 @@ create table if not exists public.source_postings (
                              )
                            ),
   relevance_score          integer,
-  relevance_score_version  text,
+  relevance_score_version  smallint check (relevance_score_version is null or relevance_score_version > 0),
   score_breakdown_json     jsonb not null default '{}'::jsonb,
   uncertainty_flags        text[] not null default '{}',
   closure_confidence       numeric(5,4) not null default 0
@@ -159,7 +166,7 @@ create table if not exists public.source_postings (
   first_seen_at            timestamptz not null default now(),
   last_seen_at             timestamptz not null default now(),
   last_payload_id          uuid references public.source_payloads(id) on delete set null,
-  last_material_hash       text not null,
+  last_material_hash       text not null check (last_material_hash ~ '^[0-9a-f]{64}$'),
   consecutive_misses       integer not null default 0 check (consecutive_misses >= 0),
   created_at               timestamptz not null default now(),
   updated_at               timestamptz not null default now(),
@@ -176,12 +183,12 @@ create table if not exists public.source_postings (
 -- so append-only behavior is universal.
 create table if not exists public.source_posting_versions (
   id                   uuid primary key default gen_random_uuid(),
-  source_posting_id    uuid not null references public.source_postings(id) on delete cascade,
+  source_posting_id    uuid not null references public.source_postings(id) on delete restrict,
   source_fetch_run_id  uuid not null references public.source_fetch_runs(id) on delete restrict,
   source_payload_id    uuid not null references public.source_payloads(id) on delete restrict,
-  connector_version    text not null,
+  connector_version    text not null check (trim(connector_version) <> ''),
   is_material_change   boolean not null,
-  material_hash        text not null,
+  material_hash        text not null check (material_hash ~ '^[0-9a-f]{64}$'),
   normalized_json      jsonb not null,
   score_breakdown_json jsonb not null default '{}'::jsonb,
   field_diff_json      jsonb not null default '{}'::jsonb,
@@ -194,7 +201,9 @@ create table if not exists public.opportunity_source_links (
   id                 uuid primary key default gen_random_uuid(),
   opportunity_id     uuid not null references public.opportunities(id) on delete restrict,
   source_posting_id  uuid not null references public.source_postings(id) on delete restrict,
-  match_type         text not null,
+  match_type         text not null check (
+                       match_type in ('exact','probable','manual','annual_family','alternate_source')
+                     ),
   is_primary         boolean not null default false,
   created_at         timestamptz not null default now(),
   unique (opportunity_id, source_posting_id)
@@ -307,10 +316,9 @@ $$;
 -- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
--- Principle: anon has no access. Authenticated officers may SELECT all six tables
--- and may INSERT or UPDATE job_sources only. They may not DELETE job_sources
--- (disable via enabled = false instead). Officers cannot mutate fetch runs, payloads,
--- postings, versions, or source links — those are exclusively service_role operations.
+-- Principle: anon has no access. Authenticated officers may SELECT all six tables.
+-- They may not INSERT, UPDATE, or DELETE any table directly — job_sources mutations
+-- are performed server-side via service-role after requireOfficer() validation (Phase 7).
 -- service_role bypasses RLS entirely; no additional policies are needed for it.
 
 alter table public.job_sources              enable row level security;
@@ -335,9 +343,6 @@ grant select on public.source_payloads          to authenticated;
 grant select on public.source_postings          to authenticated;
 grant select on public.source_posting_versions  to authenticated;
 grant select on public.opportunity_source_links to authenticated;
-
--- Grant INSERT and UPDATE on job_sources only to authenticated (RLS limits to officers).
-grant insert, update on public.job_sources to authenticated;
 
 -- Grant all table privileges to service_role (service_role bypasses RLS).
 grant all on public.job_sources, public.source_fetch_runs, public.source_payloads,
@@ -368,36 +373,9 @@ begin
 end
 $$;
 
--- RLS policies — authenticated officer INSERT on job_sources only.
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'job_sources'
-      and policyname = 'officer_insert_job_sources'
-  ) then
-    create policy officer_insert_job_sources on public.job_sources
-      for insert to authenticated
-      with check (public.is_officer());
-  end if;
-end
-$$;
-
--- RLS policies — authenticated officer UPDATE on job_sources only.
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'job_sources'
-      and policyname = 'officer_update_job_sources'
-  ) then
-    create policy officer_update_job_sources on public.job_sources
-      for update to authenticated
-      using (public.is_officer())
-      with check (public.is_officer());
-  end if;
-end
-$$;
+-- Phase 7 note: job_sources mutations (INSERT and UPDATE) will run server-side,
+-- calling requireOfficer() and using the service-role Supabase client after
+-- authorization.  No direct authenticated INSERT or UPDATE grant is issued here.
 
 -- ============================================================
 -- QUEUE CLAIM FUNCTION
@@ -407,12 +385,10 @@ $$;
 -- Purpose: atomically lease up to p_limit pending runs for a named worker,
 --          preventing duplicate claims by concurrent callers.
 --
--- SECURITY DEFINER is used so the function can UPDATE source_fetch_runs even if
--- future non-service_role callers are added (not expected in MVP). The fixed
--- search_path eliminates search-path injection risk.
---
--- EXECUTE is restricted to service_role only. Authenticated officers and anon
--- cannot call this function.
+-- SECURITY INVOKER: the function runs as the calling role (service_role in
+-- normal operation). All referenced objects are schema-qualified, and the
+-- search_path is set to pg_catalog, pg_temp to prevent injection.
+-- EXECUTE is restricted to service_role only.
 --
 -- Parameters:
 --   p_worker_id  nonempty text identifying the caller (e.g. worker instance id)
@@ -428,8 +404,8 @@ create or replace function public.claim_source_fetch_runs(
 )
 returns setof public.source_fetch_runs
 language plpgsql
-security definer
-set search_path = public, pg_temp
+security invoker
+set search_path = pg_catalog, pg_temp
 as $$
 begin
   if p_worker_id is null or trim(p_worker_id) = '' then
