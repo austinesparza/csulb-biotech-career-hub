@@ -1,4 +1,4 @@
-# CSULB Biotechnology Club Career Hub Automated Opportunity Discovery Specification
+# CSULB Biotechnology Club Career Hub Automated Ingestion Audit and Specification
 
 ## Recommendation and repository audit
 
@@ -14,7 +14,7 @@ The MVP should **defer** generalized internet scraping, JavaScript-rendered site
 
 **2. Current repository audit**
 
-The repository already ships a narrow, coherent stack: **Next.js 15, React 19, TypeScript, Supabase SSR, Supabase JS, and PapaParse**, with CI running `typecheck` and `build` using dummy Supabase values so CI does not depend on a live project. That is exactly the right baseline for an officer-maintainable student system. citeturn35view0turn12view0
+The repository already ships a narrow, coherent stack: **Next.js 15, React 19, TypeScript, Supabase SSR, Supabase JS, and PapaParse**, with CI running `typecheck` and `build` using dummy Supabase values so CI does not depend on a live project. Current validation also shows `npm run typecheck` and `npm run build` succeed today. The build still emits a **pre-existing Supabase Edge Runtime compatibility warning** because the middleware instantiates a Supabase SSR client, so this document should describe it only as an observed warning rather than a confirmed false positive. That is still the right baseline for an officer-maintainable student system. citeturn35view0turn12view0
 
 The most reusable database objects are:
 
@@ -42,7 +42,7 @@ The public publication boundary is sound. Base tables are protected by RLS, whil
 
 The officer workflow is also sound. The review page calls `requireOfficer()`, loads only `status='needs_review'`, sorts by `relevance_score`, and reminds officers that nothing goes public until approved there. The review actions are server-only, re-check officer status before using the service client, and set `review_status='approved'` and `public_safe=true` only when an officer approves. citeturn32view0turn32view1
 
-The main security concern in the current pattern is not the pattern itself but **where it can be expanded unsafely**. The present pattern—server actions that call `requireOfficer()` before using `createServiceClient()`—is acceptable. The risk appears when future scheduled jobs or preview deployments are introduced, because the `SUPABASE_SERVICE_ROLE_KEY` is powerful and bypasses RLS when used as the authorization key. That key must remain server-only and should not be shared with preview deployments unless preview points to an isolated staging Supabase project. CI already demonstrates the right spirit by using dummy env vars for build validation. citeturn32view1turn26search17turn12view0turn41view0
+The current authorization boundary must be described precisely. The service-role client **bypasses RLS**. The middleware only verifies that a Supabase session exists for `/admin/*` requests, while `requireOfficer()` is the decisive officer-authorization boundary before any privileged service-role access. Those layers are complementary rather than redundant: removing `requireOfficer()` would be unsafe even if middleware and RLS remained, and scheduled jobs using the service role must continue to leave publication decisions to officer-reviewed paths. Production service-role credentials should remain **production-only**, and preview deployments should receive **no production service-role key**. CI already demonstrates the right spirit by using dummy env vars for build validation. citeturn32view1turn26search17turn12view0turn41view0
 
 The migrations are **not idempotent in a rerun-safe sense**. `0001_init.sql` uses `create type`, `create table`, `create view`, and `create policy` broadly without `if not exists`; only extensions use `if not exists`. That is fine for one-time bootstrapping, but future schema work for automation should be split into additive migrations that are rerunnable where practical and never require the monolith to be re-executed. citeturn30view0turn33view1
 
@@ -114,7 +114,7 @@ The initial registry should bias toward **official student programs**, **federal
 | Penumbra | Employer careers | Lever | jobs.lever.co/penumbrainc | California | Intern and clinical-research-adjacent roles | P0 | Low | Low | citeturn40search7turn40search10 |
 | Fluxergy | Employer careers | Lever | jobs.lever.co/fluxergy-2 | San Diego | Engineering/science intern roles with biological applications | P0 | Low | Low | citeturn40search0 |
 
-A note on the **alumni database**: it should **not** be treated as a discovery source for scraping or automated external job collection. It is valuable as an **enrichment and prioritization layer**: the alumni hub already stores company names and public LinkedIn URLs from a public Google Sheet, and the career-hub issue list already contemplates linking public-safe alumni/company associations once consented records exist. The right use is to help officers decide which employers to onboard first and to display “alumni worked here” enrichment later—not to extract opportunities from LinkedIn. citeturn28view1turn10view3turn27search4turn27search8
+A note on the **alumni database**: it should **not** be treated as a discovery source for scraping or automated external job collection. It may eventually become an **enrichment and prioritization layer**, but that integration should be deferred until **after the ingestion MVP**. The right long-term use is to help officers decide which employers to onboard first and later display consent-aware “alumni worked here” enrichment—not to extract opportunities from LinkedIn. citeturn28view1turn10view3turn27search4turn27search8
 
 ## Architecture and data model
 
@@ -165,6 +165,10 @@ source_fetch_runs (pending → running)
 
 The fetch scheduler should never call “publish” logic. It should only create observations, draft updates, and review tasks. The existing review page already states that nothing goes public until approved there, and the public views already restrict output to approved public-safe records. citeturn32view0turn33view1
 
+### Review-task taxonomy
+
+The automated design should stay anchored to the existing `review_tasks.task_type` enum. The current enum already contains `possible_duplicate` and `stale_record`, so automated ingestion should add only four new task types: `source_new`, `source_changed`, `source_reopened`, and `source_health`. Probable automated duplicates should map to existing `possible_duplicate`. Stale, missing, closure-candidate, and archival follow-up should map to existing `stale_record`. Low score is a score band or exclusion reason, not a task type, so the schema should **not** add `reopen_candidate`, `closure_candidate`, or `low_score`.
+
 **6. Database design**
 
 The implementation-ready schema should preserve the current schema and add the following tables.
@@ -176,29 +180,38 @@ Purpose: machine-readable approved source registry attached to existing `source_
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `uuid pk default gen_random_uuid()` | |
-| `source_record_id` | `uuid not null references source_records(id) unique` | reuse existing provenance object |
-| `company_id` | `uuid null references companies(id)` | nullable for program sources |
+| `source_record_id` | `uuid not null references source_records(id) on delete restrict unique` | reuse existing provenance object |
+| `company_id` | `uuid null references companies(id) on delete set null` | nullable for program sources |
 | `source_name` | `text not null` | human label |
 | `source_kind` | `text not null check in (...)` | `greenhouse`,`lever`,`ashby`,`usajobs`,`nih_program`,`nsf_program`,`nasa_program`,`rss`,`schema_org`,`static_html`,`other_api` |
 | `source_identifier` | `text null` | board token, employer slug, API search key |
 | `careers_url` | `text not null` | canonical root URL |
 | `api_endpoint` | `text null` | resolved endpoint if separate |
 | `config_json` | `jsonb not null default '{}'::jsonb` | connector config: selectors, filters, keyword boosts, allowed params |
-| `enabled` | `boolean not null default true` | kill switch |
-| `priority` | `smallint not null default 50` | lower = sooner |
-| `fetch_interval_hours` | `integer not null default 24` | |
+| `enabled` | `boolean not null default false` | may be true only after required policy review passes |
+| `priority` | `smallint not null default 50` | lower = sooner; check `priority >= 0` |
+| `fetch_interval_hours` | `integer not null default 24` | check `fetch_interval_hours > 0` |
 | `expected_geography` | `text[] not null default '{}'` | |
 | `expected_audience` | `text[] not null default '{}'` | |
 | `terms_reviewed` | `boolean not null default false` | |
 | `terms_review_date` | `date null` | |
 | `robots_reviewed` | `boolean not null default false` | |
+| `last_attempted_at` | `timestamptz null` | latest scheduler or manual run attempt |
+| `last_successful_at` | `timestamptz null` | latest successful completion |
+| `consecutive_failures` | `integer not null default 0` | check `consecutive_failures >= 0` |
+| `last_http_status` | `integer null` | latest source-level HTTP status |
+| `last_payload_hash` | `text null` | latest successful payload hash |
+| `degraded_at` | `timestamptz null` | set when source-health follow-up begins |
+| `automatic_scheduling_paused_at` | `timestamptz null` | pause timestamp for policy or health holds |
 | `notes` | `text null` | |
 | `created_by` | `uuid references auth.users(id)` | |
 | `updated_by` | `uuid references auth.users(id)` | |
 | `created_at` | `timestamptz not null default now()` | |
 | `updated_at` | `timestamptz not null default now()` | trigger |
 
-Indexes: unique on `source_record_id`; btree on `(enabled, priority)`; btree on `(enabled, fetch_interval_hours)`; index on `company_id`.
+Indexes: unique on `source_record_id`; btree on `(enabled, priority)`; btree on `(enabled, fetch_interval_hours)`; index on `company_id`; index on `automatic_scheduling_paused_at`.
+
+Constraints and behavior: enforce source enablement at the database layer so `enabled = true` is allowed only when the required policy-review fields are satisfied, and prefer soft disable/pause over hard deletion for approved sources.
 
 **New table: `source_fetch_runs`**
 
@@ -207,28 +220,30 @@ Purpose: queue + execution log + health basis.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `uuid pk default gen_random_uuid()` | |
-| `job_source_id` | `uuid not null references job_sources(id)` | |
+| `job_source_id` | `uuid not null references job_sources(id) on delete restrict` | preserve run history |
 | `trigger_kind` | `text not null` | `scheduled`,`manual`,`retry`,`recheck` |
 | `status` | `text not null` | `pending`,`running`,`completed`,`failed`,`partial`,`cancelled` |
 | `scheduled_for` | `timestamptz not null` | |
 | `started_at` | `timestamptz null` | |
 | `finished_at` | `timestamptz null` | |
-| `attempt_no` | `integer not null default 1` | |
+| `attempt_no` | `integer not null default 1` | check `attempt_no >= 1` |
 | `worker_id` | `text null` | lease/debug |
 | `http_status` | `integer null` | source-level status if single request |
-| `records_seen` | `integer not null default 0` | |
-| `records_new` | `integer not null default 0` | |
-| `records_changed` | `integer not null default 0` | |
-| `records_unchanged` | `integer not null default 0` | |
-| `records_reviewed` | `integer not null default 0` | created review items |
-| `records_closed_candidates` | `integer not null default 0` | |
-| `payload_count` | `integer not null default 0` | |
+| `records_seen` | `integer not null default 0` | check `records_seen >= 0` |
+| `records_new` | `integer not null default 0` | check `records_new >= 0` |
+| `records_changed` | `integer not null default 0` | check `records_changed >= 0` |
+| `records_unchanged` | `integer not null default 0` | check `records_unchanged >= 0` |
+| `records_reviewed` | `integer not null default 0` | created review items; check `records_reviewed >= 0` |
+| `records_closed_candidates` | `integer not null default 0` | check `records_closed_candidates >= 0` |
+| `payload_count` | `integer not null default 0` | check `payload_count >= 0` |
 | `error_class` | `text null` | `network`,`timeout`,`robots`,`auth`,`schema`,`rate_limit`,`unexpected` |
 | `error_message` | `text null` | truncated |
 | `log_json` | `jsonb not null default '{}'::jsonb` | counters, timings |
 | `created_at` | `timestamptz not null default now()` | |
 
 Indexes: `(job_source_id, scheduled_for desc)`, `(status, scheduled_for)`, partial index on `status in ('pending','running')`.
+
+Queue claims should happen atomically in the database—for example by claiming eligible rows with `for update skip locked` semantics inside a single statement—so two workers cannot lease the same pending run.
 
 **New table: `source_payloads`**
 
@@ -237,7 +252,7 @@ Purpose: raw provenance metadata. Raw bytes should live in a private Supabase St
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `uuid pk default gen_random_uuid()` | |
-| `source_fetch_run_id` | `uuid not null references source_fetch_runs(id)` | |
+| `source_fetch_run_id` | `uuid not null references source_fetch_runs(id) on delete cascade` | cascade only when an entire run is intentionally purged |
 | `request_url` | `text not null` | final request target |
 | `final_url` | `text null` | after redirects |
 | `content_type` | `text null` | |
@@ -245,11 +260,13 @@ Purpose: raw provenance metadata. Raw bytes should live in a private Supabase St
 | `last_modified` | `text null` | |
 | `status_code` | `integer null` | |
 | `sha256` | `text not null` | |
-| `size_bytes` | `integer not null` | |
+| `size_bytes` | `integer not null` | check `size_bytes >= 0` |
 | `storage_path` | `text not null` | private bucket object path |
 | `created_at` | `timestamptz not null default now()` | |
 
 Indexes: unique on `(source_fetch_run_id, sha256, request_url)` if desired; btree on `source_fetch_run_id`.
+
+Supabase buckets can be created through the Dashboard, SQL, or client libraries. For this project, the private payload bucket should be provisioned by a version-controlled migration or a controlled deployment step and then manually verified, rather than treated as a Dashboard-only action.
 
 **New table: `source_postings`**
 
@@ -258,7 +275,7 @@ Purpose: one row per source-specific posting identity, with current normalized s
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `uuid pk default gen_random_uuid()` | |
-| `job_source_id` | `uuid not null references job_sources(id)` | |
+| `job_source_id` | `uuid not null references job_sources(id) on delete restrict` | preserve source history |
 | `external_posting_id` | `text null` | ATS/posting ID |
 | `canonical_url` | `text not null` | normalized URL |
 | `identity_key` | `text not null` | deterministic resolved identity key |
@@ -273,12 +290,18 @@ Purpose: one row per source-specific posting identity, with current normalized s
 | `focus_area` | `text null` | normalized |
 | `posted_at` | `date null` | |
 | `closes_at` | `date null` | |
-| `current_status` | `text not null default 'open'` | `open`,`missing`,`closed`,`reopened`,`unknown` |
+| `deadline_kind` | `text null` | `hard`,`rolling`,`unknown` |
+| `current_status` | `text not null default 'open'` | `open`,`missing`,`closure_candidate`,`closed`,`reopened`,`unknown` |
+| `relevance_score` | `integer null` | for automated and newly reviewed records only |
+| `relevance_score_version` | `text null` | stored rubric version for traceability |
+| `score_breakdown_json` | `jsonb not null default '{}'::jsonb` | deterministic scoring explanation |
+| `uncertainty_flags` | `text[] not null default '{}'` | ambiguous or caution flags |
+| `closure_confidence` | `numeric(5,4) not null default 0` | check `closure_confidence >= 0 and closure_confidence <= 1` |
 | `first_seen_at` | `timestamptz not null default now()` | |
 | `last_seen_at` | `timestamptz not null default now()` | |
-| `last_payload_id` | `uuid null references source_payloads(id)` | |
+| `last_payload_id` | `uuid null references source_payloads(id) on delete set null` | |
 | `last_material_hash` | `text not null` | normalized material hash |
-| `consecutive_misses` | `integer not null default 0` | |
+| `consecutive_misses` | `integer not null default 0` | check `consecutive_misses >= 0` |
 | `created_at` | `timestamptz not null default now()` | |
 | `updated_at` | `timestamptz not null default now()` | trigger |
 
@@ -292,16 +315,20 @@ Purpose: immutable normalized snapshot history.
 | Column | Type |
 |---|---|
 | `id` | `uuid pk default gen_random_uuid()` |
-| `source_posting_id` | `uuid not null references source_postings(id)` |
-| `source_fetch_run_id` | `uuid not null references source_fetch_runs(id)` |
-| `source_payload_id` | `uuid not null references source_payloads(id)` |
+| `source_posting_id` | `uuid not null references source_postings(id) on delete cascade` |
+| `source_fetch_run_id` | `uuid not null references source_fetch_runs(id) on delete restrict` |
+| `source_payload_id` | `uuid not null references source_payloads(id) on delete restrict` |
+| `connector_version` | `text not null` |
 | `is_material_change` | `boolean not null` |
 | `material_hash` | `text not null` |
 | `normalized_json` | `jsonb not null` |
+| `score_breakdown_json` | `jsonb not null default '{}'::jsonb` |
 | `field_diff_json` | `jsonb not null default '{}'::jsonb` |
 | `created_at` | `timestamptz not null default now()` |
 
 Indexes: `(source_posting_id, created_at desc)`, `(material_hash)`.
+
+Version rows should be append-only, enforced with privileges or a trigger that rejects `update` and `delete` after insert.
 
 **New table: `opportunity_source_links`**
 
@@ -310,13 +337,13 @@ Purpose: map curated opportunities to machine-observed postings, including dupli
 | Column | Type |
 |---|---|
 | `id` | `uuid pk default gen_random_uuid()` |
-| `opportunity_id` | `uuid not null references opportunities(id)` |
-| `source_posting_id` | `uuid not null references source_postings(id)` |
+| `opportunity_id` | `uuid not null references opportunities(id) on delete restrict` |
+| `source_posting_id` | `uuid not null references source_postings(id) on delete restrict` |
 | `match_type` | `text not null` |
 | `is_primary` | `boolean not null default false` |
 | `created_at` | `timestamptz not null default now()` |
 
-Uniqueness: unique on `(opportunity_id, source_posting_id)`; partial unique on primary per opportunity.
+Uniqueness: unique on `(opportunity_id, source_posting_id)`; partial unique index on `(opportunity_id) where is_primary` to allow exactly one primary source link per opportunity.
 
 **Optional but recommended new table: `audit_events`**
 
@@ -331,18 +358,19 @@ RLS rules should mirror the existing architecture:
 
 Migration sequence:
 
-1. Add enums/check constraints needed for new source kinds and run statuses.
-2. Add `job_sources`, `source_fetch_runs`, `source_payloads`.
-3. Add `source_postings`, `source_posting_versions`, `opportunity_source_links`.
-4. Add indexes and triggers.
+1. Add enum values and check constraints needed for new source kinds, task types, statuses, and nonnegative counters in an **earlier additive migration**.
+2. Add `job_sources`, `source_fetch_runs`, and `source_payloads`.
+3. Add `source_postings`, `source_posting_versions`, and `opportunity_source_links`.
+4. Add indexes, append-only enforcement, queue-claim helpers, and other triggers.
 5. Add RLS and grants.
-6. Add private storage bucket and bucket policies.
-7. Seed a handful of approved sources.
+6. Provision the private storage bucket and bucket policies through a version-controlled migration or controlled deployment step, then manually verify the bucket state.
+7. Seed only policy-reviewed approved sources.
 
 Idempotency guidance:
 
 - Use additive migrations only.
 - Prefer `create table if not exists`, `alter table add column if not exists`, `create index if not exists`, and guarded policy creation where practical.
+- `alter type ... add value` may run inside a transaction, but the new enum value cannot be used until **after commit**. Keep enum additions in an earlier migration and use the new values in a later migration.
 - Do **not** rerun `0001_init.sql`; future work belongs in new migrations because the current bootstrap migration is not rerun-safe. citeturn30view0
 
 **7. Connector specification**
@@ -697,7 +725,7 @@ Yes, the automated layer needs explicit version history, even though the current
 
 **10. Relevance scoring rubric**
 
-The system should remain deterministic and transparent. I recommend a **0–100 additive rubric**.
+The system should remain deterministic and transparent. I recommend a **0–100 additive rubric**. Expanded scoring should initially apply only to **automated discoveries and newly reviewed records**, not to the full historical catalog on day one. Store a `relevance_score_version` alongside each scored automated observation so rubric changes remain traceable.
 
 ### Hard exclusions
 
@@ -786,16 +814,16 @@ The recommended MVP scheduler is **Supabase Cron → scheduler Edge Function →
 ### Batching
 
 - Scheduler runs every day and inserts pending runs for due sources.
-- Each worker invocation claims up to **5–10 pending runs** depending on expected source latency.
-- Each run processes **one source only** to preserve isolation.
-- If 50+ sources are configured, the scheduler fans out more pending runs; multiple worker invocations drain them.
+- Each worker invocation claims a **bounded batch** of at most **5–10 pending runs** depending on expected source latency.
+- Each run processes **one source only** to preserve isolation and make retries/source health decisions easy to reason about.
+- If 50+ sources are configured, the scheduler fans out more pending runs; multiple worker invocations drain them without sharing the same claimed row.
 
 ### Retries and backoff
 
 - Transient errors: retry twice with exponential backoff.
-- `429`: backoff more aggressively and increment a source health warning.
+- `429`: back off more aggressively and increment a `source_health` warning path.
 - Parser/schema error: no blind retry; mark failed and alert.
-- After **3 consecutive failures**, auto-disable the source **or** switch it to warning-only mode depending on officer policy.
+- After **3 consecutive failures**, set `degraded_at`, create or refresh a `source_health` review task, and use `automatic_scheduling_paused_at` if policy requires pausing the source instead of inventing a new task type.
 
 ### Timeout behavior
 
@@ -837,12 +865,13 @@ The main risks are:
 - Keep the service-role key exclusively in server-only contexts.
 - Scheduled ingestion should run in Supabase Edge Functions or protected Vercel server functions only.
 - No client bundle may import code paths that touch the service key.
-- Preview deployments should use a **staging Supabase project** or no service-role key at all.
+- Production service-role credentials are **production-only**. Preview deployments receive **no production service-role key**; if privileged preview testing is ever needed, use a separate staging project and staging key instead.
 - The current repo already shows the right pattern in CI by using dummy env vars and in admin actions by re-checking officer status before service-client usage. citeturn12view0turn32view1turn26search17
 
 **RLS and authz**
 
-- Keep base-table RLS “officers only.”
+- Keep base-table RLS “officers only,” but describe its role accurately: the service-role client bypasses RLS.
+- Middleware verifies session presence only; `requireOfficer()` is the decisive officer-membership check before privileged service-role use.
 - Every privileged admin mutation must verify: authenticated Supabase session, active membership in `officers`, and server-only execution.
 - Scheduled functions do not rely on user RLS; they run with a server secret in isolated code and leave publication decisions to officers. citeturn33view1turn26search1turn26search17
 
@@ -999,16 +1028,16 @@ Optional LLM use is not recommended for MVP cost reasons. Commercial job-data AP
 - **Estimated time**: 4–6 hours.
 - **Acceptance criteria**: written audit complete; exact reuse plan agreed.
 
-### Phase 1: source registry
+### Phase 1: database schema foundation
 
-- **Objective**: add `job_sources`, `source_fetch_runs`, `source_payloads`; seed first approved sources.
-- **Files likely affected**: new migration; admin source pages; shared types.
-- **Database changes**: new tables, indexes, RLS, private storage bucket.
-- **Tests**: schema/RLS tests; source enable/disable tests.
+- **Objective**: add the additive schema only: `job_sources`, `source_fetch_runs`, `source_payloads`, `source_postings`, `source_posting_versions`, `opportunity_source_links`, required enum values, constraints, RLS, and the private payload bucket.
+- **Files likely affected**: new migration; shared types.
+- **Database changes**: new tables, indexes, RLS, append-only/versioning enforcement, queue-claim helper, private storage bucket.
+- **Tests**: schema/RLS smoke tests; constraint tests; queue-claim concurrency tests.
 - **Dependencies**: phase 0.
 - **Risk**: medium.
 - **Estimated time**: 6–10 hours.
-- **Acceptance criteria**: officer can add, disable, and manually trigger an approved source.
+- **Acceptance criteria**: the database is ready for controlled source seeding and worker development without shipping admin source pages, server actions, or dashboard UI yet.
 
 ### Phase 2: Greenhouse connector
 
@@ -1092,12 +1121,12 @@ Optional LLM use is not recommended for MVP cost reasons. Commercial job-data AP
 ### Issue: Add automated source registry backed by `job_sources`
 
 - **Rationale**: automation needs a source allowlist with policy review and machine config.
-- **Scope**: migration, admin CRUD, enable/disable, terms/robots fields.
-- **Non-goals**: connectors.
-- **Technical notes**: `job_sources` should reference `source_records`.
-- **Acceptance criteria**: officer can create or disable a source without SQL.
+- **Scope**: migration, enum additions, constraints, queue-claim support, and controlled seeding fields.
+- **Non-goals**: admin CRUD, dashboard UI, or connectors.
+- **Technical notes**: `job_sources` should reference `source_records`, enforce policy-reviewed enablement, and retain source health metadata.
+- **Acceptance criteria**: the schema supports controlled creation, pausing, health tracking, and seeding of approved sources without adding admin pages yet.
 - **Dependencies**: none.
-- **Security considerations**: officer-only mutations; no open fetch target entry for non-officers.
+- **Security considerations**: officer-only mutation paths; no open fetch target entry for non-officers; production service-role key stays out of preview.
 - **Estimated effort**: medium.
 
 ### Issue: Implement Greenhouse ingestion connector
