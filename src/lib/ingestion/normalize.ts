@@ -1,0 +1,488 @@
+/**
+ * Pure normalization functions for the automated ingestion pipeline.
+ *
+ * All functions are deterministic and independently testable.
+ * Raw values are always preserved separately — normalization never destroys data.
+ *
+ * Rules:
+ * - Do not infer facts that are not present in the source.
+ * - Ambiguous values must produce uncertainty flags, not guesses.
+ * - Do not remove meaningful scientific terms, degree requirements,
+ *   level markers, or geographic qualifiers.
+ * - URL canonicalization removes fragments and known tracking parameters
+ *   while preserving parameters required to reach the actual posting.
+ */
+
+import type { DeadlineKind, OpportunityClassification, RemoteType, UncertaintyFlag } from './types';
+
+// ============================================================
+// WHITESPACE AND UNICODE
+// ============================================================
+
+/**
+ * Collapse all Unicode whitespace to a single ASCII space, trim edges.
+ * Handles non-breaking spaces, zero-width spaces, tabs, and newlines.
+ */
+export function normalizeWhitespace(value: string): string {
+  return value
+    .replace(/[\u00A0\u200B\u200C\u200D\uFEFF]/g, ' ') // non-breaking and zero-width
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Apply NFC Unicode normalization (canonical decomposition, canonical composition).
+ * NFC is the standard form for text comparison and storage.
+ */
+export function normalizeUnicode(value: string): string {
+  return value.normalize('NFC');
+}
+
+/**
+ * Produce a canonical case-insensitive comparison value:
+ * NFC → trim → collapse whitespace → lowercase.
+ */
+export function toCaseInsensitiveKey(value: string): string {
+  return normalizeWhitespace(normalizeUnicode(value)).toLowerCase();
+}
+
+// ============================================================
+// HTML ENTITY DECODING AND STRIPPING
+// ============================================================
+
+const HTML_ENTITIES: Record<string, string> = {
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&apos;': "'",
+  '&#39;': "'",
+  '&nbsp;': ' ',
+  '&copy;': '©',
+  '&reg;': '®',
+  '&trade;': '™',
+  '&mdash;': '—',
+  '&ndash;': '–',
+  '&lsquo;': '\u2018',
+  '&rsquo;': '\u2019',
+  '&ldquo;': '\u201C',
+  '&rdquo;': '\u201D',
+  '&hellip;': '…',
+  '&bull;': '•',
+};
+
+/**
+ * Decode named and numeric HTML entities.
+ * Handles &amp;, &lt;, &gt;, &quot;, &#NNN;, and &#xNNN; forms.
+ */
+export function decodeHtmlEntities(value: string): string {
+  // Replace named entities
+  let result = value.replace(
+    /&[a-zA-Z][a-zA-Z0-9]{0,10};/g,
+    (match) => HTML_ENTITIES[match] ?? match,
+  );
+  // Replace decimal numeric entities
+  result = result.replace(/&#(\d{1,6});/g, (_, code: string) => {
+    const n = parseInt(code, 10);
+    return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : _;
+  });
+  // Replace hexadecimal numeric entities
+  result = result.replace(/&#x([0-9a-fA-F]{1,6});/g, (_, hex: string) => {
+    const n = parseInt(hex, 16);
+    return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : _;
+  });
+  return result;
+}
+
+/**
+ * Convert an HTML string to plain text:
+ * 1. Remove script and style tag content entirely (including content between tags).
+ * 2. Replace block-level tags with spaces.
+ * 3. Strip all remaining tags.
+ * 4. Decode entities.
+ * 5. Collapse whitespace.
+ *
+ * Returns null for null/empty input.
+ * Does not execute scripts or perform network requests.
+ */
+export function htmlToText(html: string | null | undefined): string | null {
+  if (!html) return null;
+  let text = html
+    // Remove script and style content entirely (including content between tags)
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    // Replace block tags with spaces for readability
+    .replace(/<\/?(p|br|div|li|tr|h[1-6]|blockquote|pre|ul|ol|table|thead|tbody|section|article)[^>]*>/gi, ' ')
+    // Strip all remaining tags
+    .replace(/<[^>]*>/g, ' ');
+  text = decodeHtmlEntities(text);
+  text = normalizeWhitespace(text);
+  return text || null;
+}
+
+// ============================================================
+// EMPLOYER NAME
+// ============================================================
+
+const COMPANY_SUFFIXES =
+  /\s*\b(inc|incorporated|llc|ltd|limited|corp|corporation|co|company|plc|gmbh|sa|ag|nv|bv|srl)\b\.?$/i;
+
+/**
+ * Normalize an employer name:
+ * NFC → trim → collapse whitespace → lowercase → strip legal suffixes.
+ *
+ * Preserves acronyms, scientific names, and institution names.
+ * Returns null when the input is empty after normalization.
+ */
+export function normalizeEmployerName(name: string | null | undefined): string | null {
+  if (!name) return null;
+  const decoded = decodeHtmlEntities(normalizeUnicode(name));
+  let s = normalizeWhitespace(decoded).toLowerCase();
+  s = s.replace(COMPANY_SUFFIXES, '').trim();
+  return s || null;
+}
+
+// ============================================================
+// TITLE
+// ============================================================
+
+/**
+ * Normalize a job title for comparison and storage.
+ * Preserves season/year, scientific terms, degree level markers, and roman numerals.
+ * Applies: NFC → entity decode → HTML strip → whitespace collapse → lowercase →
+ *          dash normalization → punctuation strip (except slashes).
+ */
+export function normalizeJobTitle(title: string | null | undefined): string | null {
+  if (!title) return null;
+  const decoded = decodeHtmlEntities(htmlToText(title) ?? title);
+  let s = normalizeWhitespace(decoded)
+    .toLowerCase()
+    .replace(/[–—]/g, '-')
+    // Remove leading/trailing punctuation but keep internal slashes and hyphens
+    .replace(/[^\w\s\-\/]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return s || null;
+}
+
+/**
+ * Title family form: strip season, year, and cycle markers.
+ * Used ONLY for annual-family deduplication flagging, never for identity.
+ */
+export function normalizeJobTitleFamily(title: string | null | undefined): string | null {
+  const norm = normalizeJobTitle(title);
+  if (!norm) return null;
+  return norm
+    .replace(/\b(20\d{2}|19\d{2}|spring|summer|fall|autumn|winter)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim() || null;
+}
+
+// ============================================================
+// LOCATION
+// ============================================================
+
+/**
+ * Normalize a location string for comparison.
+ * Preserves city, state, country, and compound geographic names.
+ * Returns null for empty/null input.
+ */
+export function normalizeLocation(location: string | null | undefined): string | null {
+  if (!location) return null;
+  const decoded = decodeHtmlEntities(normalizeUnicode(location));
+  const s = normalizeWhitespace(decoded)
+    .toLowerCase()
+    .replace(/[^\w\s,.-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return s || null;
+}
+
+// ============================================================
+// DEPARTMENT
+// ============================================================
+
+/**
+ * Normalize a department name for comparison.
+ * Preserves scientific discipline names (e.g. "R&D", "Biochemistry").
+ */
+export function normalizeDepartment(dept: string | null | undefined): string | null {
+  if (!dept) return null;
+  const decoded = decodeHtmlEntities(normalizeUnicode(dept));
+  const s = normalizeWhitespace(decoded).toLowerCase().trim();
+  return s || null;
+}
+
+// ============================================================
+// URL CANONICALIZATION
+// ============================================================
+
+/**
+ * Known tracking parameters to strip from URLs.
+ * Parameters required to reach the actual posting must be preserved.
+ */
+const TRACKING_PARAMS = new Set([
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+  'utm_id',
+  'ref',
+  'src',
+  'trk',
+  'fbclid',
+  'gclid',
+  'msclkid',
+  'mc_cid',
+  'mc_eid',
+  '_hsenc',
+  '_hsmi',
+  'hsCtaTracking',
+]);
+
+/**
+ * Canonicalize a URL:
+ * - Require http or https.
+ * - Lowercase protocol and hostname.
+ * - Remove URL fragments.
+ * - Remove known tracking parameters.
+ * - Preserve all other parameters (they may be required to reach the posting).
+ * - Remove trailing slash from path (not from domain root).
+ * Returns null for unparseable, non-HTTP, or empty input.
+ */
+export function canonicalizeUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const raw = normalizeWhitespace(url);
+  if (!raw) return null;
+  const withScheme = raw.includes('://') ? raw : `https://${raw}`;
+  let u: URL;
+  try {
+    u = new URL(withScheme);
+  } catch {
+    return null;
+  }
+  if (!/^https?:$/i.test(u.protocol)) return null;
+  u.protocol = u.protocol.toLowerCase();
+  u.hostname = u.hostname.toLowerCase();
+  u.hash = '';
+  for (const param of TRACKING_PARAMS) {
+    u.searchParams.delete(param);
+  }
+  let result = u.toString();
+  // Remove trailing slash only when path is non-root (avoid stripping "https://example.com")
+  if (u.pathname.length > 1 && result.endsWith('/')) {
+    result = result.slice(0, -1);
+  }
+  return result;
+}
+
+// ============================================================
+// REMOTE TYPE CLASSIFICATION
+// ============================================================
+
+const REMOTE_SIGNALS = /\bremote\b/i;
+const HYBRID_SIGNALS = /\bhybrid\b/i;
+const ONSITE_SIGNALS = /\b(on-?site|in-?office|in person|on ?campus|in-?person)\b/i;
+
+/**
+ * Classify the remote/hybrid/onsite status from title, location, and description text.
+ * Returns 'unknown' when signals are absent or contradictory.
+ *
+ * Does not infer from partial words (e.g. "remotely" or "in-remotely").
+ */
+export function classifyRemoteType(
+  title: string | null,
+  location: string | null,
+  descriptionText: string | null,
+): { remoteType: RemoteType; flags: UncertaintyFlag[] } {
+  const combined = [title, location, descriptionText]
+    .filter(Boolean)
+    .join(' ');
+
+  const hasRemote = REMOTE_SIGNALS.test(combined);
+  const hasHybrid = HYBRID_SIGNALS.test(combined);
+  const hasOnsite = ONSITE_SIGNALS.test(combined);
+
+  if (hasHybrid) return { remoteType: 'hybrid', flags: [] };
+  if (hasRemote && hasOnsite) return { remoteType: 'hybrid', flags: [] };
+  if (hasRemote) return { remoteType: 'remote', flags: [] };
+  if (hasOnsite) return { remoteType: 'onsite', flags: [] };
+
+  const flags: UncertaintyFlag[] = [];
+  if (!location && !descriptionText) {
+    flags.push('remote_ambiguous');
+  }
+  return { remoteType: 'unknown', flags };
+}
+
+// ============================================================
+// EMPLOYMENT TYPE
+// ============================================================
+
+/** Normalize employment-type string. Returns null if absent. */
+export function normalizeEmploymentType(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const s = toCaseInsensitiveKey(value);
+  if (/full.?time/.test(s)) return 'full_time';
+  if (/part.?time/.test(s)) return 'part_time';
+  if (/\bco.?op\b/.test(s)) return 'co_op';
+  if (/\bcontract\b/.test(s)) return 'contract';
+  if (/\btemporary\b|\btemp\b/.test(s)) return 'temporary';
+  if (/\bfellowship\b/.test(s)) return 'fellowship';
+  if (/\binternship\b|\bintern\b/.test(s)) return 'internship';
+  return value.trim() || null;
+}
+
+// ============================================================
+// OPPORTUNITY CLASSIFICATION
+// ============================================================
+
+const INTERNSHIP_SIGNALS = /\bintern(ship)?\b/i;
+const FELLOWSHIP_SIGNALS = /\bfellowship\b|\bfellow\b/i;
+const RESEARCH_SIGNALS = /\bresearch\b|\bscientist\b|\banalyst\b/i;
+const ENTRY_SIGNALS = /\bentry.?level\b|\bjunior\b|\bassociate\b|\bnew grad\b/i;
+
+/**
+ * Classify an opportunity from its title and employment-type string.
+ * Returns classification and whether it was inferred (vs. explicit).
+ */
+export function classifyOpportunity(
+  title: string | null,
+  employmentType: string | null,
+  descriptionText: string | null,
+): { classification: OpportunityClassification; inferred: boolean } {
+  const combined = [title, employmentType, descriptionText?.slice(0, 500)]
+    .filter(Boolean)
+    .join(' ');
+
+  if (INTERNSHIP_SIGNALS.test(combined)) {
+    return { classification: 'internship', inferred: !INTERNSHIP_SIGNALS.test(title ?? '') };
+  }
+  if (FELLOWSHIP_SIGNALS.test(combined)) {
+    return { classification: 'fellowship', inferred: !FELLOWSHIP_SIGNALS.test(title ?? '') };
+  }
+  if (RESEARCH_SIGNALS.test(combined)) {
+    return { classification: 'research', inferred: true };
+  }
+  if (ENTRY_SIGNALS.test(combined)) {
+    return { classification: 'entry_level', inferred: true };
+  }
+  return { classification: 'other', inferred: true };
+}
+
+// ============================================================
+// DATE PARSING
+// ============================================================
+
+/**
+ * Parse a date string to ISO YYYY-MM-DD.
+ * Handles:
+ * - ISO 8601 with or without time component
+ * - MM/DD/YYYY and YYYY/MM/DD
+ * - Month-name formats ("March 15, 2026")
+ *
+ * Returns null for invalid, empty, or non-date input.
+ * Uses UTC to avoid timezone-dependent day shifts.
+ */
+export function parseIsoDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const s = normalizeWhitespace(value);
+  if (!s) return null;
+
+  // ISO 8601 with optional time: 2026-01-15 or 2026-01-15T...
+  const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$/);
+  if (isoMatch) {
+    return toIsoDateSafe(Number(isoMatch[1]), Number(isoMatch[2]), Number(isoMatch[3]));
+  }
+
+  // MM/DD/YYYY or M/D/YYYY
+  const mdySlash = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mdySlash) {
+    return toIsoDateSafe(Number(mdySlash[3]), Number(mdySlash[1]), Number(mdySlash[2]));
+  }
+
+  // YYYY/MM/DD
+  const ymdSlash = s.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
+  if (ymdSlash) {
+    return toIsoDateSafe(Number(ymdSlash[1]), Number(ymdSlash[2]), Number(ymdSlash[3]));
+  }
+
+  // Date with timezone offset: attempt Date.parse on ISO strings that include time
+  const parsed = new Date(s);
+  if (!Number.isNaN(parsed.getTime()) && parsed.getUTCFullYear() > 2000) {
+    return toIsoDateSafe(
+      parsed.getUTCFullYear(),
+      parsed.getUTCMonth() + 1,
+      parsed.getUTCDate(),
+    );
+  }
+
+  return null;
+}
+
+/** Strict calendar validation: rejects impossible dates like 2026-02-31. */
+function toIsoDateSafe(y: number, m: number, d: number): string | null {
+  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+  const check = new Date(Date.UTC(y, m - 1, d));
+  if (
+    check.getUTCFullYear() !== y ||
+    check.getUTCMonth() !== m - 1 ||
+    check.getUTCDate() !== d
+  ) {
+    return null;
+  }
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+/**
+ * Determine DeadlineKind from raw deadline text and/or a parsed date.
+ */
+export function classifyDeadlineKind(
+  rawText: string | null,
+  parsedDate: string | null,
+): DeadlineKind {
+  if (parsedDate) return 'hard';
+  if (!rawText) return 'unknown';
+  if (/rolling|ongoing|until filled|no deadline|open until/i.test(rawText)) return 'rolling';
+  return 'unknown';
+}
+
+// ============================================================
+// FOCUS AREA INFERENCE
+// ============================================================
+
+const FOCUS_AREA_MAP: Array<[RegExp, string]> = [
+  [/\b(bioinformatics|computational bio(logy)?|genomics|proteomics|transcriptomics)\b/i, 'bioinformatics'],
+  [/\b(crispr|gene edit|genome edit|genetic engineer)\b/i, 'genetic engineering'],
+  [/\b(drug discovery|medicinal chem|pharmaceutical|pharma)\b/i, 'pharmaceutical'],
+  [/\b(cell (bio|culture|therapy)|stem cell|regenerative)\b/i, 'cell biology'],
+  [/\b(immunolog|antibod|immuno)\b/i, 'immunology'],
+  [/\b(molecular bio|molecular diagnostics|pcr|sequencing)\b/i, 'molecular biology'],
+  [/\b(biochem|enzyme|protein)\b/i, 'biochemistry'],
+  [/\b(micro(biol|bio)|bacterio|virology|pathogen)\b/i, 'microbiology'],
+  [/\b(clinical research|clinical trial|clinical study)\b/i, 'clinical research'],
+  [/\b(biomanufactur|bioprocess|upstream|downstream|fermentation)\b/i, 'biomanufacturing'],
+  [/\b(biomedical engineer|bme)\b/i, 'biomedical engineering'],
+  [/\b(data sci|machine learning|ml|ai|analytics)\b/i, 'data science'],
+  [/\b(regulatory|cmc|gmp|gdp|quality assurance|qa|qc)\b/i, 'regulatory & quality'],
+  [/\b(lab tech|laboratory technician)\b/i, 'laboratory operations'],
+  [/\b(research (assoc|assist|intern|scientist))\b/i, 'research'],
+  [/\b(neurosci|neurobio)\b/i, 'neuroscience'],
+  [/\b(oncol|cancer)\b/i, 'oncology'],
+  [/\b(public health|epidemi)\b/i, 'public health'],
+];
+
+/**
+ * Infer a focus area tag from job title and description.
+ * Returns the first matching tag, or null if no signal is present.
+ */
+export function inferFocusArea(
+  title: string | null,
+  descriptionText: string | null,
+): string | null {
+  const combined = [title, descriptionText?.slice(0, 1000)].filter(Boolean).join(' ');
+  for (const [pattern, tag] of FOCUS_AREA_MAP) {
+    if (pattern.test(combined)) return tag;
+  }
+  return null;
+}
