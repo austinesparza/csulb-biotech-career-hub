@@ -103,7 +103,9 @@ describe('buildGreenhouseUrl', () => {
 
   it('always uses the internal Greenhouse base URL', () => {
     const url = buildGreenhouseUrl('any-token');
-    expect(url.startsWith('https://boards-api.greenhouse.io')).toBe(true);
+    const parsed = new URL(url);
+    expect(parsed.hostname).toBe('boards-api.greenhouse.io');
+    expect(parsed.protocol).toBe('https:');
   });
 });
 
