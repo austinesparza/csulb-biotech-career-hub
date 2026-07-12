@@ -545,3 +545,492 @@ describe('fetchGreenhouseJobs', () => {
     expect(usedFetchFn).toBe(true);
   });
 });
+
+// ============================================================
+// CONFIG VALIDATION — timeoutMs and maxResponseBytes bounds
+// ============================================================
+
+describe('fetchGreenhouseJobs config validation', () => {
+  it('rejects zero timeoutMs', async () => {
+    const result = await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', timeoutMs: 0, fetchFn: mockFetch('{}') });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('invalid_config');
+  });
+
+  it('rejects negative timeoutMs', async () => {
+    const result = await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', timeoutMs: -1000, fetchFn: mockFetch('{}') });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('invalid_config');
+  });
+
+  it('rejects fractional timeoutMs', async () => {
+    const result = await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', timeoutMs: 1500.5, fetchFn: mockFetch('{}') });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('invalid_config');
+  });
+
+  it('rejects Infinity timeoutMs', async () => {
+    const result = await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', timeoutMs: Infinity, fetchFn: mockFetch('{}') });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('invalid_config');
+  });
+
+  it('rejects NaN timeoutMs', async () => {
+    const result = await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', timeoutMs: NaN, fetchFn: mockFetch('{}') });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('invalid_config');
+  });
+
+  it('rejects excessive timeoutMs (> 120000)', async () => {
+    const result = await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', timeoutMs: 200000, fetchFn: mockFetch('{}') });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('invalid_config');
+  });
+
+  it('accepts timeoutMs at lower bound (100)', async () => {
+    const body = loadFixture('greenhouse-normal.json');
+    const result = await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', timeoutMs: 100, fetchFn: mockFetch(body) });
+    expect(result.ok).toBe(true);
+  });
+
+  it('accepts timeoutMs at upper bound (120000)', async () => {
+    const body = loadFixture('greenhouse-normal.json');
+    const result = await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', timeoutMs: 120000, fetchFn: mockFetch(body) });
+    expect(result.ok).toBe(true);
+  });
+
+  it('rejects zero maxResponseBytes', async () => {
+    const result = await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', maxResponseBytes: 0, fetchFn: mockFetch('{}') });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('invalid_config');
+  });
+
+  it('rejects negative maxResponseBytes', async () => {
+    const result = await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', maxResponseBytes: -1, fetchFn: mockFetch('{}') });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('invalid_config');
+  });
+
+  it('rejects fractional maxResponseBytes', async () => {
+    const result = await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', maxResponseBytes: 1024.5, fetchFn: mockFetch('{}') });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('invalid_config');
+  });
+
+  it('rejects excessive maxResponseBytes (> 20 MiB)', async () => {
+    const result = await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', maxResponseBytes: 30 * 1024 * 1024, fetchFn: mockFetch('{}') });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('invalid_config');
+  });
+
+  it('accepts maxResponseBytes at lower bound (1024)', async () => {
+    const body = loadFixture('greenhouse-empty.json');
+    const result = await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', maxResponseBytes: 1024, fetchFn: mockFetch(body) });
+    expect(result.ok).toBe(true);
+  });
+});
+
+// ============================================================
+// REDIRECT POLICY — manual redirect mode
+// ============================================================
+
+describe('fetchGreenhouseJobs redirect policy', () => {
+  it('uses redirect: manual (no second network request on 3xx)', async () => {
+    let fetchCount = 0;
+    const countingRedirectFetch: typeof fetch = (_url, init) => {
+      fetchCount++;
+      // Simulate a 301 redirect response (opaque redirect from manual mode)
+      const response = new Response(null, {
+        status: 301,
+        headers: { Location: 'https://other-host.example.com/jobs' },
+      });
+      void init; // captures the redirect:manual option
+      return Promise.resolve(response);
+    };
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: countingRedirectFetch,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('redirect_rejected');
+    // Only one network request — no automatic redirect follow
+    expect(fetchCount).toBe(1);
+  });
+
+  it('rejects 301 redirect', async () => {
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch('', 301),
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('redirect_rejected');
+    expect(result.error?.httpStatus).toBe(301);
+  });
+
+  it('rejects 302 redirect', async () => {
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch('', 302),
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('redirect_rejected');
+    expect(result.error?.httpStatus).toBe(302);
+  });
+
+  it('passes redirect: manual in fetch options', async () => {
+    let capturedInit: RequestInit | undefined;
+    const spyFetch: typeof fetch = (_url, init) => {
+      capturedInit = init;
+      return Promise.resolve(new Response(loadFixture('greenhouse-normal.json'), { status: 200 }));
+    };
+    await fetchGreenhouseJobs({ boardToken: 'labgenomicsinc', fetchFn: spyFetch });
+    expect((capturedInit as RequestInit & { redirect?: string })?.redirect).toBe('manual');
+  });
+});
+
+// ============================================================
+// TIMEOUT — full operation timeout
+// ============================================================
+
+describe('fetchGreenhouseJobs full-operation timeout', () => {
+  it('returns timeout error when body stream never completes', async () => {
+    // Mock fetch that returns headers immediately but never resolves the body
+    const hangingBodyFetch: typeof fetch = (_url, init) => {
+      const { signal } = init as RequestInit;
+      // Create a response with a body that never sends data
+      const stream = new ReadableStream({
+        start(_controller) {
+          // Never enqueue or close — simulates a stalled body stream
+          // The AbortSignal will eventually abort it
+          if (signal) {
+            signal.addEventListener('abort', () => {
+              _controller.error(new DOMException('Aborted', 'AbortError'));
+            });
+          }
+        },
+      });
+      const response = new Response(stream, {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+      return Promise.resolve(response);
+    };
+
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: hangingBodyFetch,
+      timeoutMs: 200, // short timeout
+    });
+
+    expect(result.ok).toBe(false);
+    // Either timeout or network error depending on how abort propagates through stream
+    expect(['timeout', 'network']).toContain(result.error?.errorClass);
+  });
+});
+
+// ============================================================
+// BOUNDED ERROR BODIES — non-2xx bodies are bounded
+// ============================================================
+
+describe('fetchGreenhouseJobs bounded error bodies', () => {
+  const bigBody = 'x'.repeat(200_000); // 200KB body
+
+  it('handles oversized 404 body without unbounded read', async () => {
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch(bigBody, 404, { 'content-type': 'text/plain' }),
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('not_found');
+    expect(result.error?.httpStatus).toBe(404);
+  });
+
+  it('handles oversized 429 body without unbounded read', async () => {
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch(bigBody, 429, { 'content-type': 'text/plain' }),
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error?.errorClass).toBe('rate_limit');
+  });
+
+  it('handles oversized 500 body without unbounded read', async () => {
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch(bigBody, 500, { 'content-type': 'text/plain' }),
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error?.code).toBe('server_error');
+  });
+});
+
+// ============================================================
+// CANONICAL URL — no fabricated URLs, per-record issues
+// ============================================================
+
+describe('fetchGreenhouseJobs canonical URL handling', () => {
+  it('skips records with missing absolute_url and returns ConnectorIssue', async () => {
+    const bodyWithMissingUrl = JSON.stringify({
+      jobs: [{
+        id: 9001,
+        title: 'Test Job',
+        location: { name: 'Long Beach, CA' },
+        absolute_url: null, // missing URL
+        content: '<p>Test description</p>',
+        departments: [],
+        offices: [],
+      }],
+    });
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch(bodyWithMissingUrl),
+    });
+    // 1 record seen, 0 normalized → all-invalid → ok: false
+    expect(result.ok).toBe(false);
+    expect(result.candidates).toHaveLength(0);
+    expect(result.recordsSkipped).toBe(1);
+    expect(result.issues.length).toBeGreaterThan(0);
+    expect(result.issues[0].code).toBe('invalid_shape');
+  });
+
+  it('skips records with malformed absolute_url', async () => {
+    const body = JSON.stringify({
+      // :::bad is not a valid URL — new URL() will throw
+      jobs: [{ id: 9002, title: 'Bad URL Job', absolute_url: ':::bad-url', content: '<p>desc</p>' }],
+    });
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch(body),
+    });
+    expect(result.recordsSkipped).toBe(1);
+    expect(result.issues.length).toBeGreaterThan(0);
+  });
+
+  it('skips records with javascript: scheme absolute_url', async () => {
+    const body = JSON.stringify({
+      jobs: [{ id: 9003, title: 'XSS Job', absolute_url: 'javascript:alert(1)', content: '<p>desc</p>' }],
+    });
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch(body),
+    });
+    expect(result.recordsSkipped).toBe(1);
+    expect(result.issues.length).toBeGreaterThan(0);
+  });
+
+  it('does NOT fabricate a canonical URL from the job ID', async () => {
+    const body = JSON.stringify({
+      jobs: [{ id: 9004, title: 'No URL Job', absolute_url: null, content: '<p>desc</p>' }],
+    });
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch(body),
+    });
+    // Candidates must not contain a fabricated boards-api.greenhouse.io/jobs/{id} URL
+    for (const c of result.candidates) {
+      expect(c.canonicalUrl).not.toContain('boards-api.greenhouse.io/jobs/9004');
+    }
+  });
+});
+
+// ============================================================
+// STRUCTURED ISSUES — mixed-validity and all-invalid responses
+// ============================================================
+
+describe('fetchGreenhouseJobs structured issues', () => {
+  it('returns both valid and invalid records with issues in mixed response', async () => {
+    const mixedBody = JSON.stringify({
+      jobs: [
+        {
+          id: 8001,
+          title: 'Valid Job',
+          location: { name: 'Long Beach, CA' },
+          absolute_url: 'https://boards.greenhouse.io/test/jobs/8001',
+          content: '<p>Valid description.</p>',
+          departments: [{ name: 'Research & Development' }],
+          offices: [{ name: 'Long Beach' }],
+        },
+        {
+          id: 8002,
+          title: 'No URL Job',
+          absolute_url: null, // will be skipped
+          content: '<p>desc</p>',
+        },
+      ],
+    });
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'testboard',
+      fetchFn: mockFetch(mixedBody),
+    });
+    expect(result.ok).toBe(true); // partial success
+    expect(result.candidates.length).toBe(1); // one valid
+    expect(result.recordsSeen).toBe(2);
+    expect(result.recordsNormalized).toBe(1);
+    expect(result.recordsSkipped).toBe(1);
+    expect(result.issues.length).toBeGreaterThan(0);
+  });
+
+  it('returns ok: false when all records fail normalization', async () => {
+    const allInvalidBody = JSON.stringify({
+      jobs: [
+        { id: 7001, title: 'No URL 1', absolute_url: null },
+        { id: 7002, title: 'No URL 2', absolute_url: 'javascript:x' },
+        { id: 7003, title: 'No URL 3', absolute_url: 'ftp://not-http' },
+      ],
+    });
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'testboard',
+      fetchFn: mockFetch(allInvalidBody),
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error?.errorClass).toBe('schema');
+    expect(result.error?.code).toBe('invalid_shape');
+    expect(result.candidates).toHaveLength(0);
+    expect(result.recordsSkipped).toBe(3);
+  });
+
+  it('issues include safe job identifiers', async () => {
+    const body = JSON.stringify({
+      jobs: [{ id: 6001, title: 'No URL', absolute_url: null }],
+    });
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'testboard',
+      fetchFn: mockFetch(body),
+    });
+    expect(result.issues.length).toBeGreaterThan(0);
+    // safeId should contain the job ID in some form
+    const issue = result.issues[0];
+    expect(issue.safeId).not.toBeNull();
+    expect(issue.message).toBeTruthy();
+    // Issues must not contain raw job description content
+    expect(issue.message).not.toContain('<p>');
+  });
+
+  it('result includes recordsSeen, recordsNormalized, recordsSkipped', async () => {
+    const body = loadFixture('greenhouse-normal.json');
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch(body),
+    });
+    expect(result.ok).toBe(true);
+    expect(typeof result.recordsSeen).toBe('number');
+    expect(typeof result.recordsNormalized).toBe('number');
+    expect(typeof result.recordsSkipped).toBe('number');
+    expect(result.recordsSeen).toBeGreaterThan(0);
+    expect(result.recordsNormalized).toBe(result.candidates.length);
+    expect(result.recordsSeen).toBe(result.recordsNormalized + result.recordsSkipped);
+  });
+});
+
+// ============================================================
+// ERROR TYPES — errorClass vs code alignment
+// ============================================================
+
+describe('ConnectorError errorClass and code alignment', () => {
+  it('auth error has errorClass auth', async () => {
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch('Unauthorized', 401),
+    });
+    expect(result.error?.errorClass).toBe('auth');
+    expect(result.error?.code).toBe('auth');
+  });
+
+  it('not_found error has code not_found and errorClass unexpected', async () => {
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch('Not Found', 404),
+    });
+    expect(result.error?.code).toBe('not_found');
+    expect(result.error?.errorClass).toBe('unexpected');
+  });
+
+  it('server_error has code server_error and errorClass unexpected', async () => {
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch('Error', 500),
+    });
+    expect(result.error?.code).toBe('server_error');
+    expect(result.error?.errorClass).toBe('unexpected');
+  });
+
+  it('rate_limit has errorClass rate_limit', async () => {
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch('Too Many Requests', 429),
+    });
+    expect(result.error?.errorClass).toBe('rate_limit');
+    expect(result.error?.httpStatus).toBe(429);
+  });
+
+  it('invalid_json error has code invalid_json and errorClass schema', async () => {
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch('not-valid-json {{{'),
+    });
+    expect(result.error?.code).toBe('invalid_json');
+    expect(result.error?.errorClass).toBe('schema');
+  });
+
+  it('invalid_shape error has code invalid_shape and errorClass schema', async () => {
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch('{"data": []}'), // missing jobs array
+    });
+    expect(result.error?.code).toBe('invalid_shape');
+    expect(result.error?.errorClass).toBe('schema');
+  });
+});
+
+// ============================================================
+// GREENHOUSE FIELD MAPPING — sourceUpdatedAt, sourceMetadata
+// ============================================================
+
+describe('normalizeGreenhouseJob field mapping', () => {
+  const BOARD_TOKEN = 'labgenomicsinc';
+  const FETCHED_AT = '2026-07-11T00:00:00.000Z';
+
+  it('maps updated_at to sourceUpdatedAt', () => {
+    const job = {
+      id: 1001001,
+      title: 'Test Job',
+      updated_at: '2026-06-15T14:00:00-07:00',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/1001001',
+      location: { name: 'Long Beach, CA' },
+    };
+    const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(posting.sourceUpdatedAt).toBe('2026-06-15T14:00:00-07:00');
+  });
+
+  it('maps metadata array to sourceMetadata', () => {
+    const job = {
+      id: 1001002,
+      title: 'Test Job 2',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/1001002',
+      metadata: [{ id: 1, name: 'Type', value: 'Internship' }],
+    };
+    const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(posting.sourceMetadata).not.toBeNull();
+    expect(Array.isArray(posting.sourceMetadata)).toBe(true);
+  });
+
+  it('sourceUpdatedAt is null when updated_at absent', () => {
+    const job = {
+      id: 1001003,
+      title: 'Test Job 3',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/1001003',
+    };
+    const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(posting.sourceUpdatedAt).toBeNull();
+  });
+
+  it('sourceMetadata is null when metadata absent', () => {
+    const job = {
+      id: 1001004,
+      title: 'Test Job 4',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/1001004',
+    };
+    const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(posting.sourceMetadata).toBeNull();
+  });
+});

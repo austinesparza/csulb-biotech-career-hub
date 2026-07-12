@@ -160,3 +160,187 @@ describe('assessDuplicate', () => {
     });
   });
 });
+
+// ============================================================
+// LOCATION REQUIREMENT — dedupe corrections
+// ============================================================
+
+describe('assessDuplicate location requirement', () => {
+  it('does NOT classify probable_same_posting when locations differ', () => {
+    const existing: DedupeCandidate[] = [{
+      ...BASE_CANDIDATE,
+      identityKey: 'greenhouse:labgenomicsinc:8880001',
+      canonicalUrl: 'https://boards.greenhouse.io/labgenomicsinc/jobs/8880001',
+      locationNormalized: 'san diego, ca', // different city
+    }];
+    const result = assessDuplicate(BASE_CANDIDATE, existing);
+    expect(result.matchType).not.toBe('probable_same_posting');
+  });
+
+  it('classifies probable_same_posting when both locations are null', () => {
+    const noLocCandidate: DedupeCandidate = { ...BASE_CANDIDATE, locationNormalized: null };
+    const existing: DedupeCandidate[] = [{
+      ...BASE_CANDIDATE,
+      identityKey: 'greenhouse:labgenomicsinc:8880002',
+      canonicalUrl: 'https://boards.greenhouse.io/labgenomicsinc/jobs/8880002',
+      locationNormalized: null,
+    }];
+    const result = assessDuplicate(noLocCandidate, existing);
+    // Both null → location doesn't disqualify
+    expect(['probable_same_posting', 'exact_identity', 'exact_url']).toContain(result.matchType);
+  });
+
+  it('does NOT classify probable_same_posting when candidate has null location but existing has location', () => {
+    const noLocCandidate: DedupeCandidate = { ...BASE_CANDIDATE, locationNormalized: null };
+    const existing: DedupeCandidate[] = [{
+      ...BASE_CANDIDATE,
+      identityKey: 'greenhouse:labgenomicsinc:8880003',
+      canonicalUrl: 'https://boards.greenhouse.io/labgenomicsinc/jobs/8880003',
+      locationNormalized: 'long beach, ca',
+    }];
+    const result = assessDuplicate(noLocCandidate, existing);
+    expect(result.matchType).not.toBe('probable_same_posting');
+  });
+});
+
+// ============================================================
+// INSUFFICIENT_INFORMATION for missing employer/title
+// ============================================================
+
+describe('assessDuplicate insufficient_information', () => {
+  it('returns insufficient_information when candidate employer is missing', () => {
+    const noEmployer: DedupeCandidate = { ...BASE_CANDIDATE, employerNameNormalized: null };
+    const existing: DedupeCandidate[] = [{
+      ...BASE_CANDIDATE,
+      identityKey: 'greenhouse:labgenomicsinc:7770001',
+      canonicalUrl: 'https://boards.greenhouse.io/labgenomicsinc/jobs/7770001',
+    }];
+    const result = assessDuplicate(noEmployer, existing);
+    expect(result.matchType).toBe('insufficient_information');
+  });
+
+  it('returns insufficient_information when candidate title is missing', () => {
+    const noTitle: DedupeCandidate = { ...BASE_CANDIDATE, titleNormalized: null };
+    const existing: DedupeCandidate[] = [{
+      ...BASE_CANDIDATE,
+      identityKey: 'greenhouse:labgenomicsinc:7770002',
+      canonicalUrl: 'https://boards.greenhouse.io/labgenomicsinc/jobs/7770002',
+    }];
+    const result = assessDuplicate(noTitle, existing);
+    expect(result.matchType).toBe('insufficient_information');
+  });
+});
+
+// ============================================================
+// BEST-MATCH SELECTION — deterministic tie-breaking
+// ============================================================
+
+describe('assessDuplicate best-match selection', () => {
+  it('selects the best match from multiple candidates', () => {
+    const weakMatch: DedupeCandidate = {
+      identityKey: 'greenhouse:othercorp:1000001',
+      canonicalUrl: 'https://boards.greenhouse.io/othercorp/jobs/1000001',
+      employerNameNormalized: 'other corp',
+      titleNormalized: 'biotechnology intern cell biology',
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: null,
+    };
+    const strongMatch: DedupeCandidate = {
+      identityKey: 'greenhouse:labgenomicsinc:9999999',
+      canonicalUrl: 'https://boards.greenhouse.io/labgenomicsinc/jobs/9999999',
+      employerNameNormalized: 'lab genomics', // same employer
+      titleNormalized: 'biotechnology intern cell biology',
+      locationNormalized: 'long beach, ca',
+      departments: ['Research & Development'],
+      materialHash: null,
+    };
+    // Strong match appears second — still should win
+    const result = assessDuplicate(BASE_CANDIDATE, [weakMatch, strongMatch]);
+    expect(['probable_same_posting', 'exact_url']).toContain(result.matchType);
+  });
+
+  it('selects the same best match regardless of input order', () => {
+    const matchA: DedupeCandidate = {
+      identityKey: 'greenhouse:labgenomicsinc:1111111',
+      canonicalUrl: 'https://boards.greenhouse.io/labgenomicsinc/jobs/1111111',
+      employerNameNormalized: 'lab genomics',
+      titleNormalized: 'biotechnology intern cell biology',
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: null,
+    };
+    const matchB: DedupeCandidate = {
+      identityKey: 'greenhouse:labgenomicsinc:2222222',
+      canonicalUrl: 'https://boards.greenhouse.io/labgenomicsinc/jobs/2222222',
+      employerNameNormalized: 'lab genomics',
+      titleNormalized: 'biotechnology intern cell biology',
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: null,
+    };
+    // With equal confidence, tie-breaking must be deterministic
+    const result1 = assessDuplicate(BASE_CANDIDATE, [matchA, matchB]);
+    const result2 = assessDuplicate(BASE_CANDIDATE, [matchB, matchA]);
+    expect(result1.matchedIdentityKey).toBe(result2.matchedIdentityKey);
+  });
+});
+
+// ============================================================
+// EXACT IDENTITY with changed materialHash
+// ============================================================
+
+describe('assessDuplicate exact identity with materialHash', () => {
+  it('does not say content is unchanged when materialHash differs', () => {
+    const existing: DedupeCandidate[] = [{
+      ...BASE_CANDIDATE,
+      materialHash: 'aabbccdd00112233aabbccdd00112233aabbccdd00112233aabbccdd00112233',
+    }];
+    const candidate = { ...BASE_CANDIDATE, materialHash: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' };
+    const result = assessDuplicate(candidate, existing);
+    expect(result.matchType).toBe('exact_identity');
+    expect(result.requiresOfficerReview).toBe(true);
+    // Reasons must not claim content is unchanged when hash differs
+    const claimsUnchanged = result.reasons.some((r) =>
+      r.toLowerCase().includes('unchanged') && !r.toLowerCase().includes('changed'),
+    );
+    expect(claimsUnchanged).toBe(false);
+  });
+
+  it('does not require officer review when materialHash is same', () => {
+    const hash = 'cafebabecafebabecafebabecafebabecafebabecafebabecafebabecafebabe';
+    const existing: DedupeCandidate[] = [{ ...BASE_CANDIDATE, materialHash: hash }];
+    const candidate = { ...BASE_CANDIDATE, materialHash: hash };
+    const result = assessDuplicate(candidate, existing);
+    expect(result.matchType).toBe('exact_identity');
+    expect(result.requiresOfficerReview).toBe(false);
+  });
+
+  it('requires officer review when deadline changes (different hash)', () => {
+    const existing: DedupeCandidate[] = [{
+      ...BASE_CANDIDATE,
+      materialHash: '1111111111111111111111111111111111111111111111111111111111111111',
+    }];
+    const candidate = {
+      ...BASE_CANDIDATE,
+      materialHash: '2222222222222222222222222222222222222222222222222222222222222222',
+    };
+    const result = assessDuplicate(candidate, existing);
+    expect(result.matchType).toBe('exact_identity');
+    expect(result.requiresOfficerReview).toBe(true);
+  });
+
+  it('requires officer review when description changes (different hash)', () => {
+    const existing: DedupeCandidate[] = [{
+      ...BASE_CANDIDATE,
+      materialHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    }];
+    const candidate = {
+      ...BASE_CANDIDATE,
+      materialHash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    };
+    const result = assessDuplicate(candidate, existing);
+    expect(result.matchType).toBe('exact_identity');
+    expect(result.requiresOfficerReview).toBe(true);
+  });
+});

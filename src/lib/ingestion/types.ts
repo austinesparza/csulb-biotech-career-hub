@@ -265,6 +265,12 @@ export interface ScoreBreakdown {
   rawTotal: number;
   positiveReasons: ScoreReason[];
   negativeReasons: ScoreReason[];
+  /**
+   * Uncertainty flags derived or carried through by the scorer.
+   * Includes any flags from the input plus any derived by the scoring function
+   * (e.g. eligibility_missing, eligibility_ambiguous).
+   */
+  uncertaintyFlags: UncertaintyFlag[];
 }
 
 // ============================================================
@@ -282,6 +288,8 @@ export interface DuplicateAssessment {
   matchType: IngestionMatchType;
   /** Confidence in the match: 0.0 (none) to 1.0 (certain). */
   confidence: number;
+  /** Identity key of the best-matched existing posting, or null when no match. */
+  matchedIdentityKey: string | null;
   /** Field names that contributed to the match determination. */
   contributingFields: string[];
   /** Field names whose values conflict between the two postings. */

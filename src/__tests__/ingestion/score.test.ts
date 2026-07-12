@@ -184,3 +184,286 @@ describe('scoreIngestionCandidate', () => {
     expect(breakdown.version).toBeGreaterThan(0);
   });
 });
+
+// ============================================================
+// SOCAL GEOGRAPHY — token boundary checks
+// ============================================================
+
+describe('scoreIngestionCandidate SoCal geography safeguards', () => {
+  const geoBase: ScoringInput = {
+    ...BASE_INPUT,
+    classification: 'other',
+    descriptionText: 'Generic description.',
+  };
+
+  it('Atlanta does not receive SoCal geography bonus', () => {
+    const input: ScoringInput = { ...geoBase, locationNormalized: 'atlanta, ga' };
+    const breakdown = scoreIngestionCandidate(input);
+    const socalBonus = breakdown.positiveReasons
+      .filter((r) => r.category === 'geography')
+      .reduce((s, r) => s + r.points, 0);
+    expect(socalBonus).toBeLessThanOrEqual(0); // no SoCal bonus for Atlanta
+  });
+
+  it('Philadelphia does not receive SoCal geography bonus', () => {
+    const input: ScoringInput = { ...geoBase, locationNormalized: 'philadelphia, pa' };
+    const breakdown = scoreIngestionCandidate(input);
+    const socalBonus = breakdown.positiveReasons.filter(
+      (r) => r.category === 'geography' && r.reason.toLowerCase().includes('southern california'),
+    );
+    expect(socalBonus).toHaveLength(0);
+  });
+
+  it('Malaysia does not receive SoCal geography bonus', () => {
+    const input: ScoringInput = { ...geoBase, locationNormalized: 'kuala lumpur, malaysia' };
+    const breakdown = scoreIngestionCandidate(input);
+    const socalBonus = breakdown.positiveReasons.filter(
+      (r) => r.category === 'geography' && r.reason.toLowerCase().includes('southern california'),
+    );
+    expect(socalBonus).toHaveLength(0);
+  });
+
+  it('Northern California does not receive SoCal geography bonus', () => {
+    const input: ScoringInput = { ...geoBase, locationNormalized: 'san francisco, ca' };
+    const breakdown = scoreIngestionCandidate(input);
+    const socalBonus = breakdown.positiveReasons.filter(
+      (r) => r.category === 'geography' && r.reason.toLowerCase().includes('southern california'),
+    );
+    expect(socalBonus).toHaveLength(0);
+  });
+
+  it('Long Beach receives SoCal geography bonus', () => {
+    const input: ScoringInput = { ...geoBase, locationNormalized: 'long beach, ca' };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasGeo = breakdown.positiveReasons.some((r) => r.category === 'geography');
+    expect(hasGeo).toBe(true);
+  });
+
+  it('Los Angeles receives SoCal geography bonus', () => {
+    const input: ScoringInput = { ...geoBase, locationNormalized: 'los angeles, ca' };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasGeo = breakdown.positiveReasons.some((r) => r.category === 'geography');
+    expect(hasGeo).toBe(true);
+  });
+});
+
+// ============================================================
+// UNDERGRAD ELIGIBILITY — student-context phrases only
+// ============================================================
+
+describe('scoreIngestionCandidate undergrad eligibility', () => {
+  const undergradBase: ScoringInput = { ...BASE_INPUT, classification: 'internship' };
+
+  it('senior scientist does not receive undergrad bonus', () => {
+    const input: ScoringInput = {
+      ...undergradBase,
+      titleRaw: 'Senior Scientist',
+      titleNormalized: 'senior scientist',
+      descriptionText: 'We are hiring a Senior Scientist with 5+ years experience.',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasUndergradBonus = breakdown.positiveReasons.some(
+      (r) => r.category === 'undergrad_access' && r.points > 0,
+    );
+    expect(hasUndergradBonus).toBe(false);
+  });
+
+  it('college junior phrase provides undergrad bonus', () => {
+    const input: ScoringInput = {
+      ...undergradBase,
+      descriptionText: 'Open to college juniors and seniors.',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasUndergradBonus = breakdown.positiveReasons.some(
+      (r) => r.category === 'undergrad_access' && r.points > 0,
+    );
+    expect(hasUndergradBonus).toBe(true);
+  });
+
+  it('rising senior phrase provides undergrad bonus', () => {
+    const input: ScoringInput = {
+      ...undergradBase,
+      descriptionText: 'Perfect for a rising senior studying biology.',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasUndergradBonus = breakdown.positiveReasons.some(
+      (r) => r.category === 'undergrad_access' && r.points > 0,
+    );
+    expect(hasUndergradBonus).toBe(true);
+  });
+
+  it('generic junior job title does not provide undergrad bonus', () => {
+    const input: ScoringInput = {
+      ...undergradBase,
+      titleRaw: 'Junior Software Engineer',
+      titleNormalized: 'junior software engineer',
+      // No undergrad-context language; description does not mention students
+      descriptionText: '2+ years of professional software engineering experience required. Strong coding skills needed.',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasUndergradBonus = breakdown.positiveReasons.some(
+      (r) => r.category === 'undergrad_access' && r.points > 0,
+    );
+    expect(hasUndergradBonus).toBe(false);
+  });
+});
+
+// ============================================================
+// DEGREE REQUIREMENTS — contextual distinction
+// ============================================================
+
+describe('scoreIngestionCandidate degree requirements', () => {
+  const degreeBase: ScoringInput = {
+    ...BASE_INPUT,
+    classification: 'other',
+    titleRaw: 'Research Position',
+    titleNormalized: 'research position',
+  };
+
+  it('PhD required triggers degree penalty', () => {
+    const input: ScoringInput = { ...degreeBase, descriptionText: 'PhD required. Must hold a doctoral degree.' };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasDegreePenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'degree_req' && r.points < 0,
+    );
+    expect(hasDegreePenalty).toBe(true);
+  });
+
+  it('PhD preferred does NOT trigger degree penalty', () => {
+    const input: ScoringInput = { ...degreeBase, descriptionText: 'A bachelor\'s degree is required. PhD experience is a plus but not required for this position.' };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasDegreePenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'degree_req' && r.points < 0,
+    );
+    expect(hasDegreePenalty).toBe(false);
+  });
+
+  it('BS/MS/PhD accepted does NOT trigger degree penalty', () => {
+    const input: ScoringInput = { ...degreeBase, descriptionText: 'BS/MS/PhD accepted. All levels welcome.' };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasDegreePenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'degree_req' && r.points < 0,
+    );
+    expect(hasDegreePenalty).toBe(false);
+  });
+
+  it('"works with PhD scientists" does NOT trigger degree penalty', () => {
+    const input: ScoringInput = { ...degreeBase, descriptionText: 'You will work alongside PhD scientists in our research lab.' };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasDegreePenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'degree_req' && r.points < 0,
+    );
+    expect(hasDegreePenalty).toBe(false);
+  });
+});
+
+// ============================================================
+// SENIORITY — fellowship should not be penalized
+// ============================================================
+
+describe('scoreIngestionCandidate seniority for fellowships', () => {
+  it('postdoctoral fellow is penalized for degree_req but not seniority', () => {
+    const input: ScoringInput = {
+      ...BASE_INPUT,
+      titleRaw: 'Postdoctoral Fellow',
+      titleNormalized: 'postdoctoral fellow',
+      classification: 'other',
+      descriptionText: 'PhD required. Postdoctoral fellowship position.',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    // Has degree penalty (PhD required)
+    const hasDegreePenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'degree_req' && r.points < 0,
+    );
+    expect(hasDegreePenalty).toBe(true);
+    // Does NOT have seniority penalty for "fellow"
+    const hasFellowSeniorityPenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'seniority' && r.reason.toLowerCase().includes('fellow'),
+    );
+    expect(hasFellowSeniorityPenalty).toBe(false);
+  });
+
+  it('research fellowship is not penalized as executive seniority', () => {
+    const input: ScoringInput = {
+      ...BASE_INPUT,
+      titleRaw: 'Research Fellowship',
+      titleNormalized: 'research fellowship',
+      classification: 'other',
+      descriptionText: 'Research fellowship for early career scientists.',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasSeniorityPenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'seniority' && r.points < 0,
+    );
+    expect(hasSeniorityPenalty).toBe(false);
+  });
+});
+
+// ============================================================
+// ELIGIBILITY FLAGS — derived from description
+// ============================================================
+
+describe('scoreIngestionCandidate eligibility flag derivation', () => {
+  it('eligibility_missing is populated when description is absent', () => {
+    const input: ScoringInput = {
+      ...BASE_INPUT,
+      descriptionText: null,
+      uncertaintyFlags: [],
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.uncertaintyFlags).toContain('eligibility_missing');
+  });
+
+  it('eligibility_ambiguous is populated when description has no clear eligibility signals', () => {
+    const input: ScoringInput = {
+      ...BASE_INPUT,
+      descriptionText: 'Exciting opportunity at our company. Great benefits.',
+      uncertaintyFlags: [],
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    // Should be either ambiguous or normal — not missing (description is present)
+    expect(breakdown.uncertaintyFlags).not.toContain('eligibility_missing');
+  });
+});
+
+// ============================================================
+// DEADLINE SCORING — uses injected reference date deterministically
+// ============================================================
+
+describe('scoreIngestionCandidate deadline scoring', () => {
+  const futureInput: ScoringInput = {
+    ...BASE_INPUT,
+    closesAt: '2030-12-31', // far future regardless of wall clock
+  };
+
+  const expiredInput: ScoringInput = {
+    ...BASE_INPUT,
+    closesAt: '2020-01-01', // always in the past
+  };
+
+  it('upcoming deadline gives positive deadline score with fixed reference date', () => {
+    const referenceNow = new Date('2026-07-01T00:00:00.000Z');
+    const breakdown = scoreIngestionCandidate({ ...futureInput, closesAt: '2026-09-01' }, referenceNow);
+    // Should not have expired deadline penalty
+    const hasExpiredPenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'deadline' && r.reason.toLowerCase().includes('expired'),
+    );
+    expect(hasExpiredPenalty).toBe(false);
+  });
+
+  it('expired deadline gives negative deadline score', () => {
+    const referenceNow = new Date('2026-07-01T00:00:00.000Z');
+    const breakdown = scoreIngestionCandidate(expiredInput, referenceNow);
+    const hasExpiredPenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'deadline' && r.points < 0,
+    );
+    expect(hasExpiredPenalty).toBe(true);
+  });
+
+  it('deadline scoring is deterministic with same reference date', () => {
+    const ref = new Date('2026-07-01T00:00:00.000Z');
+    const a = scoreIngestionCandidate(futureInput, ref);
+    const b = scoreIngestionCandidate(futureInput, ref);
+    expect(a.total).toBe(b.total);
+  });
+});

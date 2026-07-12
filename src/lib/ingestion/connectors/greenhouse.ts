@@ -506,8 +506,8 @@ export async function fetchGreenhouseJobs(
       try {
         rawErrorText = await readBoundedText(response, Math.min(maxBytes, 65536));
       } catch {
-        // Oversized or unreadable — cancel and discard
-        try { response.body?.cancel(); } catch { /* ignore */ }
+        // Oversized or unreadable — discard error body (readBoundedText handles cleanup)
+        rawErrorText = null;
       }
       const errorClass = toErrorClass(httpStatus);
       const code = toErrorCode(httpStatus);
@@ -540,9 +540,20 @@ export async function fetchGreenhouseJobs(
     try {
       rawResponseText = await readBoundedText(response, maxBytes);
     } catch (err: unknown) {
+      const isAbort =
+        err instanceof Error &&
+        (err.name === 'AbortError' || err.name === 'TimeoutError');
       const isOversize = err instanceof Error && err.message.includes('exceeds');
+      if (isAbort) {
+        return makeFailure({
+          errorClass: 'timeout',
+          code: 'timeout',
+          message: `Request timed out after ${timeoutMs}ms (body stream).`,
+          httpStatus,
+        }, { fetchedAt, requestUrl, finalUrl, httpStatus, contentType, etag, lastModified });
+      }
       return makeFailure({
-        errorClass: 'schema',
+        errorClass: isOversize ? 'schema' : 'network',
         code: isOversize ? 'response_oversized' : 'network',
         message: isOversize
           ? `Response exceeds ${maxBytes} byte limit.`

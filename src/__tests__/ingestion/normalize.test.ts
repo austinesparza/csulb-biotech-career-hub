@@ -354,3 +354,136 @@ describe('inferFocusArea', () => {
     expect(inferFocusArea('Genomics Intern', null)).toBe(inferFocusArea('Genomics Intern', null));
   });
 });
+
+// ============================================================
+// UNICODE-AWARE TITLE AND LOCATION NORMALIZATION
+// ============================================================
+
+describe('normalizeJobTitle Unicode preservation', () => {
+  it('preserves accented characters in job titles', () => {
+    const normalized = normalizeJobTitle('Coordinateur Médical — Santé publique');
+    expect(normalized).toContain('médical');
+    expect(normalized).toContain('santé');
+  });
+
+  it('preserves non-Latin letters (e.g. Japanese)', () => {
+    const title = 'Research 研究員 Associate';
+    const normalized = normalizeJobTitle(title);
+    expect(normalized).toContain('研究員');
+  });
+
+  it('preserves ñ in title', () => {
+    const normalized = normalizeJobTitle('Técnico en Biotecnología');
+    expect(normalized).toContain('técnico');
+    expect(normalized).toContain('biotecnología');
+  });
+});
+
+describe('normalizeLocation Unicode preservation', () => {
+  it('preserves accented characters in location names', () => {
+    const normalized = normalizeLocation('São Paulo, Brasil');
+    expect(normalized).toContain('são paulo');
+  });
+
+  it('preserves ü in city name', () => {
+    const normalized = normalizeLocation('München, Deutschland');
+    expect(normalized).toContain('münchen');
+  });
+});
+
+// ============================================================
+// HYBRID CLASSIFICATION — only explicit hybrid language
+// ============================================================
+
+describe('classifyRemoteType hybrid', () => {
+  it('classifies as hybrid when "hybrid" is explicitly mentioned', () => {
+    const result = classifyRemoteType('Hybrid work schedule available', null, null);
+    expect(result.remoteType).toBe('hybrid');
+  });
+
+  it('does NOT classify as hybrid for remote + onsite without "hybrid" keyword', () => {
+    // "must work on-site some days, but remote work also available"
+    const result = classifyRemoteType('Must work on-site but remote work also available', null, null);
+    // Should not be hybrid — no explicit "hybrid" word
+    expect(result.remoteType).not.toBe('hybrid');
+  });
+
+  it('returns unknown with remote_ambiguous flag for contradictory signals', () => {
+    // Both remote signal and explicit on-site signal present
+    const result = classifyRemoteType('This is a fully remote position.', 'on-site only', null);
+    expect(result.remoteType).toBe('unknown');
+    expect(result.flags).toContain('remote_ambiguous');
+  });
+});
+
+// ============================================================
+// MONTH-NAME DATE PARSING — should return null
+// ============================================================
+
+describe('parseIsoDate month-name dates', () => {
+  it('returns null for US-style month-name dates', () => {
+    expect(parseIsoDate('March 15, 2026')).toBeNull();
+  });
+
+  it('returns null for "15 March 2026" format', () => {
+    expect(parseIsoDate('15 March 2026')).toBeNull();
+  });
+
+  it('returns null for abbreviated month names', () => {
+    expect(parseIsoDate('Mar 15, 2026')).toBeNull();
+  });
+
+  it('returns valid result for ISO 8601', () => {
+    expect(parseIsoDate('2026-03-15')).toBe('2026-03-15');
+  });
+
+  it('returns valid result for slash format', () => {
+    const result = parseIsoDate('03/15/2026');
+    expect(result).not.toBeNull(); // should parse MM/DD/YYYY
+  });
+});
+
+// ============================================================
+// TRACKING PARAM REMOVAL — case-insensitive
+// ============================================================
+
+describe('canonicalizeUrl tracking params case-insensitive removal', () => {
+  it('removes UTM_SOURCE (uppercase)', () => {
+    const url = canonicalizeUrl('https://example.com/job?UTM_SOURCE=email&id=1');
+    expect(url).not.toContain('UTM_SOURCE');
+    expect(url).toContain('id=1');
+  });
+
+  it('removes Utm_Medium (mixed case)', () => {
+    const url = canonicalizeUrl('https://example.com/job?Utm_Medium=cpc');
+    expect(url).not.toContain('Utm_Medium');
+    expect(url).not.toContain('utm_medium');
+  });
+
+  it('removes utm_campaign (lowercase)', () => {
+    const url = canonicalizeUrl('https://example.com/job?utm_campaign=spring&jobid=42');
+    expect(url).not.toContain('utm_campaign');
+    expect(url).toContain('jobid=42');
+  });
+});
+
+// ============================================================
+// CLASSIFICATION — associate director not entry_level
+// ============================================================
+
+describe('classifyOpportunity associate/director patterns', () => {
+  it('does NOT classify Associate Director as entry_level', () => {
+    const result = classifyOpportunity('Associate Director of Research', 'Full-time role for experienced professionals.', null);
+    expect(result.classification).not.toBe('entry_level');
+  });
+
+  it('does NOT classify Senior Associate as entry_level', () => {
+    const result = classifyOpportunity('Senior Associate Scientist', 'Research role requiring 3+ years experience.', null);
+    expect(result.classification).not.toBe('entry_level');
+  });
+
+  it('does classify research fellowship as fellowship', () => {
+    const result = classifyOpportunity('Research Fellowship', 'Summer research fellowship for students.', null);
+    expect(result.classification).toBe('fellowship');
+  });
+});

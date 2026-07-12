@@ -58,6 +58,8 @@ const W_UNRELATED_DEPT = -20;          // clearly unrelated department
 const W_GRAD_ONLY = -15;               // explicitly restricted to graduate students
 const W_NO_URL = -10;                  // no application URL
 const W_AMBIGUOUS_ELIGIBILITY = -5;    // eligibility field missing or ambiguous
+const W_DEADLINE_EXPIRED = -15;        // deadline has passed
+const W_DEADLINE_UPCOMING = 5;         // deadline within 90 days (soon)
 
 // ============================================================
 // TERM LISTS
@@ -203,10 +205,15 @@ const ADVANCED_DEGREE_NOT_REQUIRED_PHRASES = [
   'ba/bs/ms/phd', 'all degree levels',
 ];
 
-/** Terms suggesting master's degree is preferred or required. */
-const MASTERS_PREFERRED = [
-  "master's required", "master's preferred", "ms required", "ms preferred",
-  "msc required", "graduate degree required", "graduate students only",
+/** Terms suggesting master's degree is preferred or required. Use word-boundary regex matching. */
+const MASTERS_PREFERRED_PATTERNS = [
+  /\bmaster's required\b/i,
+  /\bmaster's preferred\b/i,
+  /\bms required\b/i,        // word boundary: won't match inside "bs or ms required"
+  /\bms preferred\b/i,
+  /\bmsc required\b/i,
+  /\bgraduate degree required\b/i,
+  /\bgraduate students only\b/i,
 ];
 
 /** Terms indicating restriction to graduate students. */
@@ -386,7 +393,7 @@ export function scoreIngestionCandidate(
   // Check both title and description, but distinguish required from preferred/contextual
   const combinedForDegree = [titleLower, eligibility].join(' ');
   const needsPhD = hasAdvancedDegreeRequired(combinedForDegree);
-  const prefersMasters = !needsPhD && MASTERS_PREFERRED.some((t) => eligibility.includes(t));
+  const prefersMasters = !needsPhD && MASTERS_PREFERRED_PATTERNS.some((re) => re.test(eligibility));
 
   if (needsPhD) {
     addNegative('degree_req', W_ADVANCED_DEGREE, 'PhD, MD, or postdoc credential required');
@@ -411,10 +418,25 @@ export function scoreIngestionCandidate(
   }
 
   // --- 10. Deadline scoring (uses injected now, not wall clock) ---
-  // Note: deadline scoring is based on the reference date parameter.
-  // Past deadlines do not add/remove points here; the presence of a deadline
-  // is captured by closesAt. Callers may use now for expiry logic in Phase 2B.
-  void now; // reserved for future deadline scoring in subsequent score versions
+  if (input.closesAt) {
+    const deadlineMs = Date.parse(input.closesAt); // ISO 8601 only — safe because closesAt is validated
+    if (!isNaN(deadlineMs)) {
+      const nowMs = now.getTime();
+      if (deadlineMs < nowMs) {
+        addNegative('deadline', W_DEADLINE_EXPIRED, `deadline has passed: ${input.closesAt}`);
+      } else {
+        const daysUntil = (deadlineMs - nowMs) / 86_400_000;
+        if (daysUntil <= 90) {
+          addPositive('deadline', W_DEADLINE_UPCOMING, `deadline upcoming within 90 days: ${input.closesAt}`);
+        }
+      }
+    }
+  }
+
+  // Build final uncertainty flags list (original flags + scorer-derived flags)
+  const derivedFlags = new Set<UncertaintyFlag>(input.uncertaintyFlags);
+  if (eligibilityMissing) derivedFlags.add('eligibility_missing');
+  if (eligibilityAmbiguous) derivedFlags.add('eligibility_ambiguous');
 
   const total = Math.max(0, Math.min(100, raw));
   return {
@@ -423,5 +445,6 @@ export function scoreIngestionCandidate(
     rawTotal: raw,
     positiveReasons: positive,
     negativeReasons: negative,
+    uncertaintyFlags: [...derivedFlags],
   };
 }

@@ -105,6 +105,7 @@ export function assessDuplicate(
     return {
       matchType: 'insufficient_information',
       confidence: 0,
+      matchedIdentityKey: null,
       contributingFields: [],
       conflictingFields: [],
       reasons: ['No existing postings provided for comparison.'],
@@ -141,6 +142,7 @@ export function assessDuplicate(
     return {
       matchType: 'exact_identity',
       confidence: 1.0,
+      matchedIdentityKey: exactId.identityKey,
       contributingFields: ['identityKey'],
       conflictingFields: conflicting.length > 0 || hashChanged ? [...conflicting, ...(hashChanged && !conflicting.includes('materialHash') ? ['materialHash'] : [])] : [],
       reasons: [
@@ -162,6 +164,7 @@ export function assessDuplicate(
     return {
       matchType: 'exact_url',
       confidence: 0.95,
+      matchedIdentityKey: exactUrl.identityKey,
       contributingFields: ['canonicalUrl'],
       conflictingFields: conflicting,
       reasons: [
@@ -235,6 +238,7 @@ export function assessDuplicate(
       return {
         matchType: 'probable_same_posting',
         confidence: best.confidence,
+        matchedIdentityKey: existing.identityKey,
         contributingFields: contributing,
         conflictingFields: conflicting,
         reasons: [
@@ -252,6 +256,7 @@ export function assessDuplicate(
     return {
       matchType: 'insufficient_information',
       confidence: 0,
+      matchedIdentityKey: null,
       contributingFields: [],
       conflictingFields: [],
       reasons: [
@@ -293,6 +298,7 @@ export function assessDuplicate(
       return {
         matchType: 'possible_annual_family',
         confidence: 0.6,
+        matchedIdentityKey: annualMatches[0].existing.identityKey,
         contributingFields: ['employerNameNormalized', 'titleNormalized (family)'],
         conflictingFields: ['titleNormalized'],
         reasons: [
@@ -309,6 +315,7 @@ export function assessDuplicate(
   return {
     matchType: 'likely_distinct',
     confidence: 0.9,
+    matchedIdentityKey: null,
     contributingFields: [],
     conflictingFields: [],
     reasons: ['No identity, URL, employer+title+location, or family match found across existing postings.'],
