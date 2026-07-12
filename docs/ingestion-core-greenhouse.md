@@ -778,8 +778,8 @@ fetches.
 
 ## Scoring Version 1
 
-**Score range:** 0–100 (clamped)  
-**Score version:** 1 (increment when logic changes)  
+**Score range:** 0–100 (clamped)
+**Score version:** 1 (increment when logic changes)
 **Baseline:** 40 points before adjustments
 
 ### Positive categories
