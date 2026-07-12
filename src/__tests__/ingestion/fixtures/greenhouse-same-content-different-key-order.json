@@ -1,20 +1,20 @@
 {
   "jobs": [
     {
+      "application_deadline": "2026-07-15",
       "id": 1001001,
-      "internal_job_id": 5001,
-      "title": "Biotechnology Intern — Cell Biology",
-      "updated_at": "2026-06-15T14:00:00-07:00",
-      "requisition_id": "REQ-2026-BIO-001",
-      "location": { "name": "Long Beach, CA" },
       "absolute_url": "https://boards.greenhouse.io/labgenomicsinc/jobs/1001001",
-      "content": "<p>Same internship, same content.</p>",
-      "departments": [{ "id": 10, "name": "Research &amp; Development" }],
       "offices": [{ "id": 20, "name": "Long Beach" }],
+      "departments": [{ "id": 10, "name": "Research &amp; Development" }],
+      "location": { "name": "Long Beach, CA" },
+      "content": "<p>Lab Genomics Inc. is looking for an enthusiastic <strong>Biotechnology Intern</strong> to join our Cell Biology team for Summer 2026.</p><p>Responsibilities include cell culture maintenance, PCR assay development, and data analysis. This is a paid undergraduate internship open to current juniors and seniors pursuing a Bachelor&apos;s in Biotechnology, Biology, or a related life science field.</p><ul><li>Run qPCR and gel electrophoresis</li><li>Maintain mammalian cell lines</li><li>Assist with CRISPR editing experiments</li></ul>",
+      "title": "Biotechnology Intern — Cell Biology",
       "metadata": [],
+      "updated_at": "2026-06-15T14:00:00-07:00",
       "language": "en",
+      "internal_job_id": 5001,
       "first_published": "2026-05-01T09:00:00-07:00",
-      "application_deadline": "2026-07-15"
+      "requisition_id": "REQ-2026-BIO-001"
     }
   ],
   "meta": { "total": 1 }

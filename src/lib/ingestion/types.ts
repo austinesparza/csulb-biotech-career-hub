@@ -66,12 +66,24 @@ export type OpportunityClassification =
  * curated-layer link type persisted after officer review.
  */
 export type IngestionMatchType =
-  | 'exact_identity'       // same connector kind + board token + external posting ID
-  | 'exact_url'            // same canonical URL, different identity
-  | 'probable_same_posting' // same employer + similar title + same location
+  | 'exact_identity'        // same connector kind + board token + external posting ID
+  | 'exact_url'             // same canonical URL, different identity
+  | 'probable_same_posting' // same employer + similar title + same normalized location
   | 'possible_annual_family' // same employer + title family (year/season stripped)
-  | 'likely_distinct'      // fields differ enough to be independent postings
+  | 'likely_distinct'       // fields differ enough to be independent postings
   | 'insufficient_information'; // not enough data to determine
+
+/**
+ * Persisted-link match type for opportunity_source_links.match_type.
+ * Separate from IngestionMatchType (which is used for deduplication assessment).
+ * These values map to the match_type check constraint in opportunity_source_links.
+ */
+export type PersistedLinkMatchType =
+  | 'exact'           // canonical match: same source + identity
+  | 'probable'        // officer confirmed probable duplicate
+  | 'manual'          // manually linked by officer
+  | 'annual_family'   // officer confirmed annual/recurring program family
+  | 'alternate_source'; // same opportunity from a different source connector
 
 /**
  * Flags that indicate uncertainty in a normalized field.
@@ -88,7 +100,44 @@ export type UncertaintyFlag =
   | 'deadline_invalid'
   | 'employment_type_missing'
   | 'description_missing'
-  | 'employer_name_missing';
+  | 'employer_name_missing'
+  | 'title_missing'
+  | 'url_invalid'
+  | 'partial_response';
+
+// ============================================================
+// ERROR TYPES (aligned with source_fetch_runs.error_class)
+// ============================================================
+
+/**
+ * Error class matching the source_fetch_runs.error_class database check constraint.
+ * These are the values that can be stored in the DB error_class column.
+ *
+ * Note: not_found, server_error, and response_oversized are connector-level codes,
+ * not valid source_fetch_runs.error_class values. Use 'unexpected' or 'schema' for those.
+ */
+export type SourceFetchErrorClass =
+  | 'network'
+  | 'timeout'
+  | 'robots'
+  | 'auth'
+  | 'schema'
+  | 'rate_limit'
+  | 'unexpected';
+
+/**
+ * Connector-specific stable error code.
+ * Provides more granular information than SourceFetchErrorClass.
+ * These codes are connector-internal and must not be stored directly in error_class.
+ */
+export type ConnectorErrorCode =
+  | 'not_found'           // HTTP 404
+  | 'server_error'        // HTTP 5xx
+  | 'response_oversized'  // body exceeded maxResponseBytes
+  | 'invalid_json'        // body is not valid JSON
+  | 'invalid_shape'       // JSON does not match expected schema
+  | 'invalid_config'      // configuration parameter is invalid
+  | 'redirect_rejected';  // 3xx response rejected per redirect policy
 
 // ============================================================
 // NORMALIZED POSTING
@@ -166,6 +215,19 @@ export interface NormalizedSourcePosting {
   descriptionText: string | null;
   language: string | null;
 
+  // --- Source metadata ---
+  /**
+   * ISO timestamp of the last update per the source ATS (e.g. Greenhouse updated_at).
+   * Null when not provided by the source.
+   */
+  sourceUpdatedAt: string | null;
+  /**
+   * Structured metadata from the source (e.g. Greenhouse metadata[] array).
+   * Stored as a parsed value for normalized_json storage.
+   * Null when not provided. Must not be included in scoring unless explicitly supported.
+   */
+  sourceMetadata: unknown | null;
+
   // --- Scoring ---
   relevanceScore: number;
   relevanceScoreVersion: number;
@@ -235,41 +297,53 @@ export interface DuplicateAssessment {
 // ============================================================
 
 /**
+ * A per-record issue encountered during normalization.
+ * Used when some records succeed and others fail (partial result).
+ * Must not include raw descriptions or PII in the message.
+ */
+export interface ConnectorIssue {
+  /** Safe identifier for the affected record (e.g. job ID or title stub), or null. */
+  safeId: string | null;
+  /** Stable machine-readable issue code. */
+  code: ConnectorErrorCode;
+  /** Human-readable non-sensitive description of the issue. */
+  message: string;
+}
+
+/**
  * Typed error returned by a connector when a fetch cannot succeed.
  * Callers must not throw unstructured strings; use this type instead.
  *
- * `kind` maps to the error_class check constraint in source_fetch_runs.
+ * errorClass maps to the source_fetch_runs.error_class database check constraint.
+ * code provides connector-specific granular information and must not be stored
+ * directly in error_class.
  */
 export interface ConnectorError {
-  kind:
-    | 'network'
-    | 'timeout'
-    | 'robots'
-    | 'auth'
-    | 'schema'
-    | 'rate_limit'
-    | 'not_found'
-    | 'server_error'
-    | 'oversized'
-    | 'unexpected';
+  /** Maps to source_fetch_runs.error_class. */
+  errorClass: SourceFetchErrorClass;
+  /** Connector-specific stable code (more granular than errorClass). */
+  code: ConnectorErrorCode | SourceFetchErrorClass;
   message: string;
   httpStatus?: number;
 }
 
 /**
  * The complete result of a single connector fetch operation.
+ * Discriminated union on `ok`:
+ *   - ok: true  → candidates present, error null
+ *   - ok: false → candidates empty, error present
  *
- * When ok is true, candidates contains all normalized postings from the response.
- * When ok is false, error describes what went wrong.
- * rawResponseText is always captured when available for provenance storage.
+ * rawResponseText is captured when safely available for provenance storage.
+ * Never log rawResponseText in production.
+ *
+ * issues may be non-empty even when ok: true (partial normalization failures).
  */
-export interface ConnectorFetchResult {
-  ok: boolean;
-  /** All normalized candidates produced from this fetch. Empty on error. */
-  candidates: NormalizedSourcePosting[];
+export type ConnectorFetchResult = ConnectorFetchSuccess | ConnectorFetchFailure;
+
+interface ConnectorFetchBase {
   /**
    * Raw response body text, preserved for payload storage.
-   * May be truncated if the response exceeded the size limit.
+   * Bounded to maxResponseBytes; null when unavailable or oversized.
    * Never log this value in production.
    */
   rawResponseText: string | null;
@@ -281,9 +355,30 @@ export interface ConnectorFetchResult {
   contentType: string | null;
   etag: string | null;
   lastModified: string | null;
-  error: ConnectorError | null;
   /** ISO timestamp when this fetch was initiated. */
   fetchedAt: string;
+  /** Total number of raw records seen in the response (before filtering/normalization). */
+  recordsSeen: number;
+  /** Number of records that were successfully normalized. */
+  recordsNormalized: number;
+  /** Number of records skipped due to normalization errors or invalid data. */
+  recordsSkipped: number;
+  /** Per-record issues encountered during normalization. Never contains raw descriptions. */
+  issues: ConnectorIssue[];
+}
+
+export interface ConnectorFetchSuccess extends ConnectorFetchBase {
+  ok: true;
+  /** All normalized candidates produced from this fetch. May be empty for empty boards. */
+  candidates: NormalizedSourcePosting[];
+  error: null;
+}
+
+export interface ConnectorFetchFailure extends ConnectorFetchBase {
+  ok: false;
+  /** Always empty on failure. */
+  candidates: [];
+  error: ConnectorError;
 }
 
 // ============================================================
@@ -314,9 +409,15 @@ export interface IngestionCandidate {
 export interface GreenhouseConnectorConfig {
   /** Board token (e.g. "mycompany"). Validated before use. */
   boardToken: string;
-  /** Fetch timeout in milliseconds. Defaults to 30 000. */
+  /**
+   * Fetch timeout in milliseconds. Defaults to 30 000.
+   * Must be a finite integer in the range [100, 120000].
+   */
   timeoutMs?: number;
-  /** Maximum response size in bytes. Defaults to 10 485 760 (10 MiB). */
+  /**
+   * Maximum response size in bytes. Defaults to 10 485 760 (10 MiB).
+   * Must be a finite integer in the range [1024, 20971520].
+   */
   maxResponseBytes?: number;
   /**
    * Dependency-injected fetch function for testing.

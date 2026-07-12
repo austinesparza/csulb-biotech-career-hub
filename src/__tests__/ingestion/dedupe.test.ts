@@ -9,6 +9,7 @@ const BASE_CANDIDATE: DedupeCandidate = {
   titleNormalized: 'biotechnology intern cell biology',
   locationNormalized: 'long beach, ca',
   departments: ['Research & Development'],
+  materialHash: null,
 };
 
 describe('assessDuplicate', () => {
@@ -70,6 +71,7 @@ describe('assessDuplicate', () => {
         titleNormalized: 'biotechnology intern cell biology', // same title
         locationNormalized: 'long beach, ca',
         departments: ['Research & Development'],
+  materialHash: null,
       }];
       const result = assessDuplicate(BASE_CANDIDATE, existing);
       expect(result.matchType).toBe('probable_same_posting');
@@ -92,6 +94,7 @@ describe('assessDuplicate', () => {
         titleNormalized: 'fall 2024 biotech internship program',
         locationNormalized: 'long beach, ca',
         departments: ['Research & Development'],
+  materialHash: null,
       }];
       const candidate: DedupeCandidate = {
         identityKey: 'greenhouse:labgenomicsinc:3333333',
@@ -100,6 +103,7 @@ describe('assessDuplicate', () => {
         titleNormalized: 'summer 2026 biotech internship program',
         locationNormalized: 'long beach, ca',
         departments: ['Research & Development'],
+  materialHash: null,
       };
       const result = assessDuplicate(candidate, existing);
       expect(result.matchType).toBe('possible_annual_family');
@@ -116,6 +120,7 @@ describe('assessDuplicate', () => {
         titleNormalized: 'software engineer senior',
         locationNormalized: 'new york, ny',
         departments: ['Engineering'],
+  materialHash: null,
       }];
       const result = assessDuplicate(BASE_CANDIDATE, existing);
       expect(result.matchType).toBe('likely_distinct');

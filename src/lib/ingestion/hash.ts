@@ -110,6 +110,12 @@ export function makeGreenhouseIdentityKey(boardToken: string, jobPostId: string)
  *   - offices            Sorted array of office names
  *   - closesAt           Parsed application deadline (ISO date or null)
  *   - deadlineKind       Interpretation of the deadline (hard / rolling / unknown)
+ *   - descriptionNormalized  Whitespace/HTML-normalized plain text description.
+ *                            HTML-only formatting changes (bold, italic, etc.) do not
+ *                            alter this value; meaningful text changes do.
+ *   - employmentType     Normalized employment type string (or null)
+ *   - classification     Classified opportunity type (internship, research, etc.)
+ *   - remoteType         Work-location classification (remote, hybrid, onsite, unknown)
  *
  * Excluded fields (non-material — do NOT add these to the hash):
  *   - identityKey        Identity itself, not content
@@ -125,6 +131,9 @@ export function makeGreenhouseIdentityKey(boardToken: string, jobPostId: string)
  *   - externalPostingId  Part of identity, not content
  *   - requisitionId      Internal HR tracking; changes do not indicate public
  *                        content change
+ *   - updated_at         Greenhouse server timestamp; changes on any server edit
+ *   - sourceUpdatedAt    Same as updated_at — server metadata, not content
+ *   - sourceMetadata     Source-side metadata; not public-facing content
  */
 export interface GreenhouseMaterialFields {
   titleRaw: string | null;
@@ -134,6 +143,14 @@ export interface GreenhouseMaterialFields {
   offices: string[];     // sorted
   closesAt: string | null;
   deadlineKind: string;
+  /** Whitespace/HTML-normalized description text. Use htmlToText() output. */
+  descriptionNormalized: string | null;
+  /** Normalized employment type (e.g. 'full_time', 'internship') or null. */
+  employmentType: string | null;
+  /** Classified opportunity type. */
+  classification: string;
+  /** Work-location classification. */
+  remoteType: string;
 }
 
 /**
@@ -151,6 +168,10 @@ export function makeGreenhouseMaterialHash(fields: GreenhouseMaterialFields): st
     offices: [...fields.offices].sort(),
     closesAt: fields.closesAt,
     deadlineKind: fields.deadlineKind,
+    descriptionNormalized: fields.descriptionNormalized,
+    employmentType: fields.employmentType,
+    classification: fields.classification,
+    remoteType: fields.remoteType,
   };
   return sha256Hex(stableSerialize(normalized));
 }

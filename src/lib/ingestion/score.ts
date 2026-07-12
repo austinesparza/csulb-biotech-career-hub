@@ -100,22 +100,62 @@ const UNRELATED_DEPARTMENTS = [
   'customer service', 'call center', 'warehouse', 'supply chain',
 ];
 
-/** Location terms indicating Southern California accessibility. */
-const SOCAL_LOCATIONS = [
-  'long beach', 'los angeles', 'la', 'orange county', 'irvine', 'anaheim',
-  'carson', 'torrance', 'compton', 'el segundo', 'thousand oaks', 'camarillo',
-  'ventura', 'san diego', 'santa ana', 'pomona', 'pasadena', 'burbank',
-  'glendale', 'culver city', 'santa monica', 'manhattan beach', 'hawthorne',
-  'inglewood', 'gardena', 'cerritos', 'fullerton', 'la jolla', 'san clemente',
-  'south bay', 'socal', 'southern california', 'california, usa',
+/**
+ * Southern California location patterns.
+ * Each is a full city/county/regional name that must match at a token boundary
+ * (wrapped with spaces when checked) to avoid false positives.
+ *
+ * Do NOT include bare "la" — it would match Atlanta, Malaysia, Philadelphia, etc.
+ * Do NOT include bare "california" — Northern California is not SoCal.
+ * Use explicit city/county names or "southern california" / "socal".
+ */
+const SOCAL_LOCATION_PATTERNS: RegExp[] = [
+  /\blong beach\b/,
+  /\blos angeles\b/,
+  /\borange county\b/,
+  /\birvine\b/,
+  /\banaheim\b/,
+  /\bcarson\b/,
+  /\btorrance\b/,
+  /\bcompton\b/,
+  /\bel segundo\b/,
+  /\bthousand oaks\b/,
+  /\bcamarillo\b/,
+  /\bventura\b/,
+  /\bsan diego\b/,
+  /\bsanta ana\b/,
+  /\bpomona\b/,
+  /\bpasadena\b/,
+  /\bburbank\b/,
+  /\bglendale\b/,
+  /\bculver city\b/,
+  /\bsanta monica\b/,
+  /\bmanhattan beach\b/,
+  /\bhawthorne\b/,
+  /\binglewood\b/,
+  /\bgardena\b/,
+  /\bcerritos\b/,
+  /\bfullerton\b/,
+  /\bla jolla\b/,
+  /\bsan clemente\b/,
+  /\bsouth bay\b/,
+  /\bsocal\b/,
+  /\bsouthern california\b/,
 ];
 
-/** Eligibility terms indicating undergrad accessibility. */
+/**
+ * Eligibility terms indicating undergrad accessibility.
+ * Do NOT include bare 'junior' or 'senior' — these appear in seniority titles
+ * (Junior Analyst, Senior Scientist). Require student-context phrases instead.
+ */
 const UNDERGRAD_TERMS = [
   'undergraduate', 'undergrad', "bachelor's", 'bachelor', 'bs student',
-  'ba student', 'junior', 'senior', 'sophomore', 'freshman', 'all majors',
+  'ba student', 'sophomore', 'freshman', 'all majors',
   'current students', 'university students', 'college students',
   'pursuing a degree', 'pursuing a bachelor',
+  // Student-context phrases for junior/senior
+  'college junior', 'rising junior', 'junior standing', 'junior year',
+  'college senior', 'rising senior', 'senior standing', 'senior year',
 ];
 
 /** Eligibility terms indicating recent-graduate accessibility. */
@@ -124,10 +164,14 @@ const RECENT_GRAD_TERMS = [
   '0-1 year', '0-2 year', 'no experience required', 'new graduates',
 ];
 
-/** Title terms indicating excessive seniority (strong signal). */
+/**
+ * Title terms indicating excessive seniority (strong signal).
+ * Do NOT include bare 'fellow' — student/research fellowships are not seniority.
+ * "Postdoctoral Fellow" and "Research Fellow" should not be penalized as seniority.
+ */
 const SENIORITY_STRONG = [
   'vice president', 'vp ', 'director', 'head of', 'chief', 'principal',
-  'staff engineer', 'distinguished', 'fellow', // "fellow" in seniority context
+  'staff engineer', 'distinguished',
   'senior director', 'group lead',
 ];
 
@@ -136,10 +180,27 @@ const SENIORITY_MODERATE = [
   ' senior ', 'sr.', 'sr ', 'lead ', 'manager', ' iv ', ' iii ',
 ];
 
-/** Credential/degree terms indicating advanced-degree requirement. */
-const ADVANCED_DEGREE_REQUIRED = [
-  'phd', 'ph.d', 'ph.d.', 'doctorate', 'md/', 'md required', 'm.d.',
+/**
+ * Degree-required phrases — used only in minimum/required qualifications context.
+ * These must appear in phrases indicating required credentials, not just any mention.
+ */
+const ADVANCED_DEGREE_REQUIRED_PHRASES = [
+  'phd required', 'ph.d required', 'ph.d. required', 'doctorate required',
+  'md required', 'm.d. required', 'phd or equivalent',
   'postdoc', 'post-doc', 'postdoctoral',
+  'must have a phd', 'must have ph.d', 'minimum.*phd', 'requires.*phd',
+  'phd.*minimum', 'phd.*required',
+];
+
+/**
+ * Phrases that contextualize PhD/MD as preferred, accepted, or contextual
+ * (not required). These should NOT trigger the advanced-degree penalty.
+ */
+const ADVANCED_DEGREE_NOT_REQUIRED_PHRASES = [
+  'phd preferred', 'ph.d preferred', 'phd or ms', 'bs/ms/phd',
+  'bs ms phd', 'phd a plus', 'works with phd', 'collaborate with phd',
+  'phd scientists', 'phd candidates welcome', 'phd not required',
+  'ba/bs/ms/phd', 'all degree levels',
 ];
 
 /** Terms suggesting master's degree is preferred or required. */
@@ -150,7 +211,7 @@ const MASTERS_PREFERRED = [
 
 /** Terms indicating restriction to graduate students. */
 const GRAD_ONLY = [
-  'graduate students only', 'graduate students only', 'phd students only',
+  'graduate students only', 'phd students only',
   'doctoral students only', 'must be enrolled in a graduate program',
 ];
 
@@ -174,6 +235,44 @@ export interface ScoringInput {
 }
 
 // ============================================================
+// SCORING HELPERS
+// ============================================================
+
+/**
+ * Test whether a string contains a phrase indicating advanced degree is *required*
+ * (not merely preferred, accepted, or contextual).
+ */
+function hasAdvancedDegreeRequired(text: string): boolean {
+  // First check if there's a "not required" or "preferred/accepted" context that overrides
+  const hasNotRequired = ADVANCED_DEGREE_NOT_REQUIRED_PHRASES.some((p) => text.includes(p));
+  if (hasNotRequired) {
+    // Only the phrases in ADVANCED_DEGREE_REQUIRED_PHRASES that aren't overridden matter
+    // For simplicity: if any not-required phrase is present, require explicit "required" language
+    return ADVANCED_DEGREE_REQUIRED_PHRASES.some((p) => {
+      const re = new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      return re.test(text);
+    });
+  }
+  // Postdoc always indicates advanced degree regardless of context
+  if (/\bpostdoc(toral)?\b|\bpost-doc\b/i.test(text)) return true;
+  // Check for explicit required/minimum phrases
+  return ADVANCED_DEGREE_REQUIRED_PHRASES.some((p) => {
+    const re = new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    return re.test(text);
+  });
+}
+
+/**
+ * Check whether a location string matches any SoCal pattern.
+ * Uses explicit token-boundary patterns to avoid false positives on "la" in
+ * Atlanta, Malaysia, Philadelphia, etc.
+ */
+function isSoCalLocation(locationNormalized: string | null): boolean {
+  if (!locationNormalized) return false;
+  return SOCAL_LOCATION_PATTERNS.some((re) => re.test(locationNormalized));
+}
+
+// ============================================================
 // SCORING FUNCTION
 // ============================================================
 
@@ -181,7 +280,8 @@ export interface ScoringInput {
  * Score an ingestion candidate deterministically.
  *
  * @param input    Normalized posting fields.
- * @param now      Reference time for deadline calculations. Defaults to Date.now().
+ * @param now      Reference time for deadline calculations.
+ *                 Always pass an explicit date in tests to avoid wall-clock dependency.
  * @returns        ScoreBreakdown with clamped total (0–100) and itemized reasons.
  */
 export function scoreIngestionCandidate(
@@ -226,6 +326,15 @@ export function scoreIngestionCandidate(
   }
 
   // --- 2. Undergraduate / recent-grad accessibility ---
+  // Derive eligibility flags from description when not already present
+  const hasDescription = !!input.descriptionText?.trim();
+  let eligibilityMissing = input.uncertaintyFlags.includes('eligibility_missing');
+  let eligibilityAmbiguous = input.uncertaintyFlags.includes('eligibility_ambiguous');
+
+  if (!hasDescription && !eligibilityMissing) {
+    eligibilityMissing = true;
+  }
+
   const isUndergrad = UNDERGRAD_TERMS.some((t) => eligibility.includes(t));
   const isRecentGrad = !isUndergrad && RECENT_GRAD_TERMS.some((t) => eligibility.includes(t));
   const isGradOnly = GRAD_ONLY.some((t) => eligibility.includes(t));
@@ -234,7 +343,11 @@ export function scoreIngestionCandidate(
     addPositive('undergrad_access', W_UNDERGRAD_EXPLICIT, 'explicitly mentions undergraduate eligibility');
   } else if (isRecentGrad) {
     addPositive('undergrad_access', W_RECENT_GRAD, 'recent-graduate or entry-level language in description');
+  } else if (hasDescription && !isGradOnly) {
+    // Content exists but no clear accessibility or exclusion signal
+    eligibilityAmbiguous = true;
   }
+
   if (isGradOnly) {
     addNegative('undergrad_access', W_GRAD_ONLY, 'description restricts eligibility to graduate students');
   }
@@ -255,7 +368,7 @@ export function scoreIngestionCandidate(
     addPositive('geography', W_REMOTE, 'remote-eligible position');
   } else if (input.remoteType === 'hybrid') {
     addPositive('geography', W_HYBRID, 'hybrid position');
-  } else if (SOCAL_LOCATIONS.some((loc) => locationLower.includes(loc))) {
+  } else if (isSoCalLocation(locationLower)) {
     addPositive('geography', W_SOCAL, `Southern California location: "${input.locationNormalized}"`);
   }
 
@@ -270,7 +383,9 @@ export function scoreIngestionCandidate(
   }
 
   // --- 6. Advanced-degree requirements ---
-  const needsPhD = ADVANCED_DEGREE_REQUIRED.some((t) => eligibility.includes(t) || titleLower.includes(t));
+  // Check both title and description, but distinguish required from preferred/contextual
+  const combinedForDegree = [titleLower, eligibility].join(' ');
+  const needsPhD = hasAdvancedDegreeRequired(combinedForDegree);
   const prefersMasters = !needsPhD && MASTERS_PREFERRED.some((t) => eligibility.includes(t));
 
   if (needsPhD) {
@@ -285,11 +400,8 @@ export function scoreIngestionCandidate(
     addNegative('unrelated_dept', W_UNRELATED_DEPT, `department not relevant to biotech career hub: "${input.department ?? input.departments.join(', ')}"`);
   }
 
-  // --- 8. Ambiguous eligibility ---
-  if (
-    input.uncertaintyFlags.includes('eligibility_missing') ||
-    input.uncertaintyFlags.includes('eligibility_ambiguous')
-  ) {
+  // --- 8. Ambiguous eligibility (derived or from flags) ---
+  if (eligibilityMissing || eligibilityAmbiguous) {
     addNegative('eligibility', W_AMBIGUOUS_ELIGIBILITY, 'eligibility information is missing or ambiguous');
   }
 
@@ -297,6 +409,12 @@ export function scoreIngestionCandidate(
   if (!input.canonicalUrl) {
     addNegative('link_quality', W_NO_URL, 'no application URL available');
   }
+
+  // --- 10. Deadline scoring (uses injected now, not wall clock) ---
+  // Note: deadline scoring is based on the reference date parameter.
+  // Past deadlines do not add/remove points here; the presence of a deadline
+  // is captured by closesAt. Callers may use now for expiry logic in Phase 2B.
+  void now; // reserved for future deadline scoring in subsequent score versions
 
   const total = Math.max(0, Math.min(100, raw));
   return {

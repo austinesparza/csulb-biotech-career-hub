@@ -147,9 +147,13 @@ export function normalizeEmployerName(name: string | null | undefined): string |
 
 /**
  * Normalize a job title for comparison and storage.
- * Preserves season/year, scientific terms, degree level markers, and roman numerals.
+ * Preserves season/year, scientific terms, degree level markers, roman numerals,
+ * and accented/non-Latin letters (Unicode word characters are preserved).
  * Applies: NFC → entity decode → HTML strip → whitespace collapse → lowercase →
  *          dash normalization → punctuation strip (except slashes).
+ *
+ * Uses Unicode-aware character class [\p{L}\p{N}] to preserve accented and
+ * non-Latin letters rather than the ASCII-only \w.
  */
 export function normalizeJobTitle(title: string | null | undefined): string | null {
   if (!title) return null;
@@ -157,8 +161,8 @@ export function normalizeJobTitle(title: string | null | undefined): string | nu
   let s = normalizeWhitespace(decoded)
     .toLowerCase()
     .replace(/[–—]/g, '-')
-    // Remove leading/trailing punctuation but keep internal slashes and hyphens
-    .replace(/[^\w\s\-\/]/g, ' ')
+    // Keep Unicode letters, digits, whitespace, hyphens, and slashes; replace other chars with space
+    .replace(/[^\p{L}\p{N}\s\-\/]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   return s || null;
@@ -183,7 +187,8 @@ export function normalizeJobTitleFamily(title: string | null | undefined): strin
 
 /**
  * Normalize a location string for comparison.
- * Preserves city, state, country, and compound geographic names.
+ * Preserves city, state, country, compound geographic names, and accented/non-Latin letters.
+ * Uses Unicode-aware character class to avoid stripping non-ASCII letters.
  * Returns null for empty/null input.
  */
 export function normalizeLocation(location: string | null | undefined): string | null {
@@ -191,7 +196,8 @@ export function normalizeLocation(location: string | null | undefined): string |
   const decoded = decodeHtmlEntities(normalizeUnicode(location));
   const s = normalizeWhitespace(decoded)
     .toLowerCase()
-    .replace(/[^\w\s,.-]/g, ' ')
+    // Keep Unicode letters, digits, whitespace, commas, periods, hyphens
+    .replace(/[^\p{L}\p{N}\s,.\-]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   return s || null;
@@ -219,8 +225,9 @@ export function normalizeDepartment(dept: string | null | undefined): string | n
 /**
  * Known tracking parameters to strip from URLs.
  * Parameters required to reach the actual posting must be preserved.
+ * Stored in lowercase; comparison is case-insensitive.
  */
-const TRACKING_PARAMS = new Set([
+const TRACKING_PARAMS_LOWER = new Set([
   'utm_source',
   'utm_medium',
   'utm_campaign',
@@ -237,18 +244,18 @@ const TRACKING_PARAMS = new Set([
   'mc_eid',
   '_hsenc',
   '_hsmi',
-  'hsCtaTracking',
+  'hsctaTracking',
 ]);
 
 /**
  * Canonicalize a URL:
- * - Require http or https.
+ * - Require http or https scheme; reject javascript:, data:, and other non-HTTP schemes.
  * - Lowercase protocol and hostname.
  * - Remove URL fragments.
- * - Remove known tracking parameters.
+ * - Remove known tracking parameters (case-insensitively).
  * - Preserve all other parameters (they may be required to reach the posting).
  * - Remove trailing slash from path (not from domain root).
- * Returns null for unparseable, non-HTTP, or empty input.
+ * Returns null for unparseable, non-HTTP(S), or empty input.
  */
 export function canonicalizeUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -265,8 +272,15 @@ export function canonicalizeUrl(url: string | null | undefined): string | null {
   u.protocol = u.protocol.toLowerCase();
   u.hostname = u.hostname.toLowerCase();
   u.hash = '';
-  for (const param of TRACKING_PARAMS) {
-    u.searchParams.delete(param);
+  // Remove tracking params case-insensitively
+  const keysToDelete: string[] = [];
+  for (const key of u.searchParams.keys()) {
+    if (TRACKING_PARAMS_LOWER.has(key.toLowerCase())) {
+      keysToDelete.push(key);
+    }
+  }
+  for (const key of keysToDelete) {
+    u.searchParams.delete(key);
   }
   let result = u.toString();
   // Remove trailing slash only when path is non-root (avoid stripping "https://example.com")
@@ -281,12 +295,22 @@ export function canonicalizeUrl(url: string | null | undefined): string | null {
 // ============================================================
 
 const REMOTE_SIGNALS = /\bremote\b/i;
+/**
+ * Hybrid requires explicit "hybrid" language.
+ * Do not classify as hybrid based on remote+onsite signals alone.
+ */
 const HYBRID_SIGNALS = /\bhybrid\b/i;
 const ONSITE_SIGNALS = /\b(on-?site|in-?office|in person|on ?campus|in-?person)\b/i;
 
 /**
  * Classify the remote/hybrid/onsite status from title, location, and description text.
- * Returns 'unknown' when signals are absent or contradictory.
+ *
+ * Rules:
+ * - 'hybrid' only when explicit "hybrid" language is present.
+ * - Contradictory remote AND onsite signals (without "hybrid") → 'unknown' + remote_ambiguous.
+ * - 'remote' only when remote signal present and no onsite signal.
+ * - 'onsite' only when onsite signal present and no remote signal.
+ * - 'unknown' when no signal, or contradictory without hybrid language.
  *
  * Does not infer from partial words (e.g. "remotely" or "in-remotely").
  */
@@ -304,7 +328,8 @@ export function classifyRemoteType(
   const hasOnsite = ONSITE_SIGNALS.test(combined);
 
   if (hasHybrid) return { remoteType: 'hybrid', flags: [] };
-  if (hasRemote && hasOnsite) return { remoteType: 'hybrid', flags: [] };
+  // Contradictory signals without explicit hybrid language → unknown + remote_ambiguous
+  if (hasRemote && hasOnsite) return { remoteType: 'unknown', flags: ['remote_ambiguous'] };
   if (hasRemote) return { remoteType: 'remote', flags: [] };
   if (hasOnsite) return { remoteType: 'onsite', flags: [] };
 
@@ -338,9 +363,19 @@ export function normalizeEmploymentType(value: string | null | undefined): strin
 // ============================================================
 
 const INTERNSHIP_SIGNALS = /\bintern(ship)?\b/i;
-const FELLOWSHIP_SIGNALS = /\bfellowship\b|\bfellow\b/i;
+/**
+ * Fellowship signals: match "fellowship" but not bare "fellow" which appears in
+ * "postdoctoral fellow", "research fellow", "senior fellow", etc. and should not
+ * be classified as a student fellowship.
+ */
+const FELLOWSHIP_SIGNALS = /\bfellowship\b/i;
 const RESEARCH_SIGNALS = /\bresearch\b|\bscientist\b|\banalyst\b/i;
-const ENTRY_SIGNALS = /\bentry.?level\b|\bjunior\b|\bassociate\b|\bnew grad\b/i;
+/**
+ * Entry-level signals: do NOT include bare "associate" (which appears in
+ * "Associate Director", "Senior Associate", etc.) or bare "junior"/"senior"
+ * (which appear in seniority titles). Use "entry-level" explicitly or "new grad".
+ */
+const ENTRY_SIGNALS = /\bentry.?level\b|\bnew grad\b|\bnew graduates?\b/i;
 
 /**
  * Classify an opportunity from its title and employment-type string.
@@ -375,23 +410,41 @@ export function classifyOpportunity(
 // ============================================================
 
 /**
- * Parse a date string to ISO YYYY-MM-DD.
- * Handles:
- * - ISO 8601 with or without time component
- * - MM/DD/YYYY and YYYY/MM/DD
- * - Month-name formats ("March 15, 2026")
+ * Parse a date string to ISO YYYY-MM-DD using only explicit deterministic formats.
+ * Supported formats:
+ * - ISO 8601 date: YYYY-MM-DD
+ * - ISO 8601 datetime with T or space separator: YYYY-MM-DDTHH:MM:SS... or YYYY-MM-DD HH:MM:SS...
+ * - ISO 8601 datetime with timezone offset: YYYY-MM-DDTHH:MM:SS±HH:MM
+ * - MM/DD/YYYY or M/D/YYYY
+ * - YYYY/MM/DD
  *
- * Returns null for invalid, empty, or non-date input.
- * Uses UTC to avoid timezone-dependent day shifts.
+ * Unsupported formats (month names, locale-dependent strings) return null.
+ * This avoids implementation-dependent behavior in Date.parse() for non-ISO strings.
+ *
+ * Returns null for invalid, empty, unsupported, or non-date input.
+ * Uses UTC arithmetic to avoid timezone-dependent day shifts.
  */
 export function parseIsoDate(value: string | null | undefined): string | null {
   if (!value) return null;
   const s = normalizeWhitespace(value);
   if (!s) return null;
 
-  // ISO 8601 with optional time: 2026-01-15 or 2026-01-15T...
+  // ISO 8601 with optional time component: 2026-01-15 or 2026-01-15T14:30:00Z etc.
   const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$/);
   if (isoMatch) {
+    // For datetime strings with timezone offset, extract UTC date deterministically
+    if (s.includes('T') || s.includes(' ')) {
+      const tzMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})([+-]\d{2}:\d{2}|Z)?/);
+      if (tzMatch) {
+        // Parse using Date for timezone-offset handling, then extract UTC date
+        const d = new Date(tzMatch[0].endsWith('Z') || tzMatch[0].includes('+') || (tzMatch[7] && tzMatch[7].startsWith('-'))
+          ? tzMatch[0]
+          : tzMatch[0] + 'Z');
+        if (!Number.isNaN(d.getTime())) {
+          return toIsoDateSafe(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+        }
+      }
+    }
     return toIsoDateSafe(Number(isoMatch[1]), Number(isoMatch[2]), Number(isoMatch[3]));
   }
 
@@ -407,16 +460,8 @@ export function parseIsoDate(value: string | null | undefined): string | null {
     return toIsoDateSafe(Number(ymdSlash[1]), Number(ymdSlash[2]), Number(ymdSlash[3]));
   }
 
-  // Date with timezone offset: attempt Date.parse on ISO strings that include time
-  const parsed = new Date(s);
-  if (!Number.isNaN(parsed.getTime()) && parsed.getUTCFullYear() > 2000) {
-    return toIsoDateSafe(
-      parsed.getUTCFullYear(),
-      parsed.getUTCMonth() + 1,
-      parsed.getUTCDate(),
-    );
-  }
-
+  // All other formats (month names, natural language, etc.) are unsupported.
+  // Do not use Date.parse() for non-ISO strings — implementation-dependent.
   return null;
 }
 

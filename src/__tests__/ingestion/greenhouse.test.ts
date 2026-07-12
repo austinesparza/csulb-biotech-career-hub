@@ -338,7 +338,7 @@ describe('fetchGreenhouseJobs', () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.error?.kind).toBe('schema');
+    expect(result.error?.errorClass).toBe('schema');
     expect(fetchCalled).toBe(false);
   });
 
@@ -349,7 +349,7 @@ describe('fetchGreenhouseJobs', () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.error?.kind).toBe('not_found');
+    expect(result.error?.code).toBe('not_found');
     expect(result.error?.httpStatus).toBe(404);
     expect(result.httpStatus).toBe(404);
   });
@@ -361,7 +361,7 @@ describe('fetchGreenhouseJobs', () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.error?.kind).toBe('rate_limit');
+    expect(result.error?.errorClass).toBe('rate_limit');
     expect(result.error?.httpStatus).toBe(429);
   });
 
@@ -372,7 +372,7 @@ describe('fetchGreenhouseJobs', () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.error?.kind).toBe('server_error');
+    expect(result.error?.code).toBe('server_error');
     expect(result.error?.httpStatus).toBe(500);
   });
 
@@ -384,7 +384,7 @@ describe('fetchGreenhouseJobs', () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.error?.kind).toBe('schema');
+    expect(result.error?.errorClass).toBe('schema');
     // Raw text should be preserved for debugging
     expect(result.rawResponseText).not.toBeNull();
   });
@@ -397,7 +397,7 @@ describe('fetchGreenhouseJobs', () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.error?.kind).toBe('schema');
+    expect(result.error?.errorClass).toBe('schema');
   });
 
   it('handles empty jobs array', async () => {
@@ -420,7 +420,7 @@ describe('fetchGreenhouseJobs', () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.error?.kind).toBe('timeout');
+    expect(result.error?.errorClass).toBe('timeout');
     expect(result.rawResponseText).toBeNull();
   });
 
@@ -431,20 +431,21 @@ describe('fetchGreenhouseJobs', () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.error?.kind).toBe('network');
+    expect(result.error?.errorClass).toBe('network');
   });
 
   it('handles oversized response', async () => {
-    // Create a large body that exceeds the 1-byte limit we set for this test
+    // Create a body that exceeds the minimum valid limit (1024 bytes)
+    // The oversized body is ~10KB (10 * ~1020-char job objects)
     const oversizedBody = '{"jobs":' + JSON.stringify(new Array(10).fill({ id: 1, title: 'x'.repeat(1000) })) + '}';
     const result = await fetchGreenhouseJobs({
       boardToken: 'labgenomicsinc',
       fetchFn: mockFetch(oversizedBody),
-      maxResponseBytes: 1, // tiny limit for testing
+      maxResponseBytes: 1024, // valid minimum — body exceeds this
     });
 
     expect(result.ok).toBe(false);
-    expect(result.error?.kind).toBe('oversized');
+    expect(result.error?.code).toBe('response_oversized');
   });
 
   it('includes fetchedAt timestamp in result', async () => {

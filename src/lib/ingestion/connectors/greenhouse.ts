@@ -8,8 +8,12 @@
  * - No authentication or application-submission endpoints.
  * - Board token is validated before the URL is constructed.
  * - No arbitrary fetch URLs accepted; URL is always built internally.
- * - Bounded response-size limit (default 10 MiB).
- * - Abort timeout (default 30 s).
+ * - Bounded response-size limit (default 10 MiB, max 20 MiB).
+ * - Abort timeout covers the COMPLETE operation including body streaming
+ *   and normalization (default 30 s, max 120 s).
+ * - Timer is cleared exactly once after the entire operation completes or fails.
+ * - Redirect mode is 'manual'; all 3xx responses are rejected as errors.
+ * - Non-2xx response bodies are read with the same bounded reader (not unbounded text()).
  * - Raw response body is never logged.
  * - No N+1 individual job-detail fetches in this phase.
  * - No Supabase client; no database writes.
@@ -20,9 +24,12 @@
 
 import type {
   ConnectorError,
+  ConnectorErrorCode,
   ConnectorFetchResult,
+  ConnectorIssue,
   GreenhouseConnectorConfig,
   NormalizedSourcePosting,
+  SourceFetchErrorClass,
   UncertaintyFlag,
 } from '../types';
 import {
@@ -55,6 +62,18 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 
 /** Default maximum response size in bytes (10 MiB). */
 const DEFAULT_MAX_RESPONSE_BYTES = 10 * 1024 * 1024;
+
+/** Hard lower bound for timeoutMs (100 ms). */
+const MIN_TIMEOUT_MS = 100;
+
+/** Hard upper bound for timeoutMs (120 s). */
+const MAX_TIMEOUT_MS = 120_000;
+
+/** Hard lower bound for maxResponseBytes (1 KiB). */
+const MIN_RESPONSE_BYTES = 1024;
+
+/** Hard upper bound for maxResponseBytes (20 MiB). */
+const MAX_RESPONSE_BYTES = 20 * 1024 * 1024;
 
 /** Greenhouse boards API base URL. Never accept an externally supplied URL. */
 const GREENHOUSE_BASE_URL = 'https://boards-api.greenhouse.io';
@@ -90,6 +109,32 @@ export function validateBoardToken(token: string): { valid: true } | { valid: fa
     };
   }
   return { valid: true };
+}
+
+/**
+ * Validate timeoutMs: must be a finite integer in [MIN_TIMEOUT_MS, MAX_TIMEOUT_MS].
+ */
+export function validateTimeoutMs(value: number): { valid: true; value: number } | { valid: false; reason: string } {
+  if (!Number.isFinite(value) || !Number.isInteger(value)) {
+    return { valid: false, reason: `timeoutMs must be a finite integer, got ${value}.` };
+  }
+  if (value < MIN_TIMEOUT_MS || value > MAX_TIMEOUT_MS) {
+    return { valid: false, reason: `timeoutMs must be between ${MIN_TIMEOUT_MS} and ${MAX_TIMEOUT_MS}, got ${value}.` };
+  }
+  return { valid: true, value };
+}
+
+/**
+ * Validate maxResponseBytes: must be a finite integer in [MIN_RESPONSE_BYTES, MAX_RESPONSE_BYTES].
+ */
+export function validateMaxResponseBytes(value: number): { valid: true; value: number } | { valid: false; reason: string } {
+  if (!Number.isFinite(value) || !Number.isInteger(value)) {
+    return { valid: false, reason: `maxResponseBytes must be a finite integer, got ${value}.` };
+  }
+  if (value < MIN_RESPONSE_BYTES || value > MAX_RESPONSE_BYTES) {
+    return { valid: false, reason: `maxResponseBytes must be between ${MIN_RESPONSE_BYTES} and ${MAX_RESPONSE_BYTES}, got ${value}.` };
+  }
+  return { valid: true, value };
 }
 
 /**
@@ -150,6 +195,7 @@ function isGreenhouseJob(value: unknown): value is GreenhouseJob {
 
 /**
  * Normalize a single Greenhouse job into a NormalizedSourcePosting.
+ * Returns the posting, or throws a ConnectorIssue if the record is invalid.
  *
  * @param job        Raw job object from the API.
  * @param boardToken Validated board token used to build the identity key.
@@ -181,7 +227,7 @@ export function normalizeGreenhouseJob(
   // --- Title ---
   const titleRaw = job.title ?? null;
   const titleNormalized = normalizeJobTitle(titleRaw);
-  if (!titleRaw) flags.push('description_missing'); // treat missing title as missing content
+  if (!titleRaw) flags.push('title_missing');
 
   // --- Location ---
   const locationRaw = job.location?.name ?? null;
@@ -189,14 +235,26 @@ export function normalizeGreenhouseJob(
   if (!locationRaw) flags.push('location_missing');
 
   // --- URL ---
+  // Do NOT fabricate a canonical URL. If absolute_url is missing, invalid,
+  // non-HTTP(S), or uses an unsupported scheme, the record is invalid and
+  // must be skipped by the caller via the ConnectorIssue mechanism.
   const rawUrl = job.absolute_url ?? null;
-  const canonicalUrl = (rawUrl ? canonicalizeUrl(rawUrl) : null) ?? '';
-  // If we can't get a canonical URL, fall back to a constructed one
-  const effectiveUrl = canonicalUrl || `${GREENHOUSE_BASE_URL}/jobs/${externalPostingId}`;
+  const canonicalUrl = rawUrl ? canonicalizeUrl(rawUrl) : null;
+  if (!canonicalUrl) {
+    flags.push('url_invalid');
+  }
 
   // --- Content ---
   const descriptionText = htmlToText(job.content);
   if (!job.content) flags.push('description_missing');
+
+  // --- Source metadata ---
+  const sourceUpdatedAt = job.updated_at ?? null;
+  // Preserve metadata deterministically (sorted by stable serialization).
+  // Do not include in scoring unless explicitly supported.
+  const sourceMetadata: unknown | null = job.metadata != null
+    ? (Array.isArray(job.metadata) ? job.metadata : null)
+    : null;
 
   // --- Departments ---
   const departmentsRaw: string[] = (job.departments ?? [])
@@ -256,21 +314,28 @@ export function normalizeGreenhouseJob(
     departments,
     classification,
     remoteType,
-    canonicalUrl: effectiveUrl || null,
+    canonicalUrl: canonicalUrl || null,
     descriptionText,
     closesAt,
     uncertaintyFlags: flags,
   });
 
   // --- Material hash ---
+  // Normalized description text is included in the hash so meaningful text
+  // changes trigger officer review. HTML-only formatting changes do not affect
+  // the normalized text and therefore do not change the hash.
   const materialHash = makeGreenhouseMaterialHash({
     titleRaw,
     locationRaw,
-    canonicalUrl: effectiveUrl,
+    canonicalUrl: canonicalUrl ?? '',
     departments,
     offices,
     closesAt,
     deadlineKind,
+    descriptionNormalized: descriptionText,
+    employmentType,
+    classification,
+    remoteType,
   });
 
   return {
@@ -287,7 +352,7 @@ export function normalizeGreenhouseJob(
     titleNormalized,
     locationRaw,
     locationNormalized,
-    canonicalUrl: effectiveUrl,
+    canonicalUrl: canonicalUrl ?? '',
     remoteType,
     employmentType,
     classification,
@@ -300,6 +365,8 @@ export function normalizeGreenhouseJob(
     deadlineKind,
     descriptionText,
     language,
+    sourceUpdatedAt,
+    sourceMetadata,
     relevanceScore: scoreBreakdown.total,
     relevanceScoreVersion: SCORE_VERSION,
     scoreBreakdown,
@@ -318,9 +385,14 @@ export function normalizeGreenhouseJob(
  * Security:
  * - Board token is validated before any network request is made.
  * - URL is always constructed internally from the validated token.
- * - Response size is bounded (DEFAULT_MAX_RESPONSE_BYTES).
- * - Request aborts after DEFAULT_TIMEOUT_MS.
+ * - Response size is bounded (maxResponseBytes).
+ * - Abort timeout covers the COMPLETE operation including body stream and normalization.
+ * - Timer is cleared exactly once.
+ * - Redirect mode is 'manual'; all 3xx responses are rejected.
+ * - Non-2xx response bodies use the same bounded reader.
  * - Raw response body is never logged.
+ * - Records with missing/invalid canonical URLs are skipped with a ConnectorIssue.
+ * - If all records fail, returns ok: false with errorClass schema.
  *
  * @param config  Connector configuration including board token and optional overrides.
  * @returns       ConnectorFetchResult with all normalized postings or a typed error.
@@ -329,158 +401,259 @@ export async function fetchGreenhouseJobs(
   config: GreenhouseConnectorConfig,
 ): Promise<ConnectorFetchResult> {
   const fetchedAt = new Date().toISOString();
-  const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  const maxBytes = config.maxResponseBytes ?? DEFAULT_MAX_RESPONSE_BYTES;
   const fetchFn = config.fetchFn ?? fetch;
 
-  // Validate token before making any request
+  // --- Config validation ---
+  // timeoutMs
+  let timeoutMs: number;
+  if (config.timeoutMs !== undefined) {
+    const tv = validateTimeoutMs(config.timeoutMs);
+    if (!tv.valid) {
+      return makeFailure({
+        errorClass: 'schema',
+        code: 'invalid_config',
+        message: tv.reason,
+      }, { fetchedAt });
+    }
+    timeoutMs = tv.value;
+  } else {
+    timeoutMs = DEFAULT_TIMEOUT_MS;
+  }
+
+  // maxResponseBytes
+  let maxBytes: number;
+  if (config.maxResponseBytes !== undefined) {
+    const bv = validateMaxResponseBytes(config.maxResponseBytes);
+    if (!bv.valid) {
+      return makeFailure({
+        errorClass: 'schema',
+        code: 'invalid_config',
+        message: bv.reason,
+      }, { fetchedAt });
+    }
+    maxBytes = bv.value;
+  } else {
+    maxBytes = DEFAULT_MAX_RESPONSE_BYTES;
+  }
+
+  // --- Token validation ---
   const tokenCheck = validateBoardToken(config.boardToken);
   if (!tokenCheck.valid) {
-    return {
-      ok: false,
-      candidates: [],
-      rawResponseText: null,
-      requestUrl: '',
-      finalUrl: null,
-      httpStatus: null,
-      contentType: null,
-      etag: null,
-      lastModified: null,
-      error: {
-        kind: 'schema',
-        message: `Invalid board token: ${tokenCheck.reason}`,
-      },
-      fetchedAt,
-    };
+    return makeFailure({
+      errorClass: 'schema',
+      code: 'invalid_config',
+      message: `Invalid board token: ${tokenCheck.reason}`,
+    }, { fetchedAt });
   }
 
   const requestUrl = buildGreenhouseUrl(config.boardToken);
+
+  // --- Timeout setup ---
+  // The controller covers the ENTIRE operation: fetch + body stream + parsing + normalization.
+  // It is cleared exactly once in the finally block after everything completes or fails.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  let response: Response;
   try {
-    response = await fetchFn(requestUrl, {
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'csulb-biotech-career-hub-ingestion/1.0 (https://github.com/austinesparza/csulb-biotech-career-hub)',
-      },
-    });
-  } catch (err: unknown) {
-    clearTimeout(timer);
-    const isAbort =
-      err instanceof Error &&
-      (err.name === 'AbortError' || err.name === 'TimeoutError');
-    return {
-      ok: false,
-      candidates: [],
-      rawResponseText: null,
-      requestUrl,
-      finalUrl: null,
-      httpStatus: null,
-      contentType: null,
-      etag: null,
-      lastModified: null,
-      error: {
-        kind: isAbort ? 'timeout' : 'network',
+    // --- Fetch (with redirect: 'manual') ---
+    let response: Response;
+    try {
+      response = await fetchFn(requestUrl, {
+        signal: controller.signal,
+        redirect: 'manual',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'csulb-biotech-career-hub-ingestion/1.0 (https://github.com/austinesparza/csulb-biotech-career-hub)',
+        },
+      });
+    } catch (err: unknown) {
+      const isAbort =
+        err instanceof Error &&
+        (err.name === 'AbortError' || err.name === 'TimeoutError');
+      return makeFailure({
+        errorClass: isAbort ? 'timeout' : 'network',
+        code: isAbort ? 'timeout' : 'network',
         message: isAbort
           ? `Request timed out after ${timeoutMs}ms.`
           : `Network error: ${err instanceof Error ? err.message : String(err)}`,
-      },
-      fetchedAt,
-    };
-  } finally {
-    clearTimeout(timer);
-  }
+      }, { fetchedAt, requestUrl });
+    }
 
-  const httpStatus = response.status;
-  const contentType = response.headers.get('content-type');
-  const etag = response.headers.get('etag');
-  const lastModified = response.headers.get('last-modified');
-  // response.url is the final URL after redirects (where available)
-  const finalUrl = response.url || null;
+    const httpStatus = response.status;
+    const contentType = response.headers.get('content-type');
+    const etag = response.headers.get('etag');
+    const lastModified = response.headers.get('last-modified');
+    const finalUrl = response.url || null;
 
-  // Handle non-2xx responses
-  if (!response.ok) {
-    // Drain body to avoid resource leak (but do not log it)
-    try { await response.text(); } catch { /* ignore */ }
-    const kind = toErrorKind(httpStatus);
-    return {
-      ok: false,
-      candidates: [],
-      rawResponseText: null,
-      requestUrl,
-      finalUrl,
-      httpStatus,
-      contentType,
-      etag,
-      lastModified,
-      error: {
-        kind,
-        message: `HTTP ${httpStatus} from Greenhouse boards API.`,
+    // --- Redirect rejection ---
+    // redirect: 'manual' causes 3xx responses to be returned as opaque redirects.
+    // We reject all 3xx responses as a security boundary.
+    if (httpStatus >= 300 && httpStatus < 400) {
+      // Drain body if present without reading it
+      try { response.body?.cancel(); } catch { /* ignore */ }
+      return makeFailure({
+        errorClass: 'unexpected',
+        code: 'redirect_rejected',
+        message: `Redirect rejected: HTTP ${httpStatus}. Redirects to arbitrary hosts are not followed.`,
         httpStatus,
-      },
-      fetchedAt,
-    };
-  }
+      }, { fetchedAt, requestUrl, finalUrl, httpStatus, contentType, etag, lastModified });
+    }
 
-  // Read body with size limit
-  let rawResponseText: string;
-  try {
-    rawResponseText = await readBoundedText(response, maxBytes);
-  } catch (err: unknown) {
-    const isOversize = err instanceof Error && err.message.includes('exceeds');
-    return {
-      ok: false,
-      candidates: [],
-      rawResponseText: null,
-      requestUrl,
-      finalUrl,
-      httpStatus,
-      contentType,
-      etag,
-      lastModified,
-      error: {
-        kind: isOversize ? 'oversized' : 'network',
+    // --- Non-2xx responses ---
+    if (!response.ok) {
+      // Read bounded error body for provenance (never log it)
+      let rawErrorText: string | null = null;
+      try {
+        rawErrorText = await readBoundedText(response, Math.min(maxBytes, 65536));
+      } catch {
+        // Oversized or unreadable — cancel and discard
+        try { response.body?.cancel(); } catch { /* ignore */ }
+      }
+      const errorClass = toErrorClass(httpStatus);
+      const code = toErrorCode(httpStatus);
+      return {
+        ok: false,
+        candidates: [],
+        rawResponseText: rawErrorText,
+        requestUrl,
+        finalUrl,
+        httpStatus,
+        contentType,
+        etag,
+        lastModified,
+        error: {
+          errorClass,
+          code,
+          message: `HTTP ${httpStatus} from Greenhouse boards API.`,
+          httpStatus,
+        },
+        fetchedAt,
+        recordsSeen: 0,
+        recordsNormalized: 0,
+        recordsSkipped: 0,
+        issues: [],
+      };
+    }
+
+    // --- Read body with size limit ---
+    let rawResponseText: string;
+    try {
+      rawResponseText = await readBoundedText(response, maxBytes);
+    } catch (err: unknown) {
+      const isOversize = err instanceof Error && err.message.includes('exceeds');
+      return makeFailure({
+        errorClass: 'schema',
+        code: isOversize ? 'response_oversized' : 'network',
         message: isOversize
           ? `Response exceeds ${maxBytes} byte limit.`
           : `Error reading response body: ${err instanceof Error ? err.message : String(err)}`,
         httpStatus,
-      },
-      fetchedAt,
-    };
-  }
+      }, { fetchedAt, requestUrl, finalUrl, httpStatus, contentType, etag, lastModified });
+    }
 
-  // Parse JSON
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(rawResponseText);
-  } catch {
-    return {
-      ok: false,
-      candidates: [],
-      rawResponseText,
-      requestUrl,
-      finalUrl,
-      httpStatus,
-      contentType,
-      etag,
-      lastModified,
-      error: {
-        kind: 'schema',
+    // --- Parse JSON ---
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rawResponseText);
+    } catch {
+      return makeFailure({
+        errorClass: 'schema',
+        code: 'invalid_json',
         message: 'Response body is not valid JSON.',
         httpStatus,
-      },
-      fetchedAt,
-    };
-  }
+      }, { fetchedAt, requestUrl, finalUrl, httpStatus, contentType, etag, lastModified, rawResponseText });
+    }
 
-  // Validate response shape
-  if (!isGreenhouseApiResponse(parsed)) {
+    // --- Validate response shape ---
+    if (!isGreenhouseApiResponse(parsed)) {
+      return makeFailure({
+        errorClass: 'schema',
+        code: 'invalid_shape',
+        message: 'Response does not match expected Greenhouse API shape (missing "jobs" array).',
+        httpStatus,
+      }, { fetchedAt, requestUrl, finalUrl, httpStatus, contentType, etag, lastModified, rawResponseText });
+    }
+
+    // --- Normalize each job ---
+    const candidates: NormalizedSourcePosting[] = [];
+    const issues: ConnectorIssue[] = [];
+    let recordsSeen = 0;
+    let recordsSkipped = 0;
+
+    for (const job of parsed.jobs) {
+      if (!isGreenhouseJob(job)) {
+        recordsSeen++;
+        recordsSkipped++;
+        issues.push({
+          safeId: null,
+          code: 'invalid_shape',
+          message: 'Job record is missing required "id" field.',
+        });
+        continue;
+      }
+      recordsSeen++;
+      const safeId = `job:${job.id}`;
+      try {
+        const posting = normalizeGreenhouseJob(job, config.boardToken, fetchedAt);
+        if (!posting.canonicalUrl) {
+          // URL is invalid or missing — skip this record
+          recordsSkipped++;
+          issues.push({
+            safeId,
+            code: 'invalid_shape',
+            message: `Job has missing, invalid, or non-HTTP(S) absolute_url.`,
+          });
+          continue;
+        }
+        candidates.push(posting);
+      } catch {
+        // Record normalization error as a structured issue (not logged)
+        recordsSkipped++;
+        issues.push({
+          safeId,
+          code: 'invalid_shape',
+          message: 'Job record failed normalization.',
+        });
+      }
+    }
+
+    const recordsNormalized = candidates.length;
+
+    // If every job failed normalization, return ok: false with errorClass schema
+    if (recordsSeen > 0 && recordsNormalized === 0 && recordsSkipped === recordsSeen) {
+      return {
+        ok: false,
+        candidates: [],
+        rawResponseText,
+        requestUrl,
+        finalUrl,
+        httpStatus,
+        contentType,
+        etag,
+        lastModified,
+        error: {
+          errorClass: 'schema',
+          code: 'invalid_shape',
+          message: `All ${recordsSeen} job records failed normalization.`,
+          httpStatus,
+        },
+        fetchedAt,
+        recordsSeen,
+        recordsNormalized: 0,
+        recordsSkipped,
+        issues,
+      };
+    }
+
+    // Partial or full success
+    const isPartial = recordsSkipped > 0;
+    if (isPartial && recordsNormalized === 0) {
+      // All records invalid but recordsSeen was 0 catch above; guard anyway
+    }
+
     return {
-      ok: false,
-      candidates: [],
+      ok: true,
+      candidates,
       rawResponseText,
       requestUrl,
       finalUrl,
@@ -488,40 +661,17 @@ export async function fetchGreenhouseJobs(
       contentType,
       etag,
       lastModified,
-      error: {
-        kind: 'schema',
-        message: 'Response does not match expected Greenhouse API shape (missing "jobs" array).',
-        httpStatus,
-      },
+      error: null,
       fetchedAt,
+      recordsSeen,
+      recordsNormalized,
+      recordsSkipped,
+      issues,
     };
+  } finally {
+    // Timer is cleared exactly once here, regardless of success or failure path
+    clearTimeout(timer);
   }
-
-  // Normalize each job
-  const candidates: NormalizedSourcePosting[] = [];
-  for (const job of parsed.jobs) {
-    if (!isGreenhouseJob(job)) continue; // skip malformed job objects
-    try {
-      candidates.push(normalizeGreenhouseJob(job, config.boardToken, fetchedAt));
-    } catch {
-      // Skip individual job normalization errors; partial results are returned.
-      // Errors are not logged (they may contain PII from response fields).
-    }
-  }
-
-  return {
-    ok: true,
-    candidates,
-    rawResponseText,
-    requestUrl,
-    finalUrl,
-    httpStatus,
-    contentType,
-    etag,
-    lastModified,
-    error: null,
-    fetchedAt,
-  };
 }
 
 // ============================================================
@@ -529,15 +679,58 @@ export async function fetchGreenhouseJobs(
 // ============================================================
 
 /**
- * Map an HTTP status code to a typed error kind.
+ * Map an HTTP status code to a SourceFetchErrorClass.
  * Used for error classification in connector results.
  */
-function toErrorKind(status: number): ConnectorError['kind'] {
+function toErrorClass(status: number): SourceFetchErrorClass {
+  if (status === 401 || status === 403) return 'auth';
+  if (status === 429) return 'rate_limit';
+  return 'unexpected';
+}
+
+/**
+ * Map an HTTP status code to a connector-specific error code.
+ */
+function toErrorCode(status: number): ConnectorErrorCode | SourceFetchErrorClass {
   if (status === 401 || status === 403) return 'auth';
   if (status === 404) return 'not_found';
   if (status === 429) return 'rate_limit';
   if (status >= 500) return 'server_error';
   return 'unexpected';
+}
+
+interface FailureContext {
+  fetchedAt: string;
+  requestUrl?: string;
+  finalUrl?: string | null;
+  httpStatus?: number | null;
+  contentType?: string | null;
+  etag?: string | null;
+  lastModified?: string | null;
+  rawResponseText?: string | null;
+}
+
+function makeFailure(
+  error: ConnectorError,
+  ctx: FailureContext,
+): ConnectorFetchResult {
+  return {
+    ok: false,
+    candidates: [],
+    rawResponseText: ctx.rawResponseText ?? null,
+    requestUrl: ctx.requestUrl ?? '',
+    finalUrl: ctx.finalUrl ?? null,
+    httpStatus: ctx.httpStatus ?? null,
+    contentType: ctx.contentType ?? null,
+    etag: ctx.etag ?? null,
+    lastModified: ctx.lastModified ?? null,
+    error,
+    fetchedAt: ctx.fetchedAt,
+    recordsSeen: 0,
+    recordsNormalized: 0,
+    recordsSkipped: 0,
+    issues: [],
+  };
 }
 
 /**

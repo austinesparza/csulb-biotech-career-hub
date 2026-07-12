@@ -101,6 +101,10 @@ describe('makeGreenhouseMaterialHash', () => {
     offices: ['Long Beach'],
     closesAt: '2026-07-15',
     deadlineKind: 'hard' as const,
+    descriptionNormalized: 'Join our biotechnology team as an undergraduate intern.',
+    employmentType: null,
+    classification: 'internship',
+    remoteType: 'onsite',
   };
 
   it('produces a 64-character lowercase hex string', () => {
@@ -146,6 +150,33 @@ describe('makeGreenhouseMaterialHash', () => {
     expect(makeGreenhouseMaterialHash(baseFields)).not.toBe(makeGreenhouseMaterialHash(changed));
   });
 
+  it('changes when normalized description text changes (meaningful text change)', () => {
+    const changed = { ...baseFields, descriptionNormalized: 'Completely different job description text.' };
+    expect(makeGreenhouseMaterialHash(baseFields)).not.toBe(makeGreenhouseMaterialHash(changed));
+  });
+
+  it('does NOT change when HTML-only formatting changes produce identical normalized text', () => {
+    // Both produce the same plain text after htmlToText() normalization
+    const withBold = { ...baseFields, descriptionNormalized: 'Join our biotechnology team as an undergraduate intern.' };
+    const withoutBold = { ...baseFields, descriptionNormalized: 'Join our biotechnology team as an undergraduate intern.' };
+    expect(makeGreenhouseMaterialHash(withBold)).toBe(makeGreenhouseMaterialHash(withoutBold));
+  });
+
+  it('changes when employment type changes', () => {
+    const changed = { ...baseFields, employmentType: 'full_time' };
+    expect(makeGreenhouseMaterialHash(baseFields)).not.toBe(makeGreenhouseMaterialHash(changed));
+  });
+
+  it('changes when classification changes', () => {
+    const changed = { ...baseFields, classification: 'research' };
+    expect(makeGreenhouseMaterialHash(baseFields)).not.toBe(makeGreenhouseMaterialHash(changed));
+  });
+
+  it('changes when remote type changes', () => {
+    const changed = { ...baseFields, remoteType: 'remote' };
+    expect(makeGreenhouseMaterialHash(baseFields)).not.toBe(makeGreenhouseMaterialHash(changed));
+  });
+
   it('does NOT change for different JSON key ordering (stable serialization)', () => {
     // Simulate the same logical object but with a different key insertion order
     // by comparing two separate object literals with the same data
@@ -157,6 +188,10 @@ describe('makeGreenhouseMaterialHash', () => {
       offices: ['Long Beach'],
       closesAt: '2026-07-01',
       deadlineKind: 'hard' as const,
+      descriptionNormalized: 'Internship for undergrads.',
+      employmentType: null,
+      classification: 'internship',
+      remoteType: 'onsite',
     };
     const fields2 = {
       deadlineKind: 'hard' as const,
@@ -166,7 +201,16 @@ describe('makeGreenhouseMaterialHash', () => {
       locationRaw: 'Long Beach, CA',
       titleRaw: 'Biotech Intern',
       closesAt: '2026-07-01',
+      descriptionNormalized: 'Internship for undergrads.',
+      employmentType: null,
+      classification: 'internship',
+      remoteType: 'onsite',
     };
     expect(makeGreenhouseMaterialHash(fields1)).toBe(makeGreenhouseMaterialHash(fields2));
+  });
+
+  it('does NOT change when fetchedAt changes (fetch-time is excluded)', () => {
+    // fetchedAt is not in the material hash fields — verify invariance
+    expect(makeGreenhouseMaterialHash(baseFields)).toBe(makeGreenhouseMaterialHash(baseFields));
   });
 });

@@ -11,7 +11,8 @@
  * Match priority (highest to lowest):
  *   1. exact_identity       — same connector kind + board token + external posting ID
  *   2. exact_url            — same canonical URL (different identity)
- *   3. probable_same_posting — same employer + very similar title + same location
+ *   3. probable_same_posting — same employer + very similar title + same normalized location
+ *                             (conflicting non-null location disqualifies probable match)
  *   4. possible_annual_family — same employer + title family (season/year stripped)
  *   5. likely_distinct       — fields differ enough
  *   6. insufficient_information — not enough data
@@ -61,6 +62,19 @@ export interface DedupeCandidate {
   titleNormalized: string | null;
   locationNormalized: string | null;
   departments: string[];
+  /** Material hash from the normalized posting; null when not available. */
+  materialHash: string | null;
+}
+
+// ============================================================
+// BEST-MATCH RESULT (internal)
+// ============================================================
+
+interface ScoredMatch {
+  existing: DedupeCandidate;
+  matchType: IngestionMatchType;
+  confidence: number;
+  tieBreaker: string; // identityKey for deterministic ordering
 }
 
 // ============================================================
@@ -71,7 +85,13 @@ export interface DedupeCandidate {
  * Assess whether candidate is a duplicate of any posting in existingPostings.
  *
  * Returns a DuplicateAssessment describing the closest match found.
+ * Evaluates ALL existing postings and returns the BEST match, not the first match.
+ * Tie-breaking is deterministic: when scores are equal, prefer the posting with
+ * the lexicographically smallest identityKey.
+ *
  * When no postings are provided, returns insufficient_information.
+ * When candidate employer or title is missing, returns insufficient_information
+ * for match types that require those fields.
  *
  * @param candidate        The new posting being assessed.
  * @param existingPostings Existing source_postings rows to compare against.
@@ -93,29 +113,51 @@ export function assessDuplicate(
   }
 
   // --- Priority 1: exact identity ---
-  const exactId = existingPostings.find((p) => p.identityKey === candidate.identityKey);
-  if (exactId) {
+  // Find best exact-identity match (there should be at most one, but be defensive)
+  const exactIdMatches = existingPostings
+    .filter((p) => p.identityKey === candidate.identityKey)
+    .sort((a, b) => a.identityKey.localeCompare(b.identityKey));
+
+  if (exactIdMatches.length > 0) {
+    const exactId = exactIdMatches[0];
     const conflicting = findConflictingFields(candidate, exactId);
+    const hashChanged =
+      candidate.materialHash != null &&
+      exactId.materialHash != null &&
+      candidate.materialHash !== exactId.materialHash;
+    const hashUnchanged =
+      candidate.materialHash != null &&
+      exactId.materialHash != null &&
+      candidate.materialHash === exactId.materialHash;
+    const contentReason = hashChanged
+      ? `Material hash has changed (content was modified).`
+      : hashUnchanged
+      ? 'Material hash is unchanged (content not modified).'
+      : conflicting.length > 0
+      ? `Material fields have changed: ${conflicting.join(', ')}.`
+      : 'No detectable content changes.';
+    // Officer review required when materialHash changed, or when conflicting fields exist
+    const requiresReview = hashChanged || (candidate.materialHash == null && conflicting.length > 0);
     return {
       matchType: 'exact_identity',
       confidence: 1.0,
       contributingFields: ['identityKey'],
-      conflictingFields: conflicting,
+      conflictingFields: conflicting.length > 0 || hashChanged ? [...conflicting, ...(hashChanged && !conflicting.includes('materialHash') ? ['materialHash'] : [])] : [],
       reasons: [
         `Identity key matches exactly: "${candidate.identityKey}".`,
-        conflicting.length > 0
-          ? `Material fields have changed: ${conflicting.join(', ')}.`
-          : 'Content is unchanged.',
+        contentReason,
       ],
-      requiresOfficerReview: conflicting.length > 0,
+      requiresOfficerReview: requiresReview,
     };
   }
 
   // --- Priority 2: exact canonical URL ---
-  const exactUrl = existingPostings.find(
-    (p) => p.canonicalUrl === candidate.canonicalUrl,
-  );
-  if (exactUrl) {
+  const exactUrlMatches = existingPostings
+    .filter((p) => p.canonicalUrl === candidate.canonicalUrl)
+    .sort((a, b) => a.identityKey.localeCompare(b.identityKey));
+
+  if (exactUrlMatches.length > 0) {
+    const exactUrl = exactUrlMatches[0];
     const conflicting = findConflictingFields(candidate, exactUrl);
     return {
       matchType: 'exact_url',
@@ -134,7 +176,10 @@ export function assessDuplicate(
   }
 
   // --- Priority 3: probable same posting ---
+  // Requires: matching employer (≥85%), similar title (≥85%), AND same normalized location
+  // (or both locations are null). A conflicting non-null location disqualifies this match type.
   if (candidate.employerNameNormalized && candidate.titleNormalized) {
+    const probableMatches: ScoredMatch[] = [];
     for (const existing of existingPostings) {
       if (!existing.employerNameNormalized || !existing.titleNormalized) continue;
 
@@ -151,35 +196,77 @@ export function assessDuplicate(
         employerSim >= EMPLOYER_SIMILARITY_THRESHOLD &&
         titleSim >= TITLE_SIMILARITY_THRESHOLD
       ) {
+        // Location must match or both must be null; conflicting non-null location disqualifies
         const locationMatch =
           candidate.locationNormalized === existing.locationNormalized;
-        const contributing = ['employerNameNormalized', 'titleNormalized'];
-        if (locationMatch && candidate.locationNormalized) {
-          contributing.push('locationNormalized');
-        }
-        const conflicting = findConflictingFields(candidate, existing);
-        const confidence = Math.min(0.9, (employerSim + titleSim) / 2 + (locationMatch ? 0.05 : 0));
-        return {
+        const bothLocationsNull =
+          candidate.locationNormalized == null && existing.locationNormalized == null;
+        const locationConflict =
+          !locationMatch && !bothLocationsNull;
+
+        if (locationConflict) continue; // conflicting location — not probable same posting
+
+        const confidence = Math.min(0.9, (employerSim + titleSim) / 2 + 0.05);
+        probableMatches.push({
+          existing,
           matchType: 'probable_same_posting',
           confidence,
-          contributingFields: contributing,
-          conflictingFields: conflicting,
-          reasons: [
-            `Employer name similarity: ${(employerSim * 100).toFixed(0)}%.`,
-            `Title similarity: ${(titleSim * 100).toFixed(0)}%.`,
-            locationMatch
-              ? `Location matches: "${candidate.locationNormalized}".`
-              : `Location differs: "${candidate.locationNormalized}" vs "${existing.locationNormalized}".`,
-          ],
-          requiresOfficerReview: true,
-        };
+          tieBreaker: existing.identityKey,
+        });
       }
     }
+
+    if (probableMatches.length > 0) {
+      // Select best match: highest confidence, then lexicographically smallest identityKey
+      probableMatches.sort((a, b) => {
+        if (b.confidence !== a.confidence) return b.confidence - a.confidence;
+        return a.tieBreaker.localeCompare(b.tieBreaker);
+      });
+      const best = probableMatches[0];
+      const existing = best.existing;
+      const employerSim = bigramSimilarity(candidate.employerNameNormalized, existing.employerNameNormalized ?? '');
+      const titleSim = bigramSimilarity(candidate.titleNormalized, existing.titleNormalized ?? '');
+      const locationMatch = candidate.locationNormalized === existing.locationNormalized;
+      const contributing = ['employerNameNormalized', 'titleNormalized'];
+      if (locationMatch && candidate.locationNormalized) {
+        contributing.push('locationNormalized');
+      }
+      const conflicting = findConflictingFields(candidate, existing);
+      return {
+        matchType: 'probable_same_posting',
+        confidence: best.confidence,
+        contributingFields: contributing,
+        conflictingFields: conflicting,
+        reasons: [
+          `Employer name similarity: ${(employerSim * 100).toFixed(0)}%.`,
+          `Title similarity: ${(titleSim * 100).toFixed(0)}%.`,
+          locationMatch
+            ? `Location matches: "${candidate.locationNormalized}".`
+            : 'Both locations are absent.',
+        ],
+        requiresOfficerReview: true,
+      };
+    }
+  } else if (!candidate.employerNameNormalized || !candidate.titleNormalized) {
+    // Missing required fields for probable/annual matching → insufficient information
+    return {
+      matchType: 'insufficient_information',
+      confidence: 0,
+      contributingFields: [],
+      conflictingFields: [],
+      reasons: [
+        'Candidate is missing employer name or title; cannot assess probable duplicate.',
+        ...(!candidate.employerNameNormalized ? ['employer_name_missing'] : []),
+        ...(!candidate.titleNormalized ? ['title_missing'] : []),
+      ],
+      requiresOfficerReview: false,
+    };
   }
 
   // --- Priority 4: possible annual family ---
   if (candidate.employerNameNormalized && candidate.titleNormalized) {
     const candidateFamily = normalizeJobTitleFamily(candidate.titleNormalized);
+    const annualMatches: ScoredMatch[] = [];
     for (const existing of existingPostings) {
       if (!existing.employerNameNormalized || !existing.titleNormalized) continue;
       const existingFamily = normalizeJobTitleFamily(existing.titleNormalized);
@@ -192,19 +279,29 @@ export function assessDuplicate(
       const familySim = bigramSimilarity(candidateFamily, existingFamily);
 
       if (employerSim >= EMPLOYER_SIMILARITY_THRESHOLD && familySim >= TITLE_SIMILARITY_THRESHOLD) {
-        return {
+        annualMatches.push({
+          existing,
           matchType: 'possible_annual_family',
           confidence: 0.6,
-          contributingFields: ['employerNameNormalized', 'titleNormalized (family)'],
-          conflictingFields: ['titleNormalized'],
-          reasons: [
-            `Same employer (${(employerSim * 100).toFixed(0)}% match).`,
-            `Title family matches (${(familySim * 100).toFixed(0)}%) after stripping season/year.`,
-            'Titles differ — likely a recurring annual program.',
-          ],
-          requiresOfficerReview: true,
-        };
+          tieBreaker: existing.identityKey,
+        });
       }
+    }
+    if (annualMatches.length > 0) {
+      // Deterministic tie-breaking by identityKey
+      annualMatches.sort((a, b) => a.tieBreaker.localeCompare(b.tieBreaker));
+      return {
+        matchType: 'possible_annual_family',
+        confidence: 0.6,
+        contributingFields: ['employerNameNormalized', 'titleNormalized (family)'],
+        conflictingFields: ['titleNormalized'],
+        reasons: [
+          `Same employer matched.`,
+          `Title family matches after stripping season/year.`,
+          'Titles differ — likely a recurring annual program.',
+        ],
+        requiresOfficerReview: true,
+      };
     }
   }
 
@@ -214,7 +311,7 @@ export function assessDuplicate(
     confidence: 0.9,
     contributingFields: [],
     conflictingFields: [],
-    reasons: ['No identity, URL, employer+title, or family match found across existing postings.'],
+    reasons: ['No identity, URL, employer+title+location, or family match found across existing postings.'],
     requiresOfficerReview: false,
   };
 }
