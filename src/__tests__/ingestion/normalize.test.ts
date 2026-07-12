@@ -254,6 +254,21 @@ describe('classifyRemoteType', () => {
     const { remoteType } = classifyRemoteType(null, 'Hybrid / On-site', 'remote or on-site');
     expect(remoteType).toBe('hybrid');
   });
+  it('does not classify negated remote text as remote', () => {
+    const result = classifyRemoteType('Scientist', 'Long Beach, CA', 'Remote work is not available.');
+    expect(result.remoteType).toBe('unknown');
+    expect(result.flags).toContain('remote_ambiguous');
+  });
+  it('does not classify negated hybrid text as hybrid', () => {
+    const result = classifyRemoteType('Scientist', 'Long Beach, CA', 'This is not a hybrid role.');
+    expect(result.remoteType).toBe('unknown');
+    expect(result.flags).toContain('remote_ambiguous');
+  });
+  it('returns onsite when negated remote text appears with explicit onsite language', () => {
+    const result = classifyRemoteType('Scientist', 'On-site in Long Beach', 'No remote option.');
+    expect(result.remoteType).toBe('onsite');
+    expect(result.flags).not.toContain('remote_ambiguous');
+  });
   it('is deterministic', () => {
     const a = classifyRemoteType('Intern', 'Remote', null);
     const b = classifyRemoteType('Intern', 'Remote', null);
@@ -308,6 +323,12 @@ describe('parseIsoDate', () => {
   it('parses ISO datetime with timezone', () => {
     expect(parseIsoDate('2026-06-01T09:00:00-07:00')).toBe('2026-06-01');
   });
+  it('parses ISO datetime with fractional seconds', () => {
+    expect(parseIsoDate('2026-06-01T09:00:00.250Z')).toBe('2026-06-01');
+  });
+  it('parses ISO datetime with space separator', () => {
+    expect(parseIsoDate('2026-06-01 09:00:00')).toBe('2026-06-01');
+  });
   it('parses MM/DD/YYYY', () => {
     expect(parseIsoDate('07/15/2026')).toBe('2026-07-15');
   });
@@ -320,6 +341,15 @@ describe('parseIsoDate', () => {
   it('returns null for impossible dates', () => {
     expect(parseIsoDate('2026-13-01')).toBeNull(); // month 13
     expect(parseIsoDate('2026-01-32')).toBeNull(); // day 32
+  });
+  it('rejects trailing garbage after date prefix', () => {
+    expect(parseIsoDate('2026-06-15 garbage')).toBeNull();
+    expect(parseIsoDate('2026-06-15Tnonsense')).toBeNull();
+  });
+  it('rejects malformed datetime values with valid date prefix', () => {
+    expect(parseIsoDate('2026-06-15T99:99:99')).toBeNull();
+    expect(parseIsoDate('2026-06-15T09:00:00+24:00')).toBeNull();
+    expect(parseIsoDate('2026-06-15T09:00:00+05:99')).toBeNull();
   });
   it('is deterministic', () => {
     expect(parseIsoDate('2026-07-15')).toBe(parseIsoDate('2026-07-15'));

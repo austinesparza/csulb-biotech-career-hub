@@ -355,6 +355,36 @@ describe('scoreIngestionCandidate degree requirements', () => {
     );
     expect(hasDegreePenalty).toBe(false);
   });
+
+  it('"Master\'s required" triggers degree penalty', () => {
+    const input: ScoringInput = { ...degreeBase, descriptionText: "Master's required for this role." };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req' && r.points < 0)).toBe(true);
+  });
+
+  it('"MS required" triggers degree penalty', () => {
+    const input: ScoringInput = { ...degreeBase, descriptionText: 'MS required for this role.' };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req' && r.points < 0)).toBe(true);
+  });
+
+  it('"BS or MS required" does NOT trigger degree penalty', () => {
+    const input: ScoringInput = { ...degreeBase, descriptionText: 'BS or MS required.' };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req' && r.points < 0)).toBe(false);
+  });
+
+  it('"BS/MS accepted" does NOT trigger degree penalty', () => {
+    const input: ScoringInput = { ...degreeBase, descriptionText: 'BS/MS accepted.' };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req' && r.points < 0)).toBe(false);
+  });
+
+  it('"Bachelor\'s or master\'s degree" does NOT trigger degree penalty', () => {
+    const input: ScoringInput = { ...degreeBase, descriptionText: "Bachelor's or master's degree in biology." };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req' && r.points < 0)).toBe(false);
+  });
 });
 
 // ============================================================
@@ -396,6 +426,20 @@ describe('scoreIngestionCandidate seniority for fellowships', () => {
       (r) => r.category === 'seniority' && r.points < 0,
     );
     expect(hasSeniorityPenalty).toBe(false);
+  });
+
+  it('works with postdoctoral fellows is not penalized for degree requirements', () => {
+    const input: ScoringInput = {
+      ...BASE_INPUT,
+      titleRaw: 'Research Associate',
+      titleNormalized: 'research associate',
+      descriptionText: 'This role works with postdoctoral fellows in the lab.',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasDegreePenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'degree_req' && r.points < 0,
+    );
+    expect(hasDegreePenalty).toBe(false);
   });
 });
 

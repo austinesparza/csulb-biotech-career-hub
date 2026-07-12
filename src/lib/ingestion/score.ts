@@ -194,13 +194,16 @@ const ADVANCED_DEGREE_REQUIRED_PATTERNS: RegExp[] = [
   /\bmd\s+required\b/i,
   /\bm\.d\.?\s+required\b/i,
   /\bph\.?d\.?\s+or\s+equivalent\b/i,              // "PhD or equivalent"
-  /\bpostdoc(toral)?\b/i,                          // any postdoc mention
-  /\bpost-doc\b/i,
   /\bmust\s+have\s+a?\s*ph\.?d\.?\b/i,             // "must have a PhD"
   /\bmust\s+hold\s+a\s+(phd|ph\.d\.?|doctorate)\b/i,   // "must hold a doctorate"
   /\bminimum\s+(?:\w+\s+){0,4}ph\.?d\.?\b/i,      // "minimum qualification is a PhD"
   /\brequires?\s+a?\s*ph\.?d\.?\b/i,               // "requires a PhD", "requires PhD"
   /\bph\.?d\.?\s+(?:is\s+)?(?:the\s+)?minimum\b/i, // "PhD is the minimum"
+];
+const POSTDOC_TITLE_PATTERNS: RegExp[] = [/\bpostdoc(toral)?\b/i, /\bpost-doc\b/i];
+const POSTDOC_REQUIRED_PATTERNS: RegExp[] = [
+  /\b(postdoc(toral)?|post-doc)\b(?:\s+\w+){0,4}\s+(required|minimum|must|needed)\b/i,
+  /\b(required|minimum|must|needed)\b(?:\s+\w+){0,4}\b(postdoc(toral)?|post-doc)\b/i,
 ];
 
 /**
@@ -214,15 +217,22 @@ const ADVANCED_DEGREE_NOT_REQUIRED_PHRASES = [
   'ba/bs/ms/phd', 'all degree levels',
 ];
 
-/** Terms suggesting master's degree is preferred or required. Use word-boundary regex matching. */
+/** Terms suggesting master's degree is preferred or required. */
 const MASTERS_PREFERRED_PATTERNS = [
   /\bmaster's required\b/i,
   /\bmaster's preferred\b/i,
-  /\bms required\b/i,        // word boundary: won't match inside "bs or ms required"
+  /\bmasters required\b/i,
+  /\bmaster's degree required\b/i,
+  /\bms required\b/i,
   /\bms preferred\b/i,
   /\bmsc required\b/i,
   /\bgraduate degree required\b/i,
   /\bgraduate students only\b/i,
+];
+const BACHELORS_OR_MASTERS_ACCEPTED_PATTERNS = [
+  /\b(bs|b\.s\.|ba|b\.a\.|bachelor'?s?)\s*(\/|\bor\b)\s*(ms|m\.s\.|master'?s?|msc)\b/i,
+  /\b(ms|m\.s\.|master'?s?|msc)\s*(\/|\bor\b)\s*(bs|b\.s\.|ba|b\.a\.|bachelor'?s?)\b/i,
+  /\bbachelor'?s?\s+or\s+master'?s?\s+degree\b/i,
 ];
 
 /** Terms indicating restriction to graduate students. */
@@ -267,6 +277,13 @@ function hasAdvancedDegreeRequired(text: string): boolean {
   }
   // Check for explicit required/minimum patterns
   return ADVANCED_DEGREE_REQUIRED_PATTERNS.some((re) => re.test(text));
+}
+
+function hasPostdocDegreeRequired(title: string, text: string): boolean {
+  if (POSTDOC_TITLE_PATTERNS.some((re) => re.test(title))) {
+    return true;
+  }
+  return POSTDOC_REQUIRED_PATTERNS.some((re) => re.test(text));
 }
 
 /**
@@ -394,8 +411,12 @@ export function scoreIngestionCandidate(
   // --- 6. Advanced-degree requirements ---
   // Check both title and description, but distinguish required from preferred/contextual
   const combinedForDegree = [titleLower, eligibility].join(' ');
-  const needsPhD = hasAdvancedDegreeRequired(combinedForDegree);
-  const prefersMasters = !needsPhD && MASTERS_PREFERRED_PATTERNS.some((re) => re.test(eligibility));
+  const needsPhD = hasAdvancedDegreeRequired(combinedForDegree) || hasPostdocDegreeRequired(titleLower, eligibility);
+  const hasBachelorsAlternative = BACHELORS_OR_MASTERS_ACCEPTED_PATTERNS.some((re) => re.test(eligibility));
+  const prefersMasters =
+    !needsPhD &&
+    !hasBachelorsAlternative &&
+    MASTERS_PREFERRED_PATTERNS.some((re) => re.test(eligibility));
 
   if (needsPhD) {
     addNegative('degree_req', W_ADVANCED_DEGREE, 'PhD, MD, or postdoc credential required');

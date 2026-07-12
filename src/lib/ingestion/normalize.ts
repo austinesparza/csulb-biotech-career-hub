@@ -301,6 +301,10 @@ const REMOTE_SIGNALS = /\bremote\b/i;
  */
 const HYBRID_SIGNALS = /\bhybrid\b/i;
 const ONSITE_SIGNALS = /\b(on-?site|in-?office|in person|on ?campus|in-?person)\b/i;
+const NEGATED_REMOTE_SIGNALS =
+  /\b(not remote|no remote option|remote work is not available|remote is not available)\b/i;
+const NEGATED_HYBRID_SIGNALS =
+  /\b(not hybrid|no hybrid option|hybrid work is not available|this is not a hybrid role)\b/i;
 
 /**
  * Classify the remote/hybrid/onsite status from title, location, and description text.
@@ -326,6 +330,13 @@ export function classifyRemoteType(
   const hasRemote = REMOTE_SIGNALS.test(combined);
   const hasHybrid = HYBRID_SIGNALS.test(combined);
   const hasOnsite = ONSITE_SIGNALS.test(combined);
+  const hasNegatedRemote = NEGATED_REMOTE_SIGNALS.test(combined);
+  const hasNegatedHybrid = NEGATED_HYBRID_SIGNALS.test(combined);
+
+  if (hasNegatedRemote || hasNegatedHybrid) {
+    if (hasOnsite) return { remoteType: 'onsite', flags: [] };
+    return { remoteType: 'unknown', flags: ['remote_ambiguous'] };
+  }
 
   if (hasHybrid) return { remoteType: 'hybrid', flags: [] };
   // Contradictory signals without explicit hybrid language → unknown + remote_ambiguous
@@ -429,23 +440,46 @@ export function parseIsoDate(value: string | null | undefined): string | null {
   const s = normalizeWhitespace(value);
   if (!s) return null;
 
-  // ISO 8601 with optional time component: 2026-01-15 or 2026-01-15T14:30:00Z etc.
-  const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$/);
-  if (isoMatch) {
-    // For datetime strings with timezone offset, extract UTC date deterministically
-    if (s.includes('T') || s.includes(' ')) {
-      const tzMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})([+-]\d{2}:\d{2}|Z)?/);
-      if (tzMatch) {
-        // Parse using Date for timezone-offset handling, then extract UTC date
-        const d = new Date(tzMatch[0].endsWith('Z') || tzMatch[0].includes('+') || (tzMatch[7] && tzMatch[7].startsWith('-'))
-          ? tzMatch[0]
-          : tzMatch[0] + 'Z');
-        if (!Number.isNaN(d.getTime())) {
-          return toIsoDateSafe(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
-        }
-      }
-    }
-    return toIsoDateSafe(Number(isoMatch[1]), Number(isoMatch[2]), Number(isoMatch[3]));
+  // Strict ISO 8601 date: YYYY-MM-DD
+  const isoDateMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoDateMatch) {
+    return toIsoDateSafe(
+      Number(isoDateMatch[1]),
+      Number(isoDateMatch[2]),
+      Number(isoDateMatch[3]),
+    );
+  }
+
+  // Strict ISO 8601 datetime:
+  // YYYY-MM-DDTHH:MM:SS(.sss)?(Z|±HH:MM)?
+  // YYYY-MM-DD HH:MM:SS(.sss)?(Z|±HH:MM)?
+  const isoDateTimeMatch = s.match(
+    /^(\d{4})-(\d{2})-(\d{2})([T ])(\d{2}):(\d{2}):(\d{2})(\.\d{1,3})?(?:([+-])(\d{2}):(\d{2})|Z)?$/,
+  );
+  if (isoDateTimeMatch) {
+    const y = Number(isoDateTimeMatch[1]);
+    const mo = Number(isoDateTimeMatch[2]);
+    const d = Number(isoDateTimeMatch[3]);
+    const hh = Number(isoDateTimeMatch[5]);
+    const mm = Number(isoDateTimeMatch[6]);
+    const ss = Number(isoDateTimeMatch[7]);
+    const frac = isoDateTimeMatch[8] ?? '';
+    const sign = isoDateTimeMatch[9];
+    const tzH = isoDateTimeMatch[10];
+    const tzM = isoDateTimeMatch[11];
+
+    if (!toIsoDateSafe(y, mo, d)) return null;
+    if (hh > 23 || mm > 59 || ss > 59) return null;
+    if ((tzH && Number(tzH) > 23) || (tzM && Number(tzM) > 59)) return null;
+
+    const tz =
+      sign && tzH && tzM
+        ? `${sign}${tzH}:${tzM}`
+        : (s.endsWith('Z') ? 'Z' : 'Z');
+    const normalizedInput = `${isoDateTimeMatch[1]}-${isoDateTimeMatch[2]}-${isoDateTimeMatch[3]}T${isoDateTimeMatch[5]}:${isoDateTimeMatch[6]}:${isoDateTimeMatch[7]}${frac}${tz}`;
+    const parsed = new Date(normalizedInput);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return toIsoDateSafe(parsed.getUTCFullYear(), parsed.getUTCMonth() + 1, parsed.getUTCDate());
   }
 
   // MM/DD/YYYY or M/D/YYYY

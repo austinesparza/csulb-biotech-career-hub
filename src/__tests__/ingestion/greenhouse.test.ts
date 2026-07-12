@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import {
@@ -728,6 +728,73 @@ describe('fetchGreenhouseJobs full-operation timeout', () => {
   });
 });
 
+describe('fetchGreenhouseJobs deadline checks', () => {
+  it('returns timeout before JSON parsing when deadline is exceeded', async () => {
+    const nowSpy = vi.spyOn(Date, 'now');
+    nowSpy.mockReturnValueOnce(0).mockReturnValueOnce(150);
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      timeoutMs: 100,
+      fetchFn: mockFetch(loadFixture('greenhouse-normal.json')),
+    });
+    nowSpy.mockRestore();
+    expect(result.ok).toBe(false);
+    expect(result.error?.errorClass).toBe('timeout');
+    expect(result.error?.code).toBe('timeout');
+  });
+
+  it('returns timeout immediately after JSON parsing when deadline is exceeded', async () => {
+    const nowSpy = vi.spyOn(Date, 'now');
+    nowSpy.mockReturnValueOnce(0).mockReturnValueOnce(10).mockReturnValueOnce(150);
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      timeoutMs: 100,
+      fetchFn: mockFetch(loadFixture('greenhouse-normal.json')),
+    });
+    nowSpy.mockRestore();
+    expect(result.ok).toBe(false);
+    expect(result.error?.errorClass).toBe('timeout');
+    expect(result.error?.code).toBe('timeout');
+  });
+
+  it('returns timeout during record normalization when deadline is exceeded', async () => {
+    const nowSpy = vi.spyOn(Date, 'now');
+    nowSpy
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(20)
+      .mockReturnValueOnce(150);
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      timeoutMs: 100,
+      fetchFn: mockFetch(loadFixture('greenhouse-normal.json')),
+    });
+    nowSpy.mockRestore();
+    expect(result.ok).toBe(false);
+    expect(result.error?.errorClass).toBe('timeout');
+    expect(result.error?.code).toBe('timeout');
+  });
+
+  it('returns timeout before success return when deadline is exceeded', async () => {
+    const nowSpy = vi.spyOn(Date, 'now');
+    nowSpy
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(20)
+      .mockReturnValueOnce(30)
+      .mockReturnValueOnce(150);
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      timeoutMs: 100,
+      fetchFn: mockFetch(loadFixture('greenhouse-normal.json')),
+    });
+    nowSpy.mockRestore();
+    expect(result.ok).toBe(false);
+    expect(result.error?.errorClass).toBe('timeout');
+    expect(result.error?.code).toBe('timeout');
+  });
+});
+
 // ============================================================
 // BOUNDED ERROR BODIES — non-2xx bodies are bounded
 // ============================================================
@@ -999,7 +1066,7 @@ describe('normalizeGreenhouseJob field mapping', () => {
       location: { name: 'Long Beach, CA' },
     };
     const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
-    expect(posting.sourceUpdatedAt).toBe('2026-06-15T14:00:00-07:00');
+    expect(posting.sourceUpdatedAt).toBe('2026-06-15T21:00:00.000Z');
   });
 
   it('maps metadata array to sourceMetadata', () => {
@@ -1217,6 +1284,13 @@ describe('fetchGreenhouseJobs partial_response flag', () => {
     expect(result.ok).toBe(true);
     expect(result.candidates.length).toBe(1);
     expect(result.candidates[0].uncertaintyFlags).toContain('partial_response');
+    expect(result.candidates[0].scoreBreakdown.uncertaintyFlags).toContain('partial_response');
+    expect(
+      result.candidates[0].uncertaintyFlags.filter((f) => f === 'partial_response').length,
+    ).toBe(1);
+    expect(
+      result.candidates[0].scoreBreakdown.uncertaintyFlags.filter((f) => f === 'partial_response').length,
+    ).toBe(1);
   });
 
   it('does NOT add partial_response when all records normalize successfully', async () => {
@@ -1240,24 +1314,114 @@ describe('normalizeGreenhouseJob sourceUpdatedAt validation', () => {
   const BOARD_TOKEN = 'labgenomicsinc';
   const FETCHED_AT = '2026-07-11T00:00:00.000Z';
 
-  it('passes through a valid ISO timestamp unchanged', () => {
+  it('accepts RFC3339 Z timestamps and stores canonical ISO form', () => {
+    const job = {
+      id: 9900,
+      title: 'Test',
+      updated_at: '2026-06-15T14:00:00Z',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9900',
+    };
+    const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(posting.sourceUpdatedAt).toBe('2026-06-15T14:00:00.000Z');
+    expect(posting.uncertaintyFlags).not.toContain('source_updated_at_invalid');
+  });
+
+  it('accepts RFC3339 fractional seconds', () => {
     const job = {
       id: 9901,
       title: 'Test',
-      updated_at: '2026-06-15T14:00:00-07:00',
+      updated_at: '2026-06-15T14:00:00.123Z',
       absolute_url: 'https://boards.greenhouse.io/co/jobs/9901',
     };
     const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
-    expect(posting.sourceUpdatedAt).toBe('2026-06-15T14:00:00-07:00');
+    expect(posting.sourceUpdatedAt).toBe('2026-06-15T14:00:00.123Z');
     expect(posting.uncertaintyFlags).not.toContain('source_updated_at_invalid');
+  });
+
+  it('accepts RFC3339 timezone offsets and stores canonical UTC ISO', () => {
+    const job = {
+      id: 9902,
+      title: 'Test',
+      updated_at: '2026-06-15T14:00:00-07:00',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9902',
+    };
+    const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(posting.sourceUpdatedAt).toBe('2026-06-15T21:00:00.000Z');
+    expect(posting.uncertaintyFlags).not.toContain('source_updated_at_invalid');
+  });
+
+  it('rejects invalid calendar values', () => {
+    const job = {
+      id: 9903,
+      title: 'Test',
+      updated_at: '2026-02-31T10:00:00Z',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9903',
+    };
+    const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(posting.sourceUpdatedAt).toBeNull();
+    expect(posting.uncertaintyFlags).toContain('source_updated_at_invalid');
+  });
+
+  it('rejects natural-language dates', () => {
+    const job = {
+      id: 9904,
+      title: 'Test',
+      updated_at: 'March 1, 2026',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9904',
+    };
+    const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(posting.sourceUpdatedAt).toBeNull();
+    expect(posting.uncertaintyFlags).toContain('source_updated_at_invalid');
+  });
+
+  it('rejects non-RFC3339 date-only and slash-form dates', () => {
+    const dateOnly = {
+      id: 9909,
+      title: 'Test',
+      updated_at: '2026-06-15',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9909',
+    };
+    const slashDate = {
+      id: 9910,
+      title: 'Test',
+      updated_at: '06/15/2026',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9910',
+    };
+    const first = normalizeGreenhouseJob(dateOnly as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    const second = normalizeGreenhouseJob(slashDate as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(first.sourceUpdatedAt).toBeNull();
+    expect(second.sourceUpdatedAt).toBeNull();
+    expect(first.uncertaintyFlags).toContain('source_updated_at_invalid');
+    expect(second.uncertaintyFlags).toContain('source_updated_at_invalid');
+  });
+
+  it('rejects non-RFC3339 trailing garbage and malformed offsets', () => {
+    const trailingGarbage = {
+      id: 9905,
+      title: 'Test',
+      updated_at: '2026-06-15T14:00:00Z garbage',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9905',
+    };
+    const badOffset = {
+      id: 9906,
+      title: 'Test',
+      updated_at: '2026-06-15T14:00:00+24:00',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9906',
+    };
+    const first = normalizeGreenhouseJob(trailingGarbage as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    const second = normalizeGreenhouseJob(badOffset as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(first.sourceUpdatedAt).toBeNull();
+    expect(second.sourceUpdatedAt).toBeNull();
+    expect(first.uncertaintyFlags).toContain('source_updated_at_invalid');
+    expect(second.uncertaintyFlags).toContain('source_updated_at_invalid');
   });
 
   it('sets sourceUpdatedAt to null for a non-timestamp string and adds source_updated_at_invalid flag', () => {
     const job = {
-      id: 9902,
+      id: 9907,
       title: 'Test',
       updated_at: 'not-a-real-timestamp',
-      absolute_url: 'https://boards.greenhouse.io/co/jobs/9902',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9907',
     };
     const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
     expect(posting.sourceUpdatedAt).toBeNull();
@@ -1266,9 +1430,9 @@ describe('normalizeGreenhouseJob sourceUpdatedAt validation', () => {
 
   it('sets sourceUpdatedAt to null when updated_at is absent', () => {
     const job = {
-      id: 9903,
+      id: 9908,
       title: 'Test',
-      absolute_url: 'https://boards.greenhouse.io/co/jobs/9903',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9908',
     };
     const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
     expect(posting.sourceUpdatedAt).toBeNull();

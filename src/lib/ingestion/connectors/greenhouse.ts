@@ -77,6 +77,8 @@ const MAX_RESPONSE_BYTES = 20 * 1024 * 1024;
 
 /** Greenhouse boards API base URL. Never accept an externally supplied URL. */
 const GREENHOUSE_BASE_URL = 'https://boards-api.greenhouse.io';
+const RFC3339_TIMESTAMP =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d{1,9})?(Z|([+-])(\d{2}):(\d{2}))$/;
 
 // ============================================================
 // BOARD TOKEN VALIDATION
@@ -192,6 +194,37 @@ function isGreenhouseJob(value: unknown): value is GreenhouseJob {
   return typeof obj.id === 'number';
 }
 
+function toIsoDateSafe(y: number, m: number, d: number): string | null {
+  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+  const check = new Date(Date.UTC(y, m - 1, d));
+  if (check.getUTCFullYear() !== y || check.getUTCMonth() !== m - 1 || check.getUTCDate() !== d) {
+    return null;
+  }
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+function parseStrictRfc3339Timestamp(raw: string): string | null {
+  const m = raw.match(RFC3339_TIMESTAMP);
+  if (!m) return null;
+
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  const hour = Number(m[4]);
+  const minute = Number(m[5]);
+  const second = Number(m[6]);
+  const offsetHour = m[9] ? Number(m[9]) : null;
+  const offsetMinute = m[10] ? Number(m[10]) : null;
+
+  if (!toIsoDateSafe(year, month, day)) return null;
+  if (hour > 23 || minute > 59 || second > 59) return null;
+  if ((offsetHour != null && offsetHour > 23) || (offsetMinute != null && offsetMinute > 59)) return null;
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
 // ============================================================
 // JOB NORMALIZATION
 // ============================================================
@@ -256,10 +289,10 @@ export function normalizeGreenhouseJob(
   // with an uncertainty flag rather than silently forwarding a non-timestamp string.
   let sourceUpdatedAt: string | null = null;
   if (job.updated_at != null) {
-    const raw = job.updated_at;
-    const parsed = Date.parse(raw);
-    if (!isNaN(parsed)) {
-      sourceUpdatedAt = raw;
+    const raw = String(job.updated_at).trim();
+    const parsed = parseStrictRfc3339Timestamp(raw);
+    if (parsed) {
+      sourceUpdatedAt = parsed;
     } else {
       flags.push('source_updated_at_invalid');
     }
@@ -468,6 +501,7 @@ export async function fetchGreenhouseJobs(
   // The controller covers the ENTIRE operation: fetch + body stream + parsing + normalization.
   // It is cleared exactly once in the finally block after everything completes or fails.
   const controller = new AbortController();
+  const deadlineMs = Date.now() + timeoutMs;
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
@@ -620,6 +654,15 @@ export async function fetchGreenhouseJobs(
     }
 
     // --- Parse JSON ---
+    if (Date.now() > deadlineMs) {
+      return makeFailure({
+        errorClass: 'timeout',
+        code: 'timeout',
+        message: `Request timed out after ${timeoutMs}ms before JSON parsing.`,
+        httpStatus,
+      }, { fetchedAt, requestUrl, finalUrl, httpStatus, contentType, etag, lastModified, rawResponseText });
+    }
+
     let parsed: unknown;
     try {
       parsed = JSON.parse(rawResponseText);
@@ -628,6 +671,15 @@ export async function fetchGreenhouseJobs(
         errorClass: 'schema',
         code: 'invalid_json',
         message: 'Response body is not valid JSON.',
+        httpStatus,
+      }, { fetchedAt, requestUrl, finalUrl, httpStatus, contentType, etag, lastModified, rawResponseText });
+    }
+
+    if (Date.now() > deadlineMs) {
+      return makeFailure({
+        errorClass: 'timeout',
+        code: 'timeout',
+        message: `Request timed out after ${timeoutMs}ms after JSON parsing.`,
         httpStatus,
       }, { fetchedAt, requestUrl, finalUrl, httpStatus, contentType, etag, lastModified, rawResponseText });
     }
@@ -649,6 +701,14 @@ export async function fetchGreenhouseJobs(
     let recordsSkipped = 0;
 
     for (const job of parsed.jobs) {
+      if (Date.now() > deadlineMs) {
+        return makeFailure({
+          errorClass: 'timeout',
+          code: 'timeout',
+          message: `Request timed out after ${timeoutMs}ms during record normalization.`,
+          httpStatus,
+        }, { fetchedAt, requestUrl, finalUrl, httpStatus, contentType, etag, lastModified, rawResponseText });
+      }
       if (!isGreenhouseJob(job)) {
         recordsSeen++;
         recordsSkipped++;
@@ -719,10 +779,21 @@ export async function fetchGreenhouseJobs(
     const isPartial = recordsSkipped > 0;
     if (isPartial) {
       for (const c of candidates) {
-        if (!c.uncertaintyFlags.includes('partial_response')) {
-          c.uncertaintyFlags.push('partial_response');
-        }
+        c.uncertaintyFlags = [...new Set<UncertaintyFlag>([...c.uncertaintyFlags, 'partial_response'])];
+        c.scoreBreakdown.uncertaintyFlags = [...new Set<UncertaintyFlag>([
+          ...c.scoreBreakdown.uncertaintyFlags,
+          'partial_response',
+        ])];
       }
+    }
+
+    if (Date.now() > deadlineMs) {
+      return makeFailure({
+        errorClass: 'timeout',
+        code: 'timeout',
+        message: `Request timed out after ${timeoutMs}ms before returning success.`,
+        httpStatus,
+      }, { fetchedAt, requestUrl, finalUrl, httpStatus, contentType, etag, lastModified, rawResponseText });
     }
 
     return {
