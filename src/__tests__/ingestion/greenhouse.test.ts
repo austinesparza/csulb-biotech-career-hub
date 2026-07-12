@@ -723,8 +723,8 @@ describe('fetchGreenhouseJobs full-operation timeout', () => {
     });
 
     expect(result.ok).toBe(false);
-    // Either timeout or network error depending on how abort propagates through stream
-    expect(['timeout', 'network']).toContain(result.error?.errorClass);
+    // Must be exactly timeout — stream abort is always a timeout, not a network error
+    expect(result.error?.errorClass).toBe('timeout');
   });
 });
 
@@ -1032,5 +1032,246 @@ describe('normalizeGreenhouseJob field mapping', () => {
     };
     const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
     expect(posting.sourceMetadata).toBeNull();
+  });
+});
+
+// ============================================================
+// BOARD TOKEN NORMALIZATION — trim and lowercase
+// ============================================================
+
+describe('validateBoardToken normalization', () => {
+  it('accepts token with surrounding whitespace (trims it)', () => {
+    const result = validateBoardToken('  mycompany  ');
+    expect(result.valid).toBe(true);
+    if (result.valid) expect(result.normalized).toBe('mycompany');
+  });
+
+  it('accepts uppercase token and returns lowercased normalized form', () => {
+    const result = validateBoardToken('MyCompany');
+    expect(result.valid).toBe(true);
+    if (result.valid) expect(result.normalized).toBe('mycompany');
+  });
+
+  it('accepts mixed-case token with whitespace and returns normalized form', () => {
+    const result = validateBoardToken('  LabGenomicsInc  ');
+    expect(result.valid).toBe(true);
+    if (result.valid) expect(result.normalized).toBe('labgenomicsinc');
+  });
+
+  it('uses normalized token in identityKey and URL when uppercase token is provided', async () => {
+    const body = loadFixture('greenhouse-normal.json');
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'LabGenomicsInc',
+      fetchFn: mockFetch(body),
+    });
+    expect(result.ok).toBe(true);
+    // URL must use the lowercased token
+    expect(result.requestUrl).toContain('labgenomicsinc');
+    expect(result.requestUrl).not.toContain('LabGenomicsInc');
+    // All candidate identityKeys must use the lowercased token
+    for (const c of result.candidates) {
+      expect(c.identityKey).toContain('labgenomicsinc');
+      expect(c.identityKey).not.toContain('LabGenomicsInc');
+    }
+  });
+
+  it('uses normalized token when board token has surrounding whitespace', async () => {
+    const body = loadFixture('greenhouse-normal.json');
+    const result = await fetchGreenhouseJobs({
+      boardToken: '  labgenomicsinc  ',
+      fetchFn: mockFetch(body),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.requestUrl).toContain('labgenomicsinc');
+    expect(result.requestUrl).not.toContain('  ');
+  });
+});
+
+// ============================================================
+// RESPONSE URL VALIDATION — HTTPS + correct hostname
+// ============================================================
+
+describe('fetchGreenhouseJobs response.url validation', () => {
+  it('rejects a response whose final URL is a foreign host (HTTPS)', async () => {
+    // Simulate a fetch that returns a 200 with a foreign response.url (e.g., after a
+    // server-side redirect followed by a re-fetch — or a misconfigured proxy).
+    const foreignFinalUrlFetch: typeof fetch = (_url, _init) => {
+      const response = new Response(loadFixture('greenhouse-normal.json'), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+      // Patch response.url to simulate a foreign host
+      Object.defineProperty(response, 'url', { value: 'https://evil.example.com/jobs' });
+      return Promise.resolve(response);
+    };
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: foreignFinalUrlFetch,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error?.errorClass).toBe('unexpected');
+    expect(result.error?.code).toBe('redirect_rejected');
+  });
+
+  it('rejects a response whose final URL uses HTTP (not HTTPS)', async () => {
+    const httpFinalUrlFetch: typeof fetch = (_url, _init) => {
+      const response = new Response('{}', {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+      Object.defineProperty(response, 'url', { value: 'http://boards-api.greenhouse.io/v1/boards/test/jobs' });
+      return Promise.resolve(response);
+    };
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: httpFinalUrlFetch,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error?.errorClass).toBe('unexpected');
+    expect(result.error?.code).toBe('redirect_rejected');
+  });
+
+  it('accepts a response whose final URL is the correct Greenhouse host', async () => {
+    const correctFinalUrlFetch: typeof fetch = (_url, _init) => {
+      const response = new Response(loadFixture('greenhouse-normal.json'), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+      Object.defineProperty(response, 'url', {
+        value: 'https://boards-api.greenhouse.io/v1/boards/labgenomicsinc/jobs?content=true',
+      });
+      return Promise.resolve(response);
+    };
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: correctFinalUrlFetch,
+    });
+    expect(result.ok).toBe(true);
+  });
+});
+
+// ============================================================
+// TIMEOUT PRESERVATION — non-2xx hanging body
+// ============================================================
+
+describe('fetchGreenhouseJobs non-2xx body timeout', () => {
+  it('returns errorClass timeout when 500 body stream hangs', async () => {
+    // Return a 500 whose body never resolves — simulates a server that sends headers
+    // but stalls the body indefinitely.
+    const hangingBody500Fetch: typeof fetch = (_url, init) => {
+      const { signal } = init as RequestInit;
+      const stream = new ReadableStream({
+        start(controller) {
+          if (signal) {
+            signal.addEventListener('abort', () => {
+              controller.error(new DOMException('Aborted', 'AbortError'));
+            });
+          }
+          // Never enqueue or close
+        },
+      });
+      const response = new Response(stream, {
+        status: 500,
+        headers: { 'content-type': 'text/plain' },
+      });
+      return Promise.resolve(response);
+    };
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: hangingBody500Fetch,
+      timeoutMs: 200,
+    });
+    expect(result.ok).toBe(false);
+    // Must be timeout — NOT server_error or not_found or rate_limit
+    expect(result.error?.errorClass).toBe('timeout');
+  });
+});
+
+// ============================================================
+// PARTIAL RESPONSE FLAG — partial_response in candidates
+// ============================================================
+
+describe('fetchGreenhouseJobs partial_response flag', () => {
+  it('adds partial_response to candidates when some records are skipped', async () => {
+    const mixedBody = JSON.stringify({
+      jobs: [
+        {
+          id: 5001,
+          title: 'Valid Job',
+          location: { name: 'Long Beach, CA' },
+          absolute_url: 'https://boards.greenhouse.io/test/jobs/5001',
+          content: '<p>Valid description for a biotech intern.</p>',
+        },
+        {
+          id: 5002,
+          title: 'No URL Job',
+          absolute_url: null,
+          content: '<p>desc</p>',
+        },
+      ],
+    });
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'testboard',
+      fetchFn: mockFetch(mixedBody),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.candidates.length).toBe(1);
+    expect(result.candidates[0].uncertaintyFlags).toContain('partial_response');
+  });
+
+  it('does NOT add partial_response when all records normalize successfully', async () => {
+    const body = loadFixture('greenhouse-normal.json');
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      fetchFn: mockFetch(body),
+    });
+    expect(result.ok).toBe(true);
+    for (const c of result.candidates) {
+      expect(c.uncertaintyFlags).not.toContain('partial_response');
+    }
+  });
+});
+
+// ============================================================
+// SOURCE UPDATED AT VALIDATION
+// ============================================================
+
+describe('normalizeGreenhouseJob sourceUpdatedAt validation', () => {
+  const BOARD_TOKEN = 'labgenomicsinc';
+  const FETCHED_AT = '2026-07-11T00:00:00.000Z';
+
+  it('passes through a valid ISO timestamp unchanged', () => {
+    const job = {
+      id: 9901,
+      title: 'Test',
+      updated_at: '2026-06-15T14:00:00-07:00',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9901',
+    };
+    const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(posting.sourceUpdatedAt).toBe('2026-06-15T14:00:00-07:00');
+    expect(posting.uncertaintyFlags).not.toContain('source_updated_at_invalid');
+  });
+
+  it('sets sourceUpdatedAt to null for a non-timestamp string and adds source_updated_at_invalid flag', () => {
+    const job = {
+      id: 9902,
+      title: 'Test',
+      updated_at: 'not-a-real-timestamp',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9902',
+    };
+    const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(posting.sourceUpdatedAt).toBeNull();
+    expect(posting.uncertaintyFlags).toContain('source_updated_at_invalid');
+  });
+
+  it('sets sourceUpdatedAt to null when updated_at is absent', () => {
+    const job = {
+      id: 9903,
+      title: 'Test',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9903',
+    };
+    const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(posting.sourceUpdatedAt).toBeNull();
+    expect(posting.uncertaintyFlags).not.toContain('source_updated_at_invalid');
   });
 });

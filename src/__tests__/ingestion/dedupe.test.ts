@@ -344,3 +344,163 @@ describe('assessDuplicate exact identity with materialHash', () => {
     expect(result.requiresOfficerReview).toBe(true);
   });
 });
+
+// ============================================================
+// ANNUAL FAMILY DEDUPLICATION — tightened requirements
+// ============================================================
+
+describe('assessDuplicate annual-family tightened', () => {
+  it('identical titles in different cities are likely_distinct, not possible_annual_family', () => {
+    // Same employer, identical title, but different cities — should NOT be annual family
+    const candidate: DedupeCandidate = {
+      identityKey: 'greenhouse:acme:1001',
+      canonicalUrl: 'https://boards.greenhouse.io/acme/jobs/1001',
+      employerNameNormalized: 'acme biotech',
+      titleNormalized: 'biotech internship program',
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: null,
+    };
+    const existing: DedupeCandidate[] = [{
+      identityKey: 'greenhouse:acme:2001',
+      canonicalUrl: 'https://boards.greenhouse.io/acme/jobs/2001',
+      employerNameNormalized: 'acme biotech',
+      titleNormalized: 'biotech internship program', // identical title
+      locationNormalized: 'boston, ma', // different city
+      departments: [],
+      materialHash: null,
+    }];
+    const result = assessDuplicate(candidate, existing);
+    expect(result.matchType).toBe('likely_distinct');
+    expect(result.matchType).not.toBe('possible_annual_family');
+  });
+
+  it('does not classify as annual family when neither title has season/year markers', () => {
+    // Titles have no season/year to strip — families equal originals — not annual family
+    const candidate: DedupeCandidate = {
+      identityKey: 'greenhouse:acme:1002',
+      canonicalUrl: 'https://boards.greenhouse.io/acme/jobs/1002',
+      employerNameNormalized: 'acme biotech',
+      titleNormalized: 'research intern',
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: null,
+    };
+    const existing: DedupeCandidate[] = [{
+      identityKey: 'greenhouse:acme:2002',
+      canonicalUrl: 'https://boards.greenhouse.io/acme/jobs/2002',
+      employerNameNormalized: 'acme biotech',
+      titleNormalized: 'research intern', // same, no markers
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: null,
+    }];
+    const result = assessDuplicate(candidate, existing);
+    // Should NOT be annual_family since no season/year was stripped
+    expect(result.matchType).not.toBe('possible_annual_family');
+  });
+
+  it('classifies as possible_annual_family when titles differ only by season/year', () => {
+    const candidate: DedupeCandidate = {
+      identityKey: 'greenhouse:acme:1003',
+      canonicalUrl: 'https://boards.greenhouse.io/acme/jobs/1003',
+      employerNameNormalized: 'acme biotech',
+      titleNormalized: 'summer 2026 biotech internship program',
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: null,
+    };
+    const existing: DedupeCandidate[] = [{
+      identityKey: 'greenhouse:acme:2003',
+      canonicalUrl: 'https://boards.greenhouse.io/acme/jobs/2003',
+      employerNameNormalized: 'acme biotech',
+      titleNormalized: 'fall 2024 biotech internship program',
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: null,
+    }];
+    const result = assessDuplicate(candidate, existing);
+    expect(result.matchType).toBe('possible_annual_family');
+    expect(result.requiresOfficerReview).toBe(true);
+  });
+});
+
+// ============================================================
+// EXACT URL — materialHash in conflictingFields
+// ============================================================
+
+describe('assessDuplicate exact_url materialHash conflict', () => {
+  it('includes materialHash in conflictingFields when hashes differ on exact-URL match', () => {
+    const candidate: DedupeCandidate = {
+      identityKey: 'greenhouse:acme:5001',
+      canonicalUrl: 'https://boards.greenhouse.io/acme/jobs/5001',
+      employerNameNormalized: 'acme biotech',
+      titleNormalized: 'research intern',
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    };
+    const existing: DedupeCandidate[] = [{
+      identityKey: 'greenhouse:acme:5002', // different identity
+      canonicalUrl: 'https://boards.greenhouse.io/acme/jobs/5001', // same URL
+      employerNameNormalized: 'acme biotech',
+      titleNormalized: 'research intern',
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', // different hash
+    }];
+    const result = assessDuplicate(candidate, existing);
+    expect(result.matchType).toBe('exact_url');
+    expect(result.requiresOfficerReview).toBe(true);
+    expect(result.conflictingFields).toContain('materialHash');
+  });
+
+  it('does NOT add materialHash to conflictingFields when hashes are equal on exact-URL match', () => {
+    const hash = 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+    const candidate: DedupeCandidate = {
+      identityKey: 'greenhouse:acme:5003',
+      canonicalUrl: 'https://boards.greenhouse.io/acme/jobs/5003',
+      employerNameNormalized: 'acme biotech',
+      titleNormalized: 'lab intern',
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: hash,
+    };
+    const existing: DedupeCandidate[] = [{
+      identityKey: 'greenhouse:acme:5004',
+      canonicalUrl: 'https://boards.greenhouse.io/acme/jobs/5003',
+      employerNameNormalized: 'acme biotech',
+      titleNormalized: 'lab intern',
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: hash,
+    }];
+    const result = assessDuplicate(candidate, existing);
+    expect(result.matchType).toBe('exact_url');
+    expect(result.conflictingFields).not.toContain('materialHash');
+  });
+
+  it('does NOT add materialHash when either hash is null on exact-URL match', () => {
+    const candidate: DedupeCandidate = {
+      identityKey: 'greenhouse:acme:5005',
+      canonicalUrl: 'https://boards.greenhouse.io/acme/jobs/5005',
+      employerNameNormalized: 'acme biotech',
+      titleNormalized: 'lab intern',
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: null,
+    };
+    const existing: DedupeCandidate[] = [{
+      identityKey: 'greenhouse:acme:5006',
+      canonicalUrl: 'https://boards.greenhouse.io/acme/jobs/5005',
+      employerNameNormalized: 'acme biotech',
+      titleNormalized: 'lab intern',
+      locationNormalized: 'long beach, ca',
+      departments: [],
+      materialHash: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+    }];
+    const result = assessDuplicate(candidate, existing);
+    expect(result.matchType).toBe('exact_url');
+    expect(result.conflictingFields).not.toContain('materialHash');
+  });
+});

@@ -465,6 +465,25 @@ describe('canonicalizeUrl tracking params case-insensitive removal', () => {
     expect(url).not.toContain('utm_campaign');
     expect(url).toContain('jobid=42');
   });
+
+  it('removes hsctatracking (lowercase)', () => {
+    const url = canonicalizeUrl('https://example.com/job?hsctatracking=abc123&jobid=99');
+    expect(url).not.toContain('hsctatracking');
+    expect(url).toContain('jobid=99');
+  });
+
+  it('removes hsctatracking (mixed case — case-insensitive removal)', () => {
+    const url = canonicalizeUrl('https://example.com/job?hsctaTracking=xyz&jobid=77');
+    expect(url).not.toContain('hsctaTracking');
+    expect(url).not.toContain('hsctatracking');
+    expect(url).toContain('jobid=77');
+  });
+
+  it('removes HSCTATRACKING (all uppercase)', () => {
+    const url = canonicalizeUrl('https://example.com/job?HSCTATRACKING=foo&ref_id=55');
+    expect(url).not.toContain('HSCTATRACKING');
+    expect(url).toContain('ref_id=55');
+  });
 });
 
 // ============================================================

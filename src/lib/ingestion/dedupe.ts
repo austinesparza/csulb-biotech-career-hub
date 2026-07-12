@@ -161,17 +161,24 @@ export function assessDuplicate(
   if (exactUrlMatches.length > 0) {
     const exactUrl = exactUrlMatches[0];
     const conflicting = findConflictingFields(candidate, exactUrl);
+    const urlHashChanged =
+      candidate.materialHash != null &&
+      exactUrl.materialHash != null &&
+      candidate.materialHash !== exactUrl.materialHash;
+    const allConflicting = urlHashChanged && !conflicting.includes('materialHash')
+      ? [...conflicting, 'materialHash']
+      : conflicting;
     return {
       matchType: 'exact_url',
       confidence: 0.95,
       matchedIdentityKey: exactUrl.identityKey,
       contributingFields: ['canonicalUrl'],
-      conflictingFields: conflicting,
+      conflictingFields: allConflicting,
       reasons: [
         `Canonical URL matches: "${candidate.canonicalUrl}".`,
         'Identity keys differ — may be a re-posted or duplicated listing.',
-        conflicting.length > 0
-          ? `Field differences: ${conflicting.join(', ')}.`
+        allConflicting.length > 0
+          ? `Field differences: ${allConflicting.join(', ')}.`
           : 'Other fields match.',
       ],
       requiresOfficerReview: true,
@@ -276,6 +283,22 @@ export function assessDuplicate(
       if (!existing.employerNameNormalized || !existing.titleNormalized) continue;
       const existingFamily = normalizeJobTitleFamily(existing.titleNormalized);
       if (!candidateFamily || !existingFamily) continue;
+
+      // Annual-family requires evidence that season/year/cycle markers were actually
+      // removed or differ: the raw titles must not be identical (identical titles
+      // in different cities are likely_distinct, not annual-family), and at least one
+      // title must differ from its own family form (i.e., something was stripped).
+      const titlesIdentical = candidate.titleNormalized === existing.titleNormalized;
+      const candidateStripped = candidateFamily !== candidate.titleNormalized;
+      const existingStripped = existingFamily !== existing.titleNormalized;
+      if (titlesIdentical || (!candidateStripped && !existingStripped)) continue;
+
+      // Location conflict disqualifies annual-family matches (same as probable_same_posting).
+      const locationConflict =
+        candidate.locationNormalized !== existing.locationNormalized &&
+        candidate.locationNormalized != null &&
+        existing.locationNormalized != null;
+      if (locationConflict) continue;
 
       const employerSim = bigramSimilarity(
         candidate.employerNameNormalized,

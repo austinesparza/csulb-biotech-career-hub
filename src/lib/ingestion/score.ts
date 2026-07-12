@@ -183,15 +183,24 @@ const SENIORITY_MODERATE = [
 ];
 
 /**
- * Degree-required phrases — used only in minimum/required qualifications context.
- * These must appear in phrases indicating required credentials, not just any mention.
+ * Degree-required patterns — real RegExp objects used only in minimum/required
+ * qualifications context.  These must match phrases indicating required credentials,
+ * not just any mention of a degree.  Patterns intentionally avoid `.*` across
+ * arbitrary distances to prevent false positives like "PhD … not required".
  */
-const ADVANCED_DEGREE_REQUIRED_PHRASES = [
-  'phd required', 'ph.d required', 'ph.d. required', 'doctorate required',
-  'md required', 'm.d. required', 'phd or equivalent',
-  'postdoc', 'post-doc', 'postdoctoral',
-  'must have a phd', 'must have ph.d', 'minimum.*phd', 'requires.*phd',
-  'phd.*minimum', 'phd.*required',
+const ADVANCED_DEGREE_REQUIRED_PATTERNS: RegExp[] = [
+  /\bph\.?d\.?\s+(?:is\s+)?required\b/i,         // "PhD required", "PhD is required"
+  /\bdoctorate\s+(?:is\s+)?required\b/i,           // "doctorate required"
+  /\bmd\s+required\b/i,
+  /\bm\.d\.?\s+required\b/i,
+  /\bph\.?d\.?\s+or\s+equivalent\b/i,              // "PhD or equivalent"
+  /\bpostdoc(toral)?\b/i,                          // any postdoc mention
+  /\bpost-doc\b/i,
+  /\bmust\s+have\s+a?\s*ph\.?d\.?\b/i,             // "must have a PhD"
+  /\bmust\s+hold\s+a\s+(phd|ph\.d\.?|doctorate)\b/i,   // "must hold a doctorate"
+  /\bminimum\s+(?:\w+\s+){0,4}ph\.?d\.?\b/i,      // "minimum qualification is a PhD"
+  /\brequires?\s+a?\s*ph\.?d\.?\b/i,               // "requires a PhD", "requires PhD"
+  /\bph\.?d\.?\s+(?:is\s+)?(?:the\s+)?minimum\b/i, // "PhD is the minimum"
 ];
 
 /**
@@ -253,20 +262,11 @@ function hasAdvancedDegreeRequired(text: string): boolean {
   // First check if there's a "not required" or "preferred/accepted" context that overrides
   const hasNotRequired = ADVANCED_DEGREE_NOT_REQUIRED_PHRASES.some((p) => text.includes(p));
   if (hasNotRequired) {
-    // Only the phrases in ADVANCED_DEGREE_REQUIRED_PHRASES that aren't overridden matter
-    // For simplicity: if any not-required phrase is present, require explicit "required" language
-    return ADVANCED_DEGREE_REQUIRED_PHRASES.some((p) => {
-      const re = new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      return re.test(text);
-    });
+    // If a not-required phrase is present, only the explicit "required" patterns count
+    return ADVANCED_DEGREE_REQUIRED_PATTERNS.some((re) => re.test(text));
   }
-  // Postdoc always indicates advanced degree regardless of context
-  if (/\bpostdoc(toral)?\b|\bpost-doc\b/i.test(text)) return true;
-  // Check for explicit required/minimum phrases
-  return ADVANCED_DEGREE_REQUIRED_PHRASES.some((p) => {
-    const re = new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    return re.test(text);
-  });
+  // Check for explicit required/minimum patterns
+  return ADVANCED_DEGREE_REQUIRED_PATTERNS.some((re) => re.test(text));
 }
 
 /**
@@ -373,8 +373,10 @@ export function scoreIngestionCandidate(
   // --- 4. Geographic accessibility ---
   if (input.remoteType === 'remote') {
     addPositive('geography', W_REMOTE, 'remote-eligible position');
-  } else if (input.remoteType === 'hybrid') {
-    addPositive('geography', W_HYBRID, 'hybrid position');
+  } else if (input.remoteType === 'hybrid' && isSoCalLocation(locationLower)) {
+    // Hybrid bonus only applies within Southern California; outside SoCal hybrid
+    // positions are not an accessibility advantage for CSULB Biotech Club members.
+    addPositive('geography', W_HYBRID, `hybrid position in Southern California: "${input.locationNormalized}"`);
   } else if (isSoCalLocation(locationLower)) {
     addPositive('geography', W_SOCAL, `Southern California location: "${input.locationNormalized}"`);
   }
@@ -419,7 +421,11 @@ export function scoreIngestionCandidate(
 
   // --- 10. Deadline scoring (uses injected now, not wall clock) ---
   if (input.closesAt) {
-    const deadlineMs = Date.parse(input.closesAt); // ISO 8601 only — safe because closesAt is validated
+    // Date-only values (YYYY-MM-DD) must be treated as end-of-day UTC so that a
+    // deadline equal to the reference calendar date is not counted as expired.
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(input.closesAt);
+    const deadlineStr = isDateOnly ? `${input.closesAt}T23:59:59.999Z` : input.closesAt;
+    const deadlineMs = Date.parse(deadlineStr);
     if (!isNaN(deadlineMs)) {
       const nowMs = now.getTime();
       if (deadlineMs < nowMs) {

@@ -244,7 +244,7 @@ const TRACKING_PARAMS_LOWER = new Set([
   'mc_eid',
   '_hsenc',
   '_hsmi',
-  'hsctaTracking',
+  'hsctatracking',
 ]);
 
 /**

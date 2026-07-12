@@ -103,7 +103,8 @@ export type UncertaintyFlag =
   | 'employer_name_missing'
   | 'title_missing'
   | 'url_invalid'
-  | 'partial_response';
+  | 'partial_response'
+  | 'source_updated_at_invalid';
 
 // ============================================================
 // ERROR TYPES (aligned with source_fetch_runs.error_class)

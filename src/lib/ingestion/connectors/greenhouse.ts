@@ -90,25 +90,28 @@ const GREENHOUSE_BASE_URL = 'https://boards-api.greenhouse.io';
  * We allow underscores as some boards use them; we reject anything else.
  *
  * This is a strict allowlist to prevent SSRF via token injection.
+ *
+ * The token is normalized (trimmed + lowercased) before validation.
+ * Returns the normalized token on success so callers always use the canonical form.
  */
-export function validateBoardToken(token: string): { valid: true } | { valid: false; reason: string } {
+export function validateBoardToken(token: string): { valid: true; normalized: string } | { valid: false; reason: string } {
   if (!token || typeof token !== 'string') {
     return { valid: false, reason: 'Board token must be a non-empty string.' };
   }
-  const trimmed = token.trim();
-  if (trimmed.length === 0) {
+  const normalized = token.trim().toLowerCase();
+  if (normalized.length === 0) {
     return { valid: false, reason: 'Board token must not be blank.' };
   }
-  if (trimmed.length > 128) {
+  if (normalized.length > 128) {
     return { valid: false, reason: 'Board token exceeds maximum length of 128 characters.' };
   }
-  if (!/^[a-z0-9][a-z0-9_-]*$/i.test(trimmed)) {
+  if (!/^[a-z0-9][a-z0-9_-]*$/.test(normalized)) {
     return {
       valid: false,
       reason: 'Board token must contain only letters, digits, hyphens, and underscores, and must start with a letter or digit.',
     };
   }
-  return { valid: true };
+  return { valid: true, normalized };
 }
 
 /**
@@ -249,7 +252,18 @@ export function normalizeGreenhouseJob(
   if (!job.content) flags.push('description_missing');
 
   // --- Source metadata ---
-  const sourceUpdatedAt = job.updated_at ?? null;
+  // Validate sourceUpdatedAt as an ISO timestamp.  Malformed values become null
+  // with an uncertainty flag rather than silently forwarding a non-timestamp string.
+  let sourceUpdatedAt: string | null = null;
+  if (job.updated_at != null) {
+    const raw = job.updated_at;
+    const parsed = Date.parse(raw);
+    if (!isNaN(parsed)) {
+      sourceUpdatedAt = raw;
+    } else {
+      flags.push('source_updated_at_invalid');
+    }
+  }
   // Preserve metadata deterministically (sorted by stable serialization).
   // Do not include in scoring unless explicitly supported.
   const sourceMetadata: unknown | null = job.metadata != null
@@ -445,8 +459,10 @@ export async function fetchGreenhouseJobs(
       message: `Invalid board token: ${tokenCheck.reason}`,
     }, { fetchedAt });
   }
+  // Use the normalized (trimmed + lowercased) token for URL construction and all keys.
+  const boardToken = tokenCheck.normalized;
 
-  const requestUrl = buildGreenhouseUrl(config.boardToken);
+  const requestUrl = buildGreenhouseUrl(boardToken);
 
   // --- Timeout setup ---
   // The controller covers the ENTIRE operation: fetch + body stream + parsing + normalization.
@@ -485,6 +501,34 @@ export async function fetchGreenhouseJobs(
     const lastModified = response.headers.get('last-modified');
     const finalUrl = response.url || null;
 
+    // --- Final-URL validation ---
+    // After fetch (even with redirect: 'manual'), verify the final URL is the
+    // expected Greenhouse host.  A non-empty response.url that does not use HTTPS
+    // or points to a foreign host indicates an unexpected redirect and is rejected.
+    if (finalUrl) {
+      try {
+        const finalParsed = new URL(finalUrl);
+        if (finalParsed.protocol !== 'https:' || finalParsed.hostname !== 'boards-api.greenhouse.io') {
+          try { response.body?.cancel(); } catch { /* ignore */ }
+          return makeFailure({
+            errorClass: 'unexpected',
+            code: 'redirect_rejected',
+            message: `Final URL is not the expected Greenhouse host: "${finalUrl}".`,
+            httpStatus,
+          }, { fetchedAt, requestUrl, finalUrl, httpStatus, contentType, etag, lastModified });
+        }
+      } catch {
+        // If the URL can't be parsed, treat it as an unexpected host
+        try { response.body?.cancel(); } catch { /* ignore */ }
+        return makeFailure({
+          errorClass: 'unexpected',
+          code: 'redirect_rejected',
+          message: `Final URL could not be parsed: "${finalUrl}".`,
+          httpStatus,
+        }, { fetchedAt, requestUrl, finalUrl, httpStatus, contentType, etag, lastModified });
+      }
+    }
+
     // --- Redirect rejection ---
     // redirect: 'manual' causes 3xx responses to be returned as opaque redirects.
     // We reject all 3xx responses as a security boundary.
@@ -501,12 +545,25 @@ export async function fetchGreenhouseJobs(
 
     // --- Non-2xx responses ---
     if (!response.ok) {
-      // Read bounded error body for provenance (never log it)
+      // Read bounded error body for provenance (never log it).
+      // If reading the error body is aborted by the timeout, preserve the timeout
+      // classification rather than converting it into not_found / rate_limit / server_error.
       let rawErrorText: string | null = null;
       try {
         rawErrorText = await readBoundedText(response, Math.min(maxBytes, 65536));
-      } catch {
-        // Oversized or unreadable — discard error body (readBoundedText handles cleanup)
+      } catch (bodyErr: unknown) {
+        const isAbort =
+          bodyErr instanceof Error &&
+          (bodyErr.name === 'AbortError' || bodyErr.name === 'TimeoutError');
+        if (isAbort) {
+          return makeFailure({
+            errorClass: 'timeout',
+            code: 'timeout',
+            message: `Request timed out after ${timeoutMs}ms (error body stream).`,
+            httpStatus,
+          }, { fetchedAt, requestUrl, finalUrl, httpStatus, contentType, etag, lastModified });
+        }
+        // Oversized or unreadable — discard error body
         rawErrorText = null;
       }
       const errorClass = toErrorClass(httpStatus);
@@ -605,7 +662,7 @@ export async function fetchGreenhouseJobs(
       recordsSeen++;
       const safeId = `job:${job.id}`;
       try {
-        const posting = normalizeGreenhouseJob(job, config.boardToken, fetchedAt);
+        const posting = normalizeGreenhouseJob(job, boardToken, fetchedAt);
         if (!posting.canonicalUrl) {
           // URL is invalid or missing — skip this record
           recordsSkipped++;
@@ -656,10 +713,16 @@ export async function fetchGreenhouseJobs(
       };
     }
 
-    // Partial or full success
+    // Partial or full success.
+    // When some records were skipped, add partial_response to each candidate's flags
+    // so downstream consumers know the connector result is incomplete.
     const isPartial = recordsSkipped > 0;
-    if (isPartial && recordsNormalized === 0) {
-      // All records invalid but recordsSeen was 0 catch above; guard anyway
+    if (isPartial) {
+      for (const c of candidates) {
+        if (!c.uncertaintyFlags.includes('partial_response')) {
+          c.uncertaintyFlags.push('partial_response');
+        }
+      }
     }
 
     return {

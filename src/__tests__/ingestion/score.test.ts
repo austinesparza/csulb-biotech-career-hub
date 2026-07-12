@@ -423,6 +423,8 @@ describe('scoreIngestionCandidate eligibility flag derivation', () => {
     const breakdown = scoreIngestionCandidate(input);
     // Should be either ambiguous or normal — not missing (description is present)
     expect(breakdown.uncertaintyFlags).not.toContain('eligibility_missing');
+    // Must assert eligibility_ambiguous when no eligibility signals are found
+    expect(breakdown.uncertaintyFlags).toContain('eligibility_ambiguous');
   });
 });
 
@@ -465,5 +467,187 @@ describe('scoreIngestionCandidate deadline scoring', () => {
     const a = scoreIngestionCandidate(futureInput, ref);
     const b = scoreIngestionCandidate(futureInput, ref);
     expect(a.total).toBe(b.total);
+  });
+});
+
+// ============================================================
+// DEADLINE SCORING — date-only same-day not expired
+// ============================================================
+
+describe('scoreIngestionCandidate date-only deadline edge cases', () => {
+  it('date-only deadline equal to reference date is NOT expired', () => {
+    // The deadline "2026-09-15" should not be expired at the START of 2026-09-15
+    const referenceNow = new Date('2026-09-15T00:00:00.000Z'); // midnight UTC
+    const input: ScoringInput = { ...BASE_INPUT, closesAt: '2026-09-15' };
+    const breakdown = scoreIngestionCandidate(input, referenceNow);
+    const hasExpiredPenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'deadline' && r.reason.toLowerCase().includes('passed'),
+    );
+    expect(hasExpiredPenalty).toBe(false);
+  });
+
+  it('date-only deadline equal to reference date is NOT expired at noon', () => {
+    const referenceNow = new Date('2026-09-15T12:00:00.000Z'); // noon UTC
+    const input: ScoringInput = { ...BASE_INPUT, closesAt: '2026-09-15' };
+    const breakdown = scoreIngestionCandidate(input, referenceNow);
+    const hasExpiredPenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'deadline' && r.reason.toLowerCase().includes('passed'),
+    );
+    expect(hasExpiredPenalty).toBe(false);
+  });
+
+  it('date-only deadline one day before reference date IS expired', () => {
+    const referenceNow = new Date('2026-09-16T00:00:00.000Z');
+    const input: ScoringInput = { ...BASE_INPUT, closesAt: '2026-09-15' };
+    const breakdown = scoreIngestionCandidate(input, referenceNow);
+    const hasExpiredPenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'deadline' && r.points < 0,
+    );
+    expect(hasExpiredPenalty).toBe(true);
+  });
+
+  it('date-only deadline one day after reference date is upcoming', () => {
+    const referenceNow = new Date('2026-09-14T00:00:00.000Z');
+    const input: ScoringInput = { ...BASE_INPUT, closesAt: '2026-09-15' };
+    const breakdown = scoreIngestionCandidate(input, referenceNow);
+    const hasExpiredPenalty = breakdown.negativeReasons.some(
+      (r) => r.category === 'deadline' && r.reason.toLowerCase().includes('passed'),
+    );
+    expect(hasExpiredPenalty).toBe(false);
+  });
+});
+
+// ============================================================
+// HYBRID GEOGRAPHY — bonus only within SoCal
+// ============================================================
+
+describe('scoreIngestionCandidate hybrid geography restriction', () => {
+  const hybridBase: ScoringInput = {
+    ...BASE_INPUT,
+    remoteType: 'hybrid',
+    classification: 'other',
+    descriptionText: 'Hybrid schedule, no clear eligibility signals.',
+  };
+
+  it('Boston hybrid does NOT receive geography bonus', () => {
+    const input: ScoringInput = {
+      ...hybridBase,
+      locationNormalized: 'boston, ma',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    const geoPoints = breakdown.positiveReasons
+      .filter((r) => r.category === 'geography')
+      .reduce((s, r) => s + r.points, 0);
+    expect(geoPoints).toBe(0);
+  });
+
+  it('New York hybrid does NOT receive geography bonus', () => {
+    const input: ScoringInput = {
+      ...hybridBase,
+      locationNormalized: 'new york, ny',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    const geoPoints = breakdown.positiveReasons
+      .filter((r) => r.category === 'geography')
+      .reduce((s, r) => s + r.points, 0);
+    expect(geoPoints).toBe(0);
+  });
+
+  it('Long Beach hybrid DOES receive geography bonus', () => {
+    const input: ScoringInput = {
+      ...hybridBase,
+      locationNormalized: 'long beach, ca',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasGeoBonus = breakdown.positiveReasons.some(
+      (r) => r.category === 'geography' && r.points > 0,
+    );
+    expect(hasGeoBonus).toBe(true);
+  });
+
+  it('Irvine hybrid DOES receive geography bonus', () => {
+    const input: ScoringInput = {
+      ...hybridBase,
+      locationNormalized: 'irvine, ca',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasGeoBonus = breakdown.positiveReasons.some(
+      (r) => r.category === 'geography' && r.points > 0,
+    );
+    expect(hasGeoBonus).toBe(true);
+  });
+
+  it('remote position DOES receive geography bonus regardless of location', () => {
+    const input: ScoringInput = {
+      ...hybridBase,
+      remoteType: 'remote',
+      locationNormalized: 'boston, ma',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    const hasGeoBonus = breakdown.positiveReasons.some(
+      (r) => r.category === 'geography' && r.points > 0,
+    );
+    expect(hasGeoBonus).toBe(true);
+  });
+});
+
+// ============================================================
+// DEGREE PATTERNS — real RegExp detection
+// ============================================================
+
+describe('scoreIngestionCandidate degree pattern detection', () => {
+  const base: ScoringInput = {
+    ...BASE_INPUT,
+    classification: 'other',
+    titleRaw: 'Research Scientist',
+    titleNormalized: 'research scientist',
+  };
+
+  it('detects "requires a PhD"', () => {
+    const input: ScoringInput = { ...base, descriptionText: 'This position requires a PhD in molecular biology.' };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req')).toBe(true);
+  });
+
+  it('detects "minimum qualification is a PhD"', () => {
+    const input: ScoringInput = { ...base, descriptionText: 'Minimum qualification is a PhD in a relevant field.' };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req')).toBe(true);
+  });
+
+  it('detects "PhD is required"', () => {
+    const input: ScoringInput = { ...base, descriptionText: 'A PhD is required for this role.' };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req')).toBe(true);
+  });
+
+  it('detects "must hold a doctorate"', () => {
+    const input: ScoringInput = { ...base, descriptionText: 'Candidates must hold a doctorate in chemistry.' };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req')).toBe(true);
+  });
+
+  it('does NOT penalize "PhD preferred"', () => {
+    const input: ScoringInput = { ...base, descriptionText: 'PhD preferred but not required. BS accepted.' };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req' && r.points < 0)).toBe(false);
+  });
+
+  it('does NOT penalize "PhD not required"', () => {
+    const input: ScoringInput = { ...base, descriptionText: 'A PhD is not required for this internship position.' };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req' && r.points < 0)).toBe(false);
+  });
+
+  it('does NOT penalize "BS/MS/PhD accepted"', () => {
+    const input: ScoringInput = { ...base, descriptionText: 'BS/MS/PhD accepted. All degree levels welcome.' };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req' && r.points < 0)).toBe(false);
+  });
+
+  it('does NOT penalize "works with PhD scientists"', () => {
+    const input: ScoringInput = { ...base, descriptionText: 'You will work alongside PhD scientists in our research laboratory.' };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req' && r.points < 0)).toBe(false);
   });
 });
