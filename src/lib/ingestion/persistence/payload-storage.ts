@@ -1,4 +1,4 @@
-'use server';
+import 'server-only';
 
 import { sha256Hex } from '../hash';
 import type { ConnectorFetchResult } from '../types';
@@ -28,7 +28,7 @@ export async function storeRawPayload(params: {
   fetchResult: ConnectorFetchResult;
 }): Promise<StoredPayload | null> {
   const { fetchResult, repository, fetchRunId, jobSourceId } = params;
-  if (!fetchResult.rawResponseText || !fetchResult.requestUrl) {
+  if (fetchResult.rawResponseText === null || !fetchResult.requestUrl) {
     return null;
   }
 

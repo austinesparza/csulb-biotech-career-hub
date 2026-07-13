@@ -1,4 +1,4 @@
-'use server';
+import 'server-only';
 
 export * from './errors';
 export * from './opportunity-bridge';

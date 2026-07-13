@@ -1,12 +1,13 @@
-'use server';
+import 'server-only';
 
 import type { IngestionRepository, ReviewTaskRow } from './repository';
 
 export type SourceReviewTaskType = 'source_new' | 'source_changed' | 'source_reopened' | 'source_health';
+export type IngestionReviewTaskType = SourceReviewTaskType | 'possible_duplicate' | 'possible_repost';
 
 export async function ensureOpenSourceReviewTask(params: {
   repository: IngestionRepository;
-  taskType: SourceReviewTaskType;
+  taskType: IngestionReviewTaskType;
   entityTable: string;
   entityId: string;
   materialHash: string | null;

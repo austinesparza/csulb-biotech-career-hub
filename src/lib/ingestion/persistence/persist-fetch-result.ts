@@ -1,8 +1,8 @@
-'use server';
+import 'server-only';
 
 import type { ConnectorFetchResult, NormalizedSourcePosting, SourceFetchErrorClass } from '../types';
 import { isAllowedFetchRunErrorClass, FetchRunAlreadyFinalizedError, FetchRunValidationError } from './errors';
-import { bridgeOpportunityForSourcePosting } from './opportunity-bridge';
+import { bridgeOpportunityForSourcePosting, PENDING_OPPORTUNITY_MIN_SCORE } from './opportunity-bridge';
 import { storeRawPayload } from './payload-storage';
 import {
   createSupabaseIngestionRepository,
@@ -144,6 +144,9 @@ export async function persistFetchResult(params: {
   expectedJobSourceId: string;
   fetchResult: ConnectorFetchResult;
   clock?: IngestionClock;
+  retry?: {
+    resumeFailedRun?: boolean;
+  };
 }): Promise<PersistFetchResultSummary> {
   const clock = params.clock ?? { now: () => new Date() };
   const run = await params.repository.getFetchRun(params.fetchRunId);
@@ -155,8 +158,18 @@ export async function persistFetchResult(params: {
     throw new FetchRunValidationError(params.fetchRunId, `Fetch run ${params.fetchRunId} does not belong to expected source ${params.expectedJobSourceId}.`);
   }
 
-  if (run.status === 'completed' || run.status === 'partial' || run.status === 'failed' || run.status === 'cancelled') {
+  if (run.status === 'completed' || run.status === 'partial' || run.status === 'cancelled') {
     throw new FetchRunAlreadyFinalizedError(params.fetchRunId, run.status);
+  }
+
+  if (run.status === 'failed') {
+    const canResume = params.retry?.resumeFailedRun
+      && run.error_class === 'unexpected'
+      && ((run.log_json && Object.prototype.hasOwnProperty.call(run.log_json, 'persistenceError'))
+        || (run.log_json && Object.prototype.hasOwnProperty.call(run.log_json, 'persistence_error')));
+    if (!canResume) {
+      throw new FetchRunAlreadyFinalizedError(params.fetchRunId, run.status);
+    }
   }
 
   if (run.status !== 'running') {
@@ -178,6 +191,7 @@ export async function persistFetchResult(params: {
     recordsClosedCandidates: 0,
   };
   const result = params.fetchResult;
+  let staleObservationCount = 0;
 
   try {
     const payload = await storeRawPayload({
@@ -189,11 +203,15 @@ export async function persistFetchResult(params: {
     payloadId = payload?.payload.id ?? null;
     payloadInserted = payload?.inserted ?? false;
 
+    if (result.ok && result.candidates.length > 0 && payload == null) {
+      throw new FetchRunValidationError(params.fetchRunId, 'Successful fetch results with candidates require a stored raw payload.');
+    }
+
     if (result.ok && payload) {
       for (const candidate of result.candidates) {
       const existing = await params.repository.findPostingByIdentity(params.expectedJobSourceId, candidate.identityKey);
-      const reopened = existing != null && ['closed', 'missing', 'closure_candidate'].includes(existing.current_status);
-      const currentStatus = reopened ? 'reopened' as const : 'open' as const;
+      const reopenedFromCurrent = existing != null && ['closed', 'missing', 'closure_candidate'].includes(existing.current_status);
+      const currentStatus = reopenedFromCurrent ? 'reopened' as const : 'open' as const;
 
       const upsertInput = {
         jobSourceId: params.expectedJobSourceId,
@@ -224,15 +242,24 @@ export async function persistFetchResult(params: {
         observedAtIso: candidate.fetchedAt,
       };
 
-      const posting = existing
-        ? await params.repository.updatePosting(existing.id, upsertInput)
-        : await params.repository.insertPosting(upsertInput);
+      const upsert = await params.repository.upsertPostingObservation({
+        fetchRunId: params.fetchRunId,
+        ...upsertInput,
+      });
+      const posting = upsert.posting;
+      const isFirstObservation = upsert.created;
+      const materialChanged = upsert.materialChanged;
+      const reopened = upsert.wasPreviouslyClosed;
+
+      if (upsert.staleObservation) {
+        staleObservationCount += 1;
+        counters.recordsUnchanged += 1;
+        continue;
+      }
 
       const priorVersion: SourcePostingVersionRow | null = await params.repository.getLatestVersion(posting.id);
-      const isFirstObservation = priorVersion == null;
-      const materialChanged = isFirstObservation || priorVersion.material_hash !== candidate.materialHash;
 
-      if (!existing) counters.recordsNew += 1;
+      if (upsert.created) counters.recordsNew += 1;
       else if (materialChanged) counters.recordsChanged += 1;
       else counters.recordsUnchanged += 1;
 
@@ -255,7 +282,7 @@ export async function persistFetchResult(params: {
         });
       }
 
-      if (!existing && candidate.relevanceScore >= 35) {
+      if (upsert.created && candidate.relevanceScore >= PENDING_OPPORTUNITY_MIN_SCORE) {
         counters.recordsReviewed += 1;
         await ensureOpenSourceReviewTask({
           repository: params.repository,
@@ -309,9 +336,10 @@ export async function persistFetchResult(params: {
       payloadStored: payloadId != null,
       payloadId,
       counters,
+      staleObservationCount,
     });
 
-    await params.repository.updateFetchRun({
+    const finalized = await params.repository.updateFetchRun({
       id: params.fetchRunId,
       status: finalStatus,
       httpStatus: result.httpStatus,
@@ -327,6 +355,9 @@ export async function persistFetchResult(params: {
       logJson: safeLog,
       finishedAtIso: clock.now().toISOString(),
     });
+    if (!finalized.updated) {
+      throw new FetchRunValidationError(params.fetchRunId, 'Fetch run finalization race detected; run was already finalized or cancelled.');
+    }
 
     return {
       fetchRunId: params.fetchRunId,
@@ -336,7 +367,7 @@ export async function persistFetchResult(params: {
       counters,
     };
   } catch (error) {
-    await params.repository.updateFetchRun({
+    const failed = await params.repository.updateFetchRun({
       id: params.fetchRunId,
       status: 'failed',
       httpStatus: result.httpStatus,
@@ -353,9 +384,13 @@ export async function persistFetchResult(params: {
         payloadStored: payloadId != null,
         payloadId,
         persistenceError: error instanceof Error ? error.message : String(error),
+        staleObservationCount,
       }),
       finishedAtIso: clock.now().toISOString(),
     });
+    if (!failed.updated) {
+      throw new FetchRunValidationError(params.fetchRunId, 'Fetch run failure transition race detected; run was already finalized or cancelled.');
+    }
     throw error;
   }
 }
@@ -367,6 +402,9 @@ export async function persistFetchResultWithSupabase(params: {
   expectedJobSourceId: string;
   fetchResult: ConnectorFetchResult;
   clock?: IngestionClock;
+  retry?: {
+    resumeFailedRun?: boolean;
+  };
 }): Promise<PersistFetchResultSummary> {
   const repository = createSupabaseIngestionRepository({ db: params.db, storage: params.storage, clock: params.clock });
   return persistFetchResult({
@@ -375,6 +413,7 @@ export async function persistFetchResultWithSupabase(params: {
     expectedJobSourceId: params.expectedJobSourceId,
     fetchResult: params.fetchResult,
     clock: params.clock,
+    retry: params.retry,
   });
 }
 

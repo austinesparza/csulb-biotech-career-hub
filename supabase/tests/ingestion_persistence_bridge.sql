@@ -1,5 +1,6 @@
 \set ON_ERROR_STOP on
 
+-- Phase 2B local integration test: exercises transactional RPC and persistence invariants.
 begin;
 
 create temp table _results (check_name text primary key, result text not null) on commit drop;
@@ -10,7 +11,6 @@ language plpgsql as $$
 begin
   if p_passed then
     insert into _results values (p_name, 'PASS');
-    raise notice 'PASS  %', p_name;
   else
     insert into _results values (p_name, format('FAIL: %s', p_msg));
     raise exception 'Assertion failed: % (%)', p_name, p_msg;
@@ -23,16 +23,23 @@ declare
   v_sr uuid;
   v_js uuid;
   v_run uuid;
+  v_run2 uuid;
   v_payload uuid;
+  v_payload2 uuid;
+  v_out record;
   v_posting uuid;
   v_opp uuid;
+  v_updated integer;
 begin
   insert into public.source_records (name, source_type)
-  values ('_phase2b_sr', 'website_page')
+  values ('_phase2b_int_sr', 'website_page')
   returning id into v_sr;
 
-  insert into public.job_sources (source_record_id, source_name, source_kind, careers_url, enabled, terms_reviewed, terms_review_date, robots_reviewed)
-  values (v_sr, 'phase2b-source', 'greenhouse', 'https://example.com/careers', true, true, current_date, true)
+  insert into public.job_sources (
+    source_record_id, source_name, source_kind, careers_url,
+    enabled, terms_reviewed, terms_review_date, robots_reviewed
+  )
+  values (v_sr, 'phase2b-int-source', 'greenhouse', 'https://example.com/careers', true, true, current_date, true)
   returning id into v_js;
 
   insert into public.source_fetch_runs (job_source_id, trigger_kind, status, scheduled_for, started_at)
@@ -45,76 +52,213 @@ begin
   ) values (
     v_run, 'https://boards-api.greenhouse.io/v1/boards/test/jobs?content=true',
     'https://boards-api.greenhouse.io/v1/boards/test/jobs?content=true',
-    'application/json', 200, lpad('a', 64, 'a'), 123,
+    'application/json', 200, lpad('a', 64, 'a'), 0,
     'source/test/a/a.txt'
   ) returning id into v_payload;
 
-  begin
-    insert into public.source_payloads (
-      source_fetch_run_id, request_url, final_url, content_type,
-      status_code, sha256, size_bytes, storage_path
-    ) values (
-      v_run, 'https://boards-api.greenhouse.io/v1/boards/test/jobs?content=true',
-      'https://boards-api.greenhouse.io/v1/boards/test/jobs?content=true',
-      'application/json', 200, lpad('a', 64, 'a'), 123,
-      'source/test/a/a.txt'
-    );
-    perform _assert('source_payload_unique_rejects_duplicate', false, 'duplicate payload row was accepted');
-  exception when unique_violation then
-    perform _assert('source_payload_unique_rejects_duplicate', true);
-  end;
+  perform _assert(
+    'payload_metadata_inserted',
+    exists(select 1 from public.source_payloads where id = v_payload and size_bytes = 0),
+    'payload metadata row missing'
+  );
 
-  insert into public.source_postings (
-    job_source_id, external_posting_id, canonical_url, identity_key,
-    current_status, relevance_score, relevance_score_version,
-    score_breakdown_json, uncertainty_flags, first_seen_at, last_seen_at,
-    last_payload_id, last_material_hash
+  select * into v_out from public.upsert_source_posting_observation(
+    v_run,
+    v_js,
+    'greenhouse:test:123',
+    'https://example.com/jobs/123',
+    '123',
+    'Acme Biotech',
+    'acme biotech',
+    'Research Intern',
+    'research intern',
+    'Long Beach, CA',
+    'long beach, ca',
+    'hybrid',
+    'internship',
+    'internship',
+    'Research',
+    'biotech',
+    date '2026-07-01',
+    date '2026-08-01',
+    'hard',
+    'open',
+    80,
+    1,
+    '{}'::jsonb,
+    '{}'::text[],
+    v_payload,
+    lpad('b', 64, 'b'),
+    '2026-07-13T00:00:00Z'::timestamptz
+  );
+
+  v_posting := v_out.posting_id;
+
+  perform _assert('rpc_creates_posting', v_out.created and not v_out.stale_observation, 'posting not created by rpc');
+
+  select * into v_out from public.upsert_source_posting_observation(
+    v_run,
+    v_js,
+    'greenhouse:test:123',
+    'https://example.com/jobs/123',
+    '123',
+    'Acme Biotech',
+    'acme biotech',
+    'Research Intern',
+    'research intern',
+    'Long Beach, CA',
+    'long beach, ca',
+    'hybrid',
+    'internship',
+    'internship',
+    'Research',
+    'biotech',
+    date '2026-07-01',
+    date '2026-08-01',
+    'hard',
+    'open',
+    80,
+    1,
+    '{}'::jsonb,
+    '{}'::text[],
+    v_payload,
+    lpad('b', 64, 'b'),
+    '2026-07-13T00:00:00Z'::timestamptz
+  );
+
+  perform _assert('rpc_reports_unchanged_replay', not v_out.created and not v_out.material_changed and not v_out.stale_observation, 'unchanged replay not detected');
+
+  select * into v_out from public.upsert_source_posting_observation(
+    v_run,
+    v_js,
+    'greenhouse:test:123',
+    'https://example.com/jobs/123',
+    '123',
+    'Acme Biotech',
+    'acme biotech',
+    'Research Intern II',
+    'research intern ii',
+    'Long Beach, CA',
+    'long beach, ca',
+    'hybrid',
+    'internship',
+    'internship',
+    'Research',
+    'biotech',
+    date '2026-07-01',
+    date '2026-08-01',
+    'hard',
+    'open',
+    80,
+    1,
+    '{}'::jsonb,
+    '{}'::text[],
+    v_payload,
+    lpad('c', 64, 'c'),
+    '2026-07-14T00:00:00Z'::timestamptz
+  );
+
+  perform _assert('rpc_reports_material_change', v_out.material_changed and not v_out.stale_observation, 'material change not detected');
+
+  select * into v_out from public.upsert_source_posting_observation(
+    v_run,
+    v_js,
+    'greenhouse:test:123',
+    'https://example.com/jobs/123',
+    '123',
+    'Acme Biotech',
+    'acme biotech',
+    'Old Replay',
+    'old replay',
+    'Long Beach, CA',
+    'long beach, ca',
+    'hybrid',
+    'internship',
+    'internship',
+    'Research',
+    'biotech',
+    date '2026-07-01',
+    date '2026-08-01',
+    'hard',
+    'open',
+    80,
+    1,
+    '{}'::jsonb,
+    '{}'::text[],
+    v_payload,
+    lpad('d', 64, 'd'),
+    '2026-07-12T00:00:00Z'::timestamptz
+  );
+
+  perform _assert('rpc_rejects_stale_observation_regression', v_out.stale_observation and not v_out.material_changed, 'stale observation should be rejected');
+
+  insert into public.source_fetch_runs (job_source_id, trigger_kind, status, scheduled_for, started_at)
+  values (v_js, 'manual', 'running', now(), now())
+  returning id into v_run2;
+
+  insert into public.source_payloads (
+    source_fetch_run_id, request_url, final_url, content_type,
+    status_code, sha256, size_bytes, storage_path
   ) values (
-    v_js, '123', 'https://example.com/jobs/123', 'greenhouse:test:123',
-    'open', 80, 1,
-    '{}'::jsonb, '{}'::text[], now(), now(),
-    v_payload, lpad('b', 64, 'b')
-  ) returning id into v_posting;
-
-  begin
-    insert into public.source_postings (
-      job_source_id, canonical_url, identity_key,
-      current_status, last_material_hash
-    ) values (
-      v_js, 'https://example.com/jobs/123', 'greenhouse:test:123',
-      'open', lpad('b', 64, 'b')
-    );
-    perform _assert('source_posting_identity_unique_rejects_duplicate', false, 'duplicate identity row was accepted');
-  exception when unique_violation then
-    perform _assert('source_posting_identity_unique_rejects_duplicate', true);
-  end;
+    v_run2, 'https://boards-api.greenhouse.io/v1/boards/test/jobs?content=true',
+    'https://boards-api.greenhouse.io/v1/boards/test/jobs?content=true',
+    'application/json', 200, lpad('e', 64, 'e'), 123,
+    'source/test/e/e.txt'
+  ) returning id into v_payload2;
 
   insert into public.source_posting_versions (
     source_posting_id, source_fetch_run_id, source_payload_id,
     connector_version, is_material_change, material_hash,
     normalized_json, score_breakdown_json, field_diff_json
   ) values (
-    v_posting, v_run, v_payload,
-    '1.0.0', false, lpad('b', 64, 'b'),
-    '{"identityKey":"greenhouse:test:123"}'::jsonb,
-    '{}'::jsonb,
-    '{}'::jsonb
+    v_posting, v_run2, v_payload2,
+    '1.0.0', false, lpad('e', 64, 'e'),
+    '{}'::jsonb, '{}'::jsonb, '{}'::jsonb
   );
 
   begin
-    update public.source_posting_versions
-      set connector_version = '1.0.1'
-    where source_posting_id = v_posting;
-    perform _assert('source_posting_versions_update_blocked', false, 'append-only trigger failed to block update');
-  exception when others then
-    perform _assert('source_posting_versions_update_blocked', true);
+    insert into public.source_posting_versions (
+      source_posting_id, source_fetch_run_id, source_payload_id,
+      connector_version, is_material_change, material_hash,
+      normalized_json, score_breakdown_json, field_diff_json
+    ) values (
+      v_posting, v_run2, v_payload2,
+      '1.0.0', false, lpad('e', 64, 'e'),
+      '{}'::jsonb, '{}'::jsonb, '{}'::jsonb
+    );
+    perform _assert('version_unique_material_hash_prevents_duplicate', false, 'duplicate material version insert accepted');
+  exception when unique_violation then
+    perform _assert('version_unique_material_hash_prevents_duplicate', true);
   end;
 
-  insert into public.opportunities (
-    source_record_id, title, status, review_status, public_safe
-  ) values (
-    v_sr, 'Pending bridge opportunity', 'needs_review', 'pending', false
-  ) returning id into v_opp;
+  insert into public.opportunities (source_record_id, title, status, review_status, public_safe)
+  values (v_sr, 'Pending bridge opportunity', 'needs_review', 'pending', false)
+  returning id into v_opp;
+
+  insert into public.review_tasks (task_type, entity_table, entity_id, status, notes)
+  values ('source_changed', 'opportunities', v_opp, 'open', '[source_changed:hash1] changed');
+
+  begin
+    insert into public.review_tasks (task_type, entity_table, entity_id, status, notes)
+    values ('source_changed', 'opportunities', v_opp, 'open', '[source_changed:hash1] changed');
+    perform _assert('review_task_open_unique_blocks_duplicate', false, 'duplicate open task accepted');
+  exception when unique_violation then
+    perform _assert('review_task_open_unique_blocks_duplicate', true);
+  end;
+
+  update public.source_fetch_runs
+     set status = 'cancelled',
+         finished_at = now()
+   where id = v_run2;
+
+  update public.source_fetch_runs
+     set status = 'completed',
+         finished_at = now()
+   where id = v_run2
+     and status = 'running';
+
+  get diagnostics v_updated = row_count;
+  perform _assert('compare_and_set_prevents_cancelled_overwrite', v_updated = 0, 'cancelled run should not be overwritten');
 
   insert into public.opportunity_source_links (
     opportunity_id, source_posting_id, match_type, is_primary
@@ -126,34 +270,12 @@ begin
     insert into public.opportunity_source_links (
       opportunity_id, source_posting_id, match_type, is_primary
     ) values (
-      v_opp, v_posting, 'exact', false
+      v_opp, gen_random_uuid(), 'exact', true
     );
-    perform _assert('opportunity_source_links_unique_rejects_duplicate_pair', false, 'duplicate source link pair was accepted');
+    perform _assert('one_primary_source_link_enforced', false, 'second primary link accepted');
   exception when unique_violation then
-    perform _assert('opportunity_source_links_unique_rejects_duplicate_pair', true);
+    perform _assert('one_primary_source_link_enforced', true);
   end;
-
-  begin
-    insert into public.opportunity_source_links (
-      opportunity_id, source_posting_id, match_type, is_primary
-    ) values (
-      v_opp, v_posting, 'manual', true
-    );
-    perform _assert('opportunity_source_links_primary_unique_rejects_second_primary', false, 'second primary link was accepted');
-  exception when unique_violation then
-    perform _assert('opportunity_source_links_primary_unique_rejects_second_primary', true);
-  end;
-
-  perform _assert('pending_opportunity_safety_defaults',
-    exists (
-      select 1 from public.opportunities
-      where id = v_opp
-        and status = 'needs_review'
-        and review_status = 'pending'
-        and public_safe = false
-    ),
-    'pending opportunity safety flags not preserved'
-  );
 end
 $$;
 

@@ -1,4 +1,4 @@
-'use server';
+import 'server-only';
 
 import { makeFamilyKey, makeStrictKey } from '../../csvImport';
 import {
@@ -67,6 +67,36 @@ function toExistingOpportunity(row: OpportunityRow): ExistingOpportunity {
   };
 }
 
+function canAutoMutateDraft(opportunity: OpportunityRow): boolean {
+  if (opportunity.review_status === 'rejected' || opportunity.review_status === 'approved') return false;
+  if (['hidden', 'duplicate', 'not_relevant', 'archive_only'].includes(opportunity.status)) return false;
+  return true;
+}
+
+async function ensureLink(params: {
+  repository: IngestionRepository;
+  opportunityId: string;
+  sourcePostingId: string;
+  matchType: PersistedLinkMatchType;
+  requestPrimary: boolean;
+}) {
+  const existing = await params.repository.getLink(params.opportunityId, params.sourcePostingId);
+  if (existing) return existing;
+
+  let isPrimary = false;
+  if (params.requestPrimary) {
+    const currentPrimary = await params.repository.getPrimaryLink(params.opportunityId);
+    isPrimary = !currentPrimary;
+  }
+
+  return params.repository.insertLink({
+    opportunityId: params.opportunityId,
+    sourcePostingId: params.sourcePostingId,
+    matchType: params.matchType,
+    isPrimary,
+  });
+}
+
 export interface OpportunityBridgeResult {
   createdPendingOpportunityId: string | null;
   linkedOpportunityId: string | null;
@@ -82,9 +112,10 @@ export async function bridgeOpportunityForSourcePosting(params: {
   materialChanged: boolean;
 }): Promise<OpportunityBridgeResult> {
   const { repository, jobSource, sourcePosting, posting, materialChanged } = params;
-  const draft = postingToDraft(posting, jobSource.company_id);
+  const companyResolution = await repository.resolveCompanyId(jobSource, posting.employerNameRaw, posting.employerNameNormalized);
+  const draft = postingToDraft(posting, companyResolution.companyId);
 
-  const existingOpportunities = await repository.listOpenOpportunities();
+  const existingOpportunities = await repository.listMatchableOpportunities();
   const match = matchOpportunity(draft, existingOpportunities.map(toExistingOpportunity));
 
   let linkedOpportunity: OpportunityRow | null = null;
@@ -95,61 +126,86 @@ export async function bridgeOpportunityForSourcePosting(params: {
   if (match.kind === 'same_url' || match.kind === 'strict_key' || match.kind === 'family' || match.kind === 'fuzzy') {
     linkedOpportunity = await repository.findOpportunityById(match.opportunityId);
     if (linkedOpportunity) {
-      const policy = decideUpdatePolicy(linkedOpportunity);
-      if (policy.mode === 'touch_and_flag') {
-        protectedApproved = true;
+      if (match.kind === 'family' || match.kind === 'fuzzy') {
         await repository.updateOpportunityObservation(linkedOpportunity.id, posting.fetchedAt);
+        await ensureOpenSourceReviewTask({
+          repository,
+          taskType: match.kind === 'family' ? 'possible_repost' : 'possible_duplicate',
+          entityTable: 'opportunities',
+          entityId: linkedOpportunity.id,
+          materialHash: sourcePosting.last_material_hash,
+          noteTag: match.kind,
+          noteBody: `${match.kind === 'family' ? 'Family-key' : 'Fuzzy'} match requires officer review before treating records as same opportunity.`,
+        });
 
-        const changed = changedFlaggedFields(
-          {
+        matchType = mapMatchTypeToLinkType(match.kind);
+        await ensureLink({
+          repository,
+          opportunityId: linkedOpportunity.id,
+          sourcePostingId: sourcePosting.id,
+          matchType,
+          requestPrimary: false,
+        });
+      } else {
+        const policy = decideUpdatePolicy(linkedOpportunity);
+        const mayMutate = canAutoMutateDraft(linkedOpportunity) && policy.mode === 'update_fields';
+
+        if (!mayMutate) {
+          protectedApproved = policy.mode === 'touch_and_flag' || linkedOpportunity.review_status === 'approved';
+          await repository.updateOpportunityObservation(linkedOpportunity.id, posting.fetchedAt);
+
+          const changed = changedFlaggedFields(
+            {
+              title: draft.title,
+              posting_url: draft.posting_url,
+              location: draft.location,
+              eligibility: draft.eligibility,
+              focus_area: draft.focus_area,
+              deadline: draft.deadline,
+              deadline_text: draft.deadline_text,
+              paid_status: draft.paid_status,
+              application_type: draft.application_type,
+              source_status_raw: draft.source_status_raw,
+            },
+            linkedOpportunity as unknown as Record<string, unknown>,
+          );
+
+          if (materialChanged || changed.length > 0) {
+            await ensureOpenSourceReviewTask({
+              repository,
+              taskType: 'source_changed',
+              entityTable: 'opportunities',
+              entityId: linkedOpportunity.id,
+              materialHash: sourcePosting.last_material_hash,
+              noteTag: 'source_changed',
+              noteBody: `Linked source posting changed; opportunity fields preserved. Changed fields: ${changed.join(', ') || 'material_hash_only'}.`,
+            });
+          }
+        } else {
+          await repository.updateOpportunityDraftFromPosting(linkedOpportunity.id, {
             title: draft.title,
-            posting_url: draft.posting_url,
+            postingUrl: draft.posting_url,
             location: draft.location,
-            eligibility: draft.eligibility,
-            focus_area: draft.focus_area,
+            focusArea: draft.focus_area,
             deadline: draft.deadline,
-            deadline_text: draft.deadline_text,
-            paid_status: draft.paid_status,
-            application_type: draft.application_type,
-            source_status_raw: draft.source_status_raw,
-          },
-          linkedOpportunity as unknown as Record<string, unknown>,
-        );
-
-        if (materialChanged || changed.length > 0) {
-          await ensureOpenSourceReviewTask({
-            repository,
-            taskType: 'source_changed',
-            entityTable: 'opportunities',
-            entityId: linkedOpportunity.id,
-            materialHash: sourcePosting.last_material_hash,
-            noteTag: 'source_changed',
-            noteBody: `Linked source posting changed; approved/public opportunity preserved. Changed fields: ${changed.join(', ') || 'material_hash_only'}.`,
+            deadlineText: draft.deadline_text,
+            applicationType: draft.application_type,
+            sourceStatusRaw: draft.source_status_raw,
+            relevanceScore: posting.relevanceScore,
+            relevanceReasons: [`score:${posting.relevanceScore}`],
+            observedAtIso: posting.fetchedAt,
           });
         }
-      } else {
-        await repository.updateOpportunityDraftFromPosting(linkedOpportunity.id, {
-          title: draft.title,
-          postingUrl: draft.posting_url,
-          location: draft.location,
-          focusArea: draft.focus_area,
-          deadline: draft.deadline,
-          deadlineText: draft.deadline_text,
-          applicationType: draft.application_type,
-          sourceStatusRaw: draft.source_status_raw,
-          relevanceScore: posting.relevanceScore,
-          relevanceReasons: [`score:${posting.relevanceScore}`],
-          observedAtIso: posting.fetchedAt,
+
+        matchType = 'exact';
+        await ensureLink({
+          repository,
+          opportunityId: linkedOpportunity.id,
+          sourcePostingId: sourcePosting.id,
+          matchType,
+          requestPrimary: true,
         });
       }
-
-      matchType = mapMatchTypeToLinkType(match.kind);
-      await repository.insertLink({
-        opportunityId: linkedOpportunity.id,
-        sourcePostingId: sourcePosting.id,
-        matchType,
-        isPrimary: matchType === 'exact',
-      });
     }
   }
 
@@ -174,13 +230,26 @@ export async function bridgeOpportunityForSourcePosting(params: {
 
     linkedOpportunity = pending;
     createdPendingOpportunityId = pending.id;
-    matchType = 'alternate_source';
-    await repository.insertLink({
+    matchType = 'exact';
+    await ensureLink({
+      repository,
       opportunityId: pending.id,
       sourcePostingId: sourcePosting.id,
       matchType,
-      isPrimary: false,
+      requestPrimary: true,
     });
+
+    if (companyResolution.matchedFuzzy) {
+      await ensureOpenSourceReviewTask({
+        repository,
+        taskType: 'possible_duplicate',
+        entityTable: 'opportunities',
+        entityId: pending.id,
+        materialHash: sourcePosting.last_material_hash,
+        noteTag: 'company_fuzzy',
+        noteBody: 'Fuzzy company match requires officer review before company association is treated as exact.',
+      });
+    }
   }
 
   return {

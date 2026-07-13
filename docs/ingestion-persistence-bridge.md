@@ -2,146 +2,103 @@
 
 ## Scope
 
-Phase 2B adds a server-only persistence bridge that accepts Phase 2A connector results and writes to the Phase 1 ingestion schema without automatic publication.
+Phase 2B persistence now enforces transactional posting/version integrity, compare-and-set fetch-run finalization, replay-safe payload reconciliation, and review-only behavior for non-exact opportunity matches.
 
-Implemented flow:
+## Module boundary
 
-connector result
-→ raw payload storage
-→ source payload metadata
-→ source posting upsert
-→ immutable posting version
-→ dedupe-driven bridge assessment
-→ review task creation
-→ optional pending opportunity row
+All modules in `src/lib/ingestion/persistence/` are server-only data-access modules and start with:
 
-## Module architecture
-
-`src/lib/ingestion/persistence/`
-
-- `errors.ts`: typed persistence and fetch-run validation errors.
-- `repository.ts`: repository interface + Supabase adapter with DI for DB and storage clients.
-- `payload-storage.ts`: deterministic SHA-256 payload pathing and metadata persistence.
-- `review-tasks.ts`: idempotent open-task creation for approved enum task types.
-- `opportunity-bridge.ts`: pending-opportunity safety gate + approved-record protection.
-- `persist-fetch-result.ts`: orchestration from fetch result to schema writes.
-- `index.ts`: server-only export surface.
-
-Dependency injection:
-
-- `db` client (Supabase PostgREST client interface)
-- `storage` client (Supabase storage interface)
-- `clock` provider
-
-## Persistence sequence
-
-1. Load `source_fetch_runs` and validate:
-   - row exists
-   - `job_source_id` matches expected source
-   - status is `running`
-   - reject finalized statuses (`completed`, `partial`, `failed`, `cancelled`)
-2. Optionally store raw payload when `rawResponseText` is available.
-3. For each normalized candidate:
-   - upsert `source_postings` by `(job_source_id, identity_key)`
-   - preserve `first_seen_at`
-   - update `last_seen_at`, `last_payload_id`, `last_material_hash`
-   - reset `consecutive_misses` when seen
-   - persist score + score version + uncertainty flags + score breakdown
-4. Insert `source_posting_versions`:
-   - first observation
-   - subsequent material-hash changes only
-   - deterministic `field_diff_json` from previous normalized snapshot
-5. Create idempotent review tasks:
-   - `source_new` for new relevant posting observations
-   - `source_changed` for material changes
-   - `source_reopened` when a previously closed/missing posting is seen open
-6. Bridge to opportunities:
-   - match existing opportunities with existing dedupe policy
-   - for approved+public opportunities: update observation timestamp only; never mutate curated/public fields
-   - for non-approved opportunities: update draft fields safely
-   - create pending opportunities only at/above threshold, always with:
-     - `status = needs_review`
-     - `review_status = pending`
-     - `public_safe = false`
-   - create `opportunity_source_links` using allowed match types only
-7. Finalize fetch run with safe structured `log_json`, counters, and final status.
-
-## Raw payload object paths
-
-Payload object paths are deterministic and collision-resistant:
-
-`{job_source_id}/{source_fetch_run_id}/{sha256[0..1]}/{sha256}.txt`
-
-This keeps stable auditability by source + run + content hash.
-
-## Source posting and version rules
-
-- `source_postings` are never deleted by the bridge.
-- `source_posting_versions` remains append-only (existing trigger unchanged).
-- A new version row is inserted only on first observation or material hash change.
-- Re-observing the same material hash does not create a duplicate version row.
-
-## Idempotency strategy (Approach B)
-
-Phase 2B uses explicit idempotent compensation/resumability (no new RPC migration):
-
-- payload metadata uniqueness: `(source_fetch_run_id, sha256, request_url)`
-- source posting identity uniqueness: `(job_source_id, identity_key)`
-- source link uniqueness: `(opportunity_id, source_posting_id)`
-- open-task dedupe via deterministic task notes marker + subject/type lookup
-- deterministic processing allows safe replay of the same fetch run payload
-
-Uniqueness races are handled as retry-safe lookups where possible.
-
-## Failure and retry behavior
-
-- Storage upload failure aborts processing.
-- Storage success + metadata failure throws `PayloadStorageMetadataError` with explicit reconciliation guidance.
-- Unexpected persistence errors set fetch run status to `failed`, record safe error info in `log_json`, and rethrow.
-- Raw payload text is never copied into logs.
-
-## Approved-record mutation boundary
-
-For matched opportunities that are already `review_status = approved` and `public_safe = true`:
-
-- do not overwrite imported/public-facing fields
-- update `last_seen_at` only
-- create `source_changed` review tasks when material/flagged fields differ
-
-## Opportunity safety gates
-
-Pending opportunity creation requires relevance score >= 35.
-
-Automatically created opportunities are always:
-
-- `status = needs_review`
-- `review_status = pending`
-- `public_safe = false`
-
-No bridge path sets approved/public statuses.
-
-## Transaction limitation
-
-Supabase JS does not provide a general client-side multi-table transaction for this workflow.
-
-Phase 2B intentionally uses idempotent resumability (Approach B) rather than introducing transactional RPC in this phase.
-
-## Local integration test commands
-
-```bash
-npx supabase start
-npx supabase db reset --local
-npx supabase db lint --local --fail-on error
-npx supabase status
-export LOCAL_DATABASE_URL='<local db url>'
-psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/automated_ingestion_schema.sql
-psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/ingestion_persistence_bridge.sql
+```ts
+import 'server-only';
 ```
 
-## Deferred work
+They are **not** Server Action modules.
 
-- scheduler and worker claiming loop
-- additional connectors
-- source admin UI
-- closure/miss lifecycle automation
-- transactional RPC option if future multi-table invariants require stronger atomicity
+## Transactional boundary
+
+`public.upsert_source_posting_observation(...)` is the transactional boundary for critical posting mutation.
+
+It:
+- locks and validates the running fetch run
+- serializes identity updates with advisory locking
+- creates or updates `source_postings`
+- returns deterministic `created/material_changed/reopened/stale_observation` outcomes
+- rejects stale observations from regressing current posting state
+
+Version insertion remains append-only, and duplicate version writes are blocked by unique `(source_posting_id, material_hash)`.
+
+## Payload and version guarantees
+
+- Success with `candidates.length > 0` requires a persisted payload row.
+- `rawResponseText = null` is treated as unavailable payload and fails safe.
+- `rawResponseText = ''` is valid and persisted as a zero-byte payload.
+- No posting version is inserted without `source_payload_id`.
+
+## Retry and resume rules
+
+- `completed` and `cancelled` runs are immutable.
+- `failed` runs can be resumed only with explicit `retry.resumeFailedRun = true` and only when the previous failure was persistence-related (`error_class = unexpected` + persistence marker in `log_json`).
+- Connector-terminal failures are not resumed as successful runs.
+
+## Fetch-run compare-and-set
+
+Finalization/failure updates use:
+- `id = fetchRunId`
+- `status = 'running'`
+
+Exactly one row must update; cancellation/finalization races are rejected.
+
+## Opportunity bridge behavior
+
+- Only `same_url` and `strict_key` matches may auto-update mutable draft opportunities.
+- `family` and `fuzzy` matches are review-only: no automatic field/lifecycle mutation.
+- Family/fuzzy matches create review tasks and non-primary links (`annual_family` / `probable`) when linked.
+- Excluded matching population: `duplicate`, `not_relevant`, `hidden`, `archive_only`.
+- `closed`, `expired`, `broken_link`, and `rejected` remain matchable as historical/repost candidates but are not silently reset.
+
+## Company resolution
+
+Order of operations:
+1. use `job_sources.company_id` when valid
+2. otherwise exact normalized company match
+3. fuzzy company match creates a review task (`possible_duplicate`)
+4. no match may create private company rows only when employer identity is sufficiently present
+5. missing/ambiguous employer identity does not fabricate unknown companies
+
+## Source-link semantics
+
+- New pending opportunities created directly from source postings are linked as `match_type = exact, is_primary = true`.
+- Existing opportunities receive primary exact links only when no primary link exists.
+- If another primary already exists, the new exact link is inserted as non-primary.
+- Duplicate and one-primary races are handled through DB constraints and recovery lookups.
+
+## Test scope
+
+### Schema-invariant SQL checks
+
+`supabase/tests/ingestion_persistence_schema_invariants.sql`
+
+### Local integration SQL checks (RPC + concurrency invariants)
+
+`supabase/tests/ingestion_persistence_bridge.sql`
+
+Covers:
+- payload metadata insertion
+- RPC posting create/replay/material-change/stale-observation outcomes
+- duplicate version prevention
+- review-task idempotency uniqueness
+- compare-and-set run finalization race protection
+- one-primary source-link enforcement
+
+### TypeScript bridge tests
+
+`src/__tests__/ingestion/persistence-bridge.test.ts`
+
+Covers:
+- payload-required success behavior
+- empty-body payload persistence
+- retry/resume rules
+- stale observation non-regression
+- family/fuzzy review-only behavior
+- source-link primary semantics
+- cancellation/finalization race handling

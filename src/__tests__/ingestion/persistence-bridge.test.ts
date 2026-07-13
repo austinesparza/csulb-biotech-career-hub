@@ -15,6 +15,7 @@ import {
   type SourcePostingRow,
   type SourcePostingVersionRow,
 } from '../../lib/ingestion/persistence';
+import { normalizeCompanyName } from '../../lib/normalize';
 
 class FakeRepository implements IngestionRepository {
   fetchRuns: SourceFetchRunRow[] = [
@@ -31,6 +32,7 @@ class FakeRepository implements IngestionRepository {
   tasks: ReviewTaskRow[] = [];
   opportunities: OpportunityRow[] = [];
   links: OpportunitySourceLinkRow[] = [];
+  companies = [{ id: 'co-1', name: 'Acme Biotech', name_normalized: 'acme biotech' }];
 
   failUpload = false;
   failPayloadMetadataInsert = false;
@@ -52,9 +54,13 @@ class FakeRepository implements IngestionRepository {
   }
 
   async updateFetchRun(input: any) {
-    const run = this.fetchRuns.find((r) => r.id === input.id)!;
+    const run = this.fetchRuns.find((r) => r.id === input.id);
+    if (!run || run.status !== 'running') return { updated: false };
     run.status = input.status;
     run.finished_at = input.finishedAtIso;
+    run.error_class = input.errorClass;
+    run.log_json = input.logJson;
+    return { updated: true };
   }
 
   async uploadPayloadObject(_storagePath: string, _payload: Uint8Array) {
@@ -116,8 +122,27 @@ class FakeRepository implements IngestionRepository {
     return posting;
   }
 
+  async upsertPostingObservation(input: any) {
+    const existing = await this.findPostingByIdentity(input.jobSourceId, input.identityKey);
+    if (!existing) {
+      const posting = await this.insertPosting(input);
+      return { posting, created: true, wasPreviouslyClosed: false, materialChanged: true, staleObservation: false };
+    }
+    if (new Date(input.observedAtIso).getTime() < new Date(existing.last_seen_at).getTime()) {
+      return { posting: existing, created: false, wasPreviouslyClosed: false, materialChanged: false, staleObservation: true };
+    }
+    const wasPreviouslyClosed = ['closed', 'missing', 'closure_candidate'].includes(existing.current_status);
+    const materialChanged = existing.last_material_hash !== input.lastMaterialHash;
+    const posting = await this.updatePosting(existing.id, input);
+    return { posting, created: false, wasPreviouslyClosed, materialChanged, staleObservation: false };
+  }
+
   async getLatestVersion(sourcePostingId: string) {
     return this.versions.filter((v) => v.source_posting_id === sourcePostingId).at(-1) ?? null;
+  }
+
+  async getVersionByMaterialHash(sourcePostingId: string, materialHash: string) {
+    return this.versions.find((v) => v.source_posting_id === sourcePostingId && v.material_hash === materialHash) ?? null;
   }
 
   async insertPostingVersion(input: any) {
@@ -152,7 +177,7 @@ class FakeRepository implements IngestionRepository {
     return row;
   }
 
-  async listOpenOpportunities() {
+  async listMatchableOpportunities() {
     return this.opportunities;
   }
 
@@ -201,6 +226,7 @@ class FakeRepository implements IngestionRepository {
       paid_status: 'unknown',
       application_type: input.applicationType,
       source_status_raw: input.sourceStatusRaw,
+      status: 'needs_review',
     };
     this.opportunities.push(row);
     return row;
@@ -222,6 +248,23 @@ class FakeRepository implements IngestionRepository {
     };
     this.links.push(row);
     return row;
+  }
+
+  async getPrimaryLink(opportunityId: string) {
+    return this.links.find((l) => l.opportunity_id === opportunityId && l.is_primary) ?? null;
+  }
+
+  async resolveCompanyId(jobSource: JobSourceRow, employerNameRaw: string | null, employerNameNormalized: string | null) {
+    if (jobSource.company_id && this.companies.some((c) => c.id === jobSource.company_id)) {
+      return { companyId: jobSource.company_id, matchedFuzzy: false };
+    }
+    const normalized = (employerNameNormalized ?? '').trim() || (employerNameRaw ? normalizeCompanyName(employerNameRaw) : '');
+    if (!normalized) return { companyId: null, matchedFuzzy: false };
+    const exact = this.companies.find((c) => c.name_normalized === normalized);
+    if (exact) return { companyId: exact.id, matchedFuzzy: false };
+    const created = { id: this.id('co'), name: employerNameRaw ?? employerNameNormalized ?? 'Unknown', name_normalized: normalized };
+    this.companies.push(created);
+    return { companyId: created.id, matchedFuzzy: false };
   }
 }
 
@@ -271,7 +314,11 @@ function posting(overrides: Partial<NormalizedSourcePosting> = {}): NormalizedSo
   };
 }
 
-function successResult(candidates: NormalizedSourcePosting[], partial = false): ConnectorFetchResult {
+function successResult(
+  candidates: NormalizedSourcePosting[],
+  partial = false,
+  overrides: Partial<ConnectorFetchResult> = {},
+): ConnectorFetchResult {
   return {
     ok: true,
     candidates,
@@ -288,6 +335,7 @@ function successResult(candidates: NormalizedSourcePosting[], partial = false): 
     recordsNormalized: candidates.length,
     recordsSkipped: partial ? 1 : 0,
     issues: partial ? [{ safeId: 'job:skip', code: 'invalid_shape', message: 'skipped row' }] : [],
+    ...overrides,
   };
 }
 
@@ -334,6 +382,8 @@ describe('ingestion persistence bridge', () => {
     expect(repo.opportunities).toHaveLength(1);
     expect(repo.opportunities[0].review_status).toBe('pending');
     expect(repo.opportunities[0].public_safe).toBe(false);
+    expect(repo.links[0]?.match_type).toBe('exact');
+    expect(repo.links[0]?.is_primary).toBe(true);
   });
 
   it('marks unchanged posting as unchanged and prevents duplicate versions', async () => {
@@ -422,6 +472,38 @@ describe('ingestion persistence bridge', () => {
     })).rejects.toThrow(/already finalized/i);
   });
 
+  it('allows explicit resume of persistence-failed runs', async () => {
+    const repo = new FakeRepository();
+    repo.fetchRuns[0].status = 'failed';
+    repo.fetchRuns[0].error_class = 'unexpected';
+    repo.fetchRuns[0].log_json = { persistenceError: 'previous insert failed' };
+
+    const summary = await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+      retry: { resumeFailedRun: true },
+    });
+
+    expect(summary.fetchRunStatus).toBe('completed');
+  });
+
+  it('does not resume connector-terminal failed runs as successful', async () => {
+    const repo = new FakeRepository();
+    repo.fetchRuns[0].status = 'failed';
+    repo.fetchRuns[0].error_class = 'rate_limit';
+    repo.fetchRuns[0].log_json = { connectorError: 'rate limited' };
+
+    await expect(persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+      retry: { resumeFailedRun: true },
+    })).rejects.toThrow(/already finalized/i);
+  });
+
   it('prevents duplicate payload metadata entries on replay', async () => {
     const repo = new FakeRepository();
     await persistFetchResult({ repository: repo, fetchRunId: 'run-1', expectedJobSourceId: 'source-1', fetchResult: successResult([posting()]) });
@@ -456,6 +538,7 @@ describe('ingestion persistence bridge', () => {
       paid_status: 'unknown',
       application_type: null,
       source_status_raw: null,
+      status: 'open_verified',
     });
 
     await persistFetchResult({
@@ -557,5 +640,146 @@ describe('ingestion persistence bridge', () => {
 
     expect(repo.fetchRuns[0].status).toBe('failed');
     expect(repo.payloads).toHaveLength(1);
+  });
+
+  it('fails safe when successful candidates are missing raw payload', async () => {
+    const repo = new FakeRepository();
+    await expect(persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()], false, { rawResponseText: null }),
+    })).rejects.toThrow(/require a stored raw payload/i);
+    expect(repo.fetchRuns[0].status).toBe('failed');
+  });
+
+  it('stores zero-byte payload for empty successful response body', async () => {
+    const repo = new FakeRepository();
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()], false, { rawResponseText: '' }),
+    });
+    expect(repo.payloads).toHaveLength(1);
+  });
+
+  it('keeps family matches review-only and does not overwrite fields', async () => {
+    const repo = new FakeRepository();
+    repo.opportunities.push({
+      id: 'opp-family',
+      company_id: 'co-1',
+      title: 'Research Intern Summer 2025',
+      posting_url: 'https://example.com/other-url',
+      dedupe_key: 'acme biotech|research intern summer 2025|https://example.com/other-url',
+      family_key: 'acme biotech|research intern',
+      review_status: 'approved',
+      public_safe: true,
+      last_seen_at: '2026-07-01T00:00:00.000Z',
+      location: 'Long Beach',
+      eligibility: null,
+      focus_area: 'biotech',
+      deadline: null,
+      deadline_text: null,
+      paid_status: 'unknown',
+      application_type: null,
+      source_status_raw: null,
+      status: 'open_verified',
+    });
+
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({ titleRaw: 'Research Intern Summer 2026', titleNormalized: 'research intern summer 2026' })]),
+    });
+
+    expect(repo.opportunities[0].title).toBe('Research Intern Summer 2025');
+    expect(repo.tasks.some((t) => t.task_type === 'possible_repost')).toBe(true);
+  });
+
+  it('creates non-primary exact link when opportunity already has a primary source', async () => {
+    const repo = new FakeRepository();
+    repo.opportunities.push({
+      id: 'opp-2',
+      company_id: 'co-1',
+      title: 'Draft Role',
+      posting_url: 'https://example.com/job/1',
+      dedupe_key: 'acme biotech|draft role|https://example.com/job/1',
+      family_key: 'acme biotech|draft role',
+      review_status: 'pending',
+      public_safe: false,
+      last_seen_at: '2026-07-01T00:00:00.000Z',
+      location: null,
+      eligibility: null,
+      focus_area: null,
+      deadline: null,
+      deadline_text: null,
+      paid_status: 'unknown',
+      application_type: null,
+      source_status_raw: null,
+      status: 'needs_review',
+    });
+    repo.links.push({
+      id: 'link-existing',
+      opportunity_id: 'opp-2',
+      source_posting_id: 'posting-existing',
+      match_type: 'exact',
+      is_primary: true,
+    });
+
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+    });
+
+    const inserted = repo.links.find((l) => l.source_posting_id !== 'posting-existing');
+    expect(inserted?.is_primary).toBe(false);
+  });
+
+  it('rejects finalization races when run is cancelled after initial read', async () => {
+    const repo = new FakeRepository();
+    const originalUpdate = repo.updateFetchRun.bind(repo);
+    repo.updateFetchRun = async (input: any) => {
+      repo.fetchRuns[0].status = 'cancelled';
+      return originalUpdate(input);
+    };
+
+    await expect(persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+    })).rejects.toThrow(/finalization race|failure transition race/i);
+  });
+
+  it('does not regress posting state from stale observations', async () => {
+    const repo = new FakeRepository();
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({ fetchedAt: '2026-07-14T00:00:00.000Z' })]),
+    });
+
+    repo.fetchRuns.push({
+      id: 'run-4',
+      job_source_id: 'source-1',
+      status: 'running',
+      started_at: new Date().toISOString(),
+      finished_at: null,
+    });
+
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-4',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({ fetchedAt: '2026-07-13T00:00:00.000Z', materialHash: 'f'.repeat(64) })]),
+    });
+
+    expect(repo.postings[0].last_seen_at).toBe('2026-07-14T00:00:00.000Z');
+    expect(repo.postings[0].last_material_hash).toBe('a'.repeat(64));
   });
 });
