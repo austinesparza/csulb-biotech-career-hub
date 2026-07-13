@@ -1,0 +1,21 @@
+{
+  "jobs": [
+    {
+      "id": 1001001,
+      "internal_job_id": 5001,
+      "title": "Biotechnology Intern — Cell Biology (Updated Title)",
+      "updated_at": "2026-06-17T14:00:00-07:00",
+      "requisition_id": "REQ-2026-BIO-001",
+      "location": { "name": "Long Beach, CA" },
+      "absolute_url": "https://boards.greenhouse.io/labgenomicsinc/jobs/1001001",
+      "content": "<p>Same description as before.</p>",
+      "departments": [{ "id": 10, "name": "Research &amp; Development" }],
+      "offices": [{ "id": 20, "name": "Long Beach" }],
+      "metadata": [],
+      "language": "en",
+      "first_published": "2026-05-01T09:00:00-07:00",
+      "application_deadline": "2026-07-15"
+    }
+  ],
+  "meta": { "total": 1 }
+}
