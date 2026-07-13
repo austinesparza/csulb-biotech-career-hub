@@ -84,9 +84,9 @@ begin
   perform pg_advisory_xact_lock(hashtext(p_job_source_id::text || ':' || p_identity_key));
 
   select * into v_existing
-  from public.source_postings
-  where job_source_id = p_job_source_id
-    and identity_key = p_identity_key
+  from public.source_postings as sp
+  where sp.job_source_id = p_job_source_id
+    and sp.identity_key = p_identity_key
   for update;
 
   if v_existing.id is null then
