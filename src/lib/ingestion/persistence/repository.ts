@@ -197,6 +197,7 @@ function hasSufficientEmployerIdentity(nameRaw: string | null, nameNormalized: s
 export interface IngestionRepository {
   getFetchRun(fetchRunId: string): Promise<SourceFetchRunRow | null>;
   getJobSource(jobSourceId: string): Promise<JobSourceRow | null>;
+  beginFailedRunResume(fetchRunId: string, expectedJobSourceId: string): Promise<boolean>;
   updateFetchRun(input: UpdateFetchRunInput): Promise<UpdateFetchRunResult>;
   uploadPayloadObject(storagePath: string, payload: Uint8Array): Promise<void>;
   getPayloadByUniqueKey(fetchRunId: string, payloadHash: string, requestUrl: string): Promise<SourcePayloadRow | null>;
@@ -300,6 +301,20 @@ export function createSupabaseIngestionRepository(params: {
         .maybeSingle();
       if (error) throw new Error(error.message);
       return data ?? null;
+    },
+
+    async beginFailedRunResume(fetchRunId, expectedJobSourceId) {
+      const { data, error } = await db.from('source_fetch_runs').update({
+        status: 'running',
+        started_at: new Date().toISOString(),
+        finished_at: null,
+      }).eq('id', fetchRunId)
+        .eq('job_source_id', expectedJobSourceId)
+        .eq('status', 'failed')
+        .eq('error_class', 'unexpected')
+        .select('id');
+      if (error) throw new Error(error.message);
+      return (data ?? []).length === 1;
     },
 
     async updateFetchRun(input) {

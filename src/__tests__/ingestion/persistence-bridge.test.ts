@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import type { ConnectorFetchResult, NormalizedSourcePosting, SourceFetchErrorClass } from '../../lib/ingestion/types';
+import type { ConnectorFetchResult, ConnectorFetchSuccess, NormalizedSourcePosting, SourceFetchErrorClass } from '../../lib/ingestion/types';
 import {
   PayloadStorageMetadataError,
   persistFetchResult,
@@ -51,6 +51,15 @@ class FakeRepository implements IngestionRepository {
 
   async getJobSource(jobSourceId: string) {
     return this.jobSources.find((r) => r.id === jobSourceId) ?? null;
+  }
+
+  async beginFailedRunResume(fetchRunId: string, expectedJobSourceId: string) {
+    const run = this.fetchRuns.find((r) => r.id === fetchRunId && r.job_source_id === expectedJobSourceId);
+    if (!run) return false;
+    if (run.status !== 'failed' || run.error_class !== 'unexpected') return false;
+    run.status = 'running';
+    run.finished_at = null;
+    return true;
   }
 
   async updateFetchRun(input: any) {
@@ -317,9 +326,9 @@ function posting(overrides: Partial<NormalizedSourcePosting> = {}): NormalizedSo
 function successResult(
   candidates: NormalizedSourcePosting[],
   partial = false,
-  overrides: Partial<ConnectorFetchResult> = {},
+  overrides: Partial<ConnectorFetchSuccess> = {},
 ): ConnectorFetchResult {
-  return {
+  const base: ConnectorFetchSuccess = {
     ok: true,
     candidates,
     rawResponseText: JSON.stringify({ jobs: [{ id: 1 }] }),
@@ -335,8 +344,8 @@ function successResult(
     recordsNormalized: candidates.length,
     recordsSkipped: partial ? 1 : 0,
     issues: partial ? [{ safeId: 'job:skip', code: 'invalid_shape', message: 'skipped row' }] : [],
-    ...overrides,
   };
+  return { ...base, ...overrides };
 }
 
 function failureResult(errorClass: SourceFetchErrorClass): ConnectorFetchResult {

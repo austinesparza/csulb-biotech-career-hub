@@ -162,17 +162,24 @@ export async function persistFetchResult(params: {
     throw new FetchRunAlreadyFinalizedError(params.fetchRunId, run.status);
   }
 
+  const resumingFailedRun = run.status === 'failed' && params.retry?.resumeFailedRun
+    && run.error_class === 'unexpected'
+    && ((run.log_json && Object.prototype.hasOwnProperty.call(run.log_json, 'persistenceError'))
+      || (run.log_json && Object.prototype.hasOwnProperty.call(run.log_json, 'persistence_error')));
+
   if (run.status === 'failed') {
-    const canResume = params.retry?.resumeFailedRun
-      && run.error_class === 'unexpected'
-      && ((run.log_json && Object.prototype.hasOwnProperty.call(run.log_json, 'persistenceError'))
-        || (run.log_json && Object.prototype.hasOwnProperty.call(run.log_json, 'persistence_error')));
+    const canResume = resumingFailedRun;
     if (!canResume) {
       throw new FetchRunAlreadyFinalizedError(params.fetchRunId, run.status);
     }
+    const resumed = await params.repository.beginFailedRunResume(params.fetchRunId, params.expectedJobSourceId);
+    if (!resumed) {
+      throw new FetchRunValidationError(params.fetchRunId, 'Failed run could not be resumed due to a competing state transition.');
+    }
+    run.status = 'running';
   }
 
-  if (run.status !== 'running') {
+  if (run.status !== 'running' && !resumingFailedRun) {
     throw new FetchRunValidationError(params.fetchRunId, `Fetch run must be running before persistence (got ${run.status}).`);
   }
 

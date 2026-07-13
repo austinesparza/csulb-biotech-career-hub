@@ -1,3 +1,5 @@
+import 'server-only';
+
 import type { SourceFetchErrorClass, SourceFetchRunStatus } from '../types';
 
 export class IngestionPersistenceError extends Error {
