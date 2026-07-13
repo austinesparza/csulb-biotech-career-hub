@@ -28,7 +28,8 @@ export type EventType = 'workshop' | 'speaker_series' | 'other';
 export type ResourceType = 'guide' | 'template' | 'link' | 'recording' | 'post';
 export type TaskType =
   | 'new_import' | 'possible_duplicate' | 'possible_repost' | 'broken_link'
-  | 'expiring' | 'submission' | 'consent_check' | 'stale_record' | 'import_changed';
+  | 'expiring' | 'submission' | 'consent_check' | 'stale_record' | 'import_changed'
+  | 'source_new' | 'source_changed' | 'source_reopened' | 'source_health';
 export type TaskStatus = 'open' | 'in_progress' | 'done' | 'dismissed';
 export type SubmissionType = 'opportunity' | 'mentor_update' | 'resource' | 'correction';
 export type SubmissionStatus = 'new' | 'in_review' | 'approved' | 'rejected' | 'spam';
