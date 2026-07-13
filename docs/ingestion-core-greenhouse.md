@@ -333,7 +333,7 @@ not map to the DB enum directly.
 | `role_type` | +8 | Classification = research |
 | `geography` | +12 | Southern California location |
 | `geography` | +10 | Remote |
-| `geography` | +6 | Hybrid |
+| `geography` | +6 | Hybrid in Southern California |
 | `deadline` | +5 | Deadline within 90 days |
 
 ### Negative categories
@@ -452,6 +452,7 @@ than a guess.
 | `partial_response` | Some records failed normalization (partial result); propagated to both posting-level and score-breakdown uncertainty flags |
 | `eligibility_missing` | Description absent — eligibility cannot be assessed |
 | `eligibility_ambiguous` | Description present but contains no clear eligibility signals |
+| `source_updated_at_invalid` | `updated_at` is present but is not a valid RFC3339 timestamp |
 
 Flags do **not** prevent the candidate from being returned; they provide context
 for officer review and score adjustments.
@@ -533,7 +534,7 @@ parameter enables complete network isolation.
 # Install dependencies
 npm ci
 
-# Run all tests (337 tests, no live network)
+# Run all tests (343 tests, no live network)
 npm test
 
 # TypeScript type checking

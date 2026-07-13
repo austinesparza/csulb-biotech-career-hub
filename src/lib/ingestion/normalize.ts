@@ -333,16 +333,20 @@ export function classifyRemoteType(
   const hasNegatedRemote = NEGATED_REMOTE_SIGNALS.test(combined);
   const hasNegatedHybrid = NEGATED_HYBRID_SIGNALS.test(combined);
 
+  // Negation suppresses only the corresponding positive signal. For example,
+  // "remote role; no hybrid option" remains remote, while "not remote; hybrid"
+  // remains hybrid. A negated signal by itself is uncertain unless onsite is explicit.
+  const effectiveRemote = hasRemote && !hasNegatedRemote;
+  const effectiveHybrid = hasHybrid && !hasNegatedHybrid;
+
+  if (effectiveHybrid) return { remoteType: 'hybrid', flags: [] };
+  // Contradictory positive signals without explicit hybrid language → unknown.
+  if (effectiveRemote && hasOnsite) return { remoteType: 'unknown', flags: ['remote_ambiguous'] };
+  if (effectiveRemote) return { remoteType: 'remote', flags: [] };
+  if (hasOnsite) return { remoteType: 'onsite', flags: [] };
   if (hasNegatedRemote || hasNegatedHybrid) {
-    if (hasOnsite) return { remoteType: 'onsite', flags: [] };
     return { remoteType: 'unknown', flags: ['remote_ambiguous'] };
   }
-
-  if (hasHybrid) return { remoteType: 'hybrid', flags: [] };
-  // Contradictory signals without explicit hybrid language → unknown + remote_ambiguous
-  if (hasRemote && hasOnsite) return { remoteType: 'unknown', flags: ['remote_ambiguous'] };
-  if (hasRemote) return { remoteType: 'remote', flags: [] };
-  if (hasOnsite) return { remoteType: 'onsite', flags: [] };
 
   const flags: UncertaintyFlag[] = [];
   if (!location && !descriptionText) {

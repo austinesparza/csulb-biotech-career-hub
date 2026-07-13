@@ -205,6 +205,10 @@ const POSTDOC_REQUIRED_PATTERNS: RegExp[] = [
   /\b(postdoc(toral)?|post-doc)\b(?:\s+\w+){0,4}\s+(required|minimum|must|needed)\b/i,
   /\b(required|minimum|must|needed)\b(?:\s+\w+){0,4}\b(postdoc(toral)?|post-doc)\b/i,
 ];
+const POSTDOC_NOT_REQUIRED_PATTERNS: RegExp[] = [
+  /\b(postdoc(toral)?|post-doc)\b(?:\s+\w+){0,5}\s+not\s+(required|needed)\b/gi,
+  /\bno\s+(postdoc(toral)?|post-doc)\b(?:\s+\w+){0,4}\s+(?:is\s+)?(required|needed)\b/gi,
+];
 
 /**
  * Phrases that contextualize PhD/MD as preferred, accepted, or contextual
@@ -283,7 +287,11 @@ function hasPostdocDegreeRequired(title: string, text: string): boolean {
   if (POSTDOC_TITLE_PATTERNS.some((re) => re.test(title))) {
     return true;
   }
-  return POSTDOC_REQUIRED_PATTERNS.some((re) => re.test(text));
+  let requirementText = text;
+  for (const pattern of POSTDOC_NOT_REQUIRED_PATTERNS) {
+    requirementText = requirementText.replace(pattern, ' ');
+  }
+  return POSTDOC_REQUIRED_PATTERNS.some((re) => re.test(requirementText));
 }
 
 /**

@@ -441,6 +441,28 @@ describe('scoreIngestionCandidate seniority for fellowships', () => {
     );
     expect(hasDegreePenalty).toBe(false);
   });
+
+  it('postdoctoral experience is not required does not trigger a degree penalty', () => {
+    const input: ScoringInput = {
+      ...BASE_INPUT,
+      titleRaw: 'Research Associate',
+      titleNormalized: 'research associate',
+      descriptionText: 'Postdoctoral experience is not required for this role.',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req')).toBe(false);
+  });
+
+  it('postdoc not required does not trigger a degree penalty', () => {
+    const input: ScoringInput = {
+      ...BASE_INPUT,
+      titleRaw: 'Research Associate',
+      titleNormalized: 'research associate',
+      descriptionText: 'Postdoc not required. A bachelor degree is accepted.',
+    };
+    const breakdown = scoreIngestionCandidate(input);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req')).toBe(false);
+  });
 });
 
 // ============================================================

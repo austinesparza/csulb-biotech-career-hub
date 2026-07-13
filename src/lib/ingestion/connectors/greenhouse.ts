@@ -417,7 +417,9 @@ export function normalizeGreenhouseJob(
     relevanceScore: scoreBreakdown.total,
     relevanceScoreVersion: SCORE_VERSION,
     scoreBreakdown,
-    uncertaintyFlags: [...new Set(flags)], // deduplicate flags
+    // Persist scorer-derived flags (for example eligibility_missing and
+    // eligibility_ambiguous) at the posting level as well as in the breakdown.
+    uncertaintyFlags: [...new Set(scoreBreakdown.uncertaintyFlags)],
     fetchedAt,
   };
 }

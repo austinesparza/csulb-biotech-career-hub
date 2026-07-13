@@ -269,6 +269,16 @@ describe('classifyRemoteType', () => {
     expect(result.remoteType).toBe('onsite');
     expect(result.flags).not.toContain('remote_ambiguous');
   });
+  it('keeps remote when only hybrid is negated', () => {
+    const result = classifyRemoteType('Remote Scientist', 'Remote', 'Remote role; no hybrid option.');
+    expect(result.remoteType).toBe('remote');
+    expect(result.flags).not.toContain('remote_ambiguous');
+  });
+  it('keeps hybrid when only remote is negated', () => {
+    const result = classifyRemoteType('Hybrid Scientist', 'Hybrid', 'Not remote; this is a hybrid role.');
+    expect(result.remoteType).toBe('hybrid');
+    expect(result.flags).not.toContain('remote_ambiguous');
+  });
   it('is deterministic', () => {
     const a = classifyRemoteType('Intern', 'Remote', null);
     const b = classifyRemoteType('Intern', 'Remote', null);

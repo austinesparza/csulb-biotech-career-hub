@@ -1307,6 +1307,39 @@ describe('fetchGreenhouseJobs partial_response flag', () => {
 });
 
 // ============================================================
+// POSTING-LEVEL ELIGIBILITY FLAGS
+// ============================================================
+
+describe('normalizeGreenhouseJob posting-level eligibility flags', () => {
+  const BOARD_TOKEN = 'labgenomicsinc';
+  const FETCHED_AT = '2026-07-11T00:00:00.000Z';
+
+  it('propagates eligibility_missing from the score breakdown to the posting', () => {
+    const job = {
+      id: 9801,
+      title: 'Research Intern',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9801',
+      content: null,
+    };
+    const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(posting.scoreBreakdown.uncertaintyFlags).toContain('eligibility_missing');
+    expect(posting.uncertaintyFlags).toContain('eligibility_missing');
+  });
+
+  it('propagates eligibility_ambiguous from the score breakdown to the posting', () => {
+    const job = {
+      id: 9802,
+      title: 'Research Intern',
+      absolute_url: 'https://boards.greenhouse.io/co/jobs/9802',
+      content: '<p>Support laboratory experiments and maintain records.</p>',
+    };
+    const posting = normalizeGreenhouseJob(job as Parameters<typeof normalizeGreenhouseJob>[0], BOARD_TOKEN, FETCHED_AT);
+    expect(posting.scoreBreakdown.uncertaintyFlags).toContain('eligibility_ambiguous');
+    expect(posting.uncertaintyFlags).toContain('eligibility_ambiguous');
+  });
+});
+
+// ============================================================
 // SOURCE UPDATED AT VALIDATION
 // ============================================================
 
