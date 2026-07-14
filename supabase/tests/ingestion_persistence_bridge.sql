@@ -247,7 +247,7 @@ begin
   ) values (
     v_run2, 'https://boards-api.greenhouse.io/v1/boards/test/jobs?content=true',
     'https://boards-api.greenhouse.io/v1/boards/test/jobs?content=true',
-    'application/json', 200, lpad('g', 64, 'g'), 456,
+    'application/json', 200, lpad('f', 64, 'f'), 456,
     'source/test/g/g.txt'
   ) returning id into v_payload2;
 

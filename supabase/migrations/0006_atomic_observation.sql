@@ -31,7 +31,7 @@ create unique index if not exists idx_source_posting_versions_posting_run
 create or replace function public._jsonb_field_diff(p_old jsonb, p_new jsonb)
 returns jsonb
 language plpgsql
-immutable parallel safe
+stable parallel safe
 security invoker
 set search_path = pg_temp
 as $$
@@ -341,7 +341,7 @@ begin
 
     if v_task_type is not null then
       insert into public.review_tasks (task_type, entity_table, entity_id, status, notes)
-      values (v_task_type, 'source_postings', v_posting.id, 'open', v_task_notes)
+      values (v_task_type::public.task_type, 'source_postings', v_posting.id, 'open', v_task_notes)
       on conflict (task_type, entity_table, entity_id, notes)
       where status = 'open'
       do nothing
@@ -426,7 +426,9 @@ begin
     ) values (
       p_company_id, p_source_record_id, p_title, p_posting_url,
       p_location, p_focus_area, p_deadline, p_deadline_text,
-      p_paid_status, p_application_type, p_source_status_raw,
+      p_paid_status::public.paid_status,
+      p_application_type,
+      p_source_status_raw,
       'needs_review', 'pending', false,
       p_relevance_score, coalesce(p_relevance_reasons, '{}'),
       p_dedupe_key, p_family_key,
