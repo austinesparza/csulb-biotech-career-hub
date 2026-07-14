@@ -51,6 +51,9 @@ export default async function AdminHome() {
         <Link href="/admin/duplicates" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
           Scan for duplicates
         </Link>
+        <Link href="/admin/ingestion" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
+          Run ingestion
+        </Link>
         <a href="/api/export?format=csv" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
           Export approved (CSV)
         </a>
