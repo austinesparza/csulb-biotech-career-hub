@@ -101,6 +101,22 @@ begin
     '{}'::jsonb
   );
 
+  -- Same run must not produce a second version (idempotency key: posting + run)
+  begin
+    insert into public.source_posting_versions (
+      source_posting_id, source_fetch_run_id, source_payload_id,
+      connector_version, is_material_change, material_hash,
+      normalized_json, score_breakdown_json, field_diff_json
+    ) values (
+      v_posting, v_run, v_payload,
+      '1.0.1', false, lpad('b', 64, 'b'), -- same run, even different hash
+      '{}'::jsonb, '{}'::jsonb, '{}'::jsonb
+    );
+    perform _assert('version_unique_run_rejects_same_run_duplicate', false, 'same-run duplicate version was accepted');
+  exception when unique_violation then
+    perform _assert('version_unique_run_rejects_same_run_duplicate', true);
+  end;
+
   begin
     update public.source_posting_versions
       set connector_version = '1.0.1'

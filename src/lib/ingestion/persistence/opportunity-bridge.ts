@@ -69,7 +69,11 @@ function toExistingOpportunity(row: OpportunityRow): ExistingOpportunity {
 
 function canAutoMutateDraft(opportunity: OpportunityRow): boolean {
   if (opportunity.review_status === 'rejected' || opportunity.review_status === 'approved') return false;
-  if (['hidden', 'duplicate', 'not_relevant', 'archive_only'].includes(opportunity.status)) return false;
+  const protectedStatuses = [
+    'closed', 'expired', 'broken_link',
+    'hidden', 'duplicate', 'not_relevant', 'archive_only',
+  ];
+  if (protectedStatuses.includes(opportunity.status)) return false;
   return true;
 }
 
@@ -182,7 +186,7 @@ export async function bridgeOpportunityForSourcePosting(params: {
             });
           }
         } else {
-          await repository.updateOpportunityDraftFromPosting(linkedOpportunity.id, {
+          const casResult = await repository.updateOpportunityDraftFromPosting(linkedOpportunity.id, {
             title: draft.title,
             postingUrl: draft.posting_url,
             location: draft.location,
@@ -195,6 +199,22 @@ export async function bridgeOpportunityForSourcePosting(params: {
             relevanceReasons: [`score:${posting.relevanceScore}`],
             observedAtIso: posting.fetchedAt,
           });
+
+          if (!casResult.updated) {
+            // The opportunity was concurrently approved, rejected, or moved to a
+            // protected lifecycle state.  Preserve all fields; only touch
+            // observation metadata and open a source_changed task.
+            await repository.updateOpportunityObservation(linkedOpportunity.id, posting.fetchedAt);
+            await ensureOpenSourceReviewTask({
+              repository,
+              taskType: 'source_changed',
+              entityTable: 'opportunities',
+              entityId: linkedOpportunity.id,
+              materialHash: sourcePosting.last_material_hash,
+              noteTag: 'source_changed',
+              noteBody: `Linked source posting changed; opportunity protected during race. Material change detected.`,
+            });
+          }
         }
 
         matchType = 'exact';

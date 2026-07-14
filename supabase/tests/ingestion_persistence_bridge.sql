@@ -192,6 +192,8 @@ begin
 
   perform _assert('rpc_rejects_stale_observation_regression', v_out.stale_observation and not v_out.material_changed, 'stale observation should be rejected');
 
+  -- Verify version idempotency by source_fetch_run_id (not material_hash)
+  -- Set up a second fetch run and payload for further version tests
   insert into public.source_fetch_runs (job_source_id, trigger_kind, status, scheduled_for, started_at)
   values (v_js, 'manual', 'running', now(), now())
   returning id into v_run2;
@@ -206,6 +208,7 @@ begin
     'source/test/e/e.txt'
   ) returning id into v_payload2;
 
+  -- Insert first version for run2 (different hash = 'e')
   insert into public.source_posting_versions (
     source_posting_id, source_fetch_run_id, source_payload_id,
     connector_version, is_material_change, material_hash,
@@ -217,18 +220,51 @@ begin
   );
 
   begin
+    -- Same run, any hash: must conflict on (source_posting_id, source_fetch_run_id)
     insert into public.source_posting_versions (
       source_posting_id, source_fetch_run_id, source_payload_id,
       connector_version, is_material_change, material_hash,
       normalized_json, score_breakdown_json, field_diff_json
     ) values (
       v_posting, v_run2, v_payload2,
-      '1.0.0', false, lpad('e', 64, 'e'),
+      '1.0.0', false, lpad('f', 64, 'f'), -- different material_hash, same run
       '{}'::jsonb, '{}'::jsonb, '{}'::jsonb
     );
-    perform _assert('version_unique_material_hash_prevents_duplicate', false, 'duplicate material version insert accepted');
+    perform _assert('version_unique_run_prevents_duplicate', false, 'duplicate run version insert accepted');
   exception when unique_violation then
-    perform _assert('version_unique_material_hash_prevents_duplicate', true);
+    perform _assert('version_unique_run_prevents_duplicate', true);
+  end;
+
+  -- Different runs with the same material_hash must NOT conflict (A → B → A allowed)
+  -- Re-use v_run2/v_payload2 for "run 3" (hash matching run 1's 'b' hash)
+  insert into public.source_fetch_runs (job_source_id, trigger_kind, status, scheduled_for, started_at)
+  values (v_js, 'manual', 'running', now(), now())
+  returning id into v_run2;
+
+  insert into public.source_payloads (
+    source_fetch_run_id, request_url, final_url, content_type,
+    status_code, sha256, size_bytes, storage_path
+  ) values (
+    v_run2, 'https://boards-api.greenhouse.io/v1/boards/test/jobs?content=true',
+    'https://boards-api.greenhouse.io/v1/boards/test/jobs?content=true',
+    'application/json', 200, lpad('g', 64, 'g'), 456,
+    'source/test/g/g.txt'
+  ) returning id into v_payload2;
+
+  begin
+    -- Same hash as first version (run 1 used 'b'), but different run — must succeed
+    insert into public.source_posting_versions (
+      source_posting_id, source_fetch_run_id, source_payload_id,
+      connector_version, is_material_change, material_hash,
+      normalized_json, score_breakdown_json, field_diff_json
+    ) values (
+      v_posting, v_run2, v_payload2,
+      '1.0.0', true, lpad('b', 64, 'b'), -- same hash as first version in run 1
+      '{}'::jsonb, '{}'::jsonb, '{}'::jsonb
+    );
+    perform _assert('aba_version_history_allowed', true, 'A->B->A history must be allowed across different runs');
+  exception when unique_violation then
+    perform _assert('aba_version_history_allowed', false, 'unique violation blocked A->B->A history — idempotency key is wrong');
   end;
 
   insert into public.opportunities (source_record_id, title, status, review_status, public_safe)

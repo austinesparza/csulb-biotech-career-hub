@@ -14,8 +14,14 @@ import {
   type SourcePayloadRow,
   type SourcePostingRow,
   type SourcePostingVersionRow,
+  type UpsertPostingResult,
 } from '../../lib/ingestion/persistence';
 import { normalizeCompanyName } from '../../lib/normalize';
+
+const PROTECTED_STATUSES = [
+  'closed', 'expired', 'broken_link',
+  'hidden', 'duplicate', 'not_relevant', 'archive_only',
+] as const;
 
 class FakeRepository implements IngestionRepository {
   fetchRuns: SourceFetchRunRow[] = [
@@ -97,13 +103,15 @@ class FakeRepository implements IngestionRepository {
     return row;
   }
 
-  async findPostingByIdentity(jobSourceId: string, identityKey: string) {
+  // ── Private posting helpers (not on IngestionRepository interface) ──────────
+
+  private findPostingByIdentitySync(jobSourceId: string, identityKey: string) {
     return this.postings.find((p) => p.job_source_id === jobSourceId && p.identity_key === identityKey) ?? null;
   }
 
-  async insertPosting(input: any) {
+  private insertPostingSync(input: any): SourcePostingRow {
     if (this.failPostingInsert) throw new Error('posting insert failed');
-    const existing = await this.findPostingByIdentity(input.jobSourceId, input.identityKey);
+    const existing = this.findPostingByIdentitySync(input.jobSourceId, input.identityKey);
     if (existing) return existing;
     const row: SourcePostingRow = {
       id: this.id('posting'),
@@ -121,48 +129,124 @@ class FakeRepository implements IngestionRepository {
     return row;
   }
 
-  async updatePosting(id: string, input: any) {
-    const posting = this.postings.find((p) => p.id === id)!;
-    posting.last_seen_at = input.observedAtIso;
-    posting.last_material_hash = input.lastMaterialHash;
-    posting.current_status = input.currentStatus;
-    posting.relevance_score = input.relevanceScore;
-    posting.relevance_score_version = input.relevanceScoreVersion;
-    return posting;
-  }
-
-  async upsertPostingObservation(input: any) {
-    const existing = await this.findPostingByIdentity(input.jobSourceId, input.identityKey);
-    if (!existing) {
-      const posting = await this.insertPosting(input);
-      return { posting, created: true, wasPreviouslyClosed: false, materialChanged: true, staleObservation: false };
-    }
-    if (new Date(input.observedAtIso).getTime() < new Date(existing.last_seen_at).getTime()) {
-      return { posting: existing, created: false, wasPreviouslyClosed: false, materialChanged: false, staleObservation: true };
-    }
+  private updatePostingSync(existing: SourcePostingRow, input: any): SourcePostingRow {
     const wasPreviouslyClosed = ['closed', 'missing', 'closure_candidate'].includes(existing.current_status);
-    const materialChanged = existing.last_material_hash !== input.lastMaterialHash;
-    const posting = await this.updatePosting(existing.id, input);
-    return { posting, created: false, wasPreviouslyClosed, materialChanged, staleObservation: false };
+    existing.last_seen_at = input.observedAtIso;
+    existing.last_material_hash = input.lastMaterialHash;
+    existing.current_status = wasPreviouslyClosed && input.currentStatus === 'open' ? 'reopened' : input.currentStatus;
+    existing.relevance_score = input.relevanceScore;
+    existing.relevance_score_version = input.relevanceScoreVersion;
+    return existing;
   }
 
-  async getLatestVersion(sourcePostingId: string) {
+  private getLatestVersionSync(sourcePostingId: string): SourcePostingVersionRow | null {
     return this.versions.filter((v) => v.source_posting_id === sourcePostingId).at(-1) ?? null;
   }
 
-  async getVersionByMaterialHash(sourcePostingId: string, materialHash: string) {
-    return this.versions.find((v) => v.source_posting_id === sourcePostingId && v.material_hash === materialHash) ?? null;
+  private getVersionByRunSync(sourcePostingId: string, fetchRunId: string): SourcePostingVersionRow | null {
+    return this.versions.find(
+      (v) => v.source_posting_id === sourcePostingId && v.source_fetch_run_id === fetchRunId,
+    ) ?? null;
   }
 
-  async insertPostingVersion(input: any) {
-    const row: SourcePostingVersionRow = {
-      id: this.id('version'),
-      source_posting_id: input.sourcePostingId,
-      material_hash: input.materialHash,
-      normalized_json: input.normalizedJson,
-    };
-    this.versions.push(row);
-    return row;
+  /**
+   * Atomically (in-memory) upserts the posting, inserts the version, and
+   * creates the appropriate source review task — mirroring the
+   * persist_posting_observation RPC semantics.
+   */
+  async upsertPostingObservation(input: any): Promise<UpsertPostingResult> {
+    const existing = this.findPostingByIdentitySync(input.jobSourceId, input.identityKey);
+    let posting: SourcePostingRow;
+    let created = false;
+    let wasPreviouslyClosed = false;
+    let materialChanged = false;
+    let staleObservation = false;
+
+    if (!existing) {
+      posting = this.insertPostingSync(input);
+      created = true;
+      materialChanged = true;
+    } else if (new Date(input.observedAtIso).getTime() < new Date(existing.last_seen_at).getTime()) {
+      staleObservation = true;
+      posting = existing;
+    } else {
+      wasPreviouslyClosed = ['closed', 'missing', 'closure_candidate'].includes(existing.current_status);
+      materialChanged = existing.last_material_hash !== input.lastMaterialHash;
+      posting = this.updatePostingSync(existing, input);
+    }
+
+    // ── Version insertion (idempotent by source_fetch_run_id) ────────────────
+    let version: SourcePostingVersionRow | null = null;
+    let versionInserted = false;
+
+    if (!staleObservation && (created || materialChanged)) {
+      const existingVersion = this.getVersionByRunSync(posting.id, input.fetchRunId);
+      if (existingVersion) {
+        version = existingVersion;
+        versionInserted = false;
+      } else {
+        const priorVersion = this.getLatestVersionSync(posting.id);
+        const fieldDiff = priorVersion
+          ? diffDeterministic(priorVersion.normalized_json, input.normalizedJson)
+          : {};
+        version = {
+          id: this.id('version'),
+          source_posting_id: posting.id,
+          source_fetch_run_id: input.fetchRunId,
+          material_hash: input.lastMaterialHash,
+          normalized_json: input.normalizedJson,
+        };
+        this.versions.push(version);
+        versionInserted = true;
+        void fieldDiff; // computed for parity with RPC; not stored in FakeRepository
+      }
+    }
+
+    // ── Review task creation (idempotent by notes string) ────────────────────
+    let taskTypeCreated: string | null = null;
+
+    if (!staleObservation) {
+      let taskType: string | null = null;
+      let noteTag: string | null = null;
+      let noteBody: string | null = null;
+
+      if (created && input.relevanceScore >= input.minScoreForReview) {
+        taskType = 'source_new';
+        noteTag = 'source_new';
+        noteBody = `New relevant source posting observed (${input.identityKey}).`;
+      } else if (wasPreviouslyClosed) {
+        taskType = 'source_reopened';
+        noteTag = 'source_reopened';
+        noteBody = `Previously closed posting was observed open again (${input.identityKey}).`;
+      } else if (materialChanged && !created) {
+        taskType = 'source_changed';
+        noteTag = 'source_changed';
+        noteBody = `Material change detected for source posting ${input.identityKey}.`;
+      }
+
+      if (taskType && noteTag && noteBody) {
+        const notes = `[${noteTag}:${input.lastMaterialHash}] ${noteBody}`;
+        const existingTask = this.tasks.find(
+          (t) => t.status === 'open' && t.task_type === taskType && t.entity_table === 'source_postings'
+               && t.entity_id === posting.id && t.notes === notes,
+        );
+        if (!existingTask) {
+          this.tasks.push({
+            id: this.id('task'),
+            task_type: taskType,
+            entity_table: 'source_postings',
+            entity_id: posting.id,
+            status: 'open',
+            notes,
+          });
+          taskTypeCreated = taskType;
+        } else {
+          taskTypeCreated = taskType; // still report the type for idempotent replays
+        }
+      }
+    }
+
+    return { posting, created, wasPreviouslyClosed, materialChanged, staleObservation, version, versionInserted, taskTypeCreated };
   }
 
   async findOpenReviewTask(taskType: string, entityTable: string, entityId: string, notes: string) {
@@ -200,7 +284,12 @@ class FakeRepository implements IngestionRepository {
   }
 
   async updateOpportunityDraftFromPosting(opportunityId: string, input: any) {
-    const opp = this.opportunities.find((o) => o.id === opportunityId)!;
+    const opp = this.opportunities.find((o) => o.id === opportunityId);
+    if (!opp) return { updated: false };
+    if (opp.public_safe !== false) return { updated: false };
+    if (opp.review_status === 'approved' || opp.review_status === 'rejected') return { updated: false };
+    if ((PROTECTED_STATUSES as readonly string[]).includes(opp.status)) return { updated: false };
+
     opp.title = input.title;
     opp.posting_url = input.postingUrl;
     opp.location = input.location;
@@ -212,6 +301,7 @@ class FakeRepository implements IngestionRepository {
     opp.last_seen_at = input.observedAtIso;
     opp.review_status = 'pending';
     opp.public_safe = false;
+    return { updated: true };
   }
 
   async insertPendingOpportunity(input: any) {
@@ -432,14 +522,19 @@ describe('ingestion persistence bridge', () => {
 
   it('creates source_reopened when closed posting is observed open again', async () => {
     const repo = new FakeRepository();
-    const inserted = await repo.insertPosting({
-      jobSourceId: 'source-1', identityKey: 'greenhouse:test:1', canonicalUrl: 'https://example.com/job/1', externalPostingId: '1',
-      employerNameRaw: 'Acme', employerNameNormalized: 'acme', titleRaw: 'x', titleNormalized: 'x', locationRaw: null,
-      locationNormalized: null, remoteType: 'unknown', employmentType: null, classification: 'internship', department: null,
-      focusArea: null, postedAt: null, closesAt: null, deadlineKind: 'unknown', currentStatus: 'closed', relevanceScore: 70,
-      relevanceScoreVersion: 1, scoreBreakdownJson: {}, uncertaintyFlags: [], lastPayloadId: null, lastMaterialHash: 'c'.repeat(64), observedAtIso: '2026-07-01T00:00:00.000Z',
+    // Directly push a closed posting into the repo's state
+    repo.postings.push({
+      id: 'posting-seed',
+      job_source_id: 'source-1',
+      identity_key: 'greenhouse:test:1',
+      canonical_url: 'https://example.com/job/1',
+      current_status: 'closed',
+      first_seen_at: '2026-07-01T00:00:00.000Z',
+      last_seen_at: '2026-07-01T00:00:00.000Z',
+      last_material_hash: 'c'.repeat(64),
+      relevance_score: 70,
+      relevance_score_version: 1,
     });
-    inserted.current_status = 'closed';
 
     await persistFetchResult({ repository: repo, fetchRunId: 'run-1', expectedJobSourceId: 'source-1', fetchResult: successResult([posting({ materialHash: 'd'.repeat(64) })]) });
 
@@ -790,5 +885,279 @@ describe('ingestion persistence bridge', () => {
 
     expect(repo.postings[0].last_seen_at).toBe('2026-07-14T00:00:00.000Z');
     expect(repo.postings[0].last_material_hash).toBe('a'.repeat(64));
+  });
+
+  // ── New integrity tests ───────────────────────────────────────────────────
+
+  it('same run replay does not duplicate a version (idempotency by fetch-run)', async () => {
+    const repo = new FakeRepository();
+    // First call: creates posting + version
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+    });
+    expect(repo.versions).toHaveLength(1);
+
+    // Second call with the SAME run that has been re-started (resume scenario)
+    repo.fetchRuns[0].status = 'running';
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+    });
+    // Replay must not insert a second version for the same run
+    expect(repo.versions).toHaveLength(1);
+  });
+
+  it('A → B → A across three runs produces three immutable versions', async () => {
+    const hashA = 'a'.repeat(64);
+    const hashB = 'b'.repeat(64);
+    const repo = new FakeRepository();
+
+    // Run 1: hash A (first observation)
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({ materialHash: hashA, fetchedAt: '2026-07-11T00:00:00.000Z' })]),
+    });
+
+    // Run 2: hash B (material change)
+    repo.fetchRuns.push({ id: 'run-2', job_source_id: 'source-1', status: 'running', started_at: new Date().toISOString(), finished_at: null });
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-2',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({ materialHash: hashB, fetchedAt: '2026-07-12T00:00:00.000Z', titleRaw: 'Updated Intern' })]),
+    });
+
+    // Run 3: hash A again (reverted) — must produce a third version, not conflict
+    repo.fetchRuns.push({ id: 'run-3', job_source_id: 'source-1', status: 'running', started_at: new Date().toISOString(), finished_at: null });
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-3',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({ materialHash: hashA, fetchedAt: '2026-07-13T00:00:00.000Z' })]),
+    });
+
+    // Three distinct version rows must exist
+    expect(repo.versions).toHaveLength(3);
+    const hashes = repo.versions.map((v) => v.material_hash);
+    expect(hashes).toEqual([hashA, hashB, hashA]);
+    // Each has its own fetch run
+    const runIds = repo.versions.map((v) => v.source_fetch_run_id);
+    expect(new Set(runIds).size).toBe(3);
+  });
+
+  it('source_new review task is created exactly once on run replay', async () => {
+    const repo = new FakeRepository();
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+    });
+    const taskCountAfterFirst = repo.tasks.filter((t) => t.task_type === 'source_new').length;
+    expect(taskCountAfterFirst).toBe(1);
+
+    // Replay the same run
+    repo.fetchRuns[0].status = 'running';
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+    });
+    const taskCountAfterReplay = repo.tasks.filter((t) => t.task_type === 'source_new').length;
+    expect(taskCountAfterReplay).toBe(1);
+  });
+
+  it('concurrent CAS protection: approved opportunity preserves fields and creates source_changed task', async () => {
+    const repo = new FakeRepository();
+    // Pre-populate an approved opportunity that would normally match
+    repo.opportunities.push({
+      id: 'opp-approved',
+      company_id: 'co-1',
+      title: 'Research Intern (Approved)',
+      posting_url: 'https://example.com/job/1',
+      dedupe_key: 'acme-biotech::research-intern::https://example.com/job/1',
+      family_key: 'acme-biotech::research-intern',
+      review_status: 'approved',
+      public_safe: true,
+      last_seen_at: '2026-07-01T00:00:00.000Z',
+      location: 'Long Beach, CA',
+      eligibility: null,
+      focus_area: 'biotech',
+      deadline: null,
+      deadline_text: null,
+      paid_status: 'unknown',
+      application_type: 'internship',
+      source_status_raw: 'open',
+      status: 'active',
+    });
+
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+    });
+
+    const approvedOpp = repo.opportunities.find((o) => o.id === 'opp-approved')!;
+    // Fields must be preserved
+    expect(approvedOpp.title).toBe('Research Intern (Approved)');
+    // A source_changed task must be opened for the opportunity
+    const task = repo.tasks.find((t) => t.entity_table === 'opportunities' && t.entity_id === 'opp-approved' && t.task_type === 'source_changed');
+    expect(task).toBeDefined();
+  });
+
+  it.each(
+    ['closed', 'expired', 'broken_link', 'hidden', 'duplicate', 'not_relevant', 'archive_only'] as const,
+  )('protected lifecycle state "%s" prevents auto-mutation of opportunity fields', async (status) => {
+    const repo = new FakeRepository();
+    repo.opportunities.push({
+      id: `opp-${status}`,
+      company_id: 'co-1',
+      title: `Protected Title (${status})`,
+      posting_url: 'https://example.com/job/1',
+      dedupe_key: 'acme-biotech::research-intern::https://example.com/job/1',
+      family_key: 'acme-biotech::research-intern',
+      review_status: 'pending',
+      public_safe: false,
+      last_seen_at: '2026-07-01T00:00:00.000Z',
+      location: 'Long Beach, CA',
+      eligibility: null,
+      focus_area: 'biotech',
+      deadline: null,
+      deadline_text: null,
+      paid_status: 'unknown',
+      application_type: 'internship',
+      source_status_raw: 'open',
+      status,
+    });
+
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+    });
+
+    const opp = repo.opportunities.find((o) => o.id === `opp-${status}`)!;
+    // Title must not be overwritten by automation
+    expect(opp.title).toBe(`Protected Title (${status})`);
+  });
+
+  it('rejected review_status prevents auto-mutation of opportunity fields', async () => {
+    const repo = new FakeRepository();
+    repo.opportunities.push({
+      id: 'opp-rejected',
+      company_id: 'co-1',
+      title: 'Rejected Title',
+      posting_url: 'https://example.com/job/1',
+      dedupe_key: 'acme-biotech::research-intern::https://example.com/job/1',
+      family_key: 'acme-biotech::research-intern',
+      review_status: 'rejected',
+      public_safe: false,
+      last_seen_at: '2026-07-01T00:00:00.000Z',
+      location: 'Long Beach, CA',
+      eligibility: null,
+      focus_area: 'biotech',
+      deadline: null,
+      deadline_text: null,
+      paid_status: 'unknown',
+      application_type: 'internship',
+      source_status_raw: 'open',
+      status: 'needs_review',
+    });
+
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+    });
+
+    const opp = repo.opportunities.find((o) => o.id === 'opp-rejected')!;
+    expect(opp.title).toBe('Rejected Title');
+  });
+
+  it('duplicate pending opportunity creation is idempotent (same dedupe key)', async () => {
+    const repo = new FakeRepository();
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+    });
+    const firstCount = repo.opportunities.length;
+    expect(firstCount).toBe(1);
+
+    // Second run with the same posting identity creates no additional opportunity
+    repo.fetchRuns.push({ id: 'run-2', job_source_id: 'source-1', status: 'running', started_at: new Date().toISOString(), finished_at: null });
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-2',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({ fetchedAt: '2026-07-14T00:00:00.000Z' })]),
+    });
+    expect(repo.opportunities.length).toBe(1);
+  });
+
+  it('failed-run resume recreates missing source_new task', async () => {
+    // With the atomic RPC, posting + version + task are committed together or not at all.
+    // Simulate: first call fails entirely (RPC exception → run marked failed with persistenceError).
+    const repo = new FakeRepository();
+    repo.fetchRuns[0].status = 'running';
+
+    // Make the upsert throw on the first call to simulate an RPC-level failure
+    let firstCall = true;
+    const originalUpsert = repo.upsertPostingObservation.bind(repo);
+    repo.upsertPostingObservation = async (input: any) => {
+      if (firstCall) {
+        firstCall = false;
+        throw new Error('simulated rpc failure');
+      }
+      return originalUpsert(input);
+    };
+
+    await expect(persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+    })).rejects.toThrow(/simulated rpc failure/);
+
+    // Nothing was persisted (atomic failure: posting, version, task all absent)
+    expect(repo.postings).toHaveLength(0);
+    expect(repo.versions).toHaveLength(0);
+    expect(repo.tasks.filter((t) => t.task_type === 'source_new')).toHaveLength(0);
+    // Run is now in failed+persistenceError state
+    expect(repo.fetchRuns[0].status).toBe('failed');
+    expect(repo.fetchRuns[0].log_json).toHaveProperty('persistenceError');
+
+    // Resume: replay creates posting + version + task exactly once
+    repo.upsertPostingObservation = originalUpsert;
+    repo.fetchRuns[0] = {
+      id: 'run-1', job_source_id: 'source-1', status: 'failed',
+      error_class: 'unexpected' as any, started_at: new Date().toISOString(), finished_at: new Date().toISOString(),
+      log_json: { persistenceError: 'simulated rpc failure' },
+    };
+
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+      retry: { resumeFailedRun: true },
+    });
+
+    expect(repo.postings).toHaveLength(1);
+    expect(repo.versions).toHaveLength(1);
+    const tasksAfter = repo.tasks.filter((t) => t.task_type === 'source_new').length;
+    expect(tasksAfter).toBe(1);
   });
 });

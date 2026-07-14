@@ -67,6 +67,7 @@ export interface SourcePostingRow {
 export interface SourcePostingVersionRow {
   id: string;
   source_posting_id: string;
+  source_fetch_run_id: string;
   material_hash: string;
   normalized_json: Record<string, unknown>;
 }
@@ -147,6 +148,12 @@ export interface UpsertPostingInput {
   lastPayloadId: string | null;
   lastMaterialHash: string;
   observedAtIso: string;
+  /** Connector version string for version row provenance. */
+  connectorVersion: string;
+  /** Normalised posting snapshot, stored in source_posting_versions. */
+  normalizedJson: Record<string, unknown>;
+  /** Minimum relevance score to trigger a source_new / source_changed / source_reopened review task. */
+  minScoreForReview: number;
 }
 
 export interface UpsertPostingResult {
@@ -155,6 +162,12 @@ export interface UpsertPostingResult {
   wasPreviouslyClosed: boolean;
   materialChanged: boolean;
   staleObservation: boolean;
+  /** The version row that was created (or found via idempotent replay), null when stale. */
+  version: SourcePostingVersionRow | null;
+  /** True when a new version row was actually inserted (false on idempotent replay). */
+  versionInserted: boolean;
+  /** The review task type that was atomically created, or null. */
+  taskTypeCreated: string | null;
 }
 
 export interface UpdateFetchRunInput {
@@ -213,28 +226,31 @@ export interface IngestionRepository {
     sizeBytes: number;
     storagePath: string;
   }): Promise<SourcePayloadRow>;
-  findPostingByIdentity(jobSourceId: string, identityKey: string): Promise<SourcePostingRow | null>;
-  insertPosting(input: UpsertPostingInput): Promise<SourcePostingRow>;
-  updatePosting(id: string, input: UpsertPostingInput): Promise<SourcePostingRow>;
+  /**
+   * Atomically upsert the source posting, insert the immutable version row, and
+   * create the appropriate source review task, all inside a single database
+   * transaction (via the persist_posting_observation RPC).
+   *
+   * The production Supabase implementation requires the RPC and will throw
+   * if it is unavailable.  FakeRepository implementations inline the same logic
+   * to keep unit tests fast and self-contained.
+   */
   upsertPostingObservation(input: UpsertPostingInput & { fetchRunId: string }): Promise<UpsertPostingResult>;
-  getLatestVersion(sourcePostingId: string): Promise<SourcePostingVersionRow | null>;
-  getVersionByMaterialHash(sourcePostingId: string, materialHash: string): Promise<SourcePostingVersionRow | null>;
-  insertPostingVersion(input: {
-    sourcePostingId: string;
-    sourceFetchRunId: string;
-    sourcePayloadId: string;
-    connectorVersion: string;
-    isMaterialChange: boolean;
-    materialHash: string;
-    normalizedJson: Record<string, unknown>;
-    scoreBreakdownJson: Record<string, unknown>;
-    fieldDiffJson: Record<string, unknown>;
-  }): Promise<SourcePostingVersionRow>;
   findOpenReviewTask(taskType: string, entityTable: string, entityId: string, notes: string): Promise<ReviewTaskRow | null>;
   insertReviewTask(taskType: string, entityTable: string, entityId: string, notes: string): Promise<ReviewTaskRow>;
   listMatchableOpportunities(): Promise<OpportunityRow[]>;
   findOpportunityById(opportunityId: string): Promise<OpportunityRow | null>;
   updateOpportunityObservation(opportunityId: string, observedAtIso: string): Promise<void>;
+  /**
+   * Update opportunity draft fields only when the record is still eligible for
+   * automated mutation (public_safe=false, not approved/rejected, not in a
+   * protected lifecycle state).
+   *
+   * Returns `{ updated: true }` when exactly one row was written.
+   * Returns `{ updated: false }` when the record was concurrently protected
+   * (approved, rejected, or moved to a protected status) during the race —
+   * callers must preserve opportunity fields and create a source_changed task.
+   */
   updateOpportunityDraftFromPosting(opportunityId: string, input: {
     title: string;
     postingUrl: string;
@@ -247,7 +263,7 @@ export interface IngestionRepository {
     relevanceScore: number;
     relevanceReasons: string[];
     observedAtIso: string;
-  }): Promise<void>;
+  }): Promise<{ updated: boolean }>;
   insertPendingOpportunity(input: {
     companyId: string | null;
     sourceRecordId: string;
@@ -387,205 +403,77 @@ export function createSupabaseIngestionRepository(params: {
       return data;
     },
 
-    async findPostingByIdentity(jobSourceId, identityKey) {
-      const { data, error } = await db.from('source_postings')
-        .select('id, job_source_id, identity_key, canonical_url, current_status, first_seen_at, last_seen_at, last_material_hash, relevance_score, relevance_score_version')
-        .eq('job_source_id', jobSourceId)
-        .eq('identity_key', identityKey)
-        .maybeSingle();
-
-      if (error) throw new Error(error.message);
-      return data ?? null;
-    },
-
     async upsertPostingObservation(input) {
-      if (db.rpc) {
-        const { data, error } = await db.rpc('upsert_source_posting_observation', {
-          p_fetch_run_id: input.fetchRunId,
-          p_job_source_id: input.jobSourceId,
-          p_identity_key: input.identityKey,
-          p_canonical_url: input.canonicalUrl,
-          p_external_posting_id: input.externalPostingId,
-          p_employer_name_raw: input.employerNameRaw,
-          p_employer_name_normalized: input.employerNameNormalized,
-          p_title_raw: input.titleRaw,
-          p_title_normalized: input.titleNormalized,
-          p_location_raw: input.locationRaw,
-          p_location_normalized: input.locationNormalized,
-          p_remote_type: input.remoteType,
-          p_employment_type: input.employmentType,
-          p_classification: input.classification,
-          p_department: input.department,
-          p_focus_area: input.focusArea,
-          p_posted_at: isoDateOrNull(input.postedAt),
-          p_closes_at: isoDateOrNull(input.closesAt),
-          p_deadline_kind: input.deadlineKind,
-          p_current_status: input.currentStatus,
-          p_relevance_score: input.relevanceScore,
-          p_relevance_score_version: input.relevanceScoreVersion,
-          p_score_breakdown_json: input.scoreBreakdownJson,
-          p_uncertainty_flags: input.uncertaintyFlags,
-          p_last_payload_id: input.lastPayloadId,
-          p_last_material_hash: input.lastMaterialHash,
-          p_observed_at: input.observedAtIso,
-        });
-        if (error) throw new Error(error.message);
-        const row = Array.isArray(data) ? data[0] : data;
-        return {
-          posting: {
-            id: row.posting_id,
-            job_source_id: row.job_source_id,
-            identity_key: row.identity_key,
-            canonical_url: row.canonical_url,
-            current_status: row.current_status,
-            first_seen_at: row.first_seen_at,
-            last_seen_at: row.last_seen_at,
-            last_material_hash: row.last_material_hash,
-            relevance_score: row.relevance_score,
-            relevance_score_version: row.relevance_score_version,
-          },
-          created: row.created,
-          wasPreviouslyClosed: row.reopened,
-          materialChanged: row.material_changed,
-          staleObservation: row.stale_observation,
-        };
+      if (!db.rpc) {
+        throw new Error(
+          'persist_posting_observation requires an RPC-capable IngestionDbClient. ' +
+          'The non-transactional fallback has been removed.'
+        );
       }
-
-      const existing = await this.findPostingByIdentity(input.jobSourceId, input.identityKey);
-      if (!existing) {
-        const posting = await this.insertPosting(input);
-        return { posting, created: true, wasPreviouslyClosed: false, materialChanged: true, staleObservation: false };
-      }
-      if (new Date(input.observedAtIso).getTime() < new Date(existing.last_seen_at).getTime()) {
-        return { posting: existing, created: false, wasPreviouslyClosed: false, materialChanged: false, staleObservation: true };
-      }
-      const wasPreviouslyClosed = ['closed', 'missing', 'closure_candidate'].includes(existing.current_status);
-      const materialChanged = existing.last_material_hash !== input.lastMaterialHash;
-      const posting = await this.updatePosting(existing.id, input);
-      return { posting, created: false, wasPreviouslyClosed, materialChanged, staleObservation: false };
-    },
-
-    async insertPosting(input) {
-      const { data, error } = await db.from('source_postings').insert({
-        job_source_id: input.jobSourceId,
-        identity_key: input.identityKey,
-        canonical_url: input.canonicalUrl,
-        external_posting_id: input.externalPostingId,
-        employer_name_raw: input.employerNameRaw,
-        employer_name_normalized: input.employerNameNormalized,
-        title_raw: input.titleRaw,
-        title_normalized: input.titleNormalized,
-        location_raw: input.locationRaw,
-        location_normalized: input.locationNormalized,
-        remote_type: input.remoteType,
-        employment_type: input.employmentType,
-        classification: input.classification,
-        department: input.department,
-        focus_area: input.focusArea,
-        posted_at: isoDateOrNull(input.postedAt),
-        closes_at: isoDateOrNull(input.closesAt),
-        deadline_kind: input.deadlineKind,
-        current_status: input.currentStatus,
-        relevance_score: input.relevanceScore,
-        relevance_score_version: input.relevanceScoreVersion,
-        score_breakdown_json: input.scoreBreakdownJson,
-        uncertainty_flags: input.uncertaintyFlags,
-        first_seen_at: input.observedAtIso,
-        last_seen_at: input.observedAtIso,
-        last_payload_id: input.lastPayloadId,
-        last_material_hash: input.lastMaterialHash,
-        consecutive_misses: 0,
-      }).select('id, job_source_id, identity_key, canonical_url, current_status, first_seen_at, last_seen_at, last_material_hash, relevance_score, relevance_score_version').single();
-
-      if (error) {
-        if (isDuplicateKeyError(error)) {
-          const existing = await this.findPostingByIdentity(input.jobSourceId, input.identityKey);
-          if (existing) return existing;
-        }
-        throw new Error(error.message);
-      }
-
-      return data;
-    },
-
-    async updatePosting(id, input) {
-      const { data, error } = await db.from('source_postings').update({
-        canonical_url: input.canonicalUrl,
-        external_posting_id: input.externalPostingId,
-        employer_name_raw: input.employerNameRaw,
-        employer_name_normalized: input.employerNameNormalized,
-        title_raw: input.titleRaw,
-        title_normalized: input.titleNormalized,
-        location_raw: input.locationRaw,
-        location_normalized: input.locationNormalized,
-        remote_type: input.remoteType,
-        employment_type: input.employmentType,
-        classification: input.classification,
-        department: input.department,
-        focus_area: input.focusArea,
-        posted_at: isoDateOrNull(input.postedAt),
-        closes_at: isoDateOrNull(input.closesAt),
-        deadline_kind: input.deadlineKind,
-        current_status: input.currentStatus,
-        relevance_score: input.relevanceScore,
-        relevance_score_version: input.relevanceScoreVersion,
-        score_breakdown_json: input.scoreBreakdownJson,
-        uncertainty_flags: input.uncertaintyFlags,
-        last_seen_at: input.observedAtIso,
-        last_payload_id: input.lastPayloadId,
-        last_material_hash: input.lastMaterialHash,
-        consecutive_misses: 0,
-      }).eq('id', id)
-        .select('id, job_source_id, identity_key, canonical_url, current_status, first_seen_at, last_seen_at, last_material_hash, relevance_score, relevance_score_version')
-        .single();
-
+      const { data, error } = await db.rpc('persist_posting_observation', {
+        p_fetch_run_id:             input.fetchRunId,
+        p_job_source_id:            input.jobSourceId,
+        p_identity_key:             input.identityKey,
+        p_canonical_url:            input.canonicalUrl,
+        p_external_posting_id:      input.externalPostingId,
+        p_employer_name_raw:        input.employerNameRaw,
+        p_employer_name_normalized: input.employerNameNormalized,
+        p_title_raw:                input.titleRaw,
+        p_title_normalized:         input.titleNormalized,
+        p_location_raw:             input.locationRaw,
+        p_location_normalized:      input.locationNormalized,
+        p_remote_type:              input.remoteType,
+        p_employment_type:          input.employmentType,
+        p_classification:           input.classification,
+        p_department:               input.department,
+        p_focus_area:               input.focusArea,
+        p_posted_at:                isoDateOrNull(input.postedAt),
+        p_closes_at:                isoDateOrNull(input.closesAt),
+        p_deadline_kind:            input.deadlineKind,
+        p_current_status:           input.currentStatus,
+        p_relevance_score:          input.relevanceScore,
+        p_relevance_score_version:  input.relevanceScoreVersion,
+        p_score_breakdown_json:     input.scoreBreakdownJson,
+        p_uncertainty_flags:        input.uncertaintyFlags,
+        p_last_payload_id:          input.lastPayloadId,
+        p_last_material_hash:       input.lastMaterialHash,
+        p_observed_at:              input.observedAtIso,
+        p_connector_version:        input.connectorVersion,
+        p_normalized_json:          input.normalizedJson,
+        p_min_score_for_review:     input.minScoreForReview,
+      });
       if (error) throw new Error(error.message);
-      return data;
-    },
-
-    async getLatestVersion(sourcePostingId) {
-      const { data, error } = await db.from('source_posting_versions')
-        .select('id, source_posting_id, material_hash, normalized_json')
-        .eq('source_posting_id', sourcePostingId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw new Error(error.message);
-      return data ?? null;
-    },
-
-    async getVersionByMaterialHash(sourcePostingId, materialHash) {
-      const { data, error } = await db.from('source_posting_versions')
-        .select('id, source_posting_id, material_hash, normalized_json')
-        .eq('source_posting_id', sourcePostingId)
-        .eq('material_hash', materialHash)
-        .maybeSingle();
-      if (error) throw new Error(error.message);
-      return data ?? null;
-    },
-
-    async insertPostingVersion(input) {
-      const { data, error } = await db.from('source_posting_versions').insert({
-        source_posting_id: input.sourcePostingId,
-        source_fetch_run_id: input.sourceFetchRunId,
-        source_payload_id: input.sourcePayloadId,
-        connector_version: input.connectorVersion,
-        is_material_change: input.isMaterialChange,
-        material_hash: input.materialHash,
-        normalized_json: input.normalizedJson,
-        score_breakdown_json: input.scoreBreakdownJson,
-        field_diff_json: input.fieldDiffJson,
-      }).select('id, source_posting_id, material_hash, normalized_json').single();
-
-      if (error) {
-        if (isDuplicateKeyError(error)) {
-          const existing = await this.getVersionByMaterialHash(input.sourcePostingId, input.materialHash);
-          if (existing) return existing;
-        }
-        throw new Error(error.message);
-      }
-      return data;
+      const row = Array.isArray(data) ? data[0] : data;
+      const version: SourcePostingVersionRow | null = row.version_id
+        ? {
+            id:                  row.version_id,
+            source_posting_id:   row.posting_id,
+            source_fetch_run_id: input.fetchRunId,
+            material_hash:       input.lastMaterialHash,
+            normalized_json:     input.normalizedJson,
+          }
+        : null;
+      return {
+        posting: {
+          id:                      row.posting_id,
+          job_source_id:           row.job_source_id,
+          identity_key:            row.identity_key,
+          canonical_url:           row.canonical_url,
+          current_status:          row.current_status,
+          first_seen_at:           row.first_seen_at,
+          last_seen_at:            row.last_seen_at,
+          last_material_hash:      row.last_material_hash,
+          relevance_score:         row.relevance_score,
+          relevance_score_version: row.relevance_score_version,
+        },
+        created:            row.created,
+        wasPreviouslyClosed: row.reopened,
+        materialChanged:    row.material_changed,
+        staleObservation:   row.stale_observation,
+        version,
+        versionInserted:    row.version_inserted ?? false,
+        taskTypeCreated:    row.review_task_type ?? null,
+      };
     },
 
     async findOpenReviewTask(taskType, entityTable, entityId, notes) {
@@ -659,7 +547,11 @@ export function createSupabaseIngestionRepository(params: {
     },
 
     async updateOpportunityDraftFromPosting(opportunityId, input) {
-      const { error } = await db.from('opportunities').update({
+      const PROTECTED_STATUSES = [
+        'closed', 'expired', 'broken_link',
+        'hidden', 'duplicate', 'not_relevant', 'archive_only',
+      ];
+      const { data, error } = await db.from('opportunities').update({
         title: input.title,
         posting_url: input.postingUrl,
         location: input.location,
@@ -674,12 +566,47 @@ export function createSupabaseIngestionRepository(params: {
         status: 'needs_review',
         review_status: 'pending',
         public_safe: false,
-      }).eq('id', opportunityId);
+      }).eq('id', opportunityId)
+        .eq('public_safe', false)
+        .not('review_status', 'in', '(approved,rejected)')
+        .not('status', 'in', `(${PROTECTED_STATUSES.join(',')})`)
+        .select('id');
 
       if (error) throw new Error(error.message);
+      return { updated: Array.isArray(data) && data.length === 1 };
     },
 
     async insertPendingOpportunity(input) {
+      // Use the advisory-lock RPC when available to prevent duplicate pending
+      // opportunities when concurrent fetch runs race on the same dedupe key.
+      if (db.rpc) {
+        const { data: rpcData, error: rpcError } = await db.rpc('create_pending_opportunity', {
+          p_company_id:        input.companyId,
+          p_source_record_id:  input.sourceRecordId,
+          p_title:             input.title,
+          p_posting_url:       input.postingUrl,
+          p_location:          input.location,
+          p_focus_area:        input.focusArea,
+          p_deadline:          isoDateOrNull(input.deadline),
+          p_deadline_text:     input.deadlineText,
+          p_paid_status:       input.paidStatus,
+          p_application_type:  input.applicationType,
+          p_source_status_raw: input.sourceStatusRaw,
+          p_relevance_score:   input.relevanceScore,
+          p_relevance_reasons: [`score:${input.relevanceScore}`],
+          p_dedupe_key:        input.dedupeKey,
+          p_family_key:        input.familyKey,
+          p_observed_at:       input.observedAtIso,
+        });
+        if (rpcError) throw new Error(rpcError.message);
+        const rpcRow = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+        const { data: opp, error: fetchError } = await db.from('opportunities').select(
+          'id, company_id, title, posting_url, dedupe_key, family_key, review_status, public_safe, last_seen_at, location, eligibility, focus_area, deadline, deadline_text, paid_status, application_type, source_status_raw, status',
+        ).eq('id', rpcRow.opportunity_id).single();
+        if (fetchError) throw new Error(fetchError.message);
+        return opp;
+      }
+
       const { data, error } = await db.from('opportunities').insert({
         company_id: input.companyId,
         source_record_id: input.sourceRecordId,

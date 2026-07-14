@@ -12,9 +12,7 @@ import {
   type IngestionRepository,
   type IngestionStorageClient,
   type PersistFetchRunCounters,
-  type SourcePostingVersionRow,
 } from './repository';
-import { ensureOpenSourceReviewTask } from './review-tasks';
 import type { SourceFetchRunStatus } from '../types';
 
 function stableObject(value: unknown): unknown {
@@ -216,9 +214,7 @@ export async function persistFetchResult(params: {
 
     if (result.ok && payload) {
       for (const candidate of result.candidates) {
-      const existing = await params.repository.findPostingByIdentity(params.expectedJobSourceId, candidate.identityKey);
-      const reopenedFromCurrent = existing != null && ['closed', 'missing', 'closure_candidate'].includes(existing.current_status);
-      const currentStatus = reopenedFromCurrent ? 'reopened' as const : 'open' as const;
+      const normalizedSnapshot = toNormalizedSnapshot(candidate);
 
       const upsertInput = {
         jobSourceId: params.expectedJobSourceId,
@@ -239,7 +235,8 @@ export async function persistFetchResult(params: {
         postedAt: candidate.postedAt,
         closesAt: candidate.closesAt,
         deadlineKind: candidate.deadlineKind,
-        currentStatus,
+        // Always pass 'open'; the RPC auto-promotes to 'reopened' when needed.
+        currentStatus: 'open' as const,
         relevanceScore: candidate.relevanceScore,
         relevanceScoreVersion: candidate.relevanceScoreVersion,
         scoreBreakdownJson: stableObject(candidate.scoreBreakdown) as Record<string, unknown>,
@@ -247,14 +244,18 @@ export async function persistFetchResult(params: {
         lastPayloadId: payload.payload.id,
         lastMaterialHash: candidate.materialHash,
         observedAtIso: candidate.fetchedAt,
+        connectorVersion: candidate.connectorVersion,
+        normalizedJson: normalizedSnapshot,
+        minScoreForReview: PENDING_OPPORTUNITY_MIN_SCORE,
       };
 
+      // persist_posting_observation: posting + version + review task are all
+      // created inside a single database transaction. No separate calls needed.
       const upsert = await params.repository.upsertPostingObservation({
         fetchRunId: params.fetchRunId,
         ...upsertInput,
       });
       const posting = upsert.posting;
-      const isFirstObservation = upsert.created;
       const materialChanged = upsert.materialChanged;
       const reopened = upsert.wasPreviouslyClosed;
 
@@ -264,68 +265,13 @@ export async function persistFetchResult(params: {
         continue;
       }
 
-      const priorVersion: SourcePostingVersionRow | null = await params.repository.getLatestVersion(posting.id);
-
       if (upsert.created) counters.recordsNew += 1;
       else if (materialChanged) counters.recordsChanged += 1;
       else counters.recordsUnchanged += 1;
 
-      if (materialChanged) {
-        const normalizedSnapshot = toNormalizedSnapshot(candidate);
-        const fieldDiff = priorVersion
-          ? diffDeterministic(priorVersion.normalized_json, normalizedSnapshot)
-          : {};
-
-        await params.repository.insertPostingVersion({
-          sourcePostingId: posting.id,
-          sourceFetchRunId: params.fetchRunId,
-          sourcePayloadId: payload.payload.id,
-          connectorVersion: candidate.connectorVersion,
-          isMaterialChange: !isFirstObservation,
-          materialHash: candidate.materialHash,
-          normalizedJson: normalizedSnapshot,
-          scoreBreakdownJson: stableObject(candidate.scoreBreakdown) as Record<string, unknown>,
-          fieldDiffJson: fieldDiff,
-        });
-      }
-
-      if (upsert.created && candidate.relevanceScore >= PENDING_OPPORTUNITY_MIN_SCORE) {
+      // The review task was created atomically inside the RPC. Count it here.
+      if (upsert.taskTypeCreated) {
         counters.recordsReviewed += 1;
-        await ensureOpenSourceReviewTask({
-          repository: params.repository,
-          taskType: 'source_new',
-          entityTable: 'source_postings',
-          entityId: posting.id,
-          materialHash: candidate.materialHash,
-          noteTag: 'source_new',
-          noteBody: `New relevant source posting observed (${candidate.identityKey}).`,
-        });
-      }
-
-      if (existing && materialChanged) {
-        counters.recordsReviewed += 1;
-        await ensureOpenSourceReviewTask({
-          repository: params.repository,
-          taskType: 'source_changed',
-          entityTable: 'source_postings',
-          entityId: posting.id,
-          materialHash: candidate.materialHash,
-          noteTag: 'source_changed',
-          noteBody: `Material change detected for source posting ${candidate.identityKey}.`,
-        });
-      }
-
-      if (reopened) {
-        counters.recordsReviewed += 1;
-        await ensureOpenSourceReviewTask({
-          repository: params.repository,
-          taskType: 'source_reopened',
-          entityTable: 'source_postings',
-          entityId: posting.id,
-          materialHash: candidate.materialHash,
-          noteTag: 'source_reopened',
-          noteBody: `Previously closed posting was observed open again (${candidate.identityKey}).`,
-        });
       }
 
       await bridgeOpportunityForSourcePosting({
