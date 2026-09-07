@@ -1,0 +1,39 @@
+name: Weekly officer review digest
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 08:00 PST / 09:00 PDT on Mondays. GitHub cron has no timezone support.
+    - cron: '0 16 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-officer-review-digest
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
+      GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+      GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+      REVIEW_DIGEST_RECIPIENTS: ${{ secrets.REVIEW_DIGEST_RECIPIENTS }}
+      REVIEW_DIGEST_FROM: ${{ vars.REVIEW_DIGEST_FROM }}
+      REVIEW_DASHBOARD_URL: ${{ vars.REVIEW_DASHBOARD_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify notification configuration
+        id: config
+        run: node scripts/validate-review-digest-env.mjs
+      - name: Send digest only when records need review
+        if: steps.config.outputs.configured == 'true'
+        run: node scripts/review-digest.mjs

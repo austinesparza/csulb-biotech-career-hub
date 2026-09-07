@@ -16,6 +16,8 @@ jobs:
           cache: npm
       - run: npm install
       - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:digest
 
   build:
     runs-on: ubuntu-latest

@@ -16,6 +16,7 @@ interface Search {
   loc?: string;
   after?: string;
   paid?: string;
+  audience?: string;
   sort?: string;
 }
 
@@ -30,6 +31,9 @@ export default async function InternshipsPage({
   const loc = sanitizeSearchTerm(params.loc);
   const after = /^\d{4}-\d{2}-\d{2}$/.test(params.after ?? '') ? params.after : undefined;
   const paid = params.paid === 'paid' ? 'paid' : undefined;
+  const audience = ['graduate', 'undergraduate', 'special', 'adjacent'].includes(params.audience ?? '')
+    ? params.audience
+    : undefined;
   const sort = ['deadline', 'newest', 'company'].includes(params.sort ?? '') ? params.sort : undefined;
   const supabase = createClient();
 
@@ -39,6 +43,10 @@ export default async function InternshipsPage({
   if (loc) query = query.ilike('location', `%${loc}%`);
   if (after) query = query.gte('deadline', after);
   if (paid) query = query.in('paid_status', ['paid', 'stipend']);
+  if (audience === 'graduate') query = query.in('audience_bucket', ['graduate', 'mixed']);
+  if (audience === 'undergraduate') query = query.in('audience_bucket', ['undergraduate', 'mixed']);
+  if (audience === 'special') query = query.eq('audience_bucket', 'special');
+  if (audience === 'adjacent') query = query.eq('audience_bucket', 'adjacent');
   query =
     sort === 'deadline'
       ? query.order('deadline', { ascending: true, nullsFirst: false })
@@ -87,6 +95,15 @@ export default async function InternshipsPage({
           style={{ border: '1px solid var(--line)' }}>
           <option value="">Any pay</option>
           <option value="paid">Paid or stipend only</option>
+        </select>
+        <select name="audience" defaultValue={audience ?? ''} aria-label="Student audience"
+          className="rounded-md bg-white px-2 py-2"
+          style={{ border: '1px solid var(--line)' }}>
+          <option value="">Any student audience</option>
+          <option value="graduate">Graduate-accessible</option>
+          <option value="undergraduate">Undergraduate-accessible</option>
+          <option value="special">Special eligibility</option>
+          <option value="adjacent">Adjacent term or format</option>
         </select>
         <select name="sort" defaultValue={sort ?? ''} aria-label="Sort order"
           className="rounded-md bg-white px-2 py-2"

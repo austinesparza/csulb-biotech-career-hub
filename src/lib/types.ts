@@ -21,6 +21,14 @@ export const PUBLIC_STATUSES: OpportunityStatus[] = ['open_verified', 'open_unve
 
 export type ReviewStatus = 'pending' | 'approved' | 'rejected' | 'changes_requested';
 export type PaidStatus = 'paid' | 'unpaid' | 'stipend' | 'unknown';
+export type AudienceBucket =
+  | 'undergraduate'
+  | 'graduate'
+  | 'mixed'
+  | 'special'
+  | 'adjacent'
+  | 'ineligible'
+  | 'unknown';
 export type PersonRole = 'mentor' | 'alumnus' | 'speaker' | 'officer' | 'other';
 export type ParseStatus = 'ok' | 'error' | 'skipped';
 export type ImportRunStatus = 'running' | 'completed' | 'failed';
@@ -106,6 +114,8 @@ export interface Opportunity {
   start_date_text: string | null;
   paid_status: PaidStatus;
   application_type: string | null;
+  audience_bucket: AudienceBucket;
+  audience_reason: string | null;
   source_status_raw: string | null;
   status: OpportunityStatus;
   public_notes: string | null;
@@ -271,6 +281,8 @@ export interface PublicOpportunity {
   start_date_text: string | null;
   paid_status: PaidStatus;
   application_type: string | null;
+  audience_bucket: AudienceBucket;
+  audience_reason: string | null;
   status: Extract<OpportunityStatus, 'open_verified' | 'open_unverified'>;
   public_notes: string | null;
   relevance_score: number | null;
