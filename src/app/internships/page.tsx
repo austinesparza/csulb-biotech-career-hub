@@ -11,7 +11,6 @@ interface Search {
   focus?: string;
   loc?: string;
   paid?: string;
-  audience?: string;
   sort?: string;
 }
 
@@ -21,21 +20,17 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
   const focus = sanitizeSearchTerm(params.focus);
   const loc = sanitizeSearchTerm(params.loc);
   const paid = params.paid === 'paid' ? 'paid' : undefined;
-  const audience = ['graduate', 'undergraduate', 'special', 'adjacent', 'all'].includes(params.audience ?? '')
-    ? params.audience!
-    : 'graduate';
   const sort = ['deadline', 'newest', 'company'].includes(params.sort ?? '') ? params.sort : undefined;
   const supabase = createClient();
 
-  let query = supabase.from('public_opportunities').select('*');
+  let query = supabase
+    .from('public_opportunities')
+    .select('*')
+    .in('audience_bucket', ['graduate', 'mixed']);
   if (q) query = query.or(`title.ilike.%${q}%,company_name.ilike.%${q}%`);
   if (focus) query = query.ilike('focus_area', `%${focus}%`);
   if (loc) query = query.ilike('location', `%${loc}%`);
   if (paid) query = query.in('paid_status', ['paid', 'stipend']);
-  if (audience === 'graduate') query = query.in('audience_bucket', ['graduate', 'mixed']);
-  if (audience === 'undergraduate') query = query.in('audience_bucket', ['undergraduate', 'mixed']);
-  if (audience === 'special') query = query.eq('audience_bucket', 'special');
-  if (audience === 'adjacent') query = query.eq('audience_bucket', 'adjacent');
   query = sort === 'deadline'
     ? query.order('deadline', { ascending: true, nullsFirst: false })
     : sort === 'newest'
@@ -50,16 +45,10 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
   return (
     <div className="site-wrap">
       <header className="page-head">
-        <p className="eyebrow">Graduate opportunity board</p>
-        <h1>Reviewed roles for graduate students.</h1>
+        <h1>Graduate internships</h1>
         <p className="lede">
-          The main view includes only graduate-level and explicitly graduate-accessible roles.
-          Adjacent formats and other student audiences live in labeled, opt-in views.
+          Current roles reviewed for MSc eligibility, timing, and source evidence.
         </p>
-        <div className="notice">
-          <span aria-hidden="true">◇</span>
-          <span><strong>Eligibility is a hard gate.</strong> A strong scientific match never overrides degree, enrollment, location, or work authorization requirements.</span>
-        </div>
       </header>
 
       <section className="board-shell" aria-labelledby="board-title">
@@ -88,16 +77,6 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
             <input name="loc" defaultValue={loc ?? ''} placeholder="City, state, or remote" maxLength={40} />
           </label>
           <label className="filter-field">
-            <span>Audience bucket</span>
-            <select name="audience" defaultValue={audience}>
-              <option value="graduate">Graduate-accessible</option>
-              <option value="adjacent">Adjacent term or format</option>
-              <option value="special">Special eligibility</option>
-              <option value="undergraduate">Undergraduate-accessible</option>
-              <option value="all">All public buckets</option>
-            </select>
-          </label>
-          <label className="filter-field">
             <span>Sort</span>
             <select name="sort" defaultValue={sort ?? ''}>
               <option value="">Recommended</option>
@@ -115,7 +94,7 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
 
         {error && <div className="notice"><span>!</span><span>Could not load opportunities. Please try again later.</span></div>}
         {!error && opportunities.length === 0 && (
-          <div className="notice"><span>◇</span><span>No matching reviewed opportunities right now. Try another bucket or <a href="/submit">submit a role</a>.</span></div>
+          <div className="notice"><span>◇</span><span>No matching graduate internships right now. Try another filter or <a href="/submit">submit a role</a>.</span></div>
         )}
         {opportunities.length > 0 && <Board opportunities={opportunities} sorted={!!sort} />}
       </section>
