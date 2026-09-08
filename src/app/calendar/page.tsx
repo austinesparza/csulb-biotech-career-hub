@@ -27,16 +27,11 @@ export default async function CalendarPage() {
   return (
     <div className="site-wrap">
       <header className="page-head">
-        <p className="eyebrow">Graduate recruiting calendar</p>
-        <h1>Act on stated dates. Treat patterns as clues.</h1>
+        <h1>Recruiting calendar</h1>
         <p className="lede">
           Historical timing is inferred from past recruiting cycles. Current openings and
           deadlines are shown only when a reviewed source states them.
         </p>
-        <div className="notice">
-          <span aria-hidden="true">◇</span>
-          <span><strong>Unknown stays unknown.</strong> Historical timing does not prove that a current role is open, and no date is inferred here.</span>
-        </div>
       </header>
 
       <section className="editorial-strip">
