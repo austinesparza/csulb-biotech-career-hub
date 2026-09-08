@@ -42,7 +42,7 @@ Spreadsheet CSV → import (nothing public, source required) → officer review 
 The scheduled GitHub workflow only summarizes the private review queue. It cannot
 publish records. Its recipients and Gmail OAuth credentials live in the protected
 `production` environment. Follow `docs/weekly-review-notifications.md` when adding
-or changing recipients. Never commit an address, OAuth token, or service-role key.
+or changing recipients. Never commit an address, OAuth token, or Supabase secret key.
 - Never paste private officer notes into public fields.
 - Never publish a person without recorded consent.
 - Never add code that automatically pulls data from external websites — manual links and reviewed submissions only.

@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildReviewDigest, createRawMessage, escapeHtml, parseRecipients, safeHttpsUrl } from './review-digest.mjs';
+import {
+  buildReviewDigest,
+  createRawMessage,
+  escapeHtml,
+  parseRecipients,
+  safeHttpsUrl,
+  supabaseSecretHeaders,
+} from './review-digest.mjs';
 
 test('recipient parsing rejects header injection and removes duplicates', () => {
   assert.deepEqual(parseRecipients('reviewer@example.edu, reviewer@example.edu, club@example.org'), [
@@ -58,4 +65,12 @@ test('email links accept HTTPS only', () => {
   assert.equal(safeHttpsUrl('http://example.org/job/1'), null);
   const digest = buildReviewDigest([{ title: 'Unsafe link', posting_url: 'javascript:alert(1)', companies: { name: 'Example' } }]);
   assert.doesNotMatch(digest.html, /javascript:/i);
+});
+
+test('Supabase secret key uses only the apikey header', () => {
+  const headers = supabaseSecretHeaders('sb_secret_test-value');
+  assert.deepEqual(headers, { apikey: 'sb_secret_test-value' });
+  assert.equal('Authorization' in headers, false);
+  assert.throws(() => supabaseSecretHeaders('eyJlegacy-service-role'));
+  assert.throws(() => supabaseSecretHeaders(''));
 });

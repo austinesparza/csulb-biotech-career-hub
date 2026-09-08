@@ -23,7 +23,9 @@ application status, private notes, or individualized strategy into this system.
 Create a protected GitHub environment named `production`. Add these secrets:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_SECRET_KEY`, a current `sb_secret_...` server key created for this
+  workflow. Do not use the publishable key, anon key, or deprecated legacy
+  `service_role` JWT.
 - `GMAIL_CLIENT_ID`
 - `GMAIL_CLIENT_SECRET`
 - `GMAIL_REFRESH_TOKEN`
