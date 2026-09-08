@@ -52,9 +52,11 @@ preferred long-term sender.
 4. Configure the production environment. Restrict its secrets to the default branch
    and repository administrators; a scheduled job cannot wait for manual environment approval.
 5. Run `Weekly officer review digest` manually.
-6. Confirm the message contains no private notes and all links are correct.
-7. Leave the Monday schedule enabled only after the manual acceptance test passes.
-8. Add any shared recipient only after officers explicitly approve production
+6. For the first acceptance test, select `send_test_email`. This sends one
+   unmistakably synthetic record without writing to Supabase.
+7. Confirm the message contains no private notes and all links are correct.
+8. Leave the Monday schedule enabled only after the manual acceptance test passes.
+9. Add any shared recipient only after officers explicitly approve production
    delivery and a manual test confirms the final message content.
 
 GitHub cron runs at 16:00 UTC, which is 08:00 PST or 09:00 PDT. Exact local-time

@@ -2,12 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildReviewDigest,
+  buildSyntheticTestRow,
   createRawMessage,
   escapeHtml,
   parseRecipients,
   safeHttpsUrl,
   supabaseSecretHeaders,
 } from './review-digest.mjs';
+
+test('synthetic test row is unmistakably non-production data', () => {
+  const row = buildSyntheticTestRow(new Date('2026-09-08T12:00:00Z'));
+  assert.equal(row.id, 'synthetic-gmail-test');
+  assert.equal(row.audience_bucket, 'graduate');
+  assert.match(row.title, /Synthetic/);
+  assert.match(row.eligibility, /only to verify private officer email delivery/);
+  assert.equal(row.first_seen_at, '2026-09-08T00:00:00Z');
+});
 
 test('recipient parsing rejects header injection and removes duplicates', () => {
   assert.deepEqual(parseRecipients('reviewer@example.edu, reviewer@example.edu, club@example.org'), [

@@ -2,6 +2,12 @@ name: Weekly officer review digest
 
 on:
   workflow_dispatch:
+    inputs:
+      send_test_email:
+        description: 'Send one synthetic acceptance-test digest to the configured development recipient'
+        required: false
+        default: false
+        type: boolean
   schedule:
     # 08:00 PST / 09:00 PDT on Mondays. GitHub cron has no timezone support.
     - cron: '0 16 * * 1'
@@ -26,6 +32,7 @@ jobs:
       REVIEW_DIGEST_RECIPIENTS: ${{ secrets.REVIEW_DIGEST_RECIPIENTS }}
       REVIEW_DIGEST_FROM: ${{ vars.REVIEW_DIGEST_FROM }}
       REVIEW_DASHBOARD_URL: ${{ vars.REVIEW_DASHBOARD_URL }}
+      SEND_TEST_EMAIL: ${{ github.event_name == 'workflow_dispatch' && inputs.send_test_email || false }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,4 +43,9 @@ jobs:
         run: node scripts/validate-review-digest-env.mjs
       - name: Send digest only when records need review
         if: steps.config.outputs.configured == 'true'
-        run: node scripts/review-digest.mjs
+        run: |
+          if [ "$SEND_TEST_EMAIL" = "true" ]; then
+            node scripts/review-digest.mjs --test-email
+          else
+            node scripts/review-digest.mjs
+          fi
