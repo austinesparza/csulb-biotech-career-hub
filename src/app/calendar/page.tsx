@@ -30,8 +30,8 @@ export default async function CalendarPage() {
         <p className="eyebrow">Graduate recruiting calendar</p>
         <h1>Act on stated dates. Treat patterns as clues.</h1>
         <p className="lede">
-          This calendar is generated from reviewed graduate-accessible opportunity records.
-          It plots only dates the source states.
+          Historical timing is inferred from past recruiting cycles. Current openings and
+          deadlines are shown only when a reviewed source states them.
         </p>
         <div className="notice">
           <span aria-hidden="true">◇</span>
