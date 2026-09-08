@@ -13,7 +13,8 @@
 2. `/admin/review`: clear the queue. Open each posting link before approving. Move anything student-useful from private notes into public notes; everything else stays private.
 3. Click "expire past-deadline" sweep.
 4. Check new submissions and any "import changed" tasks (a re-import found differences on an already-published listing — apply manually or dismiss).
-5. Check csubiotechclub@gmail.com for "Career Hub:" subject lines (set up a Gmail filter that labels these once).
+5. Check the configured private review inbox for "Career Hub:" subject lines.
+   During development, this must be one officer's personal address, not the club mailbox.
 
 ## Monthly
 - `/admin` → Export approved CSV → save to [backup location].
