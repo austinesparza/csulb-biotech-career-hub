@@ -1,25 +1,25 @@
 import Link from 'next/link';
 
 const CHECKS = [
-  ['Degree level', 'Does the posting explicitly accept master’s or graduate students?'],
-  ['Enrollment', 'Must you be enrolled now, full time, or returning after the role?'],
-  ['Graduation date', 'Does your expected graduation fall inside the published window?'],
-  ['Academic field', 'Is your program named, closely related, or excluded?'],
-  ['Work authorization', 'Is present or future sponsorship excluded?'],
-  ['Location', 'Can you meet on-site, relocation, or state residency requirements?'],
-  ['Schedule', 'Can you meet the dates, hours, and academic-term commitment?'],
-  ['Materials', 'Are transcript, references, portfolio, or specific documents required?'],
+  ['Degree level', 'Look for language that names master’s students, graduate students, or your exact degree level.'],
+  ['Current enrollment', 'Note whether the role requires full-time, half-time, or simply current enrollment.'],
+  ['Return to school', 'Some programs require at least one academic term after the internship ends.'],
+  ['Graduation window', 'Compare your expected conferral date with the published range, not just the year.'],
+  ['Program and institution', 'Confirm your field is accepted and check for U.S., state, or partner-school restrictions.'],
+  ['Work authorization', 'Read sponsorship, CPT or OPT, citizenship, and permanent-authorization language literally.'],
+  ['Dates and location', 'Make sure you can meet the full schedule, on-site expectations, travel, and relocation terms.'],
+  ['Application materials', 'Gather transcripts, references, and work samples before you begin the application.'],
 ] as const;
 
 export default function EligibilityPage() {
   return (
     <div className="site-wrap">
       <header className="page-head">
-        <p className="eyebrow">Hard-gate audit</p>
-        <h1>Check the gates before you tailor a single sentence.</h1>
+        <p className="eyebrow">Before you apply</p>
+        <h1>Read the eligibility section twice.</h1>
         <p className="lede">
-          A strong scientific match is irrelevant if one published requirement makes you
-          ineligible. Resolve these checks first, then invest in application materials.
+          A role can be a great scientific fit and still be closed to you. Spend five
+          minutes on the requirements before spending an hour on the application.
         </p>
       </header>
 
@@ -37,8 +37,9 @@ export default function EligibilityPage() {
 
       <section className="editorial-strip">
         <div className="margin-note">
-          <h2>Eight checks</h2>
-          <p>Answer each from the live posting or with one direct question to recruiting.</p>
+          <p className="eyebrow">Eight checks</p>
+          <h2>Start with the fine print</h2>
+          <p>Use the employer’s words. If something is unclear, ask recruiting before you tailor your materials.</p>
         </div>
         <ol className="checks-grid">
           {CHECKS.map(([title, body], index) => (
