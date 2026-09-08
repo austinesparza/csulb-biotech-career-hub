@@ -15,23 +15,21 @@ export default function EligibilityPage() {
   return (
     <div className="site-wrap">
       <header className="page-head">
-        <p className="eyebrow">Before you apply</p>
-        <h1>Read the eligibility section twice.</h1>
+        <h1>Eligibility</h1>
         <p className="lede">
-          A role can be a great scientific fit and still be closed to you. Spend five
-          minutes on the requirements before spending an hour on the application.
+          Each internship sets its own degree, enrollment, graduation, and work
+          authorization requirements. Check them before you apply.
         </p>
       </header>
 
       <section className="editorial-strip">
         <div className="margin-note">
-          <h2>Graduate access standard</h2>
-          <p>The rule behind the main board.</p>
+          <h2>Who this is for</h2>
         </div>
         <p style={{ fontFamily: 'var(--serif)', fontSize: '1.45rem', lineHeight: 1.42, maxWidth: '46ch' }}>
-          Graduate-only and explicitly graduate-accessible roles belong on the main board.
-          Mixed-level roles require explicit graduate eligibility. Adjacent exceptions are
-          labeled and never represented as graduate roles.
+          Every opportunity on the public board is a graduate internship or explicitly
+          accepts graduate students. Some accept MSc students at any stage. Others require
+          a completed first year, a specific graduation window, or continued enrollment.
         </p>
       </section>
 
@@ -47,19 +45,6 @@ export default function EligibilityPage() {
             </li>
           ))}
         </ol>
-      </section>
-
-      <section className="editorial-strip">
-        <div className="margin-note">
-          <h2>How buckets work</h2>
-          <p>Existence and student eligibility are tracked separately.</p>
-        </div>
-        <div className="directory-grid">
-          <div className="directory-row"><div><h2>Graduate-accessible</h2><p>Explicit graduate eligibility. Main board.</p></div><span className="pill pill-green">Main</span></div>
-          <div className="directory-row"><div><h2>Adjacent</h2><p>Co-op, different term, or related format. Opt-in view.</p></div><span className="pill pill-gold">Separate</span></div>
-          <div className="directory-row"><div><h2>Special eligibility</h2><p>Program-specific rules need careful review.</p></div><span className="pill pill-gold">Separate</span></div>
-          <div className="directory-row"><div><h2>Ineligible for CSULB students</h2><p>Retained for officer monitoring and audit, excluded from public results.</p></div><span className="pill pill-red">Officer-only</span></div>
-        </div>
       </section>
 
       <div className="notice" style={{ marginBottom: 64 }}>

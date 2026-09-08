@@ -42,7 +42,7 @@ export default async function HomePage() {
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 28 }}>
               <Link href="/internships" className="primary-button">Explore opportunities</Link>
-              <Link href="/eligibility" className="secondary-button">Check eligibility gates</Link>
+              <Link href="/eligibility" className="secondary-button">Review eligibility</Link>
             </div>
           </div>
           <aside className="hero-side" aria-label="Current board status">
@@ -86,8 +86,8 @@ export default async function HomePage() {
 
         <section className="editorial-strip">
           <div className="margin-note">
-            <h2>Three separate decisions</h2>
-            <p>The hub is designed to prevent a good scientific match from hiding a hard eligibility gate.</p>
+            <h2>Before you apply</h2>
+            <p>Check the role, the requirements, and the timing separately.</p>
           </div>
           <div className="directory-grid">
             <Link href="/internships" className="directory-row" style={{ textDecoration: 'none' }}>
@@ -97,10 +97,10 @@ export default async function HomePage() {
               <div><h2>Is the science relevant?</h2><p>Methods, focus area, and role context.</p></div><span>02</span>
             </Link>
             <Link href="/eligibility" className="directory-row" style={{ textDecoration: 'none' }}>
-              <div><h2>Can a CSULB graduate student apply?</h2><p>Degree, enrollment, work authorization, and program gates.</p></div><span>03</span>
+              <div><h2>Can I apply?</h2><p>Degree stage, enrollment, graduation date, and work authorization.</p></div><span>03</span>
             </Link>
             <Link href="/calendar" className="directory-row" style={{ textDecoration: 'none' }}>
-              <div><h2>When should I act?</h2><p>Only stated deadlines are plotted. Unknown stays unknown.</p></div><span>04</span>
+              <div><h2>When should I act?</h2><p>Current dates and past recruiting windows.</p></div><span>04</span>
             </Link>
           </div>
         </section>

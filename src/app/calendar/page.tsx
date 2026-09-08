@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import type { PublicOpportunity } from '@/lib/types';
+import {
+  RECRUITING_MONTHS,
+  RECRUITING_WINDOWS,
+  WATCHED_EMPLOYERS,
+} from '@/lib/recruitingCalendar';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +27,7 @@ export default async function CalendarPage() {
     .limit(200);
   const opportunities = (data ?? []) as PublicOpportunity[];
   const dated = opportunities.filter((o) => o.deadline);
-  const rolling = opportunities.filter((o) => !o.deadline);
+  const undated = opportunities.filter((o) => !o.deadline);
 
   return (
     <div className="site-wrap">
@@ -36,12 +41,12 @@ export default async function CalendarPage() {
 
       <section className="editorial-strip">
         <div className="margin-note">
-          <h2>Stated deadlines</h2>
-          <p>{dated.length} current graduate-accessible role{dated.length === 1 ? '' : 's'} with a date.</p>
+          <h2>Roles on the board</h2>
+          <p>{opportunities.length} current graduate-accessible role{opportunities.length === 1 ? '' : 's'}.</p>
         </div>
         <div>
           {error && <div className="notice"><span>!</span><span>Could not load the calendar.</span></div>}
-          {!error && dated.length === 0 && <p>No fixed deadlines are currently published on the reviewed board.</p>}
+          {!error && opportunities.length === 0 && <p>No current roles are available.</p>}
           <ol className="timeline-list">
             {dated.map((o) => (
               <li className="timeline-row" key={o.id}>
@@ -53,25 +58,68 @@ export default async function CalendarPage() {
                 </div>
               </li>
             ))}
+            {undated.map((o) => (
+              <li className="timeline-row" key={o.id}>
+                <span className="timeline-date">Open, no fixed date</span>
+                <div className="timeline-line timeline-line-open">
+                  <h2>{o.title}</h2>
+                  <p><strong>{o.company_name}</strong>{o.location ? ` · ${o.location}` : ''}</p>
+                  <p>{o.deadline_text ?? 'No deadline stated'}</p>
+                  {o.posting_url && <p><a href={o.posting_url} target="_blank" rel="noopener noreferrer nofollow">Official posting ↗</a></p>}
+                </div>
+              </li>
+            ))}
           </ol>
         </div>
       </section>
 
       <section className="editorial-strip">
         <div className="margin-note">
-          <h2>Open, no fixed date</h2>
-          <p>Active records that require prompt checking because the source does not state a fixed close date.</p>
+          <h2>Past recruiting windows</h2>
+          <p>Use these ranges to decide when to start checking. They do not indicate a current opening.</p>
+        </div>
+        <div className="window-scroll" role="region" aria-label="Historical recruiting windows" tabIndex={0}>
+          <div className="window-table">
+            <div className="window-month-row" aria-hidden="true">
+              <span />
+              <div className="window-months">
+                {RECRUITING_MONTHS.map((month) => <span key={month}>{month}</span>)}
+              </div>
+            </div>
+            {RECRUITING_WINDOWS.map((item) => (
+              <div className="window-row" key={item.employer}>
+                <div className="window-employer">
+                  <strong>{item.employer}</strong>
+                  <span>{item.category}</span>
+                </div>
+                <div className="window-track">
+                  <span
+                    className="window-bar"
+                    style={{ gridColumn: `${item.start + 1} / ${item.end + 2}` }}
+                    title={`${item.timing}. ${item.note}`}
+                  />
+                </div>
+                <div className="window-detail">
+                  <strong>{item.timing}</strong>
+                  <span>{item.note} <a href={item.source} target="_blank" rel="noopener noreferrer nofollow">Source ↗</a></span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="editorial-strip">
+        <div className="margin-note">
+          <h2>Watching</h2>
+          <p>No reliable recruiting window yet.</p>
         </div>
         <div className="directory-grid">
-          {rolling.map((o) => (
-            <div className="directory-row" key={o.id}>
-              <div>
-                <h2>{o.company_name}</h2>
-                <p>{o.title}</p>
-                <p className="mono">{o.deadline_text ?? 'No deadline stated'}</p>
-              </div>
-              {o.posting_url && <a href={o.posting_url} target="_blank" rel="noopener noreferrer nofollow">↗</a>}
-            </div>
+          {WATCHED_EMPLOYERS.map((item) => (
+            <a className="directory-row" href={item.source} target="_blank" rel="noopener noreferrer nofollow" key={item.employer} style={{ textDecoration: 'none' }}>
+              <div><h2>{item.employer}</h2><p>{item.category}</p><p className="mono">{item.cadence}</p></div>
+              <span>↗</span>
+            </a>
           ))}
         </div>
       </section>

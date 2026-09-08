@@ -10,14 +10,6 @@ const EMPTY_PREFS: Prefs = { focus: [], paid: false, remote: false, local: false
 const TERMS = ['spring', 'summer', 'fall', 'winter'] as const;
 const LOCAL_HINTS = /long beach|los angeles|orange|irvine|carson|torrance|carlsbad/i;
 
-const AUDIENCE_LABELS: Partial<Record<PublicOpportunity['audience_bucket'], string>> = {
-  graduate: 'Graduate',
-  mixed: 'Graduate accessible',
-  undergraduate: 'Undergraduate',
-  special: 'Special eligibility',
-  adjacent: 'Adjacent format',
-};
-
 function daysUntil(iso: string): number {
   return Math.floor((Date.parse(iso) - Date.now()) / 86_400_000);
 }
@@ -39,6 +31,22 @@ function personalBonus(o: PublicOpportunity, p: Prefs): { pts: number; why: stri
 }
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function graduateStage(o: PublicOpportunity): string {
+  const text = `${o.eligibility ?? ''} ${o.audience_reason ?? ''}`.toLowerCase();
+  if (/first year completed|first program year/.test(text) && /continued enrollment|return/.test(text)) {
+    return 'First-year MSc, returning for year two';
+  }
+  if (/master'?s or phd|master’s or phd/.test(text)) return 'Current MSc or PhD student';
+  if (/post-baccalaureate, or master|explicitly includes master/.test(text)) return 'Current MSc student';
+  if (/bachelor'?s or master|bachelor’s or master/.test(text) && /clarif|contradict|timing/.test(text)) {
+    return 'MSc student, confirm graduation timing';
+  }
+  if (/graduate level is not restricted|graduate level is not excluded/.test(text)) {
+    return 'Graduate student, confirm degree fit';
+  }
+  return 'Graduate student, year not specified';
 }
 
 export function Board({ opportunities, sorted }: { opportunities: PublicOpportunity[]; sorted: boolean }) {
@@ -136,7 +144,7 @@ function OpportunityRecord({ opportunity: o, index, bonus }: {
 }) {
   const urgent = !!o.deadline && daysUntil(o.deadline) >= 0 && daysUntil(o.deadline) <= 14;
   const timing = o.deadline ? `Apply by ${formatDate(o.deadline + 'T00:00:00')}` : (o.deadline_text ?? 'No deadline stated');
-  const eligibility = o.audience_reason ?? o.eligibility ?? 'Graduate eligibility was reviewed; consult the live posting.';
+  const eligibility = o.eligibility ?? 'Confirm the degree and enrollment requirements in the live posting.';
 
   return (
     <li className="opportunity-record">
@@ -167,9 +175,9 @@ function OpportunityRecord({ opportunity: o, index, bonus }: {
         {o.public_notes && <p style={{ marginTop: 12, fontSize: '.86rem' }}>{o.public_notes}</p>}
       </div>
       <dl className="annotation">
-        <dt>Graduate access</dt>
-        <dd className="eligible">{AUDIENCE_LABELS[o.audience_bucket] ?? 'Review required'}</dd>
-        <dt style={{ marginTop: 12 }}>Published basis</dt>
+        <dt>For</dt>
+        <dd className="eligible">{graduateStage(o)}</dd>
+        <dt style={{ marginTop: 12 }}>Requirements</dt>
         <dd>{eligibility}</dd>
       </dl>
       <dl className="annotation">
