@@ -27,7 +27,10 @@ Create a protected GitHub environment named `production`. Add these secrets:
 - `GMAIL_CLIENT_ID`
 - `GMAIL_CLIENT_SECRET`
 - `GMAIL_REFRESH_TOKEN`
-- `REVIEW_DIGEST_RECIPIENTS`, a comma-separated list of verified addresses
+- `REVIEW_DIGEST_RECIPIENTS`, a comma-separated list of verified addresses.
+  During development and manual acceptance testing, configure exactly one
+  personal officer address. Do not include the club mailbox or another shared
+  or distribution address.
 
 Add these environment variables:
 
@@ -42,12 +45,15 @@ preferred long-term sender.
 
 1. Apply migration `0007_opportunity_audience.sql`.
 2. Confirm the production review dashboard works for at least two officers.
-3. Verify each recipient address directly. Do not rely on an old website footer.
+3. Verify the single development recipient directly. Do not include the club
+   mailbox during development or acceptance testing.
 4. Configure the production environment. Restrict its secrets to the default branch
    and repository administrators; a scheduled job cannot wait for manual environment approval.
 5. Run `Weekly officer review digest` manually.
 6. Confirm the message contains no private notes and all links are correct.
 7. Leave the Monday schedule enabled only after the manual acceptance test passes.
+8. Add any shared recipient only after officers explicitly approve production
+   delivery and a manual test confirms the final message content.
 
 GitHub cron runs at 16:00 UTC, which is 08:00 PST or 09:00 PDT. Exact local-time
 delivery would require a timezone-aware scheduler such as Supabase Cron.
