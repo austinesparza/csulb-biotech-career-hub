@@ -37,9 +37,7 @@ export default function EligibilityPage() {
 
       <section className="editorial-strip">
         <div className="margin-note">
-          <p className="eyebrow">Eight checks</p>
           <h2>Start with the fine print</h2>
-          <p>Use the employer’s words. If something is unclear, ask recruiting before you tailor your materials.</p>
         </div>
         <ol className="checks-grid">
           {CHECKS.map(([title, body], index) => (
