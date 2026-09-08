@@ -23,6 +23,14 @@ const EMPTY_PREFS: Prefs = { focus: [], paid: false, remote: false, local: false
 const STANDINGS = ['freshman', 'sophomore', 'junior', 'senior', 'graduate'] as const;
 const TERMS = ['spring', 'summer', 'fall', 'winter'] as const;
 
+const AUDIENCE_LABELS: Partial<Record<PublicOpportunity['audience_bucket'], string>> = {
+  graduate: 'graduate-accessible',
+  mixed: 'undergraduate + graduate',
+  undergraduate: 'undergraduate-accessible',
+  special: 'special eligibility',
+  adjacent: 'adjacent term or format',
+};
+
 const LOCAL_HINTS = /long beach|los angeles|orange|irvine|carson|torrance|carlsbad/i;
 
 function prefsActive(p: Prefs): boolean {
@@ -249,6 +257,15 @@ function OpportunityCard({ o, bonus }: { o: PublicOpportunity; bonus: { pts: num
               )}
               {o.paid_status === 'unpaid' && (
                 <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-gray-700">unpaid</span>
+              )}
+              {AUDIENCE_LABELS[o.audience_bucket] && (
+                <span
+                  className="rounded-full px-2.5 py-0.5 font-medium"
+                  style={{ background: 'var(--sand)', color: 'var(--sand-deep)' }}
+                  title={o.audience_reason ?? undefined}
+                >
+                  {AUDIENCE_LABELS[o.audience_bucket]}
+                </span>
               )}
               {o.status === 'open_unverified' && (
                 <span className="rounded-full px-2.5 py-0.5 font-medium" style={{ background: 'var(--sand)', color: 'var(--sand-deep)' }}>

@@ -35,6 +35,13 @@ Spreadsheet CSV → import (nothing public, source required) → officer review 
 - **Mentor asks to be removed:** people table → `public_safe=false`, note it in `consent_notes`. Done.
 
 ## Rules that keep us out of trouble
+
+### Weekly review email
+
+The scheduled GitHub workflow only summarizes the private review queue. It cannot
+publish records. Its recipients and Gmail OAuth credentials live in the protected
+`production` environment. Follow `docs/weekly-review-notifications.md` when adding
+or changing recipients. Never commit an address, OAuth token, or service-role key.
 - Never paste private officer notes into public fields.
 - Never publish a person without recorded consent.
 - Never add code that automatically pulls data from external websites — manual links and reviewed submissions only.

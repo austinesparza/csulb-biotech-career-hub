@@ -15,7 +15,8 @@ export default async function ReviewPage() {
     .select(
       'id, title, posting_url, location, eligibility, focus_area, deadline, deadline_text, ' +
       'start_date_text, paid_status, application_type, source_status_raw, public_notes, ' +
-      'private_notes, relevance_score, relevance_reasons, companies(name, public_safe)',
+      'private_notes, relevance_score, relevance_reasons, audience_bucket, audience_reason, ' +
+      'companies(name, public_safe)',
     )
     .eq('status', 'needs_review')
     .order('relevance_score', { ascending: false, nullsFirst: false })
