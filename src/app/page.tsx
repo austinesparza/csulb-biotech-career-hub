@@ -33,16 +33,15 @@ export default async function HomePage() {
       <div className="site-wrap">
         <section className="hero">
           <div className="hero-copy">
-            <p className="eyebrow">Graduate opportunity intelligence</p>
-            <h1 className="display">Graduate internships, checked against the published requirements.</h1>
+            <p className="eyebrow">For graduate students</p>
+            <h1 className="display">Find a graduate internship.</h1>
             <p className="lede">
-              A student-maintained record of <strong>graduate-level and graduate-accessible</strong> roles
-              in biotechnology, genomics, cancer research, bioinformatics, and diagnostics. Open status,
-              scientific fit, and eligibility are kept separate.
+              Browse internships in biotechnology, genomics, cancer research, bioinformatics, and
+              diagnostics. We include the original posting, eligibility details, and the date each role was checked.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 28 }}>
-              <Link href="/internships" className="primary-button">Explore opportunities</Link>
-              <Link href="/eligibility" className="secondary-button">Review eligibility</Link>
+              <Link href="/internships" className="primary-button">View internships</Link>
+              <Link href="/eligibility" className="secondary-button">Check eligibility</Link>
             </div>
           </div>
           <aside className="hero-side" aria-label="Current board status">
@@ -52,9 +51,9 @@ export default async function HomePage() {
               <time className="evidence-date">{formatDate(checked)}</time>
             </div>
             <div className="figures">
-              <div className="figure"><strong>{graduate.length}</strong><span>open graduate-accessible roles</span></div>
-              <div className="figure"><strong>{companies}</strong><span>employers represented</span></div>
-              <div className="figure"><strong>{deadlineCount}</strong><span>roles with stated deadlines</span></div>
+              <div className="figure"><strong>{graduate.length}</strong><span>open internships</span></div>
+              <div className="figure"><strong>{companies}</strong><span>employers</span></div>
+              <div className="figure"><strong>{deadlineCount}</strong><span>stated deadlines</span></div>
             </div>
           </aside>
         </section>
@@ -62,7 +61,7 @@ export default async function HomePage() {
         <section className="editorial-strip" aria-labelledby="week-title">
           <div className="margin-note">
             <h2 id="week-title">This week</h2>
-            <p>Newly published graduate-accessible roles from the reviewed database. No hand-edited website copy.</p>
+            <p>New internships reviewed by club officers.</p>
           </div>
           <div>
             {recent.length ? (
@@ -78,7 +77,7 @@ export default async function HomePage() {
             ) : (
               <div className="notice" style={{ marginTop: 0 }}>
                 <span aria-hidden="true">◇</span>
-                <span>No newly published graduate-accessible roles in the last seven days. The board remains available below.</span>
+                <span>No new internships were added in the last seven days.</span>
               </div>
             )}
           </div>
