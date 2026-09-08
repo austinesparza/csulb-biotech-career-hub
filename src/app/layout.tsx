@@ -39,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {' '}or use the <Link href="/submit" className="underline">submit page</Link>.
           </p>
           <p className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-1">
+            <Link href="/privacy" className="underline">Privacy</Link>
             {CLUB_LINKS.clubSite && <a href={CLUB_LINKS.clubSite} className="underline">Club website</a>}
             {CLUB_LINKS.discord && <a href={CLUB_LINKS.discord} className="underline">Discord</a>}
             {CLUB_LINKS.instagram && <a href={CLUB_LINKS.instagram} className="underline">Instagram</a>}
