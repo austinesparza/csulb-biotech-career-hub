@@ -35,6 +35,14 @@ export function safeHttpsUrl(value) {
   }
 }
 
+export function supabaseSecretHeaders(value) {
+  const secretKey = String(value ?? '').trim();
+  if (!secretKey.startsWith('sb_secret_')) {
+    throw new Error('SUPABASE_SECRET_KEY must be a current sb_secret_ key');
+  }
+  return { apikey: secretKey };
+}
+
 function companyName(row) {
   if (Array.isArray(row.companies)) return row.companies[0]?.name ?? 'Unknown company';
   return row.companies?.name ?? 'Unknown company';
@@ -147,8 +155,8 @@ export function createRawMessage({ from, to, subject, text, html }) {
 
 async function fetchPendingRows() {
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!baseUrl || !serviceKey) throw new Error('Supabase URL and service-role key are required');
+  const secretKey = process.env.SUPABASE_SECRET_KEY;
+  if (!baseUrl || !secretKey) throw new Error('Supabase URL and secret key are required');
 
   const select = [
     'id', 'title', 'posting_url', 'location', 'eligibility', 'focus_area',
@@ -162,7 +170,7 @@ async function fetchPendingRows() {
   url.searchParams.set('limit', '100');
 
   const response = await fetch(url, {
-    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    headers: supabaseSecretHeaders(secretKey),
   });
   if (!response.ok) throw new Error(`Supabase review query failed: ${response.status}`);
   return response.json();
