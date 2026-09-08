@@ -2,6 +2,26 @@ import { pathToFileURL } from 'node:url';
 
 const DAY_MS = 86_400_000;
 
+export function buildSyntheticTestRow(now = new Date()) {
+  const checked = now.toISOString().slice(0, 10);
+  return {
+    id: 'synthetic-gmail-test',
+    title: 'Synthetic graduate internship review test',
+    posting_url: 'https://csulb-biotech-career-hub.vercel.app/',
+    location: 'Test record, not a real opportunity',
+    eligibility: 'Synthetic record used only to verify private officer email delivery',
+    focus_area: 'System acceptance testing',
+    deadline: null,
+    deadline_text: 'Not applicable',
+    start_date_text: 'Not applicable',
+    relevance_score: 100,
+    audience_bucket: 'graduate',
+    audience_reason: 'Synthetic test. No student should apply.',
+    first_seen_at: `${checked}T00:00:00Z`,
+    companies: { name: 'CSULB Biotechnology Club' },
+  };
+}
+
 export function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -216,8 +236,18 @@ async function sendDigest(digest) {
 
 async function main() {
   const preview = process.argv.includes('--preview');
-  const rows = await fetchPendingRows();
+  const testMode = process.argv.includes('--test-email');
+  if (preview && testMode) throw new Error('--preview and --test-email cannot be combined');
+  const rows = testMode ? [buildSyntheticTestRow()] : await fetchPendingRows();
   const digest = buildReviewDigest(rows, { dashboardUrl: process.env.REVIEW_DASHBOARD_URL });
+  if (testMode) {
+    digest.subject = `[TEST] ${digest.subject}`;
+    digest.text = `SYSTEM TEST ONLY. This is not a real opportunity.\n\n${digest.text}`;
+    digest.html = digest.html.replace(
+      '<h1 style="font-size:24px;margin-top:0">',
+      '<p style="background:#fff3cd;border-left:3px solid #f2a91b;padding:10px 12px"><strong>SYSTEM TEST ONLY</strong><br>This is not a real opportunity.</p><h1 style="font-size:24px;margin-top:0">',
+    );
+  }
   if (preview) {
     process.stdout.write(`${digest.subject}\n\n${digest.text}\n`);
     return;
@@ -227,7 +257,9 @@ async function main() {
     return;
   }
   await sendDigest(digest);
-  process.stdout.write(`Review digest sent for ${digest.counts.total} pending records.\n`);
+  process.stdout.write(testMode
+    ? 'Synthetic review digest test sent.\n'
+    : `Review digest sent for ${digest.counts.total} pending records.\n`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
