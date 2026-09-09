@@ -176,7 +176,7 @@ button, input, select { font: inherit; }
 .about-disclaimer { max-width: 76ch; margin: 0 0 64px 268px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--ink-faint); font-size: .78rem; }
 
 .site-footer { background: var(--navy); color: white; padding: 42px 0; }
-.footer-grid { display: grid; grid-template-columns: 1.3fr 1fr auto; gap: 44px; }
+.footer-grid { display: grid; grid-template-columns: 1.3fr auto; gap: 44px; }
 .footer-grid p { margin-top: 7px; color: #b7c3d2; font-size: .8rem; max-width: 45ch; }
 .footer-grid a { color: white; }
 .footer-grid a:hover { color: var(--teal-bright); }
