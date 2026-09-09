@@ -1,0 +1,146 @@
+# .github/workflows/security.yml
+#
+# Design notes, in order of importance:
+#
+# 1. Actions are pinned to commit SHAs, not tags. The LiteLLM compromise in
+#    March 2026 started with a build consuming a dependency from a mutable tag.
+#    Renovate updates these SHAs and leaves the version in the comment.
+# 2. `permissions` is read-only at the top and elevated per job.
+# 3. `pull_request` (NOT `pull_request_target`) is used, so forked PR code runs
+#    without access to repository secrets. The RLS coverage job that needs a
+#    service key runs only on push to main.
+# 4. Untrusted code and privileged credentials never share a job.
+#
+# Replace every SHA below with the real one:  gh api repos/actions/checkout/git/refs/tags/v5
+
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1"   # weekly drift check; not the sole monitor
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Runs untrusted PR code. Has NO secrets.
+  # ---------------------------------------------------------------------------
+  build-and-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install from the lockfile only
+        run: npm ci --ignore-scripts
+        # --ignore-scripts blocks postinstall, the usual payload delivery path.
+        # Drop it only if a dependency genuinely needs a build step.
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit and security-logic tests
+        run: npm run test -- --run
+        # includes lib/evidence and lib/safe-fetch tests; no network needed
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+
+      - name: Reject secrets in client output
+        run: node scripts/check-bundle-secrets.mjs .next/static .next/server public
+
+      - name: Verify every action is SHA-pinned
+        run: |
+          if grep -rEn 'uses:\s+[^@]+@(v[0-9]|main|master)\b' .github/workflows; then
+            echo "::error::actions must be pinned to a commit SHA, not a tag or branch"
+            exit 1
+          fi
+          echo "ok  all actions SHA-pinned"
+
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+
+  # ---------------------------------------------------------------------------
+  # Anonymous-key RLS test. Uses only public values, so it is safe on PRs.
+  # Point it at a preview/branch database, never production.
+  # ---------------------------------------------------------------------------
+  rls-anon:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Anonymous client must not read protected tables
+        run: npm run test -- --run tests/security/rls.test.ts
+        env:
+          SUPABASE_URL: ${{ vars.PREVIEW_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.PREVIEW_SUPABASE_ANON_KEY }}
+          PROD_PROJECT_REF: ${{ vars.PROD_PROJECT_REF }}
+
+  # ---------------------------------------------------------------------------
+  # Needs a service key, so it runs only on trusted refs, in its own job.
+  # ---------------------------------------------------------------------------
+  rls-coverage:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: preview          # scope the secret to an environment
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Every table in public has RLS enabled
+        run: npm run test -- --run tests/security/rls.test.ts
+        env:
+          SUPABASE_URL: ${{ vars.PREVIEW_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.PREVIEW_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PREVIEW_SERVICE_ROLE_KEY }}
+
+  # ---------------------------------------------------------------------------
+  # Secret scanning across history. Also enable GitHub push protection in
+  # Settings -> Code security, which blocks the commit before it lands.
+  # ---------------------------------------------------------------------------
+  secret-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@REPLACE_WITH_SHA # v2.3.9
+        env:
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"

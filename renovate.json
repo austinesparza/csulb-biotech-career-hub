@@ -1,0 +1,37 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits"],
+  "timezone": "America/Los_Angeles",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 3,
+  "minimumReleaseAge": "3 days",
+  "internalChecksFilter": "strict",
+  "lockFileMaintenance": { "enabled": true, "schedule": ["before 6am on the first day of the month"] },
+  "packageRules": [
+    {
+      "description": "Security patches jump the queue but still wait out the poisoning window.",
+      "matchDepTypes": ["dependencies", "devDependencies"],
+      "vulnerabilityAlerts": { "minimumReleaseAge": "1 day", "schedule": ["at any time"] }
+    },
+    {
+      "description": "Fast-moving AI infra gets a longer cooldown and never auto-merges. The malicious LiteLLM releases were live ~40 minutes; a cooldown skips that window entirely.",
+      "matchPackageNames": ["omniroute", "graphifyy", "litellm", "crawl4ai", "firecrawl-py", "@mendable/firecrawl-js", "instructor", "@boundaryml/baml", "langfuse"],
+      "minimumReleaseAge": "14 days",
+      "automerge": false,
+      "labels": ["ai-infra", "manual-review"]
+    },
+    {
+      "description": "Pin GitHub Actions to digests and keep the version readable in a comment.",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true,
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Patch-level dev dependencies can merge themselves once CI is green.",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    }
+  ],
+  "osvVulnerabilityAlerts": true
+}
