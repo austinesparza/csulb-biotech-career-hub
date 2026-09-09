@@ -7,6 +7,8 @@ export const dynamic = 'force-dynamic';
 export default async function AdminHome() {
   await requireOfficer();
   const db = createServiceClient();
+  // The dashboard is force-dynamic, so this is one request timestamp, not render state.
+  // eslint-disable-next-line react-hooks/purity
   const in14 = new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
 

@@ -1,7 +1,11 @@
 /**
  * publish-bridge.ts — closes the loop.
  *
- *   review_queue (approved) -> published_opportunities -> workbook rows -> data.js
+ *   reviewed opportunity -> workbook rows -> data.js
+ *
+ * The live database path is `review_tasks` plus pending `opportunities`, then
+ * officer approval into `public_opportunities`. The older parallel table names
+ * are intentionally not part of the executable schema.
  *
  * The exporter (scripts/extract-data.mjs) validates independently and refuses
  * anything missing a source, with a bad date, or carrying a private field. This

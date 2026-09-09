@@ -29,6 +29,15 @@ export type AudienceBucket =
   | 'adjacent'
   | 'ineligible'
   | 'unknown';
+export type GraduateStage =
+  | 'msc_year_1'
+  | 'msc_year_2'
+  | 'msc_any'
+  | 'mixed_graduate'
+  | 'graduate_unspecified'
+  | 'doctoral_only'
+  | 'not_msc'
+  | 'unknown';
 export type PersonRole = 'mentor' | 'alumnus' | 'speaker' | 'officer' | 'other';
 export type ParseStatus = 'ok' | 'error' | 'skipped';
 export type ImportRunStatus = 'running' | 'completed' | 'failed';
@@ -116,6 +125,11 @@ export interface Opportunity {
   application_type: string | null;
   audience_bucket: AudienceBucket;
   audience_reason: string | null;
+  scientific_lanes: string[];
+  job_functions: string[];
+  methods: string[];
+  industry_context: string[];
+  graduate_stage: GraduateStage;
   source_status_raw: string | null;
   status: OpportunityStatus;
   public_notes: string | null;

@@ -25,6 +25,8 @@ export default async function HomePage() {
     .filter((value): value is string => Boolean(value))
     .sort()
     .at(-1) ?? null;
+  // This force-dynamic server page computes freshness once per request.
+  // eslint-disable-next-line react-hooks/purity
   const weekAgo = Date.now() - 7 * 86_400_000;
   const recent = graduate.filter((o) => Date.parse(o.first_seen_at) >= weekAgo).slice(0, 4);
 

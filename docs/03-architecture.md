@@ -20,7 +20,7 @@
                 │   /, /internships, /companies, ...       │
                 │   read ONLY public_* views ──────────┐   │
                 │                                      │   │
-  Officers ───▶ │  /admin/* (auth-gated, middleware)   │   │
+  Officers ───▶ │  /admin/* (auth-gated, proxy)        │   │
                 │   import, review, dedupe, export     │   │
                 │   server actions (service role) ──┐  │   │
                 └────────────────────────────────────┼──┼──┘
@@ -82,7 +82,7 @@ csulb-biotech-career-hub/
 │   │   └── supabase/
 │   │       ├── client.ts      # browser (anon)
 │   │       └── server.ts      # server (service role / cookie auth)
-│   └── middleware.ts          # gate /admin/*
+│   └── proxy.ts               # gate /admin/*
 ├── package.json  tsconfig.json  next.config.mjs  postcss.config.mjs
 ├── .env.example  .gitignore
 └── .github/ISSUE_TEMPLATE/ (optional)

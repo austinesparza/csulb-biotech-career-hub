@@ -18,7 +18,7 @@ if (roots.length === 0) {
 
 // Detect the VALUE of known secrets, not just the variable name. Never printed.
 const literals = [
-  "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_JWT_SECRET", "GITHUB_TOKEN",
+  "SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_JWT_SECRET", "GITHUB_TOKEN",
   "GOOGLE_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN", "OPENAI_API_KEY",
   "ANTHROPIC_API_KEY", "CRON_SECRET", "TURNSTILE_SECRET_KEY",
 ]

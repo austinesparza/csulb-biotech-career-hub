@@ -1,4 +1,9 @@
-# Discovery pipeline
+# Discovery pipeline: historical design
+
+> Do not implement the table names or deployment steps below. This file preserves
+> the original design and test findings only. The integrated contract is
+> `pipeline-integration.md`; it reuses migrations 0001-0007 and migration 0011.
+> Parallel SQL remains non-executable under `supabase/proposals`.
 
 Seven stages. Each writes to its own table, so any stage can be re-run without
 re-running the ones before it. Nothing publishes without a human.

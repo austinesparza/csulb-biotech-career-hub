@@ -5,7 +5,11 @@
 # THE CORE IDEA: a lane is WHAT SCIENCE, a function is WHAT YOU DO, a method is
 # HOW. Conflating them is why an undergrad-era scorer matches "Data Analyst,
 # Commercial Insights" at a pharma company. A relevant role is
-#   (lane OR method) AND function AND stage-eligible AND NOT disqualified.
+#   (lane OR biologically contextualized method)
+#   AND (function OR internship-type)
+#   AND NOT excluded-title.
+# Stage and gates classify the record for officer review; they do not silently
+# remove an otherwise relevant posting.
 
 version: 3
 updated: 2026-09-08

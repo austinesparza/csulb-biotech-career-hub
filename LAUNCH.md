@@ -13,7 +13,8 @@ Work top to bottom. Check each box. Details live in docs/07-deployment.md; this 
 ## Phase 2: Supabase (~20 min)
 
 - [ ] Create project on a club-owned account (credentials into the shared password manager)
-- [ ] SQL editor → run `supabase/migrations/0001_init.sql` in full
+- [ ] Apply executable migrations in numeric order. Do not run anything under
+      `supabase/proposals/`. Test new migrations against a preview database first.
 - [ ] Run `supabase/seed.sql`
 - [ ] Run `supabase/seed_historical.sql` ONCE (past cycles: 2024-2025 post +
       2025-2026 sheet, ~50 archive records + ~30 companies + 2 resources)
@@ -26,7 +27,7 @@ Work top to bottom. Check each box. Details live in docs/07-deployment.md; this 
 ## Phase 3: Vercel (~15 min)
 
 - [ ] Import the GitHub repo (club Vercel account)
-- [ ] Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- [ ] Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY`
 - [ ] Deploy; landing page should show the demo posting count
 - [ ] Point `careers.<clubdomain>` CNAME at Vercel (can come later)
 

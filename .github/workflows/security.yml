@@ -7,12 +7,10 @@
 #    Renovate updates these SHAs and leaves the version in the comment.
 # 2. `permissions` is read-only at the top and elevated per job.
 # 3. `pull_request` (NOT `pull_request_target`) is used, so forked PR code runs
-#    without access to repository secrets. The RLS coverage job that needs a
-#    service key runs only on push to main.
+#    without access to repository secrets. Live preview-database RLS coverage is
+#    tracked separately until the real test harness and environment exist.
 # 4. Untrusted code and privileged credentials never share a job.
 #
-# Replace every SHA below with the real one:  gh api repos/actions/checkout/git/refs/tags/v5
-
 name: security
 
 on:
@@ -56,8 +54,13 @@ jobs:
         run: npm run typecheck
 
       - name: Unit and security-logic tests
-        run: npm run test -- --run
-        # includes lib/evidence and lib/safe-fetch tests; no network needed
+        run: npm test
+
+      - name: Pipeline tests
+        run: npm run test:pipeline
+
+      - name: Migration contract
+        run: npm run test:schema
 
       - name: Build
         run: npm run build
@@ -80,55 +83,6 @@ jobs:
         run: npm audit --audit-level=high
 
   # ---------------------------------------------------------------------------
-  # Anonymous-key RLS test. Uses only public values, so it is safe on PRs.
-  # Point it at a preview/branch database, never production.
-  # ---------------------------------------------------------------------------
-  rls-anon:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
-        with:
-          node-version: "22"
-          cache: npm
-      - run: npm ci --ignore-scripts
-      - name: Anonymous client must not read protected tables
-        run: npm run test -- --run tests/security/rls.test.ts
-        env:
-          SUPABASE_URL: ${{ vars.PREVIEW_SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ vars.PREVIEW_SUPABASE_ANON_KEY }}
-          PROD_PROJECT_REF: ${{ vars.PROD_PROJECT_REF }}
-
-  # ---------------------------------------------------------------------------
-  # Needs a service key, so it runs only on trusted refs, in its own job.
-  # ---------------------------------------------------------------------------
-  rls-coverage:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment: preview          # scope the secret to an environment
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
-        with:
-          node-version: "22"
-          cache: npm
-      - run: npm ci --ignore-scripts
-      - name: Every table in public has RLS enabled
-        run: npm run test -- --run tests/security/rls.test.ts
-        env:
-          SUPABASE_URL: ${{ vars.PREVIEW_SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ vars.PREVIEW_SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PREVIEW_SERVICE_ROLE_KEY }}
-
-  # ---------------------------------------------------------------------------
   # Secret scanning across history. Also enable GitHub push protection in
   # Settings -> Code security, which blocks the commit before it lands.
   # ---------------------------------------------------------------------------
@@ -141,6 +95,6 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: gitleaks/gitleaks-action@REPLACE_WITH_SHA # v2.3.9
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"

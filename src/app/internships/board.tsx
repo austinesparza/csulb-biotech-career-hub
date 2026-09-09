@@ -53,11 +53,14 @@ export function Board({ opportunities, sorted }: { opportunities: PublicOpportun
   const [prefs, setPrefs] = useState<Prefs>(EMPTY_PREFS);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(PREFS_KEY);
-      if (raw) setPrefs({ ...EMPTY_PREFS, ...JSON.parse(raw) });
-    } catch { /* Keep defaults when local storage is unavailable. */ }
-    setLoaded(true);
+    const hydrate = () => {
+      try {
+        const raw = localStorage.getItem(PREFS_KEY);
+        if (raw) setPrefs({ ...EMPTY_PREFS, ...JSON.parse(raw) });
+      } catch { /* Keep defaults when local storage is unavailable. */ }
+      setLoaded(true);
+    };
+    queueMicrotask(hydrate);
   }, []);
   const update = (next: Prefs) => {
     setPrefs(next);

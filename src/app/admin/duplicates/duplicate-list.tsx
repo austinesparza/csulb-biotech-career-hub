@@ -47,7 +47,7 @@ function Cluster({ cluster }: { cluster: DupCluster }) {
   if (resolved) {
     return (
       <li className="rounded-xl bg-white p-4 text-sm" style={{ border: '1px solid var(--line)', color: 'var(--ink-soft)' }}>
-        Resolved: kept "{resolved}", marked {cluster.items.length - 1} as duplicate.
+        Resolved: kept &ldquo;{resolved}&rdquo;, marked {cluster.items.length - 1} as duplicate.
       </li>
     );
   }

@@ -1,6 +1,8 @@
 # CSULB Biotech Career Hub
 
-A student-maintained career-resource and internship-tracking platform. Officers import the club's internship spreadsheet, review and deduplicate records, and publish an approved, searchable board. No scraping — data enters only via CSV import, manual entry, or voluntary reviewed submissions.
+A student-maintained graduate internship tracker. Officers review spreadsheet
+imports, voluntary submissions, and candidates collected from explicitly approved
+public sources before anything reaches the searchable board.
 
 ## Publishing to GitHub (like the alumni hub, plus a backend)
 
@@ -56,11 +58,13 @@ account is exactly the handoff risk to avoid repeating.
 3. **Approved public records are import-immutable.** Re-imports may only refresh `last_seen_at`; field differences open `import_changed` review tasks. Published listings change only by officer action.
 4. Every CSV import requires a `source_record`. Provenance is not optional.
 5. Imported spreadsheet notes land in `private_notes`. Only officer-written text goes in `public_notes`.
-6. No code that fetches data from external sites. Sources are refreshed manually per `source_records.refresh_policy`.
+6. Automated retrieval is limited to enabled `job_sources` that have recorded
+   policy and robots checks. Prohibited or uncertain sources stay manual.
 7. No server action calls `createServiceClient()` before `await requireOfficer()` succeeds.
 8. All user-supplied filter/search input passes `sanitizeSearchTerm()` before reaching a query.
 9. Enums live in the SQL migration and `src/lib/types.ts` — change both in the same PR.
-10. `SUPABASE_SERVICE_ROLE_KEY` is server-only; it must never gain a `NEXT_PUBLIC_` prefix.
+10. `SUPABASE_SECRET_KEY` is server-only; it must never gain a `NEXT_PUBLIC_`
+    prefix. `SUPABASE_SERVICE_ROLE_KEY` is a temporary legacy fallback only.
 
 ## For future officers
 Start with `HANDOFF.md` (operational runbook), then `docs/01` and `docs/02`.

@@ -26,7 +26,7 @@ export default async function CompaniesPage() {
       <h1 className="text-2xl font-semibold tracking-tight">Company Directory</h1>
       <p className="max-w-2xl text-sm" style={{ color: 'var(--ink-soft)' }}>
         A historical record: organizations that have previously offered roles the club
-        tracked, alongside any openings that are live right now (marked "open"). Listed
+        tracked, alongside any openings that are live right now (marked &ldquo;open&rdquo;). Listed
         for information only, not as an endorsement.
       </p>
       {error && <p className="text-red-700">Could not load companies. Try again later.</p>}

@@ -81,7 +81,7 @@ ok("pay folded in", uj.postings[0].rawText.includes("3800-5200 Per Month"), "");
 ok("close date kept", uj.postings[0].extra.closeDate === "2027-02-15");
 const ujClass = classify({ title: uj.postings[0].title, employer: uj.postings[0].employer, body: uj.postings[0].rawText }, tax);
 ok("kept", ujClass.keep, ujClass.dropReason);
-ok("citizenship = personal gate, not structural", ujClass.personalGates.includes("citizenship") && ujClass.structuralGate === null);
+ok("citizenship = personal gate, not structural", ujClass.personalGates.includes("citizenship") && ujClass.structuralGates.length === 0);
 ok("bucket = graduate", ujClass.suggestedBucket === "graduate", ujClass.suggestedBucket);
 
 console.log("\n=== Vendor outages must not throw ===\n");

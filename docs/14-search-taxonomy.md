@@ -28,7 +28,7 @@ as weak. They add weight when a core term is present and are worthless alone, so
 
 Word-boundary aware and separator-tolerant, so `ALS` doesn't match `also`,
 `immuno-oncology` matches the `oncology` core term, and `r/bioconductor` matches
-despite the slash. All 31 classifier tests pass.
+despite the slash. All 32 classifier tests pass.
 
 ## Student-facing search
 

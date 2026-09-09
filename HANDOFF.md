@@ -45,4 +45,5 @@ publish records. Its recipients and Gmail OAuth credentials live in the protecte
 or changing recipients. Never commit an address, OAuth token, or Supabase secret key.
 - Never paste private officer notes into public fields.
 - Never publish a person without recorded consent.
-- Never add code that automatically pulls data from external websites — manual links and reviewed submissions only.
+- Never enable an automated source until its terms, robots policy, owner, and
+  refresh policy are recorded. Keep prohibited or uncertain sources manual.

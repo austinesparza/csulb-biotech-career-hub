@@ -17,7 +17,7 @@ export interface ScoringConfig {
 export const DEFAULT_CONFIG: ScoringConfig = {
   priorityFocusAreas: [], // e.g. filled in by officers via admin settings later
   localLocationHints: ['long beach', 'los angeles', 'orange county', 'irvine', 'carson', 'torrance', 'remote', 'hybrid', 'california', 'ca'],
-  eligibilityHints: ['undergraduate', 'undergrad', 'bachelor', 'junior', 'senior', 'sophomore', 'freshman', 'all majors', 'students'],
+  eligibilityHints: ['master', 'masters', "master's", 'msc', 'graduate student', 'graduate degree', 'advanced degree'],
 };
 
 export interface ScoreResult {
@@ -74,10 +74,12 @@ export function scoreOpportunity(
   // Eligibility
   const elig = (draft.eligibility ?? '').toLowerCase();
   if (elig && config.eligibilityHints.some((h) => elig.includes(h))) {
-    add(10, 'eligibility matches undergraduates');
+    add(10, "eligibility explicitly includes master's or graduate students");
   }
-  if (/graduate students? only|phd only|masters? only/i.test(elig)) {
-    add(-15, 'restricted to graduate students');
+  if (/undergraduate students? only|bachelor'?s? students? only|ph\.?d\.? only|doctoral students? only/i.test(elig)) {
+    add(-15, "eligibility appears to exclude master's students");
+  } else if (!elig) {
+    add(-5, "master's eligibility not stated");
   }
 
   // Focus area priority (club-configurable)

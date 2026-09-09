@@ -50,8 +50,8 @@ the rule that stops the interface from becoming decorative.
 | Surface raised | `--white` | `#FFFFFF` | records, inputs, dialog |
 | Structure | `--navy` | `#0A1628` | masthead, footer |
 | Ink | `--ink` | `#1A2008` | primary text |
-| Ink secondary | `--ink-2` | `#464C3C` | supporting text |
-| Ink tertiary | `--ink-3` | `#6A7060` | metadata, labels |
+| Ink secondary | `--ink-soft` | `#464C3C` | supporting text |
+| Ink tertiary | `--ink-faint` | `#6A7060` | metadata, labels |
 | **Status** | `--teal` | `#075672` | posting status only |
 | Status accent | `--teal-bright` | `#00C4A7` | live marks, top rule |
 | **Eligible** | `--eligible` | `#3A6A1B` | explicit eligibility only |
@@ -59,7 +59,7 @@ the rule that stops the interface from becoming decorative.
 | **Restricted** | `--restricted` | `#A3283A` | structural gates only |
 | **Timing** (fills, rules) | `--gold` | `#F5A623` | large fills, rules, dark-surface focus |
 | **Timing** (marks) | `--gold-mark` | `#B8710A` | small marks on light surfaces, 3.76:1 |
-| Rules | `--line` / `--line-2` / `--line-3` | `#E3DFD3` / `#CBC6B6` / `#8C8776` | hairlines, borders, controls |
+| Rules | `--line` / `--line-strong` / `--line-dark` | `#E3DFD3` / `#CBC6B6` / `#8C8776` | hairlines, borders, controls |
 
 `--lime #8DC63F` is club brand but fails text contrast on ivory. Reserve it for
 non-text marks only; eligibility text uses `--eligible` instead.
@@ -121,7 +121,7 @@ text buttons beside it, never competing.
 Where it did not, say so plainly — an uncited assertion must look different from
 a verified one, and "Unknown" must look different from both.
 
-**Controls** are 44px minimum touch target, 1px `--line-3` border, 6px radius,
+**Controls** are 44px minimum touch target, 1px `--line-dark` border, 6px radius,
 white surface. Focus ring is 2px paper + 2px navy offset; on navy surfaces it is
 2px navy + 2px gold.
 

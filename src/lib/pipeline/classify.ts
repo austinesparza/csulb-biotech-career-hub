@@ -6,9 +6,8 @@
  *   2. Attach lanes, functions, methods, stage and gates to what survives,
  *      so the model has less to decide and the officer has more to check.
  *
- * Design rule: precision over recall at this stage. A missed role can be caught
- * by a submission; a flood of false positives destroys officer trust in the
- * inbox, and an ignored inbox is the same as no pipeline.
+ * Design rule: reject obvious noise, but keep ambiguous scientific roles for
+ * officer review. Public submissions are a supplement, not a recall control.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -76,11 +75,11 @@ export interface Classification {
   methods: { wet_lab: string[]; dry_lab: string[]; stats: string[] };
   opportunityType: { id: string; scope: "in_scope" | "adjacent"; reason?: string } | null;
   stage: { id: string; label: string; eligible: boolean };
-  structuralGate: { id: string; bucket: string } | null;
+  structuralGates: { id: string; bucket: string }[];
   personalGates: string[];
   /** True when no lane had a core term: every lane rests on corroborating supporting hits. Review more carefully. */
   corroboratedOnly?: boolean;
-  suggestedBucket: "graduate" | "special" | "adjacent" | "excluded";
+  suggestedBucket: "graduate" | "special" | "adjacent" | "excluded" | "needs_review";
   score: number;
 }
 
@@ -92,7 +91,7 @@ export function classify(posting: Posting, tax: Taxonomy): Classification {
   const empty: Classification = {
     keep: false, lanes: [], functions: [], methods: { wet_lab: [], dry_lab: [], stats: [] },
     opportunityType: null, stage: { id: "unclear", label: "Not stated", eligible: true },
-    structuralGate: null, personalGates: [], suggestedBucket: "excluded", score: 0,
+    structuralGates: [], personalGates: [], suggestedBucket: "excluded", score: 0,
   };
 
   // --- 1. Title-level negative filter (cheapest possible rejection) ---
@@ -125,7 +124,7 @@ export function classify(posting: Posting, tax: Taxonomy): Classification {
   const provisionalLanes = lanes.filter((l) => l.provisional);
   const corroborated = solid.length === 0 && provisionalLanes.length >= 2 && hasBioContext;
   const keptLanes = solid.length > 0
-    ? [...solid, ...provisionalLanes.filter(() => solid.length > 0 && false)]
+    ? [...solid, ...provisionalLanes]
     : corroborated ? provisionalLanes : [];
   lanes.length = 0;
   lanes.push(...keptLanes);
@@ -168,28 +167,30 @@ export function classify(posting: Posting, tax: Taxonomy): Classification {
     }
   }
 
-  // --- 7. Structural gate vs personal gate. This distinction is the product. ---
-  let structuralGate: Classification["structuralGate"] = null;
-  for (const g of tax.structural_gates) {
-    if (g.patterns.some((p) => new RegExp(p, "i").test(all))) { structuralGate = { id: g.id, bucket: g.bucket }; break; }
-  }
+  // --- 7. Structural gates vs personal gates. A posting can carry more than
+  //     one structural restriction, and officers need to see all of them. ---
+  const structuralGates: Classification["structuralGates"] = tax.structural_gates
+    .filter((gate) => gate.patterns.some((pattern) => new RegExp(pattern, "i").test(all)))
+    .map((gate) => ({ id: gate.id, bucket: gate.bucket }));
   const personalGates = Object.entries(tax.personal_gates)
     .filter(([, patterns]) => patterns.some((p) => new RegExp(p, "i").test(all)))
     .map(([name]) => name);
 
   // --- 8. Keep/drop and bucket suggestion (a SUGGESTION; officers decide) ---
   const corroboratedOnly = lanes.length > 0 && lanes.every((l) => l.provisional);
-  const analysis = { lanes, functions, methods, opportunityType, stage, structuralGate, personalGates, corroboratedOnly };
-  const relevant = lanes.length > 0;
+  const analysis = { lanes, functions, methods, opportunityType, stage, structuralGates, personalGates, corroboratedOnly };
+  const hasNamedMethod = methods.wet_lab.length + methods.dry_lab.length + methods.stats.length > 0;
+  const relevant = lanes.length > 0 || (hasNamedMethod && hasBioContext);
   const isInternship = opportunityType !== null;
   if (!relevant) return { ...empty, ...analysis, dropReason: "no scientific lane matched" };
   if (!isInternship && functions.length === 0) {
     return { ...empty, ...analysis, dropReason: "scientific lanes matched but no internship or research-function signal" };
   }
 
-  let suggestedBucket: Classification["suggestedBucket"] = "graduate";
-  if (stage.id === "undergrad_only" || stage.id === "phd_only") suggestedBucket = "excluded";
-  else if (structuralGate) suggestedBucket = structuralGate.bucket as Classification["suggestedBucket"];
+  let suggestedBucket: Classification["suggestedBucket"] = stage.id === "unclear" ? "needs_review" : "graduate";
+  if (stage.id === "undergrad_only") suggestedBucket = "excluded";
+  else if (stage.id === "phd_only") suggestedBucket = "special";
+  else if (structuralGates.length > 0) suggestedBucket = structuralGates[0].bucket as Classification["suggestedBucket"];
   else if (opportunityType?.scope === "adjacent" || stage.id === "postbac_stage") suggestedBucket = "adjacent";
 
   const score = Number((
@@ -200,7 +201,7 @@ export function classify(posting: Posting, tax: Taxonomy): Classification {
     Math.min(methods.dry_lab.length + methods.wet_lab.length, 6) * 0.5
   ).toFixed(2));
 
-  return { keep: true, lanes, functions, methods, opportunityType, stage, structuralGate, personalGates, corroboratedOnly, suggestedBucket, score };
+  return { keep: true, lanes, functions, methods, opportunityType, stage, structuralGates, personalGates, corroboratedOnly, suggestedBucket, score };
 }
 
 /**

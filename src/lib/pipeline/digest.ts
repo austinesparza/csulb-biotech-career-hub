@@ -1,12 +1,14 @@
 /**
- * digest.ts — the Monday officer email.
+ * digest.ts — intelligence-layer content for the Monday officer email.
  *
  * Audit finding: "Public submissions are stored safely, but officers cannot
  * currently review them in the app. They also do not appear in the weekly email."
  * This is the second half of that fix.
  *
- * Pure function: data in, text out. No mailer, no database. That keeps it
- * testable and lets you send it through whatever the club already uses.
+ * Pure function: data in, text out. No mailer, no database. The existing
+ * scripts/review-digest.mjs remains the only production query, Gmail transport,
+ * and workflow entrypoint. Integrate this richer content there rather than
+ * creating a second mailer or schedule.
  */
 
 export interface DigestInput {

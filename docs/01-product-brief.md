@@ -15,7 +15,10 @@ A Next.js + Supabase app where:
 5. Approved records export as CSV/JSON for embedding in the existing club website.
 
 ## What this app deliberately is NOT
-- Not a scraper. No automated collection from job boards or any site that prohibits automated access. Data enters only via CSV import, manual entry, or voluntary submissions — all officer-reviewed.
+- Not an unrestricted scraper. Automated retrieval is allowed only for enabled,
+  documented public sources whose terms and robots policy permit it. Manual
+  entries, spreadsheet imports, and voluntary submissions remain supported. All
+  publication decisions remain officer-reviewed.
 - Not a student-account system in v1. Students browse anonymously; only officers log in.
 - Not a replacement for the club website. It extends it and exports content back to it.
 

@@ -22,7 +22,10 @@
 - Student accounts, favorites, email alerts — not planned; keep the system anonymous-read
 
 ## Explicit non-goals (permanent)
-- No scraping or automated collection from external sites. Sources that prohibit automated access are represented only as manually entered links or officer-reviewed submissions, tracked in `source_records` with `access_level` and `refresh_policy = manual`.
+- No unrestricted scraping. Automated retrieval is limited to enabled sources
+  with recorded terms and robots checks. Sources that prohibit or do not clearly
+  allow automated access remain manual and are tracked with a manual refresh
+  policy.
 - No storing of student personal data beyond optional submitter contact on voluntary submissions.
 
 ## MVP acceptance test

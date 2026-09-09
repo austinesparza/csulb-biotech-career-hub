@@ -39,7 +39,7 @@ const c2 = classify(nih, tax);
 ok("NIH kept", c2.keep, c2.dropReason);
 ok("NIH lanes include genomics + single_cell", ["genomics", "single_cell"].every((l) => c2.lanes.some((x) => x.id === l)), c2.lanes.map(l=>l.id).join(","));
 ok("NIH bucket = graduate despite citizenship gate", c2.suggestedBucket === "graduate", c2.suggestedBucket);
-ok("NIH citizenship listed as PERSONAL gate", c2.personalGates.includes("citizenship") && c2.structuralGate === null);
+ok("NIH citizenship listed as PERSONAL gate", c2.personalGates.includes("citizenship") && c2.structuralGates.length === 0);
 
 const amgen = P(
   "Grad Intern - Operations Process Development",
@@ -65,7 +65,15 @@ const ibri = P(
 const c4 = classify(ibri, tax);
 ok("IBRI kept (evidence retained)", c4.keep, c4.dropReason);
 ok("IBRI bucket = special", c4.suggestedBucket === "special", c4.suggestedBucket);
-ok("IBRI structural gate identified", c4.structuralGate?.id === "institution_affiliation", JSON.stringify(c4.structuralGate));
+ok("IBRI structural gate identified", c4.structuralGates.some((gate) => gate.id === "institution_affiliation"), JSON.stringify(c4.structuralGates));
+
+const multiGate = P(
+  "Graduate Genomics Research Internship",
+  "Example Institute",
+  `Master's students may apply to this genomics internship. Applicants must be an Indiana university student and must be a resident of Indiana.`,
+);
+const c4b = classify(multiGate, tax);
+ok("all structural gates are retained", ["institution_affiliation", "geographic_residency"].every((id) => c4b.structuralGates.some((gate) => gate.id === id)), JSON.stringify(c4b.structuralGates));
 
 const sanofi = P(
   "2027 Spring Co-op - Bioinformatics",
