@@ -3,8 +3,8 @@
 // (1) opened or explicitly confirmed the posting link and (2) confirmed the
 // public notes are safe. Server actions re-verify officer auth regardless.
 import { useState, useTransition } from 'react';
-import { approveOpportunity, rejectOpportunity } from './actions';
-import type { PaidStatus } from '@/lib/types';
+import { approveOpportunity, archiveForAudience, rejectOpportunity } from './actions';
+import type { AudienceBucket, PaidStatus } from '@/lib/types';
 
 export interface ReviewRow {
   id: string;
@@ -23,8 +23,20 @@ export interface ReviewRow {
   private_notes: string | null;
   relevance_score: number | null;
   relevance_reasons: string[];
+  audience_bucket: AudienceBucket;
+  audience_reason: string | null;
   companies: { name: string; public_safe: boolean } | null;
 }
+
+const AUDIENCE_OPTIONS: Array<{ value: AudienceBucket; label: string }> = [
+  { value: 'unknown', label: 'Audience unresolved' },
+  { value: 'graduate', label: 'Graduate-accessible' },
+  { value: 'mixed', label: 'Graduate and undergraduate' },
+  { value: 'undergraduate', label: 'Undergraduate only' },
+  { value: 'special', label: 'Special eligibility' },
+  { value: 'adjacent', label: 'Adjacent term or format' },
+  { value: 'ineligible', label: 'Not accessible to CSULB students' },
+];
 
 export function ReviewList({ rows }: { rows: ReviewRow[] }) {
   if (rows.length === 0) {
@@ -42,11 +54,15 @@ function ReviewCard({ row }: { row: ReviewRow }) {
   const [notesConfirmed, setNotesConfirmed] = useState(false);
   const [status, setStatus] = useState<'open_verified' | 'open_unverified'>('open_verified');
   const [publicNotes, setPublicNotes] = useState(row.public_notes ?? '');
+  const [audienceBucket, setAudienceBucket] = useState<AudienceBucket>(row.audience_bucket ?? 'unknown');
+  const [audienceReason, setAudienceReason] = useState(row.audience_reason ?? '');
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const canApprove = (linkConfirmed || !row.posting_url) && notesConfirmed && !pending;
+  const audienceReady = audienceBucket !== 'unknown' && audienceReason.trim().length >= 8;
+  const canApprove = (linkConfirmed || !row.posting_url) && notesConfirmed && audienceReady &&
+    audienceBucket !== 'ineligible' && !pending;
 
   if (done) {
     return (
@@ -112,6 +128,33 @@ function ReviewCard({ row }: { row: ReviewRow }) {
         />
       </label>
 
+      <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(12rem,0.7fr)_minmax(16rem,1.3fr)]">
+        <label className="block text-xs font-medium" style={{ color: 'var(--ink-soft)' }}>
+          Student audience
+          <select
+            value={audienceBucket}
+            onChange={(e) => setAudienceBucket(e.target.value as AudienceBucket)}
+            className="mt-1 w-full rounded-md bg-white px-2 py-2 text-sm font-normal"
+            style={{ border: '1px solid var(--line)', color: 'var(--ink)' }}
+          >
+            {AUDIENCE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-medium" style={{ color: 'var(--ink-soft)' }}>
+          Audience evidence
+          <input
+            value={audienceReason}
+            onChange={(e) => setAudienceReason(e.target.value)}
+            maxLength={300}
+            placeholder="Example: current master's enrollment accepted; no U.S.-school restriction stated"
+            className="mt-1 w-full rounded-md bg-white px-3 py-2 text-sm font-normal"
+            style={{ border: '1px solid var(--line)', color: 'var(--ink)' }}
+          />
+        </label>
+      </div>
+
       <div className="mt-3 space-y-1.5 text-sm">
         {row.posting_url ? (
           <label className="flex items-center gap-2">
@@ -152,6 +195,8 @@ function ReviewCard({ row }: { row: ReviewRow }) {
                   status,
                   publicNotes,
                   makeCompanyPublic: !(row.companies?.public_safe ?? false),
+                  audienceBucket,
+                  audienceReason,
                 });
                 setDone('approved and published');
               } catch (err) {
@@ -164,6 +209,30 @@ function ReviewCard({ row }: { row: ReviewRow }) {
         >
           {pending ? 'Publishing…' : 'Approve'}
         </button>
+        {(['ineligible', 'adjacent', 'special'] as AudienceBucket[]).includes(audienceBucket) && (
+          <button
+            disabled={pending || !audienceReady}
+            onClick={() => {
+              setError(null);
+              startTransition(async () => {
+                try {
+                  await archiveForAudience({
+                    id: row.id,
+                    audienceBucket: audienceBucket as 'ineligible' | 'adjacent' | 'special',
+                    audienceReason,
+                  });
+                  setDone('classified and retained outside the public board');
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Classification failed');
+                }
+              });
+            }}
+            className="rounded-md bg-white px-4 py-1.5 disabled:opacity-40"
+            style={{ border: '1px solid var(--line)' }}
+          >
+            Keep outside public board
+          </button>
+        )}
         <button
           disabled={pending}
           onClick={() => {

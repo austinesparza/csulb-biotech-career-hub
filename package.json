@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:pipeline": "tsx src/__tests__/pipeline/all.ts"
+    "test:digest": "node --test scripts/review-digest.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",

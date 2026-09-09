@@ -3,6 +3,11 @@
 // the service client (repo invariant #7).
 import { revalidatePath } from 'next/cache';
 import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
+import type { AudienceBucket } from '@/lib/types';
+
+const PUBLISHABLE_AUDIENCES: AudienceBucket[] = [
+  'undergraduate', 'graduate', 'mixed', 'special', 'adjacent',
+];
 
 function revalidatePublic() {
   revalidatePath('/');
@@ -21,10 +26,19 @@ export async function approveOpportunity(input: {
   status: 'open_verified' | 'open_unverified';
   publicNotes: string;
   makeCompanyPublic: boolean;
+  audienceBucket: AudienceBucket;
+  audienceReason: string;
 }): Promise<void> {
   await requireOfficer();
   if (!['open_verified', 'open_unverified'].includes(input.status)) {
     throw new Error('Invalid target status');
+  }
+  if (!PUBLISHABLE_AUDIENCES.includes(input.audienceBucket)) {
+    throw new Error('Choose a publishable audience before approval');
+  }
+  const audienceReason = input.audienceReason.trim();
+  if (audienceReason.length < 8) {
+    throw new Error('Add a concise evidence-based audience reason');
   }
   const db = createServiceClient();
 
@@ -42,6 +56,8 @@ export async function approveOpportunity(input: {
       review_status: 'approved',
       public_safe: true,
       public_notes: input.publicNotes.trim() || null,
+      audience_bucket: input.audienceBucket,
+      audience_reason: audienceReason,
       last_checked_at: input.status === 'open_verified' ? new Date().toISOString() : null,
     })
     .eq('id', input.id);
@@ -50,6 +66,35 @@ export async function approveOpportunity(input: {
   if (input.makeCompanyPublic && opp.company_id) {
     await db.from('companies').update({ public_safe: true }).eq('id', opp.company_id);
   }
+  revalidatePublic();
+}
+
+export async function archiveForAudience(input: {
+  id: string;
+  audienceBucket: Extract<AudienceBucket, 'ineligible' | 'adjacent' | 'special'>;
+  audienceReason: string;
+}): Promise<void> {
+  await requireOfficer();
+  const audienceReason = input.audienceReason.trim();
+  if (audienceReason.length < 8) {
+    throw new Error('Add a concise evidence-based audience reason');
+  }
+  if (!['ineligible', 'adjacent', 'special'].includes(input.audienceBucket)) {
+    throw new Error('Invalid archive audience');
+  }
+
+  const db = createServiceClient();
+  const { error } = await db
+    .from('opportunities')
+    .update({
+      status: 'archive_only',
+      review_status: 'approved',
+      public_safe: false,
+      audience_bucket: input.audienceBucket,
+      audience_reason: audienceReason,
+    })
+    .eq('id', input.id);
+  if (error) throw new Error(error.message);
   revalidatePublic();
 }
 

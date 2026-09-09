@@ -1,0 +1,32 @@
+name: Publish reviewed opportunity data
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - data/reviewed-opportunities.json
+      - scripts/publish-reviewed-data.mjs
+      - .github/workflows/publish-reviewed-data.yml
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate reviewed data
+        run: node scripts/publish-reviewed-data.mjs
+      - name: Publish to Supabase
+        run: node scripts/publish-reviewed-data.mjs --apply
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}

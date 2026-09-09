@@ -1,109 +1,67 @@
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
+import Link from 'next/link';
 
 export default function AboutPage() {
   return (
-    <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">About the Career Hub</h1>
-
-      <section className="space-y-2">
-        <h2 className="font-semibold">How listings get here</h2>
-        <p style={{ color: 'var(--ink-soft)' }}>
-          Officers import the club internship spreadsheet, add postings by hand, and
-          review student submissions. Every record is checked by an officer before it
-          appears on the board. Nothing is collected automatically from other websites.
+    <div className="site-wrap">
+      <header className="page-head">
+        <h1>About</h1>
+        <p className="lede">
+          A student-maintained directory of graduate internships in biotechnology,
+          genomics, cancer research, bioinformatics, and related fields.
         </p>
+      </header>
+
+      <section className="editorial-strip">
+        <div className="margin-note"><h2>Built for graduate students</h2></div>
+        <div className="about-copy">
+          <p>
+            The main board is reserved for roles that explicitly accept graduate students.
+            Other records stay in the internal review system and do not crowd the public results.
+          </p>
+          <p>
+            The goal is simple: help students find credible opportunities early enough to
+            prepare a strong application.
+          </p>
+        </div>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="font-semibold">What the labels mean</h2>
-        <p style={{ color: 'var(--ink-soft)' }}>
-          "Verified by officers" means an officer opened the posting link and confirmed
-          it was live on the date shown. "Not yet re-verified" means the posting was
-          imported as open but has not been re-checked recently, so confirm details at
-          the source before applying.
-        </p>
+      <section className="editorial-strip">
+        <div className="margin-note"><h2>How it works</h2></div>
+        <div className="directory-grid">
+          <div className="directory-row"><div><h2>Find</h2><p>Students and officers submit possible roles.</p></div><span>01</span></div>
+          <div className="directory-row"><div><h2>Review</h2><p>An officer checks the source, status, dates, and graduate eligibility.</p></div><span>02</span></div>
+          <div className="directory-row"><div><h2>Publish</h2><p>Only approved, public-safe records appear on the site.</p></div><span>03</span></div>
+          <div className="directory-row"><div><h2>Recheck</h2><p>Changes return to the review queue before the public record is updated.</p></div><span>04</span></div>
+        </div>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="font-semibold">Deadlines and when to apply</h2>
-        <p style={{ color: 'var(--ink-soft)' }}>
-          Aim to apply two to four weeks before a posted deadline; many programs review
-          applications as they arrive, and materials take longer to prepare than expected.
-          "Rolling" means there is no fixed deadline and positions fill as qualified people
-          apply, so earlier is better. Postings marked "closing soon" on the board have two
-          weeks or less left. If a deadline has passed but the posting still shows as open
-          at the source, it may be worth asking the employer directly.
-        </p>
+      <section className="editorial-strip">
+        <div className="margin-note"><h2>Contribute</h2></div>
+        <div className="about-copy">
+          <p>Found a role, broken link, changed deadline, or eligibility issue? Send it to the club for review.</p>
+          <div className="about-actions">
+            <Link href="/submit" className="primary-button">Submit a role or correction</Link>
+            <a href={mailto(CLUB_LINKS.emailSubjectReport)} className="secondary-button">Email the club</a>
+          </div>
+        </div>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="font-semibold">How the recommended sort works</h2>
-        <p style={{ color: 'var(--ink-soft)' }}>
-          The default order on the Internship Exchange is a simple, transparent point
-          system that rates postings, never students. Every posting starts at 40 points,
-          then gains or loses points for things most members care about: paid roles and
-          stipends score higher, postings with a comfortable amount of time before the
-          deadline score higher, past-deadline postings drop sharply, accessible locations
-          (local or remote) add points, undergraduate-friendly eligibility adds points,
-          and a missing application link costs points. Officers can see the exact point
-          breakdown for every posting. The score only affects ordering; it never hides a
-          posting, and you can always sort by deadline or newest instead.
-        </p>
-        <p style={{ color: 'var(--ink-soft)' }}>
-          You can also tune the board for yourself under "Tune this board for you" on the
-          Internship Exchange: pick focus areas and preferences, and matching postings get
-          a visible "match for you" boost. Your choices are saved on your device only and
-          are never sent anywhere.
-        </p>
+      <section className="editorial-strip">
+        <div className="margin-note"><h2>Contact</h2></div>
+        <div className="directory-grid">
+          <a className="directory-row" href={mailto(CLUB_LINKS.emailSubjectReport)} style={{ textDecoration: 'none' }}><div><h2>Email</h2><p>{CLUB_LINKS.email}</p></div><span>↗</span></a>
+          {CLUB_LINKS.discord && <a className="directory-row" href={CLUB_LINKS.discord} style={{ textDecoration: 'none' }}><div><h2>Discord</h2><p>Join the club server</p></div><span>↗</span></a>}
+          {CLUB_LINKS.instagram && <a className="directory-row" href={CLUB_LINKS.instagram} style={{ textDecoration: 'none' }}><div><h2>Instagram</h2><p>@csulbbiotech</p></div><span>↗</span></a>}
+          {CLUB_LINKS.clubSite && <a className="directory-row" href={CLUB_LINKS.clubSite} style={{ textDecoration: 'none' }}><div><h2>Club website</h2><p>CSULB Biotechnology Club</p></div><span>↗</span></a>}
+        </div>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="font-semibold">Endorsement</h2>
-        <p style={{ color: 'var(--ink-soft)' }}>
-          Listings are shared for information. Inclusion is not an endorsement of any
-          employer or program by the club or by CSULB.
-        </p>
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="font-semibold">Report a problem</h2>
-        <p style={{ color: 'var(--ink-soft)' }}>
-          Broken link, expired posting, or wrong details? Email{' '}
-          <a href="mailto:csubiotechclub@gmail.com?subject=Career%20Hub%3A%20report%20a%20problem"
-            className="underline" style={{ color: 'var(--brand-deep)' }}>
-            csubiotechclub@gmail.com
-          </a>{' '}
-          or use the <a href="/submit" className="underline">submit page</a> and it will
-          be fixed or removed, usually within a week.
-        </p>
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="font-semibold">Get in touch</h2>
-        <ul className="space-y-1" style={{ color: 'var(--ink-soft)' }}>
-          <li>
-            Email:{' '}
-            <a href={mailto(CLUB_LINKS.emailSubjectReport)} className="underline" style={{ color: 'var(--brand-deep)' }}>
-              {CLUB_LINKS.email}
-            </a>
-          </li>
-          <li>Submissions and corrections: <a href="/submit" className="underline">the submit page</a></li>
-          {CLUB_LINKS.discord && (
-            <li>Discord: <a href={CLUB_LINKS.discord} className="underline" style={{ color: 'var(--brand-deep)' }}>join the server</a></li>
-          )}
-          {CLUB_LINKS.instagram && (
-            <li>Instagram: <a href={CLUB_LINKS.instagram} className="underline" style={{ color: 'var(--brand-deep)' }}>follow the club</a></li>
-          )}
-          {CLUB_LINKS.clubSite && (
-            <li>Main club website: <a href={CLUB_LINKS.clubSite} className="underline" style={{ color: 'var(--brand-deep)' }}>{CLUB_LINKS.clubSite}</a></li>
-          )}
-          {CLUB_LINKS.officeHours && <li>Office hours: {CLUB_LINKS.officeHours}</li>}
-        </ul>
-        <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
-          Officers: Discord, Instagram, and office hours appear here automatically once
-          they are filled in (src/lib/clubLinks.ts).
-        </p>
-      </section>
+      <p className="about-disclaimer">
+        Listings are provided for information. Inclusion is not an endorsement by the
+        CSULB Biotechnology Club or California State University, Long Beach. Always
+        confirm details in the employer’s current posting.
+      </p>
     </div>
   );
 }
