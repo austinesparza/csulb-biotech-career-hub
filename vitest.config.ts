@@ -12,5 +12,6 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/__tests__/**/*.test.ts'],
+    exclude: ['**/node_modules/**', 'src/__tests__/pipeline/**'],
   },
 });

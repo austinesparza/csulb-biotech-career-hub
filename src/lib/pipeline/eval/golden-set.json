@@ -1,0 +1,49 @@
+{
+  "note": "Hand-labelled truth. Omitting a field means the posting does not state it, so asserting a value there is a FABRICATION. Expand to ~30 cases across lanes before wiring a real model.",
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "gh-cas-bioinformatics",
+      "employer": "CAS",
+      "title": "2027 Bioinformatics Scientist Summer Intern",
+      "rawText": "2027 Bioinformatics Scientist Summer Intern\n\nResearch & Development\n\nSummer 2027 Internship\nJoin our biomedical data science team working on bioinformatics and drug-development data. You will use Python, R/Bioconductor and SQL on high-performance computing infrastructure.\n- Applicants must be currently enrolled in a Master's or PhD program in bioinformatics, computational biology, or a related quantitative field.\n- A minimum cumulative GPA of 3.0 is required.\n- Candidates must be authorized to work in the United States; we do not provide visa sponsorship for internships.\n- Hourly rate: $32.00 - $41.00 per hour depending on degree level.\n- 12 weeks, May 2027 through August 2027, on-site in Columbus.\nApplication requires a resume and an unofficial transcript. Selected candidates complete a recorded video interview.",
+      "expected": {
+        "masters_eligibility": { "value": "Master's or PhD program accepted", "quoteContains": "Master's or PhD program" },
+        "gpa_requirement": { "value": "3.0 cumulative required", "quoteContains": "GPA of 3.0" },
+        "work_authorization": { "value": "US work authorization required; no visa sponsorship", "quoteContains": "do not provide visa sponsorship" },
+        "pay_range": { "value": "$32.00-$41.00 per hour", "quoteContains": "32.00" },
+        "dates": { "value": "12 weeks, May 2027 to August 2027", "quoteContains": "May 2027 through August 2027" },
+        "schedule_format": { "value": "On-site in Columbus", "quoteContains": "on-site in Columbus" },
+        "degree_fields": { "value": "Bioinformatics, computational biology or related quantitative field", "quoteContains": "computational biology" },
+        "required_materials": { "value": "Resume and unofficial transcript", "quoteContains": "unofficial transcript" },
+        "application_steps": { "value": "Recorded video interview", "quoteContains": "recorded video interview" },
+        "methods_named": { "value": "Python, R/Bioconductor, SQL, HPC", "quoteContains": "Python" }
+      }
+    },
+    {
+      "id": "lever-amgen-process",
+      "employer": "Amgen",
+      "title": "Summer Intern, Process Development",
+      "rawText": "Summer Intern, Process Development\n\nSupport upstream process development and cGMP tech transfer for biologics drug substance.\n\nRequirements\n- Master's students accepted.\n- Must have completed at least one year of the graduate program before the start date.\n- Must continue enrollment after the internship concludes.\n\nRolling review; no fixed deadline stated. 40 hours per week.",
+      "expected": {
+        "masters_eligibility": { "value": "Master's students accepted", "quoteContains": "Master's students accepted" },
+        "enrollment_rule": { "value": "Completed at least one year of the graduate program before start", "quoteContains": "completed at least one year" },
+        "return_rule": { "value": "Must continue enrollment after the internship", "quoteContains": "continue enrollment" },
+        "deadline": { "value": "Rolling; no fixed deadline stated", "quoteContains": "Rolling review" },
+        "hours_per_week": { "value": "40 hours per week", "quoteContains": "40 hours per week" }
+      }
+    },
+    {
+      "id": "nih-sip",
+      "employer": "National Institutes of Health",
+      "title": "Summer Internship Program in Biomedical Research",
+      "rawText": "Summer Internship Program in Biomedical Research\n\nApplicants must be U.S. citizens or permanent residents and must be enrolled at least half-time in an accredited graduate or undergraduate program.\n\nResearch training in genomics, single-cell analysis and computational biology within the NIH Intramural Research Program.\n\nGraduate students are eligible. Students must be 17 years of age or older.\n\nPay: 3800-5200 Per Month",
+      "expected": {
+        "masters_eligibility": { "value": "Graduate students eligible", "quoteContains": "Graduate students are eligible" },
+        "work_authorization": { "value": "US citizens or permanent residents", "quoteContains": "U.S. citizens or permanent residents" },
+        "enrollment_rule": { "value": "At least half-time enrollment", "quoteContains": "half-time" },
+        "pay_range": { "value": "3800-5200 per month", "quoteContains": "3800-5200" }
+      }
+    }
+  ]
+}
