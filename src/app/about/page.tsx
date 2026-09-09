@@ -29,7 +29,7 @@ export default function AboutPage() {
       <section className="editorial-strip">
         <div className="margin-note"><h2>How it works</h2></div>
         <div className="directory-grid">
-          <div className="directory-row"><div><h2>Find</h2><p>Automation and student submissions surface possible roles.</p></div><span>01</span></div>
+          <div className="directory-row"><div><h2>Find</h2><p>Students and officers submit possible roles.</p></div><span>01</span></div>
           <div className="directory-row"><div><h2>Review</h2><p>An officer checks the source, status, dates, and graduate eligibility.</p></div><span>02</span></div>
           <div className="directory-row"><div><h2>Publish</h2><p>Only approved, public-safe records appear on the site.</p></div><span>03</span></div>
           <div className="directory-row"><div><h2>Recheck</h2><p>Changes return to the review queue before the public record is updated.</p></div><span>04</span></div>
