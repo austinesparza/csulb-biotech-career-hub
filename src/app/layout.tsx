@@ -42,10 +42,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <p>A student-maintained resource for graduate students. Always verify the live employer posting before applying.</p>
               </div>
             </div>
-            <div>
-              <div className="footer-title">How it stays current</div>
-              <p>Automation collects changes for officer review. Only approved, public-safe records reach this site.</p>
-            </div>
             <div className="mono" style={{ textAlign: 'right' }}>
               <Link href="/privacy">Privacy</Link><br />
               <Link href="/submit">Report a change</Link><br />
