@@ -1,57 +1,37 @@
-'use client';
-
 import Link from 'next/link';
-import { FormEvent, useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 
-export default function ForgotPasswordPage() {
-  const [ready, setReady] = useState(false);
-  const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+type ForgotPasswordPageProps = {
+  searchParams: Promise<{ sent?: string; error?: string }>;
+};
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => setReady(true), 0);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setPending(true);
-    setMessage(null);
-    setError(null);
-
-    try {
-      const form = new FormData(event.currentTarget);
-      const email = String(form.get('email'));
-      const supabase = createClient();
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/update-password`,
-      });
-      if (resetError) throw resetError;
-      setMessage('Check your email for a password-reset link. The link expires, so use the newest message.');
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'The reset email could not be sent.');
-    } finally {
-      setPending(false);
-    }
-  }
+export default async function ForgotPasswordPage({ searchParams }: ForgotPasswordPageProps) {
+  const { sent, error } = await searchParams;
 
   return (
     <div className="mx-auto max-w-sm space-y-4">
       <h1 className="text-xl font-bold">Reset officer password</h1>
       <p className="text-sm text-gray-600">Enter the email address assigned to your officer account.</p>
-      <form method="post" onSubmit={submit} className="space-y-3">
+      <form method="post" action="/api/auth/recover" className="space-y-3">
         <label className="block text-sm font-medium" htmlFor="email">Email</label>
         <input id="email" name="email" type="email" autoComplete="email" required
-          disabled={!ready || pending}
           className="w-full rounded border px-3 py-2" />
-        <button disabled={!ready || pending} className="w-full rounded bg-gray-900 px-4 py-2 text-white disabled:opacity-50">
-          {pending ? 'Sending…' : ready ? 'Send reset link' : 'Loading secure form…'}
+        <button className="w-full rounded bg-gray-900 px-4 py-2 text-white">
+          Send reset link
         </button>
       </form>
-      {message && <p role="status" aria-live="polite" className="text-sm text-green-700">{message}</p>}
-      {error && <p role="alert" aria-live="polite" className="text-sm text-red-600">{error}</p>}
+      {sent === '1' && (
+        <p role="status" className="text-sm text-green-700">
+          If an officer account matches that email, a reset link has been requested. Use the newest message.
+        </p>
+      )}
+      {error === 'invalid' && (
+        <p role="alert" className="text-sm text-red-600">Enter a valid email address.</p>
+      )}
+      {error === 'send_failed' && (
+        <p role="alert" className="text-sm text-red-600">
+          The authentication service could not accept the request. Wait briefly, then try once more.
+        </p>
+      )}
       <Link className="text-sm underline" href="/admin/login">Return to officer sign-in</Link>
     </div>
   );
