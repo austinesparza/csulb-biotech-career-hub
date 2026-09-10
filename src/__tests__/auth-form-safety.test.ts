@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const forgotPasswordPage = readFileSync('src/app/auth/forgot-password/page.tsx', 'utf8');
+const updatePasswordPage = readFileSync('src/app/auth/update-password/page.tsx', 'utf8');
 const loginPage = readFileSync('src/app/admin/login/page.tsx', 'utf8');
 const recoveryRoute = readFileSync('src/app/api/auth/recover/route.ts', 'utf8');
 const loginRoute = readFileSync('src/app/api/auth/login/route.ts', 'utf8');
@@ -22,6 +23,13 @@ describe('authentication form safety', () => {
     expect(recoveryRoute).toContain('export async function POST');
     expect(recoveryRoute).toContain('resetPasswordForEmail');
     expect(recoveryRoute).not.toMatch(/SERVICE_ROLE|SUPABASE_SECRET_KEY/);
+  });
+
+  it('fails closed when a recovery session cannot be established promptly', () => {
+    expect(updatePasswordPage).toContain('SESSION_CHECK_TIMEOUT_MS');
+    expect(updatePasswordPage).toContain('Recovery session validation timed out');
+    expect(updatePasswordPage).toContain('This reset link could not be validated');
+    expect(updatePasswordPage).toContain('Request a new reset link');
   });
 
   it('signs officers in through a server POST and checks the officer allowlist', () => {
