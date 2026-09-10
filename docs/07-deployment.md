@@ -5,13 +5,21 @@
 1. **GitHub:** create org-owned repo (club GitHub org, not a personal account — critical for handoff). Protect `main`; PRs required.
 2. **Supabase:** new project under a club account with credentials in the shared
    password manager. Apply executable migrations in numeric order, first against
-   a preview project. Never apply SQL under `supabase/proposals`. Run `seed.sql`
-   only after the schema is current.
+   a preview project. Never apply SQL under `supabase/proposals`. `seed.sql` is
+   only for an empty bootstrap project and inserts a demo row; do not run it in a
+   populated production project.
 3. **Auth:** enable email/password only; disable signups (officers are invited via dashboard); insert each officer's `auth.users.id` into `officers`.
 4. **Vercel:** import the repo (club Vercel account, hobby tier). Env vars:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SECRET_KEY` (server-only; never `NEXT_PUBLIC_`)
+   - `CRON_SECRET` (Production-only, at least 32 characters)
+   - the five `GOOGLE_*` variables from `.env.example` when direct Sheet sync is used
+
+   Keep privileged Supabase, cron, Google, model, and notification credentials
+   out of Preview. Optional pipeline and weekly-digest variables are documented
+   in `.env.example`, `docs/15-operational-pipeline.md`, and
+   `docs/weekly-review-notifications.md`.
 5. **Domain:** subdomain of the club site, e.g. `careers.csulbbiotech.org`, CNAME → Vercel. Existing website adds a nav link + optionally embeds exported JSON/CSV.
 
 ## Ongoing operation

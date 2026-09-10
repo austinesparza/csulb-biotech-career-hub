@@ -21,19 +21,26 @@ Work top to bottom. Check each box. Details live in docs/07-deployment.md; this 
       `supabase/proposals/`. Test new migrations against a preview database first.
 - [x] Confirm the pull request's **Database contracts** check passed against a
       disposable clean database before applying any migration to production.
-- [ ] Run `supabase/seed.sql`
-- [ ] Run `supabase/seed_historical.sql` ONCE (past cycles: 2024-2025 post +
-      2025-2026 sheet, ~50 archive records + ~30 companies + 2 resources)
+- [x] Do not run `supabase/seed.sql` in the populated production project. It is
+      bootstrap-only and would add an `Example Biosciences` demo row.
+- [ ] Decide whether the historical archive is still needed before running
+      `supabase/seed_historical.sql` once. Check for duplicate companies and
+      source records first; do not run it merely to complete this checklist.
 - [ ] Auth → disable signups; invite each officer by email
 - [ ] For each officer: `insert into officers (user_id, display_name) values ('<auth uid>', 'Name');`
 - [x] Verify the privacy boundary: in the SQL editor, as anon
       (`set role anon; select * from opportunities;`) — must be DENIED;
-      `select * from public_opportunities;` — must return the demo row. `reset role;`
+      `select * from public_opportunities;` — must return only officer-approved,
+      public-safe rows. `reset role;`
 
 ## Phase 3: Vercel (~15 min)
 
 - [x] Import the GitHub repo (club Vercel account)
 - [x] Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY`
+- [ ] Confirm `CRON_SECRET` is Production-only and at least 32 characters, then
+      confirm `/admin/integrations` reports scheduled orchestration as Ready.
+- [ ] Confirm the five `GOOGLE_*` variables are Production-only before the first
+      bounded Sheet sync. Preview deployments must not receive privileged keys.
 - [x] Deploy; the production landing page reads the approved Supabase view
 - [ ] Point `careers.<clubdomain>` CNAME at Vercel (can come later)
 

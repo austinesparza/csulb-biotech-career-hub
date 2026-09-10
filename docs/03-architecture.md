@@ -4,7 +4,8 @@
 **Keep the requested stack: Next.js (App Router) + Supabase + Vercel + TypeScript.** It is the right call for student-officer maintainability:
 
 - Supabase gives Postgres, auth, RLS, and a web GUI (Table Editor) — officers can fix data without writing SQL. Free tier is sufficient.
-- Vercel deploys on `git push`. No servers, no cron infrastructure needed for MVP.
+- Vercel deploys on merges to `main`, serves the Next.js application, and runs
+  two bounded cron routes. No separately managed application server is required.
 - Next.js server components mean no separate API layer to maintain.
 
 **Tradeoff considered:** Airtable/Google Sheets + a static site is simpler to *start* but fails the requirements — no real review workflow, no public/private column separation you can trust, no dedup, and the club already outgrew a spreadsheet. A Rails/Django app is more capable but assumes future officers know that framework; Next.js/TS is the most common student skill set. Conclusion: requested stack, minimal dependencies (no ORM — use `supabase-js` directly; no UI kit beyond Tailwind).
@@ -33,19 +34,29 @@
                 │  Auth: email/password, officers allowlist │
                 └───────────────────────────────────────────┘
 
-  CSV in  ── officer uploads spreadsheet export → import pipeline
-  CSV out ── /api/export → existing club website embeds/links
+  Sheet/CSV ── officer-triggered private intake → review queue
+  Sources   ── governed cron/manual fetch → raw archive → review queue
+  CSV out   ── /api/export → officer backup
 ```
 
 ## Key boundaries
 1. **Anon key can only read `public_*` views.** Base tables have RLS = officers only. Private notes physically cannot leak because the views don't include those columns.
 2. **Writes go through server actions** running with the service-role key on the server only (never shipped to the browser). Convention, enforced in code review: **no server action may call `createServiceClient()` before `await requireOfficer()` has succeeded.**
-3. **All external data enters via CSV upload or manual/submitted entry.** There is no fetch-from-external-site code path in the app; `source_records.refresh_policy` documents how each source is manually refreshed and its access rules. Every import must name its source.
+3. **External data has three governed entry paths.** Officers can sync the fixed
+   Google Sheet or upload CSV, the public can submit a narrowly validated private
+   lead, and workers can fetch only enabled `job_sources` with recorded terms and
+   robots review. Every path preserves provenance and creates private review work.
+   LinkedIn and login-gated pages remain lead/manual sources, not automated fetches.
 4. **Approved public records are import-immutable.** Re-imports may only refresh `last_seen_at`; field changes become review tasks (see docs/08).
 
 ## Request flows
 - **Student board:** server component → `select * from public_opportunities` with sanitized filters → render. Cacheable, no auth.
 - **Import:** officer uploads CSV + selects source → server action parses (papaparse) → `import_runs` row → `raw_import_rows` bulk insert → normalize → dedupe → upsert as `needs_review` (or touch-and-flag for approved records) → `review_tasks` created → summary UI.
+- **Direct Sheet sync:** officer action reads one configured workbook and bounded
+  range through a read-only service account, then enters the same import pipeline.
+- **Governed source run:** authenticated cron or officer action claims a bounded
+  source run → safe fetch → immutable payload/version archive → deterministic
+  classification and optional evidence-bound extraction → private review task.
 - **Review:** officer edits/approves → status + `review_status` + `public_safe` updated → appears on board on next request.
 - **Export:** `/api/export?format=csv` (officer-authed) streams the public view.
 
