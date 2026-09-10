@@ -4,6 +4,27 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
+const SESSION_CHECK_TIMEOUT_MS = 8_000;
+
+function withTimeout<T>(promise: Promise<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(
+      () => reject(new Error('Recovery session validation timed out')),
+      SESSION_CHECK_TIMEOUT_MS,
+    );
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeout);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timeout);
+        reject(error);
+      },
+    );
+  });
+}
+
 export default function UpdatePasswordPage() {
   const [ready, setReady] = useState(false);
   const [pending, setPending] = useState(false);
@@ -15,32 +36,36 @@ export default function UpdatePasswordPage() {
     let active = true;
 
     async function establishRecoverySession() {
-      const code = new URLSearchParams(window.location.search).get('code');
-      if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        if (exchangeError) {
-          if (active) setError('This reset link is invalid or expired. Request a new link.');
+      try {
+        const code = new URLSearchParams(window.location.search).get('code');
+        if (code) {
+          const { error: exchangeError } = await withTimeout(supabase.auth.exchangeCodeForSession(code));
+          if (exchangeError) {
+            if (active) setError('This reset link is invalid or expired. Request a new link.');
+            return;
+          }
+          window.history.replaceState({}, '', '/auth/update-password');
+        }
+
+        const { data, error: sessionError } = await withTimeout(supabase.auth.getSession());
+        if (!active) return;
+        if (sessionError || !data.session) {
+          setError('This reset link is invalid or expired. Request a new link.');
           return;
         }
-        window.history.replaceState({}, '', '/auth/update-password');
+        setReady(true);
+      } catch {
+        if (active) setError('This reset link could not be validated. Request a new link.');
       }
-
-      const { data, error: sessionError } = await supabase.auth.getSession();
-      if (!active) return;
-      if (sessionError || !data.session) {
-        setError('This reset link is invalid or expired. Request a new link.');
-        return;
-      }
-      setReady(true);
     }
 
-    void establishRecoverySession();
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (active && event === 'PASSWORD_RECOVERY' && session) {
         setError(null);
         setReady(true);
       }
     });
+    void establishRecoverySession();
 
     return () => {
       active = false;
