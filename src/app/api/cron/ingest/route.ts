@@ -11,12 +11,16 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
+function json(body: Record<string, unknown>, status = 200) {
+  return NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
+}
+
 export async function GET(request: Request) {
   if (!authorizeCronRequest(request.headers.get("authorization"))) {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    return json({ ok: false, error: "unauthorized" }, 401);
   }
   if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production") {
-    return NextResponse.json({ ok: false, error: "production_only" }, { status: 403 });
+    return json({ ok: false, error: "production_only" }, 403);
   }
 
   const db = createPipelineServiceClient();
@@ -26,7 +30,7 @@ export async function GET(request: Request) {
     p_limit: limit,
   });
   if (scheduleError) {
-    return NextResponse.json({ ok: false, stage: "schedule", error: scheduleError.message }, { status: 500 });
+    return json({ ok: false, stage: "schedule", error: scheduleError.message }, 500);
   }
 
   const reports = await runIngestionBatch({
@@ -41,7 +45,7 @@ export async function GET(request: Request) {
   if (process.env.PIPELINE_MODEL_ENABLED === "true") {
     const modelName = process.env.PIPELINE_MODEL_NAME?.trim();
     if (!modelName) {
-      return NextResponse.json({ ok: false, stage: "extraction", error: "PIPELINE_MODEL_NAME is required" }, { status: 500 });
+      return json({ ok: false, stage: "extraction", error: "PIPELINE_MODEL_NAME is required" }, 500);
     }
     const modelReport = await runExtractionBatch({
       store: new SupabaseExtractionStore(db),
@@ -73,8 +77,5 @@ export async function GET(request: Request) {
     extraction,
     reports,
   };
-  return NextResponse.json(response, {
-    status: failed.length || extractionFailed ? 500 : 200,
-    headers: { "Cache-Control": "no-store" },
-  });
+  return json(response, failed.length || extractionFailed ? 500 : 200);
 }
