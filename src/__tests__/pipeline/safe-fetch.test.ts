@@ -1,4 +1,5 @@
-import { BlockedUrlError, isBlockedIp, safeFetch } from '../../lib/pipeline/safe-fetch';
+import { BlockedUrlError, createUsaJobsFetcher, isBlockedIp, safeFetch } from '../../lib/pipeline/safe-fetch';
+import type { Fetcher } from '../../lib/pipeline/worker';
 
 let pass = 0;
 let fail = 0;
@@ -34,6 +35,30 @@ for (const url of [
   try { await safeFetch(url); }
   catch (error) { blocked = error instanceof BlockedUrlError; }
   ok(`rejects ${url}`, blocked);
+}
+
+console.log('\n=== USAJOBS credential boundary ===\n');
+const usaJobsFetch: Fetcher = createUsaJobsFetcher({ apiKey: 'test-key', registeredEmail: 'officer@example.edu' });
+for (const url of [
+  'http://data.usajobs.gov/api/Search',
+  'https://example.com/api/Search',
+  'https://data.usajobs.gov:444/api/Search',
+  'https://data.usajobs.gov/other',
+]) {
+  let blocked = false;
+  try { await usaJobsFetch(url, { etag: null, lastModified: null }); }
+  catch (error) { blocked = error instanceof BlockedUrlError; }
+  ok(`does not send USAJOBS credentials to ${url}`, blocked);
+}
+for (const credentials of [
+  { apiKey: '', registeredEmail: 'officer@example.edu' },
+  { apiKey: 'key\ninjected', registeredEmail: 'officer@example.edu' },
+  { apiKey: 'test-key', registeredEmail: 'officer@example.edu\r\nX-Evil: yes' },
+]) {
+  let rejected = false;
+  try { createUsaJobsFetcher(credentials); }
+  catch { rejected = true; }
+  ok('rejects empty or multiline USAJOBS credentials', rejected);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

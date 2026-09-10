@@ -1,48 +1,338 @@
 {
-  "note": "Hand-labelled truth. Omitting a field means the posting does not state it, so asserting a value there is a FABRICATION. Expand to ~30 cases across lanes before wiring a real model.",
-  "schemaVersion": 1,
+  "note": "Hand-labelled synthetic extraction contract. Omitting a field means the posting does not state it, so asserting a value there is a fabrication. These adversarial cases cover all ten scientific lanes but do not replace a separately labelled corpus of real postings before model-assisted production use.",
+  "schemaVersion": 2,
+  "corpusClass": "synthetic-contract",
   "cases": [
     {
-      "id": "gh-cas-bioinformatics",
-      "employer": "CAS",
-      "title": "2027 Bioinformatics Scientist Summer Intern",
-      "rawText": "2027 Bioinformatics Scientist Summer Intern\n\nResearch & Development\n\nSummer 2027 Internship\nJoin our biomedical data science team working on bioinformatics and drug-development data. You will use Python, R/Bioconductor and SQL on high-performance computing infrastructure.\n- Applicants must be currently enrolled in a Master's or PhD program in bioinformatics, computational biology, or a related quantitative field.\n- A minimum cumulative GPA of 3.0 is required.\n- Candidates must be authorized to work in the United States; we do not provide visa sponsorship for internships.\n- Hourly rate: $32.00 - $41.00 per hour depending on degree level.\n- 12 weeks, May 2027 through August 2027, on-site in Columbus.\nApplication requires a resume and an unofficial transcript. Selected candidates complete a recorded video interview.",
+      "id": "gh-cas-bioinformatics", "lane": "bioinformatics", "employer": "Example Chemical Abstracts", "title": "2027 Bioinformatics Scientist Summer Intern",
+      "rawText": "2027 Bioinformatics Scientist Summer Intern\nJoin our biomedical data science team. You will use Python, R/Bioconductor and SQL on high-performance computing infrastructure. Applicants must be enrolled in a Master's or PhD program in bioinformatics, computational biology, or a related quantitative field. A minimum cumulative GPA of 3.0 is required. Candidates must be authorized to work in the United States; we do not provide visa sponsorship. Hourly rate: $32.00 - $41.00 per hour depending on degree level. The internship runs for 12 weeks, May 2027 through August 2027, on-site in Columbus. Application requires a resume and an unofficial transcript. Selected candidates complete a recorded video interview.",
       "expected": {
-        "masters_eligibility": { "value": "Master's or PhD program accepted", "quoteContains": "Master's or PhD program" },
-        "gpa_requirement": { "value": "3.0 cumulative required", "quoteContains": "GPA of 3.0" },
-        "work_authorization": { "value": "US work authorization required; no visa sponsorship", "quoteContains": "do not provide visa sponsorship" },
-        "pay_range": { "value": "$32.00-$41.00 per hour", "quoteContains": "32.00" },
-        "dates": { "value": "12 weeks, May 2027 to August 2027", "quoteContains": "May 2027 through August 2027" },
-        "schedule_format": { "value": "On-site in Columbus", "quoteContains": "on-site in Columbus" },
-        "degree_fields": { "value": "Bioinformatics, computational biology or related quantitative field", "quoteContains": "computational biology" },
-        "required_materials": { "value": "Resume and unofficial transcript", "quoteContains": "unofficial transcript" },
-        "application_steps": { "value": "Recorded video interview", "quoteContains": "recorded video interview" },
-        "methods_named": { "value": "Python, R/Bioconductor, SQL, HPC", "quoteContains": "Python" }
+        "masters_eligibility": {"value":"Master's or PhD program accepted","quoteContains":"Master's or PhD program"},
+        "gpa_requirement": {"value":"3.0 cumulative required","quoteContains":"GPA of 3.0"},
+        "work_authorization": {"value":"US work authorization required; no visa sponsorship","quoteContains":"do not provide visa sponsorship"},
+        "pay_range": {"value":"$32.00-$41.00 per hour","quoteContains":"$32.00 - $41.00"},
+        "pay_basis": {"value":"Hourly; varies by degree level","quoteContains":"per hour depending on degree level"},
+        "dates": {"value":"12 weeks, May 2027 to August 2027","quoteContains":"May 2027 through August 2027"},
+        "schedule_format": {"value":"On-site","quoteContains":"on-site in Columbus"},
+        "location": {"value":"Columbus","quoteContains":"on-site in Columbus"},
+        "degree_fields": {"value":"Bioinformatics, computational biology, or related quantitative field","quoteContains":"computational biology"},
+        "required_materials": {"value":"Resume and unofficial transcript","quoteContains":"unofficial transcript"},
+        "application_steps": {"value":"Recorded video interview","quoteContains":"recorded video interview"},
+        "methods_named": {"value":"Python, R/Bioconductor, SQL, HPC","quoteContains":"Python, R/Bioconductor and SQL"}
       }
     },
     {
-      "id": "lever-amgen-process",
-      "employer": "Amgen",
-      "title": "Summer Intern, Process Development",
-      "rawText": "Summer Intern, Process Development\n\nSupport upstream process development and cGMP tech transfer for biologics drug substance.\n\nRequirements\n- Master's students accepted.\n- Must have completed at least one year of the graduate program before the start date.\n- Must continue enrollment after the internship concludes.\n\nRolling review; no fixed deadline stated. 40 hours per week.",
+      "id":"lever-amgen-process", "lane":"bioprocess", "employer":"Example Biologics", "title":"Summer Intern, Process Development",
+      "rawText":"Support upstream process development and cGMP tech transfer. Master's students accepted. Applicants must have completed at least one year of the graduate program before the start date. Students must continue enrollment after the internship concludes. Rolling review; no fixed deadline stated. The position is 40 hours per week.",
       "expected": {
-        "masters_eligibility": { "value": "Master's students accepted", "quoteContains": "Master's students accepted" },
-        "enrollment_rule": { "value": "Completed at least one year of the graduate program before start", "quoteContains": "completed at least one year" },
-        "return_rule": { "value": "Must continue enrollment after the internship", "quoteContains": "continue enrollment" },
-        "deadline": { "value": "Rolling; no fixed deadline stated", "quoteContains": "Rolling review" },
-        "hours_per_week": { "value": "40 hours per week", "quoteContains": "40 hours per week" }
+        "masters_eligibility":{"value":"Master's students accepted","quoteContains":"Master's students accepted"},
+        "enrollment_rule":{"value":"At least one graduate-program year completed before start","quoteContains":"completed at least one year"},
+        "return_rule":{"value":"Must continue enrollment after internship","quoteContains":"continue enrollment"},
+        "deadline":{"value":"Rolling; no fixed deadline","quoteContains":"Rolling review"},
+        "hours_per_week":{"value":"40 hours per week","quoteContains":"40 hours per week"},
+        "methods_named":{"value":"Upstream process development and cGMP tech transfer","quoteContains":"upstream process development"}
       }
     },
     {
-      "id": "nih-sip",
-      "employer": "National Institutes of Health",
-      "title": "Summer Internship Program in Biomedical Research",
-      "rawText": "Summer Internship Program in Biomedical Research\n\nApplicants must be U.S. citizens or permanent residents and must be enrolled at least half-time in an accredited graduate or undergraduate program.\n\nResearch training in genomics, single-cell analysis and computational biology within the NIH Intramural Research Program.\n\nGraduate students are eligible. Students must be 17 years of age or older.\n\nPay: 3800-5200 Per Month",
+      "id":"nih-sip", "lane":"genomics", "employer":"Example Federal Institute", "title":"Summer Internship Program in Biomedical Research",
+      "rawText":"Applicants must be U.S. citizens or permanent residents and must be enrolled at least half-time in an accredited graduate or undergraduate program. Research training includes genomics and single-cell analysis. Graduate students are eligible. Pay: $3,800-$5,200 per month.",
       "expected": {
-        "masters_eligibility": { "value": "Graduate students eligible", "quoteContains": "Graduate students are eligible" },
-        "work_authorization": { "value": "US citizens or permanent residents", "quoteContains": "U.S. citizens or permanent residents" },
-        "enrollment_rule": { "value": "At least half-time enrollment", "quoteContains": "half-time" },
-        "pay_range": { "value": "3800-5200 per month", "quoteContains": "3800-5200" }
+        "masters_eligibility":{"value":"Graduate students eligible","quoteContains":"Graduate students are eligible"},
+        "work_authorization":{"value":"US citizens or permanent residents","quoteContains":"U.S. citizens or permanent residents"},
+        "enrollment_rule":{"value":"At least half-time enrollment","quoteContains":"at least half-time"},
+        "pay_range":{"value":"$3,800-$5,200 per month","quoteContains":"$3,800-$5,200"},
+        "pay_basis":{"value":"Monthly","quoteContains":"per month"}
+      }
+    },
+    {
+      "id":"single-cell-first-year", "lane":"single_cell", "employer":"Example Cell Atlas Center", "title":"Computational Intern, Cell Atlas",
+      "rawText":"First-year master's students are welcome to apply. The project analyzes scRNA-seq and CITE-seq data with Scanpy for cell type annotation. The twelve-week internship begins June 7, 2027 and is based in Seattle.",
+      "expected": {
+        "masters_eligibility":{"value":"First-year master's students eligible","quoteContains":"First-year master's students are welcome"},
+        "dates":{"value":"12 weeks beginning June 7, 2027","quoteContains":"twelve-week internship begins June 7, 2027"},
+        "location":{"value":"Seattle","quoteContains":"based in Seattle"},
+        "methods_named":{"value":"scRNA-seq, CITE-seq, Scanpy, cell type annotation","quoteContains":"scRNA-seq and CITE-seq"}
+      }
+    },
+    {
+      "id":"data-science-mixed-degree", "lane":"data_science", "employer":"Example Medical Devices", "title":"Technology 2027 Summer Internship",
+      "rawText":"Applicants must be enrolled in a Bachelor's or Master's degree program in computer science, data science, or a related field. A minimum cumulative GPA of 3.0 is required. The team builds machine-learning tools for digital health. The hybrid schedule requires three days on-site in Irvine and two remote days.",
+      "expected": {
+        "masters_eligibility":{"value":"Bachelor's or Master's students accepted","quoteContains":"Bachelor's or Master's degree program"},
+        "degree_fields":{"value":"Computer science, data science, or related field","quoteContains":"computer science, data science"},
+        "gpa_requirement":{"value":"3.0 cumulative required","quoteContains":"GPA of 3.0"},
+        "schedule_format":{"value":"Hybrid; three on-site days and two remote days","quoteContains":"three days on-site"},
+        "location":{"value":"Irvine","quoteContains":"on-site in Irvine"},
+        "methods_named":{"value":"Machine learning","quoteContains":"machine-learning tools"}
+      }
+    },
+    {
+      "id":"protein-drug-phd-only", "lane":"protein_drug", "employer":"Example Protein Therapeutics", "title":"Doctoral Intern, Protein Design",
+      "rawText":"Applicants must be enrolled in a Ph.D. program in structural biology or biophysics. Master's students are not eligible. Interns use AlphaFold predictions and molecular dynamics to guide antibody engineering.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students not eligible; PhD enrollment required","quoteContains":"Master's students are not eligible"},
+        "enrollment_rule":{"value":"Must be enrolled in a PhD program","quoteContains":"must be enrolled in a Ph.D. program"},
+        "degree_fields":{"value":"Structural biology or biophysics","quoteContains":"structural biology or biophysics"},
+        "methods_named":{"value":"AlphaFold, molecular dynamics, antibody engineering","quoteContains":"AlphaFold predictions"}
+      }
+    },
+    {
+      "id":"cancer-undergrad-only", "lane":"cancer", "employer":"Example Cancer Center", "title":"Summer Cancer Research Internship",
+      "rawText":"This program is for undergraduate students only. Rising juniors and seniors will study tumor organoid models and perform flow cytometry. Graduate students are not eligible.",
+      "expected": {
+        "masters_eligibility":{"value":"Graduate students not eligible; undergraduate only","quoteContains":"Graduate students are not eligible"},
+        "enrollment_rule":{"value":"Undergraduate students only","quoteContains":"undergraduate students only"},
+        "methods_named":{"value":"Tumor organoids and flow cytometry","quoteContains":"tumor organoid models"}
+      }
+    },
+    {
+      "id":"diagnostics-graduation-window", "lane":"diagnostics", "employer":"Example Molecular Diagnostics", "title":"Clinical Genomics Intern",
+      "rawText":"Candidates must be pursuing a master's degree and graduate between December 2027 and June 2028. The role supports clinical variant interpretation under ACMG criteria in a CLIA laboratory. Applications close January 15, 2027.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's degree required","quoteContains":"pursuing a master's degree"},
+        "graduation_window":{"value":"Graduation between December 2027 and June 2028","quoteContains":"graduate between December 2027 and June 2028"},
+        "deadline":{"value":"January 15, 2027","quoteContains":"Applications close January 15, 2027"},
+        "methods_named":{"value":"Clinical variant interpretation, ACMG criteria, CLIA","quoteContains":"clinical variant interpretation"}
+      }
+    },
+    {
+      "id":"immunology-hourly-pay", "lane":"immunology", "employer":"Example Vaccines", "title":"Antigen Discovery Intern",
+      "rawText":"Graduate students may apply. Compensation is $28.50 to $34.75 per hour. The intern will support epitope prediction and T cell receptor sequencing for a vaccine program.",
+      "expected": {
+        "masters_eligibility":{"value":"Graduate students eligible","quoteContains":"Graduate students may apply"},
+        "pay_range":{"value":"$28.50-$34.75","quoteContains":"$28.50 to $34.75"},
+        "pay_basis":{"value":"Hourly","quoteContains":"per hour"},
+        "methods_named":{"value":"Epitope prediction and T cell receptor sequencing","quoteContains":"epitope prediction"}
+      }
+    },
+    {
+      "id":"neuro-stipend-housing", "lane":"neuro", "employer":"Example Neuroscience Institute", "title":"Graduate Research Intern, Neurodegeneration",
+      "rawText":"Master's and doctoral students are eligible. The program provides a $7,500 summer stipend, university housing, and reimbursement for one round-trip flight. Interns study tau pathology in iPSC-derived neurons.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's and doctoral students eligible","quoteContains":"Master's and doctoral students are eligible"},
+        "pay_range":{"value":"$7,500 summer stipend","quoteContains":"$7,500 summer stipend"},
+        "pay_basis":{"value":"Summer stipend","quoteContains":"summer stipend"},
+        "housing_relocation":{"value":"University housing and one round-trip flight reimbursed","quoteContains":"university housing"},
+        "methods_named":{"value":"iPSC-derived neurons","quoteContains":"iPSC-derived neurons"}
+      }
+    },
+    {
+      "id":"remote-part-time", "lane":"data_science", "employer":"Example Digital Biology Lab", "title":"Part-Time Machine Learning Intern",
+      "rawText":"This remote internship is open to master's students anywhere in the United States. The schedule is 20 hours per week from February through May 2027. Work focuses on deep-learning models for DNA sequence data using PyTorch.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students eligible","quoteContains":"open to master's students"},
+        "schedule_format":{"value":"Remote","quoteContains":"remote internship"},
+        "location":{"value":"United States","quoteContains":"anywhere in the United States"},
+        "hours_per_week":{"value":"20 hours per week","quoteContains":"20 hours per week"},
+        "dates":{"value":"February through May 2027","quoteContains":"February through May 2027"},
+        "methods_named":{"value":"Deep learning, DNA sequence data, PyTorch","quoteContains":"deep-learning models"}
+      }
+    },
+    {
+      "id":"multi-location-hybrid", "lane":"bioprocess", "employer":"Example Pharma", "title":"Manufacturing Sciences Intern",
+      "rawText":"Graduate students are accepted. Positions are available in Thousand Oaks, California and Cambridge, Massachusetts. Employees work on-site Tuesday through Thursday and remotely Monday and Friday. Projects include upstream cell-culture process characterization and scale-up.",
+      "expected": {
+        "masters_eligibility":{"value":"Graduate students accepted","quoteContains":"Graduate students are accepted"},
+        "location":{"value":"Thousand Oaks, California; Cambridge, Massachusetts","quoteContains":"Thousand Oaks, California and Cambridge, Massachusetts"},
+        "schedule_format":{"value":"Hybrid; on-site Tuesday through Thursday","quoteContains":"on-site Tuesday through Thursday"},
+        "methods_named":{"value":"Upstream cell-culture process characterization and scale-up","quoteContains":"upstream cell-culture process characterization"}
+      }
+    },
+    {
+      "id":"materials-cover-letter", "lane":"cancer", "employer":"Example Oncology Institute", "title":"Translational Oncology Summer Scholar",
+      "rawText":"Open to master's students. Submit a resume, one-page cover letter, unofficial transcript, and a two-page research statement. Incomplete applications will not be reviewed. Projects examine circulating tumor DNA for early cancer detection.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students eligible","quoteContains":"Open to master's students"},
+        "required_materials":{"value":"Resume, one-page cover letter, unofficial transcript, and two-page research statement","quoteContains":"Submit a resume"},
+        "methods_named":{"value":"Circulating tumor DNA","quoteContains":"circulating tumor DNA"}
+      }
+    },
+    {
+      "id":"recommendation-letters", "lane":"genomics", "employer":"Example Genome Center", "title":"Graduate Genomics Internship",
+      "rawText":"Applicants must arrange for two letters of recommendation to arrive by February 5, 2027. The student application is due January 29, 2027. Master's students in genetics or genomics may apply.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students eligible","quoteContains":"Master's students in genetics or genomics may apply"},
+        "degree_fields":{"value":"Genetics or genomics","quoteContains":"genetics or genomics"},
+        "recommendation_letters":{"value":"Two letters due February 5, 2027","quoteContains":"two letters of recommendation"},
+        "deadline":{"value":"January 29, 2027","quoteContains":"application is due January 29, 2027"}
+      }
+    },
+    {
+      "id":"coding-assessment", "lane":"bioinformatics", "employer":"Example Computational Biology Company", "title":"Bioinformatics Engineering Intern",
+      "rawText":"Graduate students are welcome. After submitting the application, candidates complete a 60-minute Python coding assessment and a technical panel interview. The work uses Nextflow, Docker, and AWS to develop sequence-analysis pipelines.",
+      "expected": {
+        "masters_eligibility":{"value":"Graduate students eligible","quoteContains":"Graduate students are welcome"},
+        "application_steps":{"value":"60-minute Python coding assessment and technical panel interview","quoteContains":"60-minute Python coding assessment"},
+        "methods_named":{"value":"Nextflow, Docker, AWS, sequence-analysis pipelines","quoteContains":"Nextflow, Docker, and AWS"}
+      }
+    },
+    {
+      "id":"interview-timeline", "lane":"diagnostics", "employer":"Example Clinical Data Group", "title":"Clinical Data Science Intern",
+      "rawText":"Master's students in biostatistics are eligible. First-round interviews will occur March 8-12, 2027, and offers will be issued by March 26. The project uses survival analysis on oncology clinical-trial data.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students eligible","quoteContains":"Master's students in biostatistics are eligible"},
+        "degree_fields":{"value":"Biostatistics","quoteContains":"in biostatistics"},
+        "interview_timeline":{"value":"Interviews March 8-12, 2027; offers by March 26","quoteContains":"First-round interviews"},
+        "methods_named":{"value":"Survival analysis and oncology clinical-trial data","quoteContains":"survival analysis"}
+      }
+    },
+    {
+      "id":"named-mentor-team", "lane":"immunology", "employer":"Example University Medical Center", "title":"Graduate Intern, Tumor Immunology",
+      "rawText":"The selected master's student will join Dr. Maya Chen's Tumor Immunology Laboratory in the Department of Pathology. The project studies neoantigen-specific T-cell responses using flow cytometry and ELISA.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's student eligible","quoteContains":"selected master's student"},
+        "mentor_or_team":{"value":"Dr. Maya Chen's Tumor Immunology Laboratory, Department of Pathology","quoteContains":"Dr. Maya Chen's Tumor Immunology Laboratory"},
+        "methods_named":{"value":"Flow cytometry and ELISA","quoteContains":"flow cytometry and ELISA"}
+      }
+    },
+    {
+      "id":"wet-lab-methods", "lane":"protein_drug", "employer":"Example Antibody Discovery", "title":"Protein Engineering Intern",
+      "rawText":"Currently enrolled master's students may apply. Responsibilities include mammalian cell culture, protein purification by chromatography, SPR binding assays, and mass spectrometry. The role is on-site in South San Francisco.",
+      "expected": {
+        "masters_eligibility":{"value":"Currently enrolled master's students eligible","quoteContains":"Currently enrolled master's students may apply"},
+        "methods_named":{"value":"Mammalian cell culture, chromatography, SPR, mass spectrometry","quoteContains":"mammalian cell culture"},
+        "schedule_format":{"value":"On-site","quoteContains":"on-site in South San Francisco"},
+        "location":{"value":"South San Francisco","quoteContains":"South San Francisco"}
+      }
+    },
+    {
+      "id":"poster-publication-policy", "lane":"neuro", "employer":"Example Brain Research Foundation", "title":"Neuroscience Summer Intern",
+      "rawText":"Graduate students may apply. Every intern presents a poster at the August symposium. Manuscript authorship follows the laboratory's ordinary contribution criteria and is not guaranteed. Research examines neuroinflammation in organoid models.",
+      "expected": {
+        "masters_eligibility":{"value":"Graduate students eligible","quoteContains":"Graduate students may apply"},
+        "publication_policy":{"value":"Poster required; authorship contribution-based and not guaranteed","quoteContains":"Every intern presents a poster"},
+        "methods_named":{"value":"Organoid models","quoteContains":"organoid models"}
+      }
+    },
+    {
+      "id":"return-offer-policy", "lane":"bioprocess", "employer":"Example Cell Therapy Manufacturer", "title":"Process Development Graduate Intern",
+      "rawText":"This internship accepts master's students. Interns who meet performance expectations may be considered for the company's full-time rotational program after graduation, but participation does not guarantee an offer. Work includes cell-therapy process validation.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students accepted","quoteContains":"accepts master's students"},
+        "conversion_policy":{"value":"May be considered for full-time rotational program; no offer guaranteed","quoteContains":"may be considered"},
+        "methods_named":{"value":"Cell-therapy process validation","quoteContains":"cell-therapy process validation"}
+      }
+    },
+    {
+      "id":"accommodations-route", "lane":"diagnostics", "employer":"Example Diagnostic Systems", "title":"Assay Development Intern",
+      "rawText":"Master's students are eligible. Applicants who need a reasonable accommodation during hiring should email accessibility@example.org or call 555-0100. The internship supports molecular diagnostic assay development.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students eligible","quoteContains":"Master's students are eligible"},
+        "accommodations_contact":{"value":"Email accessibility@example.org or call 555-0100","quoteContains":"accessibility@example.org"},
+        "methods_named":{"value":"Molecular diagnostic assay development","quoteContains":"molecular diagnostic assay development"}
+      }
+    },
+    {
+      "id":"veteran-program", "lane":"genomics", "employer":"Example Sequencing Company", "title":"Genomics Internship",
+      "rawText":"Graduate students may apply. Qualified disabled veterans can request placement support through the company's Veteran Internship Pathway by contacting veteranpathway@example.org. The role performs long-read sequencing analysis.",
+      "expected": {
+        "masters_eligibility":{"value":"Graduate students eligible","quoteContains":"Graduate students may apply"},
+        "eeo_veteran_disability":{"value":"Veteran Internship Pathway placement support","quoteContains":"Veteran Internship Pathway"},
+        "methods_named":{"value":"Long-read sequencing analysis","quoteContains":"long-read sequencing analysis"}
+      }
+    },
+    {
+      "id":"cohort-scale", "lane":"cancer", "employer":"Example Cancer Research Network", "title":"Cancer Research Fellows Internship",
+      "rawText":"The 2027 cohort will include 24 graduate interns across six research sites. Master's students are eligible. Projects cover tumor evolution, liquid biopsy, and cancer epigenetics.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students eligible","quoteContains":"Master's students are eligible"},
+        "cohort_scale":{"value":"24 graduate interns across six research sites","quoteContains":"24 graduate interns across six research sites"},
+        "methods_named":{"value":"Liquid biopsy and cancer epigenetics","quoteContains":"liquid biopsy"}
+      }
+    },
+    {
+      "id":"opening-and-deadline", "lane":"single_cell", "employer":"Example Spatial Biology Center", "title":"Spatial Biology Intern",
+      "rawText":"Applications open November 16, 2026 and close February 12, 2027 at 5:00 p.m. Pacific. Graduate students are eligible. The project analyzes Visium and Xenium data from tumor tissue.",
+      "expected": {
+        "masters_eligibility":{"value":"Graduate students eligible","quoteContains":"Graduate students are eligible"},
+        "deadline":{"value":"Opens November 16, 2026; closes February 12, 2027 at 5:00 p.m. Pacific","quoteContains":"Applications open November 16, 2026"},
+        "methods_named":{"value":"Visium and Xenium","quoteContains":"Visium and Xenium"}
+      }
+    },
+    {
+      "id":"rolling-no-invented-date", "lane":"protein_drug", "employer":"Example Drug Discovery Lab", "title":"Medicinal Chemistry Graduate Intern",
+      "rawText":"Applications are reviewed on a rolling basis until positions are filled; no closing date is listed. Master's students in chemistry or pharmaceutical sciences may apply. Work includes lead optimization and ADME studies.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students eligible","quoteContains":"Master's students in chemistry"},
+        "deadline":{"value":"Rolling until filled; no closing date listed","quoteContains":"rolling basis until positions are filled"},
+        "degree_fields":{"value":"Chemistry or pharmaceutical sciences","quoteContains":"chemistry or pharmaceutical sciences"},
+        "methods_named":{"value":"Lead optimization and ADME","quoteContains":"lead optimization and ADME"}
+      }
+    },
+    {
+      "id":"cpt-opt-policy", "lane":"bioinformatics", "employer":"Example Genomics Software", "title":"Computational Biology Intern",
+      "rawText":"Master's and PhD students may apply. The company can support CPT and OPT employment authorization for this internship but cannot sponsor a new H-1B petition. Interns develop Nextflow pipelines in Python.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's and PhD students eligible","quoteContains":"Master's and PhD students may apply"},
+        "work_authorization":{"value":"CPT and OPT supported; new H-1B sponsorship unavailable","quoteContains":"support CPT and OPT"},
+        "methods_named":{"value":"Nextflow and Python","quoteContains":"Nextflow pipelines in Python"}
+      }
+    },
+    {
+      "id":"permanent-authorization", "lane":"data_science", "employer":"Example Precision Medicine Company", "title":"Machine Learning Graduate Intern",
+      "rawText":"Applicants must have permanent U.S. work authorization. Sponsorship is not available now or in the future. Master's students in computer science or computational biology are accepted. Work involves PyTorch models for clinical genomic data.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students accepted","quoteContains":"Master's students"},
+        "work_authorization":{"value":"Permanent US work authorization required; no sponsorship","quoteContains":"permanent U.S. work authorization"},
+        "degree_fields":{"value":"Computer science or computational biology","quoteContains":"computer science or computational biology"},
+        "methods_named":{"value":"PyTorch and clinical genomic data","quoteContains":"PyTorch models"}
+      }
+    },
+    {
+      "id":"eligibility-unstated", "lane":"immunology", "employer":"Example Microbiome Startup", "title":"Microbiome Research Intern",
+      "rawText":"Join a twelve-week summer research internship studying host-microbiome interactions. Responsibilities include anaerobic culture, 16S sequencing, and R analysis. The position is based in San Diego.",
+      "expected": {
+        "dates":{"value":"12-week summer internship","quoteContains":"twelve-week summer research internship"},
+        "location":{"value":"San Diego","quoteContains":"based in San Diego"},
+        "methods_named":{"value":"Anaerobic culture, 16S sequencing, R","quoteContains":"anaerobic culture"}
+      }
+    },
+    {
+      "id":"named-program", "lane":"neuro", "employer":"Example Brain Institute", "title":"Summer Research Intern",
+      "rawText":"The Neural Discovery Graduate Internship Program accepts master's students. Interns investigate Parkinson's disease using iPSC-derived dopaminergic neurons. The program runs June 14 through August 20, 2027.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students accepted","quoteContains":"accepts master's students"},
+        "program_name":{"value":"Neural Discovery Graduate Internship Program","quoteContains":"Neural Discovery Graduate Internship Program"},
+        "dates":{"value":"June 14-August 20, 2027","quoteContains":"June 14 through August 20, 2027"},
+        "methods_named":{"value":"iPSC-derived dopaminergic neurons","quoteContains":"iPSC-derived dopaminergic neurons"}
+      }
+    },
+    {
+      "id":"gpa-preferred", "lane":"cancer", "employer":"Example Oncology Therapeutics", "title":"Cancer Biology Intern",
+      "rawText":"Master's students are eligible. A cumulative GPA of 3.2 or higher is preferred but not required. The project uses CRISPR knockout screens in leukemia cell lines.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students eligible","quoteContains":"Master's students are eligible"},
+        "gpa_requirement":{"value":"3.2 cumulative preferred, not required","quoteContains":"preferred but not required"},
+        "methods_named":{"value":"CRISPR knockout screens","quoteContains":"CRISPR knockout screens"}
+      }
+    },
+    {
+      "id":"continued-enrollment", "lane":"single_cell", "employer":"Example Cell Science Institute", "title":"Single-Cell Analysis Intern",
+      "rawText":"Applicants must be enrolled full-time in a master's program and must return to the same degree program for at least one academic term after the internship. Work includes Seurat analysis of single-cell RNA-seq data.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students eligible","quoteContains":"master's program"},
+        "enrollment_rule":{"value":"Full-time master's enrollment required","quoteContains":"enrolled full-time"},
+        "return_rule":{"value":"Must return for at least one academic term","quoteContains":"return to the same degree program"},
+        "methods_named":{"value":"Seurat and single-cell RNA-seq","quoteContains":"Seurat analysis"}
+      }
+    },
+    {
+      "id":"relocation-no-housing", "lane":"bioprocess", "employer":"Example Biomanufacturing Company", "title":"Downstream Process Intern",
+      "rawText":"Graduate students may apply. A one-time relocation payment of $2,000 is available to interns living more than 50 miles from the site. Housing is not provided. The role uses chromatography for downstream purification.",
+      "expected": {
+        "masters_eligibility":{"value":"Graduate students eligible","quoteContains":"Graduate students may apply"},
+        "housing_relocation":{"value":"$2,000 relocation payment for interns more than 50 miles away; no housing","quoteContains":"one-time relocation payment of $2,000"},
+        "methods_named":{"value":"Chromatography and downstream purification","quoteContains":"chromatography for downstream purification"}
+      }
+    },
+    {
+      "id":"essay-portfolio", "lane":"data_science", "employer":"Example Biomedical AI Lab", "title":"Biomedical Data Science Intern",
+      "rawText":"Master's students may apply. The application includes a 500-word project essay and a link to a code portfolio. Finalists complete a take-home data exercise. Projects use causal inference with electronic health records.",
+      "expected": {
+        "masters_eligibility":{"value":"Master's students eligible","quoteContains":"Master's students may apply"},
+        "required_materials":{"value":"500-word project essay and code portfolio","quoteContains":"500-word project essay"},
+        "application_steps":{"value":"Take-home data exercise for finalists","quoteContains":"take-home data exercise"},
+        "methods_named":{"value":"Causal inference and electronic health records","quoteContains":"causal inference"}
       }
     }
   ]

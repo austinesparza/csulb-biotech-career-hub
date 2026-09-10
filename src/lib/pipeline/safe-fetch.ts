@@ -98,6 +98,19 @@ export interface SafeFetchResult {
   body: string;
 }
 
+export type SafeFetchResponse = SafeFetchResult | { status: 304; finalUrl: string };
+
+interface InternalFetchOptions {
+  etag?: string | null;
+  lastModified?: string | null;
+  userAgent?: string;
+  /** Only used by a source-specific wrapper after it validates the target. */
+  headers?: Record<string, string>;
+  /** Prevents credentials from following a redirect outside one origin/path. */
+  restrictOrigin?: string;
+  restrictPath?: string;
+}
+
 /**
  * Fetch with redirects followed manually so every hop is revalidated.
  * Sends a club-identifying User-Agent and never attaches credentials.
@@ -105,7 +118,11 @@ export interface SafeFetchResult {
 export async function safeFetch(
   raw: string,
   opts: { etag?: string | null; lastModified?: string | null; userAgent?: string } = {},
-): Promise<SafeFetchResult | { status: 304; finalUrl: string; body: null }> {
+): Promise<SafeFetchResponse> {
+  return safeFetchInternal(raw, opts);
+}
+
+async function safeFetchInternal(raw: string, opts: InternalFetchOptions): Promise<SafeFetchResponse> {
   const ua =
     opts.userAgent ??
     "CSULBBiotechClubHub/1.0 (student resource; contact csubiotechclub@gmail.com)";
@@ -113,7 +130,17 @@ export async function safeFetch(
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const url = await assertUrlAllowed(current);
-    const headers: Record<string, string> = { "User-Agent": ua, Accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.5" };
+    if (
+      (opts.restrictOrigin && url.origin.toLowerCase() !== opts.restrictOrigin) ||
+      (opts.restrictPath && url.pathname.toLowerCase() !== opts.restrictPath)
+    ) {
+      throw new BlockedUrlError(`redirect target ${url.origin}${url.pathname} is not allowed for this authenticated request`, current);
+    }
+    const headers: Record<string, string> = {
+      "User-Agent": ua,
+      Accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.5",
+      ...opts.headers,
+    };
     if (opts.etag) headers["If-None-Match"] = opts.etag;
     if (opts.lastModified) headers["If-Modified-Since"] = opts.lastModified;
 
@@ -131,7 +158,7 @@ export async function safeFetch(
       clearTimeout(timer);
     }
 
-    if (response.status === 304) return { status: 304, finalUrl: url.toString(), body: null };
+    if (response.status === 304) return { status: 304, finalUrl: url.toString() };
 
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get("location");
@@ -154,4 +181,53 @@ export async function safeFetch(
     };
   }
   throw new BlockedUrlError("too many redirects", raw);
+}
+
+export interface UsaJobsCredentials {
+  /** API key issued by developer.usajobs.gov. Keep server-side. */
+  apiKey: string;
+  /** Email used to register the key. USAJOBS requires it as User-Agent. */
+  registeredEmail: string;
+}
+
+function singleLine(value: string, label: string): string {
+  const trimmed = value.trim();
+  if (!trimmed || /[\r\n]/.test(trimmed)) throw new Error(`${label} must be a non-empty single line`);
+  return trimmed;
+}
+
+/**
+ * Source-specific USAJOBS fetcher. Credentials are accepted only for the
+ * documented HTTPS search endpoint and can never follow a cross-host redirect.
+ */
+export function createUsaJobsFetcher(credentials: UsaJobsCredentials) {
+  const apiKey = singleLine(credentials.apiKey, "USAJOBS API key");
+  const registeredEmail = singleLine(credentials.registeredEmail, "USAJOBS registered email");
+
+  return async (
+    raw: string,
+    opts: { etag: string | null; lastModified: string | null },
+  ): Promise<SafeFetchResponse> => {
+    let url: URL;
+    try {
+      url = new URL(raw);
+    } catch {
+      throw new BlockedUrlError("not a valid USAJOBS URL", raw);
+    }
+    if (
+      url.protocol !== "https:" ||
+      url.origin.toLowerCase() !== "https://data.usajobs.gov" ||
+      url.pathname.toLowerCase() !== "/api/search"
+    ) {
+      throw new BlockedUrlError("USAJOBS credentials may only be sent to https://data.usajobs.gov/api/Search", raw);
+    }
+
+    return safeFetchInternal(url.toString(), {
+      ...opts,
+      userAgent: registeredEmail,
+      headers: { "Authorization-Key": apiKey },
+      restrictOrigin: "https://data.usajobs.gov",
+      restrictPath: "/api/search",
+    });
+  };
 }

@@ -13,6 +13,8 @@ import type { Connector, CanonicalPosting, ConnectorResult } from "./types";
 import { toRawText } from "./types";
 
 const str = (v: unknown): string => (v === null || v === undefined ? "" : String(v));
+const uniqueStrings = (values: unknown[]): string[] =>
+  [...new Set(values.map(str).map((value) => value.trim()).filter(Boolean))];
 const iso = (v: unknown): string | null => {
   if (!v) return null;
   const d = new Date(String(v));
@@ -72,23 +74,53 @@ export const ashby: Connector = {
     const { data, warnings } = parseJson(body, "ashby");
     const jobs = (data as { jobs?: unknown[] })?.jobs;
     if (!Array.isArray(jobs)) return { postings: [], warnings: [...warnings, "ashby: no `jobs` array"] };
-    const postings = jobs.map((job): CanonicalPosting => {
+    const postings = jobs.flatMap((job, index): CanonicalPosting[] => {
       const j = job as Record<string, any>;
+      if (j.isListed === false) {
+        warnings.push(`ashby: skipped unlisted job at index ${index}`);
+        return [];
+      }
+      const title = str(j.title).trim();
+      const url = str(j.jobUrl ?? j.applyUrl).trim();
+      if (!title || !url) {
+        warnings.push(`ashby: skipped job at index ${index} without a title or stable URL`);
+        return [];
+      }
+      const secondaryLocations = Array.isArray(j.secondaryLocations)
+        ? j.secondaryLocations.map((location: any) => location?.location)
+        : [];
+      const locations = uniqueStrings([j.location, ...secondaryLocations]);
       // Ashby exposes compensation separately -- one of the few sources that
       // hands you pay range as structured data instead of buried prose.
       const comp = j.compensation?.compensationTierSummary ?? j.compensationTierSummary ?? null;
-      return {
+      return [{
         sourceKind: "ashby",
         employer: ctx.employer,
-        externalId: str(j.id),
-        title: str(j.title),
-        url: str(j.jobUrl ?? j.applyUrl),
-        location: str(j.location),
-        rawText: toRawText([j.title, j.department, j.descriptionHtml ?? j.descriptionPlain, comp ? `Compensation: ${comp}` : null]),
+        // Ashby's public posting schema does not expose a job ID. jobUrl is
+        // the stable public identity supplied by the API.
+        externalId: url,
+        title,
+        url,
+        location: locations.join("; "),
+        rawText: toRawText([
+          title,
+          j.department,
+          locations.length ? `Locations: ${locations.join("; ")}` : null,
+          j.workplaceType ? `Workplace type: ${str(j.workplaceType)}` : null,
+          j.descriptionHtml ?? j.descriptionPlain,
+          comp ? `Compensation: ${comp}` : null,
+        ]),
         postedAt: iso(j.publishedAt),
-        updatedAt: iso(j.updatedAt ?? j.publishedAt),
-        extra: { team: j.team ?? null, employmentType: j.employmentType ?? null, isRemote: j.isRemote ?? null, compensationSummary: comp },
-      };
+        updatedAt: iso(j.publishedAt),
+        extra: {
+          team: j.team ?? null,
+          employmentType: j.employmentType ?? null,
+          isRemote: j.isRemote ?? null,
+          workplaceType: j.workplaceType ?? null,
+          secondaryLocations,
+          compensationSummary: comp,
+        },
+      }];
     });
     return { postings, warnings };
   },
@@ -105,17 +137,43 @@ export const lever: Connector = {
     if (!Array.isArray(data)) return { postings: [], warnings: [...warnings, "lever: expected a top-level array"] };
     const postings = (data as Record<string, any>[]).map((j): CanonicalPosting => {
       const lists = (j.lists ?? []).map((l: any) => `${str(l?.text)}\n${str(l?.content)}`);
+      const locations = uniqueStrings([
+        j.categories?.location,
+        ...(Array.isArray(j.categories?.allLocations) ? j.categories.allLocations : []),
+      ]);
+      const salaryRange = j.salaryRange && typeof j.salaryRange === "object"
+        ? [j.salaryRange.min, j.salaryRange.max, j.salaryRange.currency, j.salaryRange.interval]
+            .filter((value) => value !== null && value !== undefined && value !== "")
+            .map(str)
+            .join(" ")
+        : "";
+      const salary = str(j.salaryDescriptionPlain ?? j.salaryDescription) || salaryRange;
       return {
         sourceKind: "lever",
         employer: ctx.employer,
         externalId: str(j.id),
         title: str(j.text),
         url: str(j.hostedUrl ?? j.applyUrl),
-        location: str(j.categories?.location),
-        rawText: toRawText([j.text, j.descriptionPlain ?? j.description, ...lists, j.additionalPlain ?? j.additional]),
+        location: locations.join("; "),
+        rawText: toRawText([
+          j.text,
+          locations.length ? `Locations: ${locations.join("; ")}` : null,
+          j.workplaceType ? `Workplace type: ${str(j.workplaceType)}` : null,
+          j.descriptionPlain ?? j.description,
+          ...lists,
+          j.additionalPlain ?? j.additional,
+          salary ? `Compensation: ${salary}` : null,
+        ]),
         postedAt: j.createdAt ? new Date(Number(j.createdAt)).toISOString() : null,
         updatedAt: j.updatedAt ? new Date(Number(j.updatedAt)).toISOString() : null,
-        extra: { team: j.categories?.team ?? null, commitment: j.categories?.commitment ?? null, workplaceType: j.workplaceType ?? null },
+        extra: {
+          team: j.categories?.team ?? null,
+          commitment: j.categories?.commitment ?? null,
+          workplaceType: j.workplaceType ?? null,
+          allLocations: locations,
+          salaryRange: j.salaryRange ?? null,
+          salaryDescription: salary || null,
+        },
       };
     });
     return { postings, warnings };

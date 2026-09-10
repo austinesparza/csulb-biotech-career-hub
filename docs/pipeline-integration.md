@@ -83,8 +83,9 @@ recruiting-window sections; it is not a second delivery path.
 1. Apply migration `0011` to a preview database and test RLS with anonymous,
    officer, and service-role clients.
 2. Run each connector against a verified vendor endpoint and record fixtures.
-3. Expand the golden set from 3 postings to at least 30 across all ten lanes,
-   structural restrictions, personal gates, and known false positives.
+3. Preserve the 33-case synthetic extraction contract, then add a distinct set
+   of at least 30 real, officer-labelled postings across all ten lanes. Do not
+   report synthetic-contract scores as evidence of real-world model quality.
 4. Run classification-only against disabled source snapshots and inspect every
    drop reason. Do not enable recurring source fetches yet.
 5. Select an extraction model only after it passes the eval gate with zero

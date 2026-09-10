@@ -134,14 +134,15 @@ provider's free tier used normally. The gateway is for failover, not for quota.
 | Component | File | Tests |
 |---|---|---|
 | Taxonomy | `taxonomy/lanes.yaml` | — |
-| Classifier | `lib/classify.ts` | 31 |
-| Connectors (Greenhouse, Ashby, Lever, USAJOBS, page) | `lib/connectors/` | 52 |
-| Orchestration worker | `lib/worker.ts` | 32 |
-| Eval harness + golden set | `lib/eval/score.ts`, `eval/golden-set.json` | 26 |
+| Classifier | `lib/classify.ts` | 32 |
+| Connectors (Greenhouse, Ashby, Lever, USAJOBS, page) | `lib/connectors/` | 59 |
+| Orchestration worker | `lib/worker.ts` | 37 |
+| Eval harness + golden set | `lib/eval/score.ts`, `eval/golden-set.json` | 40 |
 | Evidence binding | `lib/evidence.ts` | (in security kit) |
 | Database schema | `supabase/migrations/` | — |
 
-`npm test` runs all four suites offline. No network, no API keys, no database.
+`npm run test:pipeline` runs 439 checks across eleven offline suites. No network,
+no API keys, and no database are required.
 
 ## Ports, so nothing is locked in
 
@@ -178,12 +179,17 @@ precision), and lazy all-Unknown (caught by recall).
 
 ## Before first production run
 
-1. Verify each connector's URL against current vendor docs. Paths have been
-   stable for years; a 404 at 3am is a bad time to discover a change.
-2. Get a USAJOBS API key and set the User-Agent to the registered email.
-3. Expand the golden set from 3 cases to ~30 across all lanes. Three is enough to
-   prove the harness works, not enough to trust a model.
-4. Implement `Store` against Supabase using the migration in this kit.
+1. Recheck each connector against current vendor docs during source onboarding.
+   The contracts were last checked on 2026-09-10; a fixture is not proof that a
+   specific employer board identifier is valid.
+2. Get a USAJOBS API key and registration email, keep both in server-only
+   secrets, and inject `createUsaJobsFetcher(...)` for USAJOBS sources. The
+   general `safeFetch` path intentionally never accepts credentials.
+3. The extraction contract now has 33 hand-labelled synthetic cases across all
+   ten lanes and every extraction field. Build a separate corpus of at least 30
+   real, officer-labelled postings before using its scores to gate a model in
+   production; synthetic coverage proves behavior, not real-world validity.
+4. Validate the Supabase `Store` against the preview database and its RLS rules.
 5. Run with `model: null` first — classification only, no spend — and read the
    drop reasons. That tells you whether the taxonomy is right before you pay for
    a single token.
@@ -195,11 +201,12 @@ precision), and lazy all-Unknown (caught by recall).
 | Component | File | Tests |
 |---|---|---|
 | Supabase Store (real implementation of the port) | `lib/store-supabase.ts` | — (needs a live project) |
-| Officer inbox API | `lib/inbox.ts` | 18 |
-| Weekly digest | `lib/digest.ts` | 12 |
-| Publish bridge | `lib/publish-bridge.ts` | 27 |
+| Officer inbox API | `lib/inbox.ts` | covered by the 57-check publish suite |
+| Weekly digest experiment | `lib/digest.ts` | covered by the 57-check publish suite |
+| Publish bridge | `lib/publish-bridge.ts` | covered by the 57-check publish suite |
 
-`npm test` → 198 tests across 5 suites, offline.
+Current local matrix: `npm test` runs 410 application tests across 10 files;
+`npm run test:pipeline` runs 439 pipeline checks across 11 suites.
 
 ## End-to-end verification performed
 
