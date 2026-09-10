@@ -142,3 +142,31 @@ export async function runSourceNow(formData: FormData): Promise<void> {
   await runClaimedFetch({ db, storage: db.storage, claim: run });
   refresh();
 }
+
+export async function testSourceNow(formData: FormData): Promise<void> {
+  await requireOfficer();
+  const db = createServiceClient();
+  const id = field(formData, "id");
+  const { data: source, error: sourceError } = await db.from("job_sources")
+    .select("id, terms_reviewed, terms_review_date, robots_reviewed")
+    .eq("id", id)
+    .maybeSingle();
+  if (sourceError || !source) throw new Error("Source not found.");
+  if (!source.terms_reviewed || !source.terms_review_date || !source.robots_reviewed) {
+    throw new Error("Record both terms and robots review before testing a source.");
+  }
+
+  const { data: run, error } = await db.from("source_fetch_runs").insert({
+    job_source_id: id,
+    trigger_kind: "manual",
+    status: "running",
+    scheduled_for: new Date().toISOString(),
+    started_at: new Date().toISOString(),
+    worker_id: `officer-test:${randomUUID()}`,
+    log_json: { privateTest: true },
+  }).select("id, job_source_id").single();
+  if (error || !run) throw new Error(`Could not start private test: ${error?.message ?? "unknown error"}`);
+
+  await runClaimedFetch({ db, storage: db.storage, claim: run, privateTest: true });
+  refresh();
+}
