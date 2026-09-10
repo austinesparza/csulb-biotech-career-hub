@@ -30,6 +30,7 @@ describe('authentication form safety', () => {
     expect(updatePasswordPage).toContain('Recovery session validation timed out');
     expect(updatePasswordPage).toContain('This reset link could not be validated');
     expect(updatePasswordPage).toContain('Request a new reset link');
+    expect(updatePasswordPage).toContain('Reset link unavailable');
   });
 
   it('signs officers in through a server POST and checks the officer allowlist', () => {
