@@ -3,15 +3,16 @@ import { scoreIngestionCandidate, SCORE_VERSION } from '../../lib/ingestion/scor
 import type { ScoringInput } from '../../lib/ingestion/score';
 
 const BASE_INPUT: ScoringInput = {
-  titleRaw: 'Biotechnology Intern',
-  titleNormalized: 'biotechnology intern',
+  employerName: 'Lab Genomics Inc',
+  titleRaw: 'Bioinformatics Intern',
+  titleNormalized: 'bioinformatics intern',
   locationNormalized: 'long beach, ca',
   department: 'research & development',
   departments: ['Research & Development'],
   classification: 'internship',
   remoteType: 'onsite',
   canonicalUrl: 'https://boards.greenhouse.io/labgenomicsinc/jobs/1001001',
-  descriptionText: 'This is a paid undergraduate internship. Open to juniors and seniors pursuing a bachelor\'s in Biology or Biotechnology.',
+  descriptionText: "Paid genomics internship for students currently enrolled in a master's program. Work includes RNA sequencing and Python analysis.",
   closesAt: '2026-12-01',
   uncertaintyFlags: [],
 };
@@ -51,10 +52,10 @@ describe('scoreIngestionCandidate', () => {
     expect(breakdown.total).toBeGreaterThan(50);
   });
 
-  it('gives positive points for biotech title', () => {
+  it('gives positive points for a canonical scientific lane', () => {
     const breakdown = scoreIngestionCandidate(BASE_INPUT);
     const hasBiotechReason = breakdown.positiveReasons.some(
-      (r) => r.category === 'biotech_relevance',
+      (r) => r.category === 'scientific_relevance',
     );
     expect(hasBiotechReason).toBe(true);
   });
@@ -67,12 +68,13 @@ describe('scoreIngestionCandidate', () => {
     expect(hasRoleReason).toBe(true);
   });
 
-  it('gives positive points for undergrad-accessible description', () => {
+  it("gives positive points for master's-accessible description", () => {
     const breakdown = scoreIngestionCandidate(BASE_INPUT);
-    const hasUndergradReason = breakdown.positiveReasons.some(
-      (r) => r.category === 'undergrad_access',
+    const hasGraduateReason = breakdown.positiveReasons.some(
+      (r) => r.category === 'graduate_access',
     );
-    expect(hasUndergradReason).toBe(true);
+    expect(hasGraduateReason).toBe(true);
+    expect(breakdown.taxonomyClassification.stage.id).toBe('msc_any');
   });
 
   it('penalizes senior/director titles', () => {
@@ -248,13 +250,13 @@ describe('scoreIngestionCandidate SoCal geography safeguards', () => {
 });
 
 // ============================================================
-// UNDERGRAD ELIGIBILITY — student-context phrases only
+// UNDERGRAD-ONLY ELIGIBILITY — never promoted on the graduate board
 // ============================================================
 
-describe('scoreIngestionCandidate undergrad eligibility', () => {
+describe('scoreIngestionCandidate undergrad-only eligibility', () => {
   const undergradBase: ScoringInput = { ...BASE_INPUT, classification: 'internship' };
 
-  it('senior scientist does not receive undergrad bonus', () => {
+  it('senior scientist is not mistaken for an undergraduate stage', () => {
     const input: ScoringInput = {
       ...undergradBase,
       titleRaw: 'Senior Scientist',
@@ -262,37 +264,30 @@ describe('scoreIngestionCandidate undergrad eligibility', () => {
       descriptionText: 'We are hiring a Senior Scientist with 5+ years experience.',
     };
     const breakdown = scoreIngestionCandidate(input);
-    const hasUndergradBonus = breakdown.positiveReasons.some(
-      (r) => r.category === 'undergrad_access' && r.points > 0,
-    );
-    expect(hasUndergradBonus).toBe(false);
+    expect(breakdown.taxonomyClassification.stage.id).not.toBe('undergrad_only');
   });
 
-  it('college junior phrase provides undergrad bonus', () => {
+  it('college junior phrase is classified as undergrad-only and held below threshold', () => {
     const input: ScoringInput = {
       ...undergradBase,
       descriptionText: 'Open to college juniors and seniors.',
     };
     const breakdown = scoreIngestionCandidate(input);
-    const hasUndergradBonus = breakdown.positiveReasons.some(
-      (r) => r.category === 'undergrad_access' && r.points > 0,
-    );
-    expect(hasUndergradBonus).toBe(true);
+    expect(breakdown.taxonomyClassification.stage.id).toBe('undergrad_only');
+    expect(breakdown.total).toBeLessThan(35);
   });
 
-  it('rising senior phrase provides undergrad bonus', () => {
+  it('rising senior phrase is classified as undergrad-only and held below threshold', () => {
     const input: ScoringInput = {
       ...undergradBase,
       descriptionText: 'Perfect for a rising senior studying biology.',
     };
     const breakdown = scoreIngestionCandidate(input);
-    const hasUndergradBonus = breakdown.positiveReasons.some(
-      (r) => r.category === 'undergrad_access' && r.points > 0,
-    );
-    expect(hasUndergradBonus).toBe(true);
+    expect(breakdown.taxonomyClassification.stage.id).toBe('undergrad_only');
+    expect(breakdown.total).toBeLessThan(35);
   });
 
-  it('generic junior job title does not provide undergrad bonus', () => {
+  it('generic junior job title is not treated as an undergraduate stage', () => {
     const input: ScoringInput = {
       ...undergradBase,
       titleRaw: 'Junior Software Engineer',
@@ -301,10 +296,7 @@ describe('scoreIngestionCandidate undergrad eligibility', () => {
       descriptionText: '2+ years of professional software engineering experience required. Strong coding skills needed.',
     };
     const breakdown = scoreIngestionCandidate(input);
-    const hasUndergradBonus = breakdown.positiveReasons.some(
-      (r) => r.category === 'undergrad_access' && r.points > 0,
-    );
-    expect(hasUndergradBonus).toBe(false);
+    expect(breakdown.taxonomyClassification.stage.id).not.toBe('undergrad_only');
   });
 });
 
@@ -356,16 +348,16 @@ describe('scoreIngestionCandidate degree requirements', () => {
     expect(hasDegreePenalty).toBe(false);
   });
 
-  it('"Master\'s required" triggers degree penalty', () => {
+  it('"Master\'s required" does not trigger a degree penalty', () => {
     const input: ScoringInput = { ...degreeBase, descriptionText: "Master's required for this role." };
     const breakdown = scoreIngestionCandidate(input);
-    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req' && r.points < 0)).toBe(true);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req' && r.points < 0)).toBe(false);
   });
 
-  it('"MS required" triggers degree penalty', () => {
+  it('"MS required" does not trigger a degree penalty', () => {
     const input: ScoringInput = { ...degreeBase, descriptionText: 'MS required for this role.' };
     const breakdown = scoreIngestionCandidate(input);
-    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req' && r.points < 0)).toBe(true);
+    expect(breakdown.negativeReasons.some((r) => r.category === 'degree_req' && r.points < 0)).toBe(false);
   });
 
   it('"BS or MS required" does NOT trigger degree penalty', () => {

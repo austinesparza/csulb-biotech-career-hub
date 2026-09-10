@@ -258,7 +258,7 @@ export interface ScoreReason {
  * version must always match the relevanceScoreVersion on the posting.
  */
 export interface ScoreBreakdown {
-  /** Score version (positive integer). Currently 1. */
+  /** Score version (positive integer). Currently 2. */
   version: number;
   /** Clamped final score: 0–100. */
   total: number;

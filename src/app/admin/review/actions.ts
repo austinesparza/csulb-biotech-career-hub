@@ -10,6 +10,18 @@ const PUBLISHABLE_STAGES: GraduateStage[] = [
   'msc_year_1', 'msc_year_2', 'msc_any', 'mixed_graduate', 'graduate_unspecified',
 ];
 
+export interface ReviewFinalFields {
+  scientificLanes: string[];
+  jobFunctions: string[];
+  methods: string[];
+}
+
+function cleanControlledValues(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))]
+    .filter((value) => value.length <= 100)
+    .slice(0, 50);
+}
+
 function revalidatePublic() {
   revalidatePath('/');
   revalidatePath('/internships');
@@ -30,6 +42,7 @@ export async function approveOpportunity(input: {
   audienceBucket: AudienceBucket;
   audienceReason: string;
   graduateStage: GraduateStage;
+  finalFields: ReviewFinalFields;
   sourceConfirmed: boolean;
   publicSafeConfirmed: boolean;
 }): Promise<void> {
@@ -54,7 +67,7 @@ export async function approveOpportunity(input: {
 
   const { data: opp } = await db
     .from('opportunities')
-    .select('id, company_id, scientific_lanes, job_functions, methods')
+    .select('id')
     .eq('id', input.id)
     .single();
   if (!opp) throw new Error('Opportunity not found');
@@ -70,9 +83,9 @@ export async function approveOpportunity(input: {
     p_audience_reason: audienceReason,
     p_graduate_stage: input.graduateStage,
     p_final_fields: {
-      scientific_lanes: opp.scientific_lanes ?? [],
-      job_functions: opp.job_functions ?? [],
-      methods: opp.methods ?? [],
+      scientific_lanes: cleanControlledValues(input.finalFields.scientificLanes),
+      job_functions: cleanControlledValues(input.finalFields.jobFunctions),
+      methods: cleanControlledValues(input.finalFields.methods),
     },
     p_source_confirmed: input.sourceConfirmed,
     p_public_safe_confirmed: input.publicSafeConfirmed,

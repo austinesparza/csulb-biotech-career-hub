@@ -185,6 +185,27 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const finalFields = useMemo(() => {
+    const classification = row.extraction?.classification;
+    const scientificLanes = (classification?.lanes ?? [])
+      .map((lane) => lane.label.trim())
+      .filter(Boolean);
+    const jobFunctions = (classification?.functions ?? [])
+      .map((jobFunction) => jobFunction.label.trim())
+      .filter(Boolean);
+    const methods = Object.values(classification?.methods ?? {})
+      .flat()
+      .map((method) => method.trim())
+      .filter(Boolean);
+    const unique = (values: string[]) => [...new Set(values)];
+
+    return {
+      scientificLanes: unique(scientificLanes.length > 0 ? scientificLanes : row.scientific_lanes),
+      jobFunctions: unique(jobFunctions.length > 0 ? jobFunctions : row.job_functions),
+      methods: unique(methods.length > 0 ? methods : row.methods),
+    };
+  }, [row]);
+
   const audienceReady = audienceBucket !== 'unknown' && audienceReason.trim().length >= 8;
   const canApprove = sourceConfirmed && publicSafeConfirmed && audienceReady
     && ['graduate', 'mixed'].includes(audienceBucket)
@@ -264,7 +285,7 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
           try {
             await approveOpportunity({
               id: row.id, status, publicNotes, makeCompanyPublic: !(row.companies?.public_safe ?? false),
-              audienceBucket, audienceReason, graduateStage, sourceConfirmed, publicSafeConfirmed,
+              audienceBucket, audienceReason, graduateStage, finalFields, sourceConfirmed, publicSafeConfirmed,
             });
             setDone('approved and published');
           } catch (caught) { setError(caught instanceof Error ? caught.message : 'Approval failed'); }

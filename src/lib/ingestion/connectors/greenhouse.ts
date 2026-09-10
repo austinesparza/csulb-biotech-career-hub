@@ -349,11 +349,9 @@ export function normalizeGreenhouseJob(
   const employmentType: string | null = null;
   flags.push('employment_type_missing');
 
-  // --- Focus area ---
-  const focusArea = inferFocusArea(titleRaw, descriptionText);
-
   // --- Score ---
   const scoreBreakdown = scoreIngestionCandidate({
+    employerName: employerNameRaw,
     titleRaw,
     titleNormalized,
     locationNormalized,
@@ -366,6 +364,13 @@ export function normalizeGreenhouseJob(
     closesAt,
     uncertaintyFlags: flags,
   });
+
+  // --- Focus area ---
+  // Preserve the legacy field while deriving it from the same canonical
+  // graduate taxonomy used for scoring. The old heuristic remains a fallback
+  // for broad bioscience records that need officer review.
+  const focusArea = scoreBreakdown.taxonomyClassification.lanes[0]?.label
+    ?? inferFocusArea(titleRaw, descriptionText);
 
   // --- Material hash ---
   // Normalized description text is included in the hash so meaningful text

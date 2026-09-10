@@ -178,7 +178,8 @@ graduate_stage:
       - "must be an undergraduate"
       - "undergraduate students only"
       - "rising (junior|senior)"
-      - "pursuing a bachelor'?s? degree$"
+      - "college (juniors?|seniors?)"
+      - "pursuing a bachelor'?s? degree([,.;:]| in | with | and | or |$)"
       - "bachelor'?s? degree only"
     eligible: false
   - id: phd_only
@@ -215,7 +216,7 @@ graduate_stage:
       - "\\bm\\.?s\\.?c?\\b"
       - "graduate students?"
       - "bachelor'?s?,? (or|and) master'?s?"
-      - "pursuing (a |an )?(bachelor|master|advanced) degree"
+      - "pursuing (a |an )?(master|advanced) degree"
     eligible: true
   - id: postbac_stage
     label: Post-baccalaureate stage

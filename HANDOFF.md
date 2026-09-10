@@ -26,7 +26,36 @@
 - Officer transition: add new officers (Supabase Auth invite + `officers` insert), deactivate departed (`is_active=false`), rotate shared credentials, walk through this file together.
 
 ## How things work (30-second version)
-Spreadsheet CSV → import (nothing public, source required) → officer review (approve + public-safe) → student board. Once published, imports can't change a listing — you'll get a task instead. Private notes and raw import rows never appear publicly — enforced by the database, not by carefulness.
+Listings can enter through the spreadsheet, the public submission form, or an
+officer-approved automated source. Every fetch is retained as an immutable source
+version. The graduate classifier suggests scientific lanes, job functions,
+methods, degree stage, and access restrictions. Extraction may suggest facts only
+when each asserted value has a verbatim quote in the stored source text. Nothing
+becomes public until an officer opens the source, confirms the public-safe fields,
+and approves the review card. Once published, later imports or fetches create a
+review task instead of silently changing the listing.
+
+Private notes, submitter contact information, raw source text, and unapproved
+model output never appear on the public board. The database policies and atomic
+review function enforce that separation.
+
+## Developer checks
+
+Run the complete matrix before pushing pipeline or review changes:
+
+```bash
+npm run typecheck
+npm run lint
+npm test
+npm run test:pipeline
+npm run test:digest
+npm run test:schema
+npm run build
+```
+
+If a skill installed with `npx skills add` is present under `.agents/skills/` but
+Claude Code cannot see it, link that skill into `.claude/skills/`. Do not copy a
+second independent version.
 
 ## Common fixes
 - **Bad record on the public board:** `/admin/review` → find it → Hide. Instant, no deploy.
