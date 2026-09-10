@@ -1,12 +1,14 @@
 import 'server-only';
 import { createClient } from '@supabase/supabase-js';
 import type { PublicSubmission } from '@/lib/submissions';
+import { assertPrivilegedRuntimeAllowed } from './runtime-safety';
 
 /**
  * Narrow server-side capability for public intake. The service credential never
  * reaches the browser, and this module exposes only the rate-limited database RPC.
  */
 export async function storePublicSubmission(input: PublicSubmission): Promise<void> {
+  assertPrivilegedRuntimeAllowed();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error('Submission service is not configured');

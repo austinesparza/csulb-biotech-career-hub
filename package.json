@@ -16,6 +16,7 @@
     "test:digest": "node --test scripts/review-digest.test.mjs",
     "test:publish-data": "node --test scripts/publish-reviewed-data.test.mjs",
     "test:schema": "node scripts/check-pipeline-schema.mjs",
+    "ops:doctor": "node --conditions=react-server --import tsx scripts/ops-doctor.ts",
     "tools:install": "node scripts/tools/install.mjs",
     "tools:check": "node scripts/tools/check.mjs",
     "graphify:build": ".tools/graphify/bin/graphify extract . --code-only --no-cluster --out .",

@@ -6,6 +6,7 @@
  * versions. It does not create a second source, candidate, or publication store.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { assertPrivilegedRuntimeAllowed } from '@/lib/supabase/runtime-safety';
 import type { Classification } from './classify';
 import type { ExtractedField } from './evidence';
 
@@ -49,6 +50,7 @@ export function createPipelineServiceClient(
   url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL,
   key = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY,
 ): SupabaseClient {
+  assertPrivilegedRuntimeAllowed();
   return createClient(required('SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL', url), required('SUPABASE_SECRET_KEY', key), {
     auth: { persistSession: false },
     global: { headers: { 'x-client-info': 'csulb-hub-extraction-worker' } },

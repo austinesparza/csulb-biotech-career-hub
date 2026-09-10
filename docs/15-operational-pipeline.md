@@ -158,6 +158,7 @@ Recommended activation sequence:
 ## Commands
 
 ```bash
+npm run ops:doctor
 npm run tools:install
 npm run tools:install -- --browser
 npm run tools:check
@@ -166,5 +167,16 @@ npm run omniroute:start
 npm run ingest:worker
 PIPELINE_MODEL_ENABLED=true PIPELINE_MODEL_NAME=auto npm run extract:worker
 ```
+
+Run `npm run ops:doctor` before migration rollout, after changing production
+environment variables, and after credential rotation. It reads `.env.local`
+through Next.js, verifies the required schema, reads the bounded Sheet range,
+and confirms the fixed provenance record. It never prints credential values or
+changes data. A failed check blocks rollout; model extraction is only a warning.
+
+Vercel preview deployments must not receive `SUPABASE_SECRET_KEY` or the legacy
+service-role variable. Production-only scoping is enforced again at runtime, so
+an accidental preview secret cannot be used by admin actions, public intake, or
+pipeline workers.
 
 The ingestion and extraction commands require service-role database credentials. They should run only in a private worker environment. They are not browser commands and are not enabled by installing the packages.
