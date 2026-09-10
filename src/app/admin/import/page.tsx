@@ -26,6 +26,14 @@ export default async function ImportPage() {
         are flagged for review instead.
       </p>
       </div>
+      <aside className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950" style={{ border: '1px solid #f3d38a' }}>
+        <p className="font-semibold">Sheet approval is not website approval</p>
+        <p className="mt-1">
+          Publish Decision and Public Safe cells are preserved as officer workspace notes,
+          but they cannot publish a record. Sync first, then approve the private draft in
+          the signed-in review queue. The public site updates as soon as that approval succeeds.
+        </p>
+      </aside>
       {googleSheetsConfigured() ? <SheetSync /> : <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
         Direct Google Sheet sync is not configured. CSV upload remains available below.
       </div>}
