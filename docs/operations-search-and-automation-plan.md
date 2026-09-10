@@ -1,6 +1,6 @@
 # Operations and search plan
 
-Status: code audit, implemented worker foundation, and rollout plan, September 10, 2026
+Status: reconciled with production after the governed ingestion rollout, September 10, 2026. For the concise current runbook, use `docs/15-operational-pipeline.md` and `HANDOFF.md`.
 
 This document describes what the Graduate Internship Hub does today, where the current workflow stops, and how to build a reliable search and officer-review system without letting automation publish unverified claims.
 
@@ -10,7 +10,10 @@ The public product is for graduate internships. The first target audience is CSU
 
 Undergraduate opportunities may be supported later with a separate model. They should not shape the current ranking, copy, or public filters.
 
-This is a repository-level audit. It verifies migrations, application code, scripts, and GitHub workflows. It does not inspect private production rows in Supabase. Migration `0007_opportunity_audience.sql` was separately confirmed in the production SQL editor.
+This began as a repository-level audit and design plan. The repository migration
+is `supabase/migrations/0007_opportunity_audience.sql`; production migration
+history records the same change as
+`20260910072453_reconcile_opportunity_audience`.
 
 ## What works now
 
@@ -21,12 +24,12 @@ This is a repository-level audit. It verifies migrations, application code, scri
 | Officer quick add | `/admin/add` creates an opportunity in `needs_review` | Working |
 | CSV import | Stores raw rows, normalizes, deduplicates, scores, and queues new records for review | Working manual path |
 | Officer review | Officers edit, approve, reject, or hide `opportunities` in `needs_review` | Working for opportunity records |
-| GitHub publication | Reviewed JSON merged to `main` is validated and written to Supabase | Working, but overlaps the database workflow |
-| Weekly email | Monday GitHub Action emails the `needs_review` opportunity queue | Working for one queue only |
-| Source ingestion | A manual worker now claims queued Greenhouse and governed public-page runs, archives payloads, and uses the existing persistence bridge | Implemented, not enabled |
+| GitHub staging | Reviewed JSON is validated and staged as private drafts or change tasks | Working; it cannot approve or publish |
+| Weekly email | Monday GitHub Action summarizes private review work when production mail configuration is valid | Implemented; delivery acceptance remains manual |
+| Source ingestion | Daily authenticated Vercel orchestration claims bounded Greenhouse and governed public-page runs and archives payloads | Deployed; zero production machine sources are configured |
 | Fetch fallbacks | Scrapling and ScrapeGraphAI are wired as fetch-only public-page tiers | Implemented, disabled by default |
 | Extraction | An OmniRoute-compatible worker writes quote-bound private extraction records | Implemented, disabled by default |
-| Scheduled discovery | No production schedule calls the workers | Not active |
+| Scheduled orchestration | Daily ingestion and weekly health routes are deployed with fail-closed authorization | Active but intentionally idle with zero enabled sources; no search provider is connected |
 
 The public safety boundary is sound: an opportunity is visible only after it is approved and marked public-safe. Anonymous visitors can submit records but cannot read private submissions.
 
@@ -37,14 +40,14 @@ The public safety boundary is sound: an opportunity is visible only after it is 
 | Done | `/admin/review?tab=submissions` handles new/in-review submissions | Suggestions enter the staffed review path | Monitor volume and officer response time |
 | Done | Weekly email includes pending opportunities and submissions | Officers receive one combined reminder | Add changed/stale task summaries after usage validates the format |
 | Done | Graduate relevance scorer and versioned taxonomy replace the undergraduate-first logic | Stage, lane, method, and structural gates are separate | Continue evaluation on real records |
-| Done | Manual ingestion and extraction runners exist | Queue items can be claimed and archived without publishing | Validate against a preview database before scheduling |
-| P1 | `FOCUS_AREAS` mixes scientific domains and job functions | The filter says scientific lane but contains QA, sales, legal, and finance | Split scientific lane, job function, methods, and eligibility |
-| P1 | GitHub JSON and Supabase review are two publication paths | Officers can be unsure where to edit a record | Make Supabase the record source of truth; keep GitHub for code, configuration, prompts, and evaluations |
-| P1 | `audience_bucket` reflects the older broad product | It does not answer whether a first- or second-year MSc can apply | Add graduate-stage and evidence fields; retain the old field only during migration |
-| P1 | About copy says automation surfaces roles | Discovery automation is not active | Describe the actual officer-reviewed process until the worker is live |
+| Done | Manual ingestion and extraction runners exist | Queue items can be claimed and archived without publishing | Validate a reviewed source through the private production test before enabling it |
+| Done | Public filters use scientific-lane suggestions; job functions and methods remain separate | The public label now matches the controlled suggestions | Continue migrating legacy `focus_area` values during review |
+| Done | GitHub JSON is a staging utility, not a publication path | Supabase officer review is the operational source of truth | Keep the workflow manual and staging-only |
+| Done | Graduate stage, eligibility status, and evidence fields supplement `audience_bucket` | Officers can state whether the intended MSc audience qualifies | Continue requiring role-level evidence |
+| Done | About copy describes the actual officer-reviewed process | Public claims match current operations | Update only when a governed discovery source is enabled |
 | P2 | No quality evaluation set exists for search or extraction | A score can look plausible while missing whole lanes | Maintain labeled true-positive, false-positive, and ambiguous examples by lane |
-| P2 | No source-health alert covers failed or stale feeds | Silent connector failure can look like a quiet hiring week | Report last success, item count changes, errors, and stale sources |
-| P2 | `HANDOFF.md` conflicts with newer ingestion plans | One document forbids automatic external retrieval while newer docs design it | Replace the blanket ban with an allowlisted, terms-reviewed source policy |
+| Done | Weekly health orchestration creates deduplicated source-health and stale-record tasks | Silent failures enter officer review | Verify the first real source-health event after activation |
+| Done | `HANDOFF.md` uses an allowlisted, terms-reviewed source policy | The operator rules match the deployed controls | Keep uncertain or prohibited sources manual |
 
 ## Current paths
 
@@ -89,7 +92,8 @@ This path is useful as a controlled batch loader, but it should not remain a sec
 2. It reads `opportunities` with `status = needs_review`.
 3. It sends a Gmail message only when records are waiting.
 
-The club mailbox is intentionally excluded during development. The workflow currently sends only to the configured personal recipient.
+The club mailbox is intentionally excluded during development. Acceptance must
+use exactly one configured personal recipient before any shared recipient is added.
 
 ### Source ingestion foundation
 
@@ -103,7 +107,9 @@ The database and code can represent:
 - source-to-opportunity links;
 - review tasks created from new or changed postings.
 
-The Greenhouse connector is defensive and extensively tested, but no command, worker, Edge Function, or GitHub workflow currently calls it in production.
+The Greenhouse connector is defensive and extensively tested. The authenticated
+daily Vercel route calls the bounded worker, but production currently has zero
+configured sources, so it performs no external fetches.
 
 ## Target pipeline
 
@@ -131,10 +137,10 @@ The stages have different responsibilities:
 
 ## Submission workflow
 
-Build this before adding a spreadsheet:
+The implemented flow is:
 
-1. Add `/admin/submissions`.
-2. Show the original URL, submitter note, and private contact fields.
+1. Use `/admin/review?tab=submissions` for the private submission queue.
+2. Show the original URL, submitter note, and private contact fields only to officers.
 3. Let an officer claim a row and mark obvious spam or duplicates.
 4. Fetch the official page through an approved retrieval method.
 5. Generate a structured draft. Keep the original input beside it.
@@ -410,9 +416,11 @@ Hard restrictions are classifications, not large negative scores. A doctoral-onl
 
 ## Recurring searches
 
-### Recommended runtime
+### Current runtime
 
-Use Supabase Cron to create scheduled jobs and invoke a Supabase Edge Function or database function. Supabase Cron records runs in Postgres and can make HTTP requests to Edge Functions. See [Supabase Cron](https://supabase.com/docs/guides/cron).
+The deployed low-volume runtime uses two authenticated Vercel Cron routes. Run
+state, payload metadata, source health, and review work are recorded in Postgres.
+Supabase Cron remains a possible future alternative, not a second active scheduler.
 
 GitHub Actions should continue to run CI, controlled publication utilities, and the weekly email. It is acceptable for a low-stakes digest, but GitHub documents that scheduled workflows may be delayed or even dropped during high load. It should not be the only scheduler for source monitoring. See [GitHub scheduled workflow behavior](https://docs.github.com/actions/using-workflows/events-that-trigger-workflows#schedule).
 
