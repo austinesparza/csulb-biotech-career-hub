@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
+import { readImplicitRecoverySession } from '@/lib/recovery-session';
 import { createClient } from '@/lib/supabase/client';
 
 const SESSION_CHECK_TIMEOUT_MS = 8_000;
@@ -32,22 +33,23 @@ export default function UpdatePasswordPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Read and remove implicit-flow credentials before constructing the SSR
+    // client. The SSR client is PKCE-only and would reject this callback shape.
+    const implicitSession = readImplicitRecoverySession(window.location.hash);
+    if (implicitSession) {
+      window.history.replaceState(window.history.state, '', '/auth/update-password');
+    }
     const supabase = createClient();
     let active = true;
 
     async function establishRecoverySession() {
       try {
-        const code = new URLSearchParams(window.location.search).get('code');
-        if (code) {
-          const { error: exchangeError } = await withTimeout(supabase.auth.exchangeCodeForSession(code));
-          if (exchangeError) {
-            if (active) setError('This reset link is invalid or expired. Request a new link.');
-            return;
-          }
-          window.history.replaceState({}, '', '/auth/update-password');
-        }
-
-        const { data, error: sessionError } = await withTimeout(supabase.auth.getSession());
+        const { data, error: sessionError } = implicitSession
+          ? await withTimeout(supabase.auth.setSession({
+              access_token: implicitSession.accessToken,
+              refresh_token: implicitSession.refreshToken,
+            }))
+          : await withTimeout(supabase.auth.getSession());
         if (!active) return;
         if (sessionError || !data.session) {
           setError('This reset link is invalid or expired. Request a new link.');

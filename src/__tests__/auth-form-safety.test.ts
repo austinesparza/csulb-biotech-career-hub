@@ -33,6 +33,13 @@ describe('authentication form safety', () => {
     expect(updatePasswordPage).toContain('Reset link unavailable');
   });
 
+  it('accepts implicit recovery links without leaving tokens in the address bar', () => {
+    expect(updatePasswordPage).toContain('readImplicitRecoverySession(window.location.hash)');
+    expect(updatePasswordPage).toContain('supabase.auth.setSession');
+    expect(updatePasswordPage).toContain("'/auth/update-password'");
+    expect(updatePasswordPage).not.toContain('console.log');
+  });
+
   it('signs officers in through a server POST and checks the officer allowlist', () => {
     expect(loginPage).toContain('action="/api/auth/login"');
     expect(loginPage).not.toContain("'use client'");
