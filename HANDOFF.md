@@ -18,6 +18,8 @@
 5. Check new submissions and any "import changed" tasks (a re-import found differences on an already-published listing — apply manually or dismiss).
 6. Check the configured private review inbox for "Career Hub:" subject lines.
    During development, this must be one officer's personal address, not the club mailbox.
+7. `/admin/sources`: leave new sources disabled, record terms and robots review,
+   then use **Test privately**. Inspect the marked run and evidence before enabling scheduling.
 
 ## Monthly
 - `/admin` → Export approved CSV → save to the club backup location.
@@ -69,6 +71,10 @@ second independent version.
 - **Sheet sync says it is not configured:** verify all five `GOOGLE_*` server variables, confirm the source UUID exists, and confirm the service-account email has Viewer access to only the intended workbook.
 - **Sheet sync reads the wrong columns:** keep the intake headers aligned with `HEADER_ALIASES` and the configured bounded range. Never map `Publish Decision` or `Public Safe?` into the importer.
 - **Site seems down:** free-tier Supabase pauses after inactivity; open the Supabase dashboard and restore. Vercel status: check the deployments tab.
+- **Officer sign-in fails:** use `/auth/forgot-password`, follow the newest email,
+  then return to `/admin/login`. The account must also have an active row in `officers`.
+- **Cron route returns 401:** confirm `CRON_SECRET` is at least 32 characters and
+  is scoped to Production. Never put it in a URL or a public environment variable.
 - **Mentor asks to be removed:** people table → `public_safe=false`, note it in `consent_notes`. Done.
 
 ## Rules that keep us out of trouble
