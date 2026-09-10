@@ -42,7 +42,7 @@ flowchart TD
 | Officer decision | `/admin/review` plus atomic `decide_opportunity_review` | Working after migration 0011 |
 | Public board | `public_opportunities` read by the dynamic `/internships` route | Working after migration 0011 |
 | Source scheduling | Two authenticated Vercel cron routes plus idempotent queue RPCs | Deployed; safely processes zero sources until officers enable one |
-| Direct Google Sheet sync | Fixed file/range, read-only service account, existing CSV import path | Configured in production; first officer-triggered sync not yet proven |
+| Direct Google Sheet sync | Fixed file/range, read-only service account, existing CSV import path | Production configuration exists; no `import_runs` row yet proves a completed sync |
 | Integration status | `/admin/integrations` reports each durable handoff | Implemented |
 
 ## Receive and archive rules
@@ -156,7 +156,7 @@ Recommended activation sequence:
 5. Test approve, archive, reject, and changed-approved behavior with officer and anonymous clients.
 6. Enable that reviewed source at low frequency.
 7. Add a scheduler only after two clean weeks and a source-health alert.
-8. Configure direct Sheet sync only after the app review queue has become the officers' normal workspace; run a preview sync before production.
+8. Configure direct Sheet sync only after the app review queue has become the officers' normal workspace. Then run one bounded, officer-triggered production sync and inspect the private archive and review queue before making it routine. Keep privileged secrets out of Preview.
 
 ## Security-advisor disposition
 

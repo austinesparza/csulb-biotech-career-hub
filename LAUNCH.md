@@ -40,12 +40,14 @@ Work top to bottom. Check each box. Details live in docs/07-deployment.md; this 
 ## Phase 4: Real data (~30 min)
 
 - [ ] Sign in at `/admin/login`
-- [ ] Export the club internship sheet as CSV
-- [ ] `/admin/import` → source: Club Internship Spreadsheet → upload
+- [ ] `/admin/import` → run one bounded **Sync from Google Sheet** test. If the
+      direct connection is unavailable, export the tab as CSV, select **Club
+      Internship Spreadsheet**, and upload it instead.
 - [ ] Read the import summary: errors and ignored columns tell you what the sheet
       needs (or what `HEADER_ALIASES` needs)
 - [ ] `/admin/review` → work the queue: open each link, set notes, approve/reject
-- [ ] Delete the demo row (it says so in its title)
+- [x] Confirm no demo row remains. The production public view currently contains
+      four reviewed opportunity records and no demo-titled record.
 - [ ] Check `/internships` as a logged-out student on your phone
 
 ## Phase 5: Announce (~10 min)

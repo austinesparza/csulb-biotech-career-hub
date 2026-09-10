@@ -14,7 +14,7 @@ The rule that resolves every case: **Sheet changes create review tasks. They nev
 | Approved export | App-generated, public-safe records only | App export only |
 | Semester archive | Frozen historical record per semester | App export; officers do not edit |
 
-## Intake flow (implemented, pending preview configuration)
+## Intake flow (implemented, awaiting the first private production sync)
 
 ```
 Club Google Sheet (raw intake tab)
@@ -45,6 +45,9 @@ Exports read `public_opportunities` (the public view), so an export physically c
 2. Share only the officer workbook with the service-account email as Viewer.
 3. Configure `GOOGLE_SHEETS_SPREADSHEET_ID`, `GOOGLE_SHEETS_RANGE`, `GOOGLE_SHEETS_SOURCE_RECORD_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, and `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` in the protected deployment environment.
 4. Use a bounded range such as `'Review Queue'!A1:Z500`.
-5. Run one preview sync and inspect `import_runs`, `raw_import_rows`, created drafts, and change tasks before production configuration.
+5. From an authenticated officer session, run one bounded production sync and
+   inspect `import_runs`, `raw_import_rows`, created drafts, and change tasks.
+   This is a private intake test and cannot publish. Privileged preview execution
+   remains blocked intentionally, so do not put the service key in Preview.
 
 If direct sync is unavailable, export the tab as CSV and upload it at `/admin/import`. Both paths invoke the same importer and trust model.
