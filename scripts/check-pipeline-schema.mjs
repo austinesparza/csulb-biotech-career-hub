@@ -46,6 +46,13 @@ if (!/drop\s+policy\s+if\s+exists\s+anon_insert_submissions/i.test(sql)
 if (!/create\s+or\s+replace\s+function\s+public\.accept_public_submission/i.test(sql)) {
   failures.push('bounded public submission RPC is missing');
 }
+if (!/create\s+table(?:\s+if\s+not\s+exists)?\s+public\.discovery_leads\b/i.test(sql)
+    || !/create\s+table(?:\s+if\s+not\s+exists)?\s+public\.discovery_lead_observations\b/i.test(sql)) {
+  failures.push('private lossless discovery-lead archive is missing');
+}
+if (!/create\s+or\s+replace\s+function\s+public\.archive_discovery_lead/i.test(sql)) {
+  failures.push('service-only discovery lead archive RPC is missing');
+}
 if (!/set\s+graduate_stage\s*=\s*'graduate_unspecified'/i.test(sql)) {
   failures.push('graduate-stage backfill is missing');
 }

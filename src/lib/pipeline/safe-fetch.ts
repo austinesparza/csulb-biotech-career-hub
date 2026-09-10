@@ -56,7 +56,7 @@ export function isBlockedIp(ip: string): boolean {
   return true; // unparseable -> block
 }
 
-async function assertUrlAllowed(raw: string): Promise<URL> {
+export async function assertSafePublicUrl(raw: string): Promise<URL> {
   let url: URL;
   try {
     url = new URL(raw);
@@ -129,7 +129,7 @@ async function safeFetchInternal(raw: string, opts: InternalFetchOptions): Promi
   let current = raw;
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    const url = await assertUrlAllowed(current);
+    const url = await assertSafePublicUrl(current);
     if (
       (opts.restrictOrigin && url.origin.toLowerCase() !== opts.restrictOrigin) ||
       (opts.restrictPath && url.pathname.toLowerCase() !== opts.restrictPath)

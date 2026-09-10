@@ -15,7 +15,19 @@
     "test:pipeline": "tsx src/__tests__/pipeline/all.ts",
     "test:digest": "node --test scripts/review-digest.test.mjs",
     "test:publish-data": "node --test scripts/publish-reviewed-data.test.mjs",
-    "test:schema": "node scripts/check-pipeline-schema.mjs"
+    "test:schema": "node scripts/check-pipeline-schema.mjs",
+    "tools:install": "node scripts/tools/install.mjs",
+    "tools:check": "node scripts/tools/check.mjs",
+    "graphify:build": ".tools/graphify/bin/graphify extract . --code-only --no-cluster --out .",
+    "graphify:update": ".tools/graphify/bin/graphify update . --no-cluster",
+    "graphify:check": ".tools/graphify/bin/graphify diagnose multigraph --json",
+    "graphify:query": ".tools/graphify/bin/graphify query",
+    "omniroute:version": ".tools/omniroute/node_modules/.bin/omniroute --version",
+    "omniroute:start": ".tools/omniroute/node_modules/.bin/omniroute serve --no-open --daemon",
+    "omniroute:doctor": ".tools/omniroute/node_modules/.bin/omniroute doctor",
+    "omniroute:stop": ".tools/omniroute/node_modules/.bin/omniroute stop",
+    "ingest:worker": "node --conditions=react-server --import tsx scripts/run-ingestion-worker.ts",
+    "extract:worker": "node --conditions=react-server --import tsx scripts/run-extraction-worker.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",

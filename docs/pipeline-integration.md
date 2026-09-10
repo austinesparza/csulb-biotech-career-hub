@@ -78,16 +78,31 @@ recruiting-window sections; it is not a second delivery path.
 - The branch does not apply migrations or enable a source. Those are separate
   rollout decisions against a preview database first.
 
+## Operational wiring now present
+
+- `scripts/run-ingestion-worker.ts` claims the existing queue and processes
+  governed Greenhouse sources. Static or schema.org program pages can use the
+  conditional GET, Scrapling, and ScrapeGraphAI fetch chain.
+- `scripts/run-extraction-worker.ts` reads immutable versions through the
+  existing inbox RPC and writes evidence-bound private extraction records.
+- Both commands are manual and unscheduled. Installing tooling does not enable
+  a source, apply a migration, or publish a record.
+- See `docs/15-operational-pipeline.md` for the exact Sheet, LinkedIn, archive,
+  officer-review, and website flow.
+
 ## Remaining work before a live extraction run
 
-1. Apply migration `0011` to a preview database and test RLS with anonymous,
-   officer, and service-role clients.
+1. Apply migrations `0011` through `0013` to a preview database and test RLS
+   with anonymous, officer, and service-role clients.
 2. Run each connector against a verified vendor endpoint and record fixtures.
+   Only Greenhouse and generic public-page retrieval are wired into the live
+   runner today.
 3. Preserve the 33-case synthetic extraction contract, then add a distinct set
    of at least 30 real, officer-labelled postings across all ten lanes. Do not
    report synthetic-contract scores as evidence of real-world model quality.
 4. Run classification-only against disabled source snapshots and inspect every
-   drop reason. Do not enable recurring source fetches yet.
+   routing and archive reason. Nothing is deleted for a low score. Do not enable
+   recurring source fetches yet.
 5. Select an extraction model only after it passes the eval gate with zero
    fabrications, at least 0.95 precision on critical fields, and at least 0.70
    recall on the expanded set.
