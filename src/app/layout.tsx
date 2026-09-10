@@ -45,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="mono" style={{ textAlign: 'right' }}>
               <Link href="/privacy">Privacy</Link><br />
               <Link href="/submit">Report a change</Link><br />
+              <Link href="/admin">Officer portal</Link><br />
               <a href={mailto(CLUB_LINKS.emailSubjectReport)}>Contact the club</a>
             </div>
           </div>

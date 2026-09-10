@@ -237,12 +237,17 @@ export function defaultConnector(source: RunnableJobSource, context: { db: Supab
   return fetchGreenhouseJobs({ boardToken });
 }
 
-function governanceFailure(source: RunnableJobSource): ConnectorFetchResult | null {
-  if (!source.enabled) return failure(source, "source is disabled");
-  if (!source.terms_reviewed || !source.terms_review_date) return failure(source, "source terms review is incomplete");
-  if (!source.robots_reviewed) return failure(source, "source robots review is incomplete");
-  if (source.automatic_scheduling_paused_at) return failure(source, "source scheduling is paused");
+export function sourceGovernanceError(source: RunnableJobSource, privateTest = false): string | null {
+  if (!privateTest && !source.enabled) return "source is disabled";
+  if (!source.terms_reviewed || !source.terms_review_date) return "source terms review is incomplete";
+  if (!source.robots_reviewed) return "source robots review is incomplete";
+  if (!privateTest && source.automatic_scheduling_paused_at) return "source scheduling is paused";
   return null;
+}
+
+function governanceFailure(source: RunnableJobSource, privateTest = false): ConnectorFetchResult | null {
+  const error = sourceGovernanceError(source, privateTest);
+  return error ? failure(source, error) : null;
 }
 
 async function updateSourceHealth(db: SupabaseClient, source: RunnableJobSource, result: ConnectorFetchResult): Promise<void> {
@@ -268,6 +273,7 @@ export async function runClaimedFetch(params: {
   storage: IngestionStorageClient;
   claim: ClaimedFetchRun;
   connector?: ConnectorPort;
+  privateTest?: boolean;
 }): Promise<SourceRunReport> {
   const { data, error } = await params.db.from("job_sources")
     .select("id, source_name, source_kind, source_identifier, careers_url, api_endpoint, config_json, enabled, terms_reviewed, terms_review_date, robots_reviewed, automatic_scheduling_paused_at, consecutive_failures, fetch_tier, tier_clean_runs")
@@ -276,13 +282,14 @@ export async function runClaimedFetch(params: {
   if (error) throw new Error(`load job source: ${error.message}`);
   if (!data) throw new Error(`job source ${params.claim.job_source_id} not found`);
   const source = data as RunnableJobSource;
-  const result = governanceFailure(source) ?? await (params.connector ?? defaultConnector)(source, { db: params.db });
+  const result = governanceFailure(source, params.privateTest) ?? await (params.connector ?? defaultConnector)(source, { db: params.db });
   const summary = await persistFetchResultWithSupabase({
     db: params.db as unknown as IngestionDbClient,
     storage: params.storage,
     fetchRunId: params.claim.id,
     expectedJobSourceId: source.id,
     fetchResult: result,
+    logContext: params.privateTest ? { privateTest: true } : undefined,
   });
   const warnings: string[] = [];
   const tier = result.ok && result.candidates[0]?.sourceMetadata && typeof result.candidates[0].sourceMetadata === "object"
@@ -292,10 +299,12 @@ export async function runClaimedFetch(params: {
     const { error: tierError } = await params.db.from("source_fetch_runs").update({ fetch_tier: tier }).eq("id", params.claim.id);
     if (tierError) warnings.push(`fetch tier provenance update failed: ${tierError.message}`);
   }
-  try {
-    await updateSourceHealth(params.db, source, result);
-  } catch (error) {
-    warnings.push(error instanceof Error ? error.message : String(error));
+  if (!params.privateTest) {
+    try {
+      await updateSourceHealth(params.db, source, result);
+    } catch (error) {
+      warnings.push(error instanceof Error ? error.message : String(error));
+    }
   }
   return {
     fetchRunId: params.claim.id,

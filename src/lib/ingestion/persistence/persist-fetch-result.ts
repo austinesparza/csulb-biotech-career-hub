@@ -145,6 +145,7 @@ export async function persistFetchResult(params: {
   retry?: {
     resumeFailedRun?: boolean;
   };
+  logContext?: Record<string, unknown>;
 }): Promise<PersistFetchResultSummary> {
   const clock = params.clock ?? { now: () => new Date() };
   const run = await params.repository.getFetchRun(params.fetchRunId);
@@ -286,6 +287,7 @@ export async function persistFetchResult(params: {
 
     const finalStatus = deriveFetchRunFinalStatus(result);
     const safeLog = buildSafeLog(result, {
+      ...params.logContext,
       payloadStored: payloadId != null,
       payloadId,
       counters,
@@ -334,6 +336,7 @@ export async function persistFetchResult(params: {
       errorClass: 'unexpected',
       errorMessage: error instanceof Error ? error.message : String(error),
       logJson: buildSafeLog(result, {
+        ...params.logContext,
         payloadStored: payloadId != null,
         payloadId,
         persistenceError: error instanceof Error ? error.message : String(error),
@@ -358,6 +361,7 @@ export async function persistFetchResultWithSupabase(params: {
   retry?: {
     resumeFailedRun?: boolean;
   };
+  logContext?: Record<string, unknown>;
 }): Promise<PersistFetchResultSummary> {
   const repository = createSupabaseIngestionRepository({ db: params.db, storage: params.storage, clock: params.clock });
   return persistFetchResult({
@@ -367,6 +371,7 @@ export async function persistFetchResultWithSupabase(params: {
     fetchResult: params.fetchResult,
     clock: params.clock,
     retry: params.retry,
+    logContext: params.logContext,
   });
 }
 

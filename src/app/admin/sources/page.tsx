@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { createServiceClient, requireOfficer } from "@/lib/supabase/server";
-import { createJobSource, runSourceNow, toggleSourcePause, updateSourceGovernance } from "./actions";
+import { createJobSource, runSourceNow, testSourceNow, toggleSourcePause, updateSourceGovernance } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -93,7 +93,7 @@ export default async function SourcesPage() {
             </span>
           </div>
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_auto_auto]">
+          <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_auto_auto_auto]">
             <form action={updateSourceGovernance} className="flex flex-wrap items-center gap-4 text-sm">
               <input type="hidden" name="id" value={source.id} />
               <label><input className="mr-2" type="checkbox" name="terms_reviewed" defaultChecked={source.terms_reviewed} />Terms reviewed</label>
@@ -110,7 +110,16 @@ export default async function SourcesPage() {
               <input type="hidden" name="id" value={source.id} />
               <button className="primary-button" type="submit" disabled={!source.enabled || paused}>Run and archive now</button>
             </form>
+            <form action={testSourceNow}>
+              <input type="hidden" name="id" value={source.id} />
+              <button className="secondary-button" type="submit" disabled={!source.terms_reviewed || !source.terms_review_date || !source.robots_reviewed}>
+                Test privately
+              </button>
+            </form>
           </div>
+          <p className="mt-3 text-xs" style={{ color: "var(--ink-soft)" }}>
+            Private tests work while a source is disabled or paused. They archive evidence and create review work, but do not enable scheduling, change source health, or publish anything.
+          </p>
         </article>;
       })}
     </section>
