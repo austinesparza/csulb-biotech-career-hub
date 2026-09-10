@@ -1,10 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useState, useSyncExternalStore } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
+const subscribeToHydration = () => () => {};
+
 export default function ForgotPasswordPage() {
+  const ready = useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false,
+  );
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,12 +42,13 @@ export default function ForgotPasswordPage() {
     <div className="mx-auto max-w-sm space-y-4">
       <h1 className="text-xl font-bold">Reset officer password</h1>
       <p className="text-sm text-gray-600">Enter the email address assigned to your officer account.</p>
-      <form onSubmit={submit} className="space-y-3">
+      <form method="post" onSubmit={submit} className="space-y-3">
         <label className="block text-sm font-medium" htmlFor="email">Email</label>
         <input id="email" name="email" type="email" autoComplete="email" required
+          disabled={!ready || pending}
           className="w-full rounded border px-3 py-2" />
-        <button disabled={pending} className="w-full rounded bg-gray-900 px-4 py-2 text-white disabled:opacity-50">
-          {pending ? 'Sending…' : 'Send reset link'}
+        <button disabled={!ready || pending} className="w-full rounded bg-gray-900 px-4 py-2 text-white disabled:opacity-50">
+          {pending ? 'Sending…' : ready ? 'Send reset link' : 'Loading secure form…'}
         </button>
       </form>
       {message && <p role="status" aria-live="polite" className="text-sm text-green-700">{message}</p>}
