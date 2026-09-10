@@ -1013,7 +1013,12 @@ declare
   expected_cols text[] := array[
     'id','company_name','title','posting_url','location','eligibility','focus_area',
     'deadline','deadline_text','start_date_text','paid_status','application_type',
-    'status','public_notes','relevance_score','last_checked_at','first_seen_at','source_name'
+    'status','public_notes','relevance_score','last_checked_at','first_seen_at','source_name',
+    'audience_bucket','audience_reason','scientific_lanes','job_functions','methods',
+    'industry_context','graduate_stage','eligibility_status','eligibility_evidence',
+    'continued_enrollment_required','graduation_window_start','graduation_window_end',
+    'work_authorization','application_opened_at','date_basis','source_check_result',
+    'discovery_route'
   ];
   actual_cols text[];
 begin
