@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { connection } from 'next/server';
 import { BrandMark } from '@/components/brand-mark';
 import { PrivacyAnalytics } from '@/components/privacy-analytics';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
@@ -10,7 +11,11 @@ export const metadata: Metadata = {
   description: 'Graduate-level and graduate-accessible biotechnology opportunities, reviewed by CSULB Biotechnology Club officers.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // The per-request CSP nonce can only be attached to Next.js scripts during
+  // dynamic rendering. Static HTML is created before the nonce exists.
+  await connection();
+
   return (
     <html lang="en">
       <body>

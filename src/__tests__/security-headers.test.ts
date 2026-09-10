@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { buildContentSecurityPolicy } from '../lib/security-headers';
+
+const rootLayout = readFileSync('src/app/layout.tsx', 'utf8');
 
 describe('content security policy', () => {
   it('uses a request nonce and the configured Supabase origin', () => {
@@ -12,5 +15,10 @@ describe('content security policy', () => {
 
   it('allows evaluation only in development', () => {
     expect(buildContentSecurityPolicy({ nonce: 'n', development: true })).toContain("'unsafe-eval'");
+  });
+
+  it('renders request-bound pages so Next.js can apply the CSP nonce to scripts', () => {
+    expect(rootLayout).toContain("import { connection } from 'next/server'");
+    expect(rootLayout).toContain('await connection()');
   });
 });
