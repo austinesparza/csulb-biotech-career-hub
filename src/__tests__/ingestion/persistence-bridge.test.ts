@@ -485,6 +485,20 @@ describe('ingestion persistence bridge', () => {
     expect(repo.links[0]?.is_primary).toBe(true);
   });
 
+  it('preserves private-test provenance when finalizing a run', async () => {
+    const repo = new FakeRepository();
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+      logContext: { privateTest: true },
+    });
+
+    expect(repo.fetchRuns[0].log_json).toHaveProperty('privateTest', true);
+    expect(repo.fetchRuns[0].log_json).toHaveProperty('payloadStored', true);
+  });
+
   it('marks unchanged posting as unchanged and prevents duplicate versions', async () => {
     const repo = new FakeRepository();
     await persistFetchResult({ repository: repo, fetchRunId: 'run-1', expectedJobSourceId: 'source-1', fetchResult: successResult([posting()]) });
