@@ -4,34 +4,37 @@ Work top to bottom. Check each box. Details live in docs/07-deployment.md; this 
 
 ## Phase 1: Prove the build (~15 min)
 
-- [ ] Unzip the repo, `cd csulb-biotech-career-hub`
-- [ ] `npm ci`
-- [ ] Run `npm run typecheck`, `npm run lint`, `npm test`,
+- [x] Repository is checked out and builds from a clean dependency install.
+- [x] `npm ci`
+- [x] Run `npm run typecheck`, `npm run lint`, `npm test`,
       `npm run test:pipeline`, `npm run test:digest`, `npm run test:publish-data`,
       `npm run test:schema`, and `npm run build`.
-- [ ] Create the GitHub repo under the CLUB org (not a personal account), push, protect `main`
+- [ ] Transfer the working GitHub repo from `austinesparza` to a club organization
+      and verify `main` protection. CI and Vercel deployment are active now, but
+      personal ownership remains a turnover risk.
 
 ## Phase 2: Supabase (~20 min)
 
-- [ ] Create project on a club-owned account (credentials into the shared password manager)
-- [ ] Apply executable migrations in numeric order. Do not run anything under
+- [ ] Confirm the existing Supabase project's club owner and shared password-manager
+      entry. The production project exists, but ownership documentation is still missing.
+- [x] Apply executable migrations in numeric order. Do not run anything under
       `supabase/proposals/`. Test new migrations against a preview database first.
-- [ ] Confirm the pull request's **Database contracts** check passed against a
+- [x] Confirm the pull request's **Database contracts** check passed against a
       disposable clean database before applying any migration to production.
 - [ ] Run `supabase/seed.sql`
 - [ ] Run `supabase/seed_historical.sql` ONCE (past cycles: 2024-2025 post +
       2025-2026 sheet, ~50 archive records + ~30 companies + 2 resources)
 - [ ] Auth → disable signups; invite each officer by email
 - [ ] For each officer: `insert into officers (user_id, display_name) values ('<auth uid>', 'Name');`
-- [ ] Verify the privacy boundary: in the SQL editor, as anon
+- [x] Verify the privacy boundary: in the SQL editor, as anon
       (`set role anon; select * from opportunities;`) — must be DENIED;
       `select * from public_opportunities;` — must return the demo row. `reset role;`
 
 ## Phase 3: Vercel (~15 min)
 
-- [ ] Import the GitHub repo (club Vercel account)
-- [ ] Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY`
-- [ ] Deploy; landing page should show the demo posting count
+- [x] Import the GitHub repo (club Vercel account)
+- [x] Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY`
+- [x] Deploy; the production landing page reads the approved Supabase view
 - [ ] Point `careers.<clubdomain>` CNAME at Vercel (can come later)
 
 ## Phase 4: Real data (~30 min)
