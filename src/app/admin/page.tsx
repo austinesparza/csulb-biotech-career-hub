@@ -7,6 +7,8 @@ export const dynamic = 'force-dynamic';
 export default async function AdminHome() {
   await requireOfficer();
   const db = createServiceClient();
+  // The dashboard is force-dynamic, so this is one request timestamp, not render state.
+  // eslint-disable-next-line react-hooks/purity
   const in14 = new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
 
@@ -50,6 +52,9 @@ export default async function AdminHome() {
         </Link>
         <Link href="/admin/duplicates" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
           Scan for duplicates
+        </Link>
+        <Link href="/admin/integrations" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
+          Integration status
         </Link>
         <a href="/api/export?format=csv" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
           Export approved (CSV)

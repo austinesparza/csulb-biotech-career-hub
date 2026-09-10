@@ -86,10 +86,12 @@ export function buildReviewDigest(rows, options = {}) {
   const graduates = safeRows.filter((row) => ['graduate', 'mixed'].includes(row.audience_bucket));
   const unresolved = safeRows.filter((row) => !row.audience_bucket || row.audience_bucket === 'unknown');
   const restricted = safeRows.filter((row) => ['special', 'adjacent', 'ineligible'].includes(row.audience_bucket));
+  const submissions = safeRows.filter((row) => row.origin === 'submission');
 
-  const subject = `CSULB Biotech Career Hub: ${safeRows.length} ${safeRows.length === 1 ? 'opportunity' : 'opportunities'} ready for review`;
+  const subject = `CSULB Biotech Career Hub: ${safeRows.length} ${submissions.length ? 'items' : (safeRows.length === 1 ? 'opportunity' : 'opportunities')} ready for review`;
   const summary = [
     `${safeRows.length} pending review`,
+    ...(submissions.length ? [`${submissions.length} new public submission${submissions.length === 1 ? '' : 's'}`] : []),
     `${graduates.length} graduate-accessible or mixed`,
     `${urgent.length} deadline${urgent.length === 1 ? '' : 's'} within 14 days`,
     `${unresolved.length} audience classification${unresolved.length === 1 ? '' : 's'} unresolved`,
@@ -98,7 +100,7 @@ export function buildReviewDigest(rows, options = {}) {
 
   const textRows = safeRows.slice(0, 25).map((row, index) => {
     const deadline = row.deadline ?? row.deadline_text ?? 'unknown';
-    return `${index + 1}. ${companyName(row)} | ${row.title}\n` +
+    return `${index + 1}. ${row.origin === 'submission' ? '[SUBMISSION] ' : ''}${companyName(row)} | ${row.title}\n` +
       `   Audience: ${row.audience_bucket ?? 'unknown'}${row.audience_reason ? ` | ${row.audience_reason}` : ''}\n` +
       `   Deadline: ${deadline} | Score: ${row.relevance_score ?? 'unknown'}\n` +
       `   Source: ${row.posting_url ?? 'missing'}`;
@@ -124,7 +126,7 @@ export function buildReviewDigest(rows, options = {}) {
     const source = sourceUrl
       ? `<a href="${escapeHtml(sourceUrl)}">Official posting</a>`
       : 'Source missing';
-    return `<li style="margin:0 0 16px"><strong>${escapeHtml(companyName(row))}</strong><br>` +
+    return `<li style="margin:0 0 16px">${row.origin === 'submission' ? '<strong style="color:#8a5a00">SUBMISSION</strong><br>' : ''}<strong>${escapeHtml(companyName(row))}</strong><br>` +
       `${escapeHtml(row.title)}<br>` +
       `<span style="color:#4b5563">Audience: ${escapeHtml(row.audience_bucket ?? 'unknown')}` +
       `${row.audience_reason ? ` | ${escapeHtml(row.audience_reason)}` : ''}<br>` +
@@ -141,7 +143,7 @@ export function buildReviewDigest(rows, options = {}) {
     `<p style="border-left:3px solid #f2a91b;padding-left:12px;color:#4b5563">No record in this digest has been published automatically. An officer must verify the official source and approve it in the review queue.</p>` +
     `</div></body></html>`;
 
-  return { subject, text, html, counts: { total: safeRows.length, urgent: urgent.length, graduates: graduates.length, unresolved: unresolved.length, restricted: restricted.length } };
+  return { subject, text, html, counts: { total: safeRows.length, submissions: submissions.length, urgent: urgent.length, graduates: graduates.length, unresolved: unresolved.length, restricted: restricted.length } };
 }
 
 export function createRawMessage({ from, to, subject, text, html }) {
@@ -189,11 +191,33 @@ async function fetchPendingRows() {
   url.searchParams.set('order', 'relevance_score.desc.nullslast');
   url.searchParams.set('limit', '100');
 
-  const response = await fetch(url, {
-    headers: supabaseSecretHeaders(secretKey),
-  });
-  if (!response.ok) throw new Error(`Supabase review query failed: ${response.status}`);
-  return response.json();
+  const submissionUrl = new URL('/rest/v1/user_submissions', baseUrl);
+  submissionUrl.searchParams.set('select', 'id,submission_type,payload,status,created_at');
+  submissionUrl.searchParams.set('status', 'in.(new,in_review)');
+  submissionUrl.searchParams.set('order', 'created_at.asc');
+  submissionUrl.searchParams.set('limit', '100');
+  const headers = supabaseSecretHeaders(secretKey);
+  const [opportunityResponse, submissionResponse] = await Promise.all([
+    fetch(url, { headers }), fetch(submissionUrl, { headers }),
+  ]);
+  if (!opportunityResponse.ok) throw new Error(`Supabase review query failed: ${opportunityResponse.status}`);
+  if (!submissionResponse.ok) throw new Error(`Supabase submission query failed: ${submissionResponse.status}`);
+  const [opportunities, submissions] = await Promise.all([opportunityResponse.json(), submissionResponse.json()]);
+  return [
+    ...opportunities,
+    ...submissions.map((item) => ({
+      id: item.id,
+      origin: 'submission',
+      title: item.payload?.title || `${item.submission_type} submission`,
+      posting_url: item.payload?.url ?? null,
+      eligibility: item.payload?.details ?? null,
+      relevance_score: null,
+      audience_bucket: 'unknown',
+      audience_reason: 'Officer classification required',
+      first_seen_at: item.created_at,
+      companies: { name: item.payload?.company || 'Submitted by a site visitor' },
+    })),
+  ];
 }
 
 async function getGmailAccessToken() {

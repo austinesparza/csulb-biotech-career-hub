@@ -1,0 +1,101 @@
+{
+  "note": "Adversarial recall benchmark. Every case is a role a CSULB graduate student SHOULD see. Many deliberately omit the obvious lane word ('genomics', 'bioinformatics', 'cancer') while describing the work. Per the architecture review: generate synthetic must-find postings that omit obvious words and ask whether discovery still finds them. Failures here are false negatives, which are invisible in a precision-only eval.",
+  "cases": [
+    {
+      "id": "mnm-01-ctdna-no-cancer-word",
+      "why": "ctDNA early detection without the word cancer or oncology",
+      "title": "Research Intern, Early Detection Assays",
+      "employer": "Example Diagnostics",
+      "body": "Summer 2027 internship. You will analyze circulating tumor DNA fragmentation patterns and methylation signatures for a multi-cancer early detection assay. Master's students accepted. Python and R required.",
+      "expectLanes": ["cancer", "diagnostics"]
+    },
+    {
+      "id": "mnm-02-crispr-screen-no-genomics-word",
+      "why": "genome-scale CRISPR screen without the word genomics",
+      "title": "Summer Research Intern, Functional Screening",
+      "employer": "Example Therapeutics",
+      "body": "Design and analyze pooled genome-wide CRISPR knockout screens in cancer cell lines. Analysis in Python with MAGeCK. Graduate students welcome. Summer 2027.",
+      "expectLanes": ["genomics", "cancer"]
+    },
+    {
+      "id": "mnm-03-variant-interpretation",
+      "why": "clinical variant interpretation, no 'bioinformatics' or 'genomics' in the title",
+      "title": "Intern, Clinical Variant Curation",
+      "employer": "Example Labs",
+      "body": "Support curation and interpretation of sequence variants against ACMG criteria in a CLIA laboratory. You will work with variant annotation pipelines and clinical evidence databases. Master's students in a quantitative or biological field are eligible. Summer 2027.",
+      "expectLanes": ["genomics", "diagnostics"]
+    },
+    {
+      "id": "mnm-04-single-cell-euphemism",
+      "why": "single-cell profiling described by method names only",
+      "title": "Computational Intern, Cell Atlas Program",
+      "employer": "Example Institute",
+      "body": "Analyze scRNA-seq and CITE-seq datasets using scanpy. Trajectory inference and cell type annotation across a tissue atlas. Open to graduate students. Twelve-week summer program in 2027.",
+      "expectLanes": ["single_cell"]
+    },
+    {
+      "id": "mnm-05-protein-structure",
+      "why": "structural work described through tools, not lane words",
+      "title": "Summer Intern, Molecular Modeling",
+      "employer": "Example Biologics",
+      "body": "Use AlphaFold predictions and molecular dynamics to guide antibody engineering campaigns. Python scripting required. Currently enrolled master's or PhD students. Summer 2027.",
+      "expectLanes": ["bioinformatics", "protein_drug"]
+    },
+    {
+      "id": "mnm-06-rwe-ehr",
+      "why": "real-world evidence work using EHR data",
+      "title": "Data Science Intern, Real-World Evidence",
+      "employer": "Example Pharma",
+      "body": "Analyze electronic health record and claims data to characterize treatment patterns in oncology patients. Survival analysis and propensity score methods. Master's students in biostatistics or epidemiology. Summer 2027.",
+      "expectLanes": ["diagnostics", "data_science"]
+    },
+    {
+      "id": "mnm-07-bioprocess-euphemism",
+      "why": "bioprocess work described as 'manufacturing sciences'",
+      "title": "Manufacturing Sciences Summer Intern",
+      "employer": "Example Bio",
+      "body": "Support upstream cell culture process characterization and scale-up for a monoclonal antibody program. cGMP environment. Graduate students accepted. Summer 2027.",
+      "expectLanes": ["bioprocess"]
+    },
+    {
+      "id": "mnm-08-ml-at-biotech",
+      "why": "ML role that IS relevant because the employer is biological",
+      "title": "Machine Learning Intern",
+      "employer": "Example Genomics",
+      "body": "Build deep learning models over DNA sequencing data to predict regulatory element activity. PyTorch. Graduate students in computer science, computational biology or a related field. Summer 2027.",
+      "expectLanes": ["data_science", "genomics"]
+    },
+    {
+      "id": "mnm-09-neuro-organoid",
+      "why": "neurodegeneration via disease names only",
+      "title": "Research Intern, Disease Modeling",
+      "employer": "Example Neuro",
+      "body": "Use iPSC-derived neuron and organoid models to study tau pathology in Alzheimer's disease. Imaging and flow cytometry. Master's students eligible. Summer 2027.",
+      "expectLanes": ["neuro"]
+    },
+    {
+      "id": "mnm-10-vaccine-immuno",
+      "why": "immunology through antigen and T cell work",
+      "title": "Summer Intern, Antigen Discovery",
+      "employer": "Example Vaccines",
+      "body": "Support epitope prediction and T cell receptor repertoire sequencing for a vaccine program. Graduate students accepted. Summer 2027.",
+      "expectLanes": ["immunology", "genomics"]
+    },
+    {
+      "id": "mnm-11-spatial-no-lane-word",
+      "why": "spatial biology through platform names",
+      "title": "Intern, Tissue Imaging Analytics",
+      "employer": "Example Spatial",
+      "body": "Process and analyze Visium and Xenium datasets from tumor tissue sections. Image analysis and clustering in Python. Master's students accepted. Summer 2027.",
+      "expectLanes": ["single_cell", "cancer"]
+    },
+    {
+      "id": "mnm-12-biostat-trial",
+      "why": "clinical biostatistics described as programming",
+      "title": "Statistical Programming Intern",
+      "employer": "Example Clinical",
+      "body": "Support analysis of oncology clinical trial datasets. Mixed effects models and survival analysis in R. Master's students in biostatistics eligible. Summer 2027.",
+      "expectLanes": ["bioinformatics", "diagnostics", "cancer"]
+    }
+  ]
+}

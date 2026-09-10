@@ -75,7 +75,7 @@ Every connector produces `NormalizedSourcePosting` objects. Key invariants:
 | `sourceUpdatedAt` | `string \| null` | Strict RFC3339 `updated_at`, stored canonically as UTC ISO (`toISOString`) |
 | `sourceMetadata` | `unknown \| null` | Raw `metadata` array from Greenhouse API, if present |
 | `relevanceScore` | `number` | 0–100 clamped |
-| `relevanceScoreVersion` | `number` | Positive integer; currently 1 |
+| `relevanceScoreVersion` | `number` | Positive integer; currently 2 |
 | `scoreBreakdown` | `ScoreBreakdown` | Full scoring breakdown including derived `uncertaintyFlags` |
 | `uncertaintyFlags` | `UncertaintyFlag[]` | Fields that could not be determined |
 | `fetchedAt` | `string` | ISO timestamp of the fetch operation |

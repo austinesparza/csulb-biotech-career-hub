@@ -15,7 +15,10 @@ A Next.js + Supabase app where:
 5. Approved records export as CSV/JSON for embedding in the existing club website.
 
 ## What this app deliberately is NOT
-- Not a scraper. No automated collection from job boards or any site that prohibits automated access. Data enters only via CSV import, manual entry, or voluntary submissions — all officer-reviewed.
+- Not an unrestricted scraper. Automated retrieval is allowed only for enabled,
+  documented public sources whose terms and robots policy permit it. Manual
+  entries, spreadsheet imports, and voluntary submissions remain supported. All
+  publication decisions remain officer-reviewed.
 - Not a student-account system in v1. Students browse anonymously; only officers log in.
 - Not a replacement for the club website. It extends it and exports content back to it.
 
@@ -36,7 +39,8 @@ Postings imported and approved, dead-link rate on the public board, submissions 
 
 Build **only** this, end to end, before anything else:
 
-1. Supabase schema (migration `0001_init.sql`) with RLS and public views.
+1. Ordered Supabase migrations in `supabase/migrations/` with RLS, review RPCs,
+   ingestion provenance, and public views.
 2. Officer login (Supabase email auth + `officers` allowlist).
 3. CSV import: upload → raw rows stored → normalize → dedupe → everything lands as `needs_review`. Every import requires a named source.
 4. Review queue: approve / edit / mark duplicate / reject, set status and public-safe.

@@ -1,0 +1,284 @@
+# taxonomy/lanes.yaml
+# Versioned in GitHub, per the operations plan. Nothing here is code; the matcher
+# reads it. Officers can add a term without a developer.
+#
+# THE CORE IDEA: a lane is WHAT SCIENCE, a function is WHAT YOU DO, a method is
+# HOW. Conflating them is why an undergrad-era scorer matches "Data Analyst,
+# Commercial Insights" at a pharma company. A relevant role is
+#   (lane OR biologically contextualized method)
+#   AND (function OR internship-type)
+#   AND NOT excluded-title.
+# Stage and gates classify the record for officer review; they do not silently
+# remove an otherwise relevant posting.
+
+version: 3
+updated: 2026-09-08
+
+# =============================================================================
+# SCIENTIFIC LANES — the subject matter
+# =============================================================================
+lanes:
+  - id: cancer
+    label: Cancer and oncology
+    core: [oncology, oncolog, cancer, tumor, tumour, neoplasm, carcinoma, leukemia, lymphoma, melanoma, glioma, metastasis, metastatic]
+    supporting: [immuno-oncology, "io", tumor microenvironment, ctdna, circulating tumor dna, liquid biopsy, minimal residual disease, mrd, neoantigen, car-t, checkpoint inhibitor, early detection, cancer screening]
+    # Terms that look like a match but usually are not, unless a core term is also present
+    weak: [growth, proliferation, survival]
+
+  - id: genomics
+    label: Genomics and genetics
+    core: [genomic, genomics, genetics, genetic, sequencing, ngs, whole genome, whole exome, wgs, wes, variant calling, gwas, transcriptomic, rna-seq, rnaseq]
+    supporting: [crispr, gene editing, gene therapy, epigenetic, methylation, atac-seq, chip-seq, long-read, nanopore, pacbio, illumina, variant annotation, variant interpretation, variant curation, sequence variant, sequence variants, acmg, population genetics, polygenic, pharmacogenomic, mageck, crispr knockout, pooled screen]
+    weak: [gene, dna, rna]
+
+  - id: single_cell
+    label: Single-cell and spatial
+    core: [single-cell, single cell, scrna, scrna-seq, snrna, spatial transcriptomic, spatial omics, spatial biology]
+    supporting: [cite-seq, multiome, visium, xenium, merfish, cosmx, cell atlas, cell type annotation, trajectory inference, pseudotime, flow cytometry, mass cytometry, cytof, imaging mass cytometry]
+    weak: [cell, cellular]
+
+  - id: bioinformatics
+    label: Bioinformatics and computational biology
+    core: [bioinformatic, bioinformatics, computational biology, computational biologist, biostatistic, biostatistics, systems biology, statistical genetics]
+    supporting: [pipeline development, nextflow, snakemake, workflow development, sequence analysis, multi-omics, multiomics, structural bioinformatics, molecular modeling, cheminformatics, protein structure, alphafold]
+    weak: [analysis, modeling]
+
+  - id: data_science
+    label: Biological data science and ML
+    core: [machine learning, deep learning, "ml engineer", data science, data scientist, statistical modeling, predictive model]
+    supporting: [pytorch, tensorflow, scikit-learn, foundation model, llm, nlp, computer vision, causal inference, bayesian, mixed models, survival analysis]
+    # This lane is the biggest false-positive source. It only counts when it
+    # co-occurs with a biological context term. Enforced by requires_context.
+    requires_context: true
+    weak: [data, analytics, insights]
+
+  - id: diagnostics
+    label: Diagnostics and clinical data
+    core: [diagnostic, diagnostics, clinical genomics, molecular diagnostic, assay development, companion diagnostic, ivd]
+    supporting: [clia, clinical validation, clinical trial, real-world evidence, rwe, ehr, electronic health record, biomarker, clinical laboratory, clinical evidence, acmg, regulatory submission, "510(k)", pma]
+    weak: [clinical, patient]
+
+  - id: bioprocess
+    label: Bioprocess and manufacturing science
+    core: [bioprocess, process development, upstream process, downstream process, cell culture process, fermentation, purification, chromatography]
+    supporting: [gmp, cgmp, tech transfer, scale-up, bioreactor, drug substance, drug product, cmc, process characterization, msat, quality by design]
+    weak: [manufacturing, operations, production]
+
+  - id: protein_drug
+    label: Protein science and drug discovery
+    core: [drug discovery, protein engineering, protein science, medicinal chemistry, antibody engineering, structural biology]
+    supporting: [adme, pharmacokinetic, pk/pd, dmpk, high-throughput screening, hts, assay design, lead optimization, biologics discovery, peptide, mrna, lipid nanoparticle, lnp]
+    weak: [chemistry, molecule]
+
+  - id: neuro
+    label: Neuroscience and neurodegeneration
+    core: [neuroscience, neurodegener, neurobiolog, neuroimmunolog, alzheimer, parkinson, "als", huntington, multiple sclerosis]
+    supporting: [synaptic, neuronal, ipsc-derived neuron, organoid, tauopathy, amyloid, neuroinflammation, csf biomarker]
+    weak: [brain, neural]
+
+  - id: immunology
+    label: Immunology and infectious disease
+    core: [immunolog, immunotherapy, vaccine, infectious disease, virolog, microbiome, microbiolog]
+    supporting: [t cell, b cell, antigen, adjuvant, serolog, epitope, host-pathogen, antimicrobial, antiviral, pathogen genomics]
+    weak: [immune, infection]
+
+# Biological context gate for lanes with requires_context. A generic ML role at a
+# bank must not match; the same title at a genomics company should.
+biological_context:
+  - biolog
+  - biotech
+  - biomedical
+  - life science
+  - pharmaceutic
+  - pharma
+  - genomic
+  - clinical
+  - drug
+  - therapeutic
+  - patient
+  - disease
+  - molecular
+  - laboratory
+  - health
+  - medicine
+  - medical
+  - omics
+  - cell
+  - protein
+
+# =============================================================================
+# JOB FUNCTIONS — what you would actually do
+# =============================================================================
+functions:
+  - id: research
+    label: Research and discovery
+    terms: [research intern, research internship, research scholar, research assistant, scientific intern, discovery intern, "r&d intern", summer scholar, summer research, research fellow, research trainee]
+  - id: computational
+    label: Computational and analysis
+    terms: [computational intern, bioinformatics intern, data science intern, analytics intern, biostatistics intern, machine learning intern, software intern, statistical programmer]
+  - id: clinical_reg
+    label: Clinical, regulatory and medical affairs
+    terms: [clinical intern, clinical operations, regulatory affairs intern, medical affairs, pharmacovigilance, clinical data manager, biometrics]
+  - id: process_mfg
+    label: Process, manufacturing and quality
+    terms: [process development intern, manufacturing intern, msat intern, quality intern, validation intern, engineering intern]
+  - id: product_program
+    label: Technical product and program
+    terms: [product intern, technical program, program management intern, strategy intern, business technology]
+    # Kept because "Technology Internship" style programs sometimes place graduate
+    # students into scientific teams, but flagged for officer scrutiny.
+    review_required: true
+
+# =============================================================================
+# METHODS AND SKILLS — what a student can put on a resume
+# =============================================================================
+methods:
+  wet_lab: [pcr, qpcr, "rt-pcr", ddpcr, western blot, elisa, immunohistochemistry, ihc, flow cytometry, facs, cell culture, tissue culture, library prep, cloning, crispr screen, mass spectrometry, hplc, spr, organoid, xenograft]
+  dry_lab: [python, "r/bioconductor", bioconductor, rstudio, bash, linux, unix, nextflow, snakemake, docker, singularity, aws, gcp, sql, git, "high-performance computing", hpc, slurm, snakemake, seurat, scanpy, bwa, star aligner, gatk, samtools, deseq2, limma]
+  stats: [survival analysis, cox, mixed effects, bayesian, multiple testing, power analysis, causal inference, propensity score, meta-analysis]
+
+# =============================================================================
+# OPPORTUNITY TYPE — scope of the resource
+# =============================================================================
+opportunity_types:
+  in_scope:
+    - id: summer_internship
+      terms: [summer internship, summer intern, summer analyst, summer scholar, summer program]
+    - id: research_internship
+      terms: [research internship, research intern, internship program, intern program]
+    - id: graduate_internship
+      terms: [graduate intern, grad intern, master's intern, masters intern, msc intern, phd intern, doctoral intern]
+    # Lowest-confidence catch. A bare "Intern" title is still an internship;
+    # without this, "Computational Biology Intern" matches no type and is dropped.
+    - id: generic_internship
+      terms: [intern, interns, internship, internships, trainee]
+  adjacent:
+    - id: coop
+      terms: [co-op, coop, cooperative education, spring co-op, fall co-op]
+      reason_template: "{term} outside the Summer 2027 target term"
+    - id: postbac
+      terms: [post-baccalaureate, postbaccalaureate, postbac, post-bac, irta, "prat", bridge program]
+      reason_template: "post-baccalaureate program, not a graduate internship"
+    - id: year_long
+      terms: [year-long, yearlong, 12-month, one-year program, gap year]
+      reason_template: "year-long program spanning terms outside Summer 2027"
+    - id: fellowship
+      terms: [fellowship, traineeship, scholars program]
+      reason_template: "fellowship rather than an internship; confirm term and stage"
+
+# =============================================================================
+# GRADUATE STAGE — replaces the undergraduate relevance score
+# Order matters: first match wins, so the most specific patterns come first.
+# =============================================================================
+graduate_stage:
+  - id: undergrad_only
+    label: Undergraduate only
+    patterns:
+      - "currently enrolled in an undergraduate"
+      - "must be an undergraduate"
+      - "undergraduate students only"
+      - "rising (junior|senior)"
+      - "college (juniors?|seniors?)"
+      - "pursuing a bachelor'?s? degree([,.;:]| in | with | and | or |$)"
+      - "bachelor'?s? degree only"
+    eligible: false
+  - id: phd_only
+    label: Doctoral only
+    patterns:
+      - "ph\\.?d\\.? (students?|candidates?) only"
+      - "must be enrolled in a ph\\.?d"
+      - "doctoral (students?|candidates?) only"
+      - "currently pursuing a ph\\.?d\\.? .{0,40}(required|only)"
+    eligible: false
+  - id: msc_year2
+    label: Second-year master's and beyond
+    patterns:
+      - "completed (at least )?(one|1|your first) year of .{0,30}(graduate|master)"
+      - "second[- ]year (master|graduate)"
+      - "at least one academic year .{0,30}(completed|of study)"
+      - "rising second[- ]year"
+    eligible: true
+  - id: msc_year1
+    label: First-year master's welcome
+    patterns:
+      - "first[- ]year (master|graduate) students? (are )?(welcome|eligible|encouraged)"
+      - "no prior graduate coursework"
+      - "open to students at any stage"
+    eligible: true
+  - id: msc_any
+    label: Master's students accepted
+    patterns:
+      # "Master's or PhD program" / "Bachelor's, Master's or PhD" are extremely
+      # common and were previously falling through to "unclear".
+      - "(bachelor'?s?,? )?(master'?s?|m\\.?s\\.?) (or|and|/) (ph\\.?d|doctoral|masters)"
+      - "(ph\\.?d|doctoral) (or|and|/) (master'?s?|m\\.?s\\.?)"
+      - "master'?s? (students?|degree|candidates?|program)"
+      - "\\bm\\.?s\\.?c?\\b"
+      - "graduate students?"
+      - "bachelor'?s?,? (or|and) master'?s?"
+      - "pursuing (a |an )?(master|advanced) degree"
+    eligible: true
+  - id: postbac_stage
+    label: Post-baccalaureate stage
+    patterns:
+      - "recent (bachelor|college) graduate"
+      - "within (one|two|1|2) years? of .{0,20}bachelor"
+      - "post[- ]?bacc?"
+    eligible: false
+  - id: unclear
+    label: Not stated
+    patterns: []
+    eligible: true      # ambiguity does not disqualify; it becomes "Clarification required"
+
+# =============================================================================
+# HARD DISQUALIFIERS — structural, not personal.
+# Personal gates (citizenship, GPA, authorization) stay VISIBLE, never auto-drop.
+# =============================================================================
+structural_gates:
+  - id: institution_affiliation
+    patterns:
+      - "must be (enrolled|a student) at .{0,40}(university of|state university)"
+      - "(indiana|texas|ohio|california state) (university )?(student|resident|affiliat)"
+      - "partner (school|university|institution)s? only"
+      - "students? of .{0,30}(consortium|partner)"
+    bucket: special
+  - id: geographic_residency
+    patterns:
+      - "must be a resident of"
+      - "residents? of .{0,25}(state|region) only"
+    bucket: special
+  - id: program_specific
+    patterns:
+      - "enrolled in the .{0,40} program$"
+      - "only students in the .{0,40} (program|department)"
+    bucket: special
+
+# Personal gates: surfaced prominently, never used to filter
+personal_gates:
+  citizenship: ["u\\.?s\\.? citizen", "permanent resident", "citizenship required"]
+  work_authorization: ["sponsorship", "visa", "cpt", "opt", "work authorization"]
+  gpa: ["gpa of", "minimum gpa", "cumulative gpa"]
+  enrollment_load: ["full[- ]time (enrollment|student)", "half[- ]time", "at least half"]
+  return_rule: ["return to (school|your program)", "returning student", "continue enrollment"]
+  graduation_window: ["graduat(e|ing) (between|in|no earlier|no later)", "degree conferral"]
+
+# =============================================================================
+# NEGATIVE FILTERS — drop before any model call
+# =============================================================================
+exclude_titles:
+  - sales
+  - account executive
+  - business development
+  - marketing
+  - recruiter
+  - talent acquisition
+  - facilities
+  - custodian
+  - security guard
+  - warehouse
+  - "customer success"
+  - "financial analyst"
+  - accounting
+  - "supply chain planner"
+  - legal counsel
+  - communications intern

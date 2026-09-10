@@ -5,6 +5,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { assertPrivilegedRuntimeAllowed } from './runtime-safety';
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -26,9 +27,12 @@ export async function createServerAuthClient() {
 
 /** Service-role client: bypasses RLS. Use ONLY after requireOfficer() succeeds. */
 export function createServiceClient() {
+  assertPrivilegedRuntimeAllowed();
+  const serverKey = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serverKey) throw new Error('SUPABASE_SECRET_KEY is not configured');
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    serverKey,
     { auth: { persistSession: false } },
   );
 }

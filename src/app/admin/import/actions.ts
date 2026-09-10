@@ -18,6 +18,7 @@ import {
 } from '@/lib/dedupe';
 import { normalizeCompanyName } from '@/lib/normalize';
 import { scoreOpportunity } from '@/lib/relevance';
+import { fetchGoogleSheet, readGoogleSheetsConfig } from '@/lib/google-sheets';
 import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
 
 export interface ImportSummary {
@@ -32,6 +33,11 @@ export interface ImportSummary {
   unmatchedHeaders: string[];
 }
 
+export interface GoogleSheetSyncSummary extends ImportSummary {
+  sheetRange: string;
+  sheetRows: number;
+}
+
 /** Columns loaded for dedupe + safe-update comparison. */
 const EXISTING_COLUMNS =
   'id, dedupe_key, family_key, posting_url, title, company_id, review_status, public_safe, ' +
@@ -41,18 +47,31 @@ type ExistingRow = ExistingOpportunity & Record<string, unknown>;
 
 export async function importCsv(formData: FormData): Promise<ImportSummary> {
   const { user } = await requireOfficer();
-  const db = createServiceClient();
-
   const file = formData.get('file') as File | null;
   const sourceRecordId = (formData.get('source_record_id') as string) || null;
   if (!file) throw new Error('No file uploaded');
   if (!sourceRecordId) {
     throw new Error('A source record is required for CSV imports. Pick one (e.g. "Club Internship Spreadsheet") or create it under Sources first.');
   }
+  return importCsvText({
+    text: await file.text(),
+    filename: file.name,
+    sourceRecordId,
+    uploadedBy: user.id,
+  });
+}
+
+async function importCsvText(input: {
+  text: string;
+  filename: string;
+  sourceRecordId: string;
+  uploadedBy: string;
+}): Promise<ImportSummary> {
+  const db = createServiceClient();
+  const { text, filename, sourceRecordId, uploadedBy } = input;
   const { data: source } = await db.from('source_records').select('id').eq('id', sourceRecordId).maybeSingle();
   if (!source) throw new Error('Unknown source record.');
 
-  const text = await file.text();
   const parsed = Papa.parse<Record<string, string>>(text, {
     header: true,
     skipEmptyLines: 'greedy',
@@ -70,14 +89,15 @@ export async function importCsv(formData: FormData): Promise<ImportSummary> {
     .from('import_runs')
     .insert({
       source_record_id: sourceRecordId,
-      filename: file.name,
-      uploaded_by: user.id,
+      filename,
+      uploaded_by: uploadedBy,
       total_rows: parsed.data.length,
     })
     .select('id')
     .single();
   if (runErr || !run) throw new Error(`Failed to create import run: ${runErr?.message}`);
 
+  try {
   // Load existing data once (club scale: fine).
   const { data: companies } = await db.from('companies').select('id, name, name_normalized');
   const { data: opportunities } = await db.from('opportunities').select(EXISTING_COLUMNS);
@@ -256,5 +276,42 @@ export async function importCsv(formData: FormData): Promise<ImportSummary> {
     .update({ last_imported_at: new Date().toISOString() })
     .eq('id', sourceRecordId);
 
-  return summary;
+    return summary;
+  } catch (error) {
+    const message = error instanceof Error ? error.message.slice(0, 500) : 'Unexpected import failure';
+    await db.from('import_runs').update({
+      status: 'failed',
+      finished_at: new Date().toISOString(),
+      notes: message,
+    }).eq('id', run.id);
+    throw error;
+  }
+}
+
+/**
+ * Officer-triggered, read-only synchronization from one configured Sheet range.
+ * It deliberately enters through the same raw-row archive and review rules as a
+ * CSV upload. The configured Sheet cannot select a different source or set any
+ * publication field.
+ */
+export async function syncGoogleSheet(): Promise<GoogleSheetSyncSummary> {
+  const { user } = await requireOfficer();
+  const config = readGoogleSheetsConfig();
+
+  // Reject a stale/mistyped source binding before making an external request.
+  const db = createServiceClient();
+  const { data: source, error } = await db.from('source_records')
+    .select('id')
+    .eq('id', config.sourceRecordId)
+    .maybeSingle();
+  if (error || !source) throw new Error('The configured Google Sheet source record does not exist.');
+
+  const snapshot = await fetchGoogleSheet(config);
+  const summary = await importCsvText({
+    text: Papa.unparse(snapshot.rows),
+    filename: `google-sheet-${new Date().toISOString().slice(0, 10)}.csv`,
+    sourceRecordId: config.sourceRecordId,
+    uploadedBy: user.id,
+  });
+  return { ...summary, sheetRange: snapshot.range, sheetRows: snapshot.rowCount };
 }

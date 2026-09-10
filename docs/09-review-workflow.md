@@ -35,7 +35,11 @@ Notes rule shown in the UI: *imported spreadsheet notes land in private_notes an
 When a re-import finds an approved record whose source row changed (deadline moved, URL changed, status column updated), the task shows a field-level diff. The officer either applies the change manually (and re-verifies the link) or dismisses the task. This is deliberate friction: published listings only change by officer action.
 
 ## Submissions (M2)
-`user_submissions` queue: officer opens payload → Approve creates a draft opportunity (linked via `created_opportunity_id`) which then flows through the normal review path — approval of a submission is not publication. Reject/spam requires no reason but accepts a note.
+The **Submissions** tab shows new and in-review payloads plus optional private
+contact information. **Create review draft** links an opportunity submission via
+`created_opportunity_id`; it then enters the ordinary opportunity queue. This is
+not publication. Correction and resource submissions can be marked handled;
+anything can be rejected or marked spam with an optional officer note.
 
 ## Duplicate & repost resolution (`/admin/review?tab=duplicates`)
 Side-by-side: fields diffed, newer `last_seen_at` highlighted. For `possible_duplicate`: officer picks survivor; the other becomes `duplicate` pointing at it (merge better data into the survivor first — manual, with prefilled suggestion). For `possible_repost` (same title family, different season/year): the default is **keep both** — new cycles are usually legitimately new postings; mark duplicate only if it's truly the same posting re-listed.

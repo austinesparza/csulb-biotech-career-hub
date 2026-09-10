@@ -1,6 +1,6 @@
 # Operations and search plan
 
-Status: code audit and proposed design, September 9, 2026
+Status: code audit, implemented worker foundation, and rollout plan, September 10, 2026
 
 This document describes what the Graduate Internship Hub does today, where the current workflow stops, and how to build a reliable search and officer-review system without letting automation publish unverified claims.
 
@@ -17,14 +17,16 @@ This is a repository-level audit. It verifies migrations, application code, scri
 | Area | Current behavior | Assessment |
 | --- | --- | --- |
 | Public board | Reads the restricted `public_opportunities` view and shows only approved, public-safe graduate or mixed records | Safe |
-| Public submissions | `/submit` validates the URL, applies field limits and a honeypot, then inserts into `user_submissions` | Safe intake |
+| Public submissions | `/submit` validates through a server action; a bounded RPC inserts a private `user_submissions` row | Safe intake |
 | Officer quick add | `/admin/add` creates an opportunity in `needs_review` | Working |
 | CSV import | Stores raw rows, normalizes, deduplicates, scores, and queues new records for review | Working manual path |
 | Officer review | Officers edit, approve, reject, or hide `opportunities` in `needs_review` | Working for opportunity records |
 | GitHub publication | Reviewed JSON merged to `main` is validated and written to Supabase | Working, but overlaps the database workflow |
 | Weekly email | Monday GitHub Action emails the `needs_review` opportunity queue | Working for one queue only |
-| Source ingestion | Greenhouse fetcher, normalization, hashing, persistence, history, and review bridge have tests | Foundation only |
-| Scheduled discovery | No production worker or schedule calls the source ingestion code | Not active |
+| Source ingestion | A manual worker now claims queued Greenhouse and governed public-page runs, archives payloads, and uses the existing persistence bridge | Implemented, not enabled |
+| Fetch fallbacks | Scrapling and ScrapeGraphAI are wired as fetch-only public-page tiers | Implemented, disabled by default |
+| Extraction | An OmniRoute-compatible worker writes quote-bound private extraction records | Implemented, disabled by default |
+| Scheduled discovery | No production schedule calls the workers | Not active |
 
 The public safety boundary is sound: an opportunity is visible only after it is approved and marked public-safe. Anonymous visitors can submit records but cannot read private submissions.
 
@@ -32,10 +34,10 @@ The public safety boundary is sound: an opportunity is visible only after it is 
 
 | Priority | Gap | Why it matters | Fix |
 | --- | --- | --- | --- |
-| P0 | New `user_submissions` are counted on `/admin`, but there is no submissions inbox | A valid suggestion can sit unseen | Build `/admin/submissions` with open, claim, reject, spam, and convert-to-draft actions |
-| P0 | Weekly email only queries `opportunities.status = needs_review` | Officers are not reminded about public suggestions | Add new and in-review submissions to the digest |
-| P0 | Relevance scoring is undergraduate-oriented | The model rewards undergraduate wording and penalizes master's requirements | Replace it before automated discovery is enabled |
-| P0 | There is no production ingestion runner | The tested Greenhouse connector never runs outside tests | Add a scheduled worker and source registry operations |
+| Done | `/admin/review?tab=submissions` handles new/in-review submissions | Suggestions enter the staffed review path | Monitor volume and officer response time |
+| Done | Weekly email includes pending opportunities and submissions | Officers receive one combined reminder | Add changed/stale task summaries after usage validates the format |
+| Done | Graduate relevance scorer and versioned taxonomy replace the undergraduate-first logic | Stage, lane, method, and structural gates are separate | Continue evaluation on real records |
+| Done | Manual ingestion and extraction runners exist | Queue items can be claimed and archived without publishing | Validate against a preview database before scheduling |
 | P1 | `FOCUS_AREAS` mixes scientific domains and job functions | The filter says scientific lane but contains QA, sales, legal, and finance | Split scientific lane, job function, methods, and eligibility |
 | P1 | GitHub JSON and Supabase review are two publication paths | Officers can be unsure where to edit a record | Make Supabase the record source of truth; keep GitHub for code, configuration, prompts, and evaluations |
 | P1 | `audience_bucket` reflects the older broad product | It does not answer whether a first- or second-year MSc can apply | Add graduate-stage and evidence fields; retain the old field only during migration |
@@ -49,9 +51,12 @@ The public safety boundary is sound: an opportunity is visible only after it is 
 ### Public suggestion
 
 1. A visitor submits a link and optional details at `/submit`.
-2. The browser writes an insert-only row to `user_submissions`.
-3. The admin home count increases.
-4. The workflow stops. The review page does not read this table, and the digest does not include it.
+2. A server action validates the form and invokes the narrow, globally bounded
+   `accept_public_submission` RPC. Browser roles cannot insert into the table.
+3. The admin home count and submissions review tab increase.
+4. An officer claims the suggestion, rejects spam, or converts it to a private
+   opportunity draft. Publication still requires the ordinary approval action.
+5. The weekly digest includes waiting submissions.
 
 ### Officer entry
 
@@ -72,7 +77,8 @@ The public safety boundary is sound: an opportunity is visible only after it is 
 ### Reviewed JSON
 
 1. An officer edits `data/reviewed-opportunities.json` in GitHub.
-2. A merge to `main` triggers `publish-reviewed-data.yml`.
+2. An officer manually dispatches `publish-reviewed-data.yml`; it stages new
+   records and change tasks but never publishes them.
 3. The script validates each record and writes it to Supabase.
 
 This path is useful as a controlled batch loader, but it should not remain a second everyday editing system after the admin workflow is complete.
@@ -370,14 +376,14 @@ site:jobs.ashbyhq.com
 
 Also search the web pages of known employers that use unsupported or customized systems. A discovery result is a lead, not proof that the role is open.
 
-### Deterministic filters
+### Deterministic routing
 
 Apply these before AI scoring:
 
-- reject invalid or non-HTTPS canonical URLs unless the source is an approved exception;
-- reject application aggregators when an official employer source is available;
-- reject clear regular full-time jobs with no student-program evidence;
-- route explicit undergraduate-only, doctoral-only, or completed-degree-only requirements away from the MSc board;
+- archive invalid or non-HTTPS canonical URLs with an explicit reason unless the source is an approved exception;
+- retain aggregator and LinkedIn leads while preferring an official employer source for publication evidence;
+- archive clear regular full-time jobs with no student-program evidence rather than deleting them;
+- route explicit undergraduate-only, doctoral-only, or completed-degree-only requirements away from the MSc board while retaining their source history;
 - keep contradictory and missing eligibility language as `unknown`;
 - keep source-stated dates separate from historical timing;
 - never convert a search-engine date or snippet into a posting deadline;
@@ -520,6 +526,8 @@ Do not optimize one combined score. A search can have good precision while missi
 
 ## Immediate recommendation
 
-The next implementation should be the officer submissions inbox plus digest coverage. It fixes a real reliability hole with little model risk. After that, replace the undergraduate scoring model and data labels. Only then should recurring discovery be enabled.
+The submissions inbox and digest coverage are implemented. Next, exercise the
+workflow with officers, expand the extraction golden set, and validate migrations
+against preview data. Enable recurring discovery only after those gates hold.
 
 The right spreadsheet integration is a sanitized officer mirror, not a second source of truth. The right AI integration is evidence-backed drafting, not automated approval.

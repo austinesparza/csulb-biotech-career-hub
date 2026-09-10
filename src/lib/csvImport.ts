@@ -16,23 +16,33 @@ import {
 export type CanonicalField =
   | 'company_name' | 'title' | 'posting_url' | 'location' | 'eligibility'
   | 'focus_area' | 'deadline' | 'start_date_text' | 'paid_status'
-  | 'application_type' | 'source_status_raw' | 'notes' | 'date_added';
+  | 'application_type' | 'source_status_raw' | 'notes' | 'date_added'
+  | 'candidate_id' | 'requisition' | 'work_pattern' | 'graduate_access'
+  | 'continued_enrollment' | 'work_authorization' | 'key_evidence' | 'last_checked';
 
 /** Header aliases, lowercase, punctuation-insensitive. Extend as spreadsheets evolve. */
 const HEADER_ALIASES: Record<CanonicalField, string[]> = {
   company_name: ['company name', 'company', 'organization', 'employer'],
   title: ['internship title position', 'internship title', 'position', 'title', 'role'],
-  posting_url: ['link to posting', 'link', 'url', 'posting url', 'application link'],
+  posting_url: ['link to posting', 'link', 'url', 'posting url', 'application link', 'source url'],
   location: ['location', 'city', 'location city'],
-  eligibility: ['eligibility', 'requirements', 'who can apply', 'class standing'],
-  focus_area: ['field focus area', 'focus area', 'field', 'area', 'category'],
-  deadline: ['application deadline', 'deadline', 'due date', 'apply by'],
+  eligibility: ['eligibility', 'requirements', 'who can apply', 'class standing', 'year program requirement'],
+  focus_area: ['field focus area', 'focus area', 'field', 'area', 'category', 'career area'],
+  deadline: ['application deadline', 'deadline', 'due date', 'apply by', 'stated close date'],
   start_date_text: ['start date duration', 'start date', 'duration', 'term', 'dates'],
   paid_status: ['paid unpaid', 'paid', 'compensation', 'pay'],
-  application_type: ['application type', 'apply via', 'application method'],
-  source_status_raw: ['status', 'posting status', 'state'],
-  notes: ['notes', 'comments', 'additional info'],
-  date_added: ['date added', 'added', 'date entered'],
+  application_type: ['application type', 'apply via', 'application method', 'program type'],
+  source_status_raw: ['status', 'posting status', 'state', 'open status'],
+  notes: ['notes', 'comments', 'additional info', 'officer notes'],
+  date_added: ['date added', 'added', 'date entered', 'posted date'],
+  candidate_id: ['candidate id'],
+  requisition: ['requisition', 'requisition id', 'job id'],
+  work_pattern: ['work pattern', 'work format', 'schedule format'],
+  graduate_access: ['graduate access'],
+  continued_enrollment: ['continued enrollment', 'return to school'],
+  work_authorization: ['work authorization', 'sponsorship'],
+  key_evidence: ['key evidence', 'eligibility evidence'],
+  last_checked: ['last checked', 'checked date'],
 };
 
 function normalizeHeader(h: string): string {
@@ -82,6 +92,22 @@ export function rowToDraft(
   const urlRaw = get('posting_url');
   const url = urlRaw ? normalizeUrl(urlRaw) : null;
 
+  const officerContext = [
+    ['Candidate ID', get('candidate_id')],
+    ['Requisition', get('requisition')],
+    ['Work pattern', get('work_pattern')],
+    ['Graduate access', get('graduate_access')],
+    ['Continued enrollment', get('continued_enrollment')],
+    ['Work authorization', get('work_authorization')],
+    ['Key evidence', get('key_evidence')],
+    ['Last checked', get('last_checked')],
+  ]
+    .map(([label, value]) => [label, cleanText(value)] as const)
+    .filter(([, value]) => value)
+    .map(([label, value]) => `${label}: ${value}`);
+  const notes = cleanText(get('notes'));
+  const privateNotes = [notes, ...officerContext].filter(Boolean).join('\n') || null;
+
   const draft: OpportunityDraft = {
     companyName,
     title,
@@ -97,7 +123,7 @@ export function rowToDraft(
     source_status_raw: cleanText(get('source_status_raw')),
     // Spreadsheet notes are officer-facing until proven otherwise: PRIVATE by
     // default. The review UI lets an officer copy sanitized text to public_notes.
-    private_notes: cleanText(get('notes')),
+    private_notes: privateNotes,
     date_added: parseDeadline(get('date_added')),
     dedupe_key: makeStrictKey(companyName, title, url),
     family_key: makeFamilyKey(companyName, title),

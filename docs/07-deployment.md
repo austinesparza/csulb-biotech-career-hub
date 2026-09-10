@@ -3,12 +3,15 @@
 ## One-time setup (~1 hour, documented for handoff)
 
 1. **GitHub:** create org-owned repo (club GitHub org, not a personal account — critical for handoff). Protect `main`; PRs required.
-2. **Supabase:** new project (free tier) under a club email (e.g. csulbbiotech.dev@gmail.com with shared password manager entry). Run `supabase/migrations/0001_init.sql` via SQL editor or `supabase db push`. Run `seed.sql` for career paths + demo data.
+2. **Supabase:** new project under a club account with credentials in the shared
+   password manager. Apply executable migrations in numeric order, first against
+   a preview project. Never apply SQL under `supabase/proposals`. Run `seed.sql`
+   only after the schema is current.
 3. **Auth:** enable email/password only; disable signups (officers are invited via dashboard); insert each officer's `auth.users.id` into `officers`.
 4. **Vercel:** import the repo (club Vercel account, hobby tier). Env vars:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` (server-only; never `NEXT_PUBLIC_`)
+   - `SUPABASE_SECRET_KEY` (server-only; never `NEXT_PUBLIC_`)
 5. **Domain:** subdomain of the club site, e.g. `careers.csulbbiotech.org`, CNAME → Vercel. Existing website adds a nav link + optionally embeds exported JSON/CSV.
 
 ## Ongoing operation
@@ -23,4 +26,7 @@
 3. Review HANDOFF.md together: weekly review-queue routine, monthly export/backup, semester report generation, "who to call" list.
 
 ## Local development
-`cp .env.example .env.local`, fill keys from Supabase dashboard, `npm install`, `npm run dev`. No Docker required (point local dev at the hosted Supabase project; the club scale doesn't justify local Postgres).
+`cp .env.example .env.local`, fill keys from Supabase dashboard, `npm ci`,
+`npm run dev`. Day-to-day app development may point at a non-production Supabase
+project; migration pull requests are also tested against the disposable local
+database in the **Database contracts** workflow.

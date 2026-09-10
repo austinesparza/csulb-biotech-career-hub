@@ -6,3 +6,13 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Optional local pipeline tooling and generated analysis
+.tools/
+graphify-out/
+
+# Claude Code tooling (machine-specific)
+.agents/
+.claude/skills/
+skills-lock.json
+setup-claude-tooling.sh

@@ -9,15 +9,19 @@ jobs:
   typecheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
           cache: npm
-      - run: npm install
+      - run: npm ci --ignore-scripts
       - run: npm run typecheck
+      - run: npm run lint
       - run: npm test
+      - run: npm run test:pipeline
       - run: npm run test:digest
+      - run: npm run test:publish-data
+      - run: npm run test:schema
 
   build:
     runs-on: ubuntu-latest
@@ -26,12 +30,12 @@ jobs:
       # Vercel builds with real env vars and is the true deploy gate.
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key-for-ci
-      SUPABASE_SERVICE_ROLE_KEY: dummy-service-key-for-ci
+      SUPABASE_SECRET_KEY: dummy-service-key-for-ci
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
           cache: npm
-      - run: npm install
+      - run: npm ci --ignore-scripts
       - run: npm run build

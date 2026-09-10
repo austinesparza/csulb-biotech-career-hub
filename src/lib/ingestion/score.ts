@@ -1,9 +1,9 @@
 /**
- * Deterministic relevance scoring for automated ingestion candidates (version 1).
+ * Deterministic relevance scoring for automated ingestion candidates (version 2).
  *
  * Rules:
  * - Range: 0–100 (clamped).
- * - Score version is a positive integer, currently 1.
+ * - Score version is a positive integer, currently 2.
  * - Complete breakdown with explicit positive and negative reasons.
  * - No hidden AI or model calls.
  * - No protected-characteristic inference.
@@ -15,8 +15,11 @@
  *   v1 (initial): biotechnology relevance, undergrad accessibility, role type,
  *                 SoCal/remote geography, seniority penalty, advanced-degree
  *                 penalty, unrelated-discipline penalty, ambiguous eligibility.
+ *   v2: graduate-first relevance from the canonical pipeline taxonomy. Stage,
+ *       structural gates and scientific lanes are classified independently.
  */
 
+import { classify, loadTaxonomy, type Classification } from '../pipeline/classify';
 import type { OpportunityClassification, RemoteType, ScoreBreakdown, ScoreReason, UncertaintyFlag } from './types';
 
 // ============================================================
@@ -25,7 +28,7 @@ import type { OpportunityClassification, RemoteType, ScoreBreakdown, ScoreReason
 // relevance_score and relevance_score_version must always be updated together.
 // ============================================================
 
-export const SCORE_VERSION = 1;
+export const SCORE_VERSION = 2;
 
 // ============================================================
 // SCORING WEIGHTS
@@ -36,11 +39,9 @@ export const SCORE_VERSION = 1;
 const BASELINE = 40;
 
 // Positive weights
-const W_BIOTECH_TITLE_STRONG = 20;     // strong biotech/life-science signal in title
-const W_BIOTECH_TITLE_MODERATE = 10;   // moderate biotech/life-science signal in title
-const W_BIOTECH_DEPT = 8;              // biotech/life-science department
-const W_UNDERGRAD_EXPLICIT = 15;       // explicit undergrad eligibility
-const W_RECENT_GRAD = 8;               // recent-grad language
+const W_CANONICAL_LANE = 20;           // at least one scientific lane from the canonical taxonomy
+const W_BROAD_BIOSCIENCE = 8;          // weaker fallback signal when taxonomy is inconclusive
+const W_MSC_EXPLICIT = 20;             // explicitly accessible to master's students
 const W_INTERNSHIP = 15;               // classified as internship
 const W_FELLOWSHIP = 12;               // classified as fellowship
 const W_RESEARCH = 8;                  // classified as research role
@@ -52,10 +53,11 @@ const W_HYBRID = 6;                    // hybrid
 // Negative weights (stored as negative numbers in reasons)
 const W_SENIORITY_STRONG = -25;        // VP, director, principal, staff, head of
 const W_SENIORITY_MODERATE = -15;      // senior, lead, manager
-const W_ADVANCED_DEGREE = -20;         // PhD, MD, postdoc required
-const W_MASTERS_PREFERRED = -8;        // master's preferred / required
+const W_ADVANCED_DEGREE = -20;         // PhD, MD, postdoc credential required
+const W_NON_MSC_STAGE = -45;           // undergrad-only, doctoral-only, or postbac-only
+const W_NO_SCIENTIFIC_MATCH = -35;     // canonical taxonomy found no relevant science
+const W_STRUCTURAL_GATE = -10;         // institution/program/residency restriction
 const W_UNRELATED_DEPT = -20;          // clearly unrelated department
-const W_GRAD_ONLY = -15;               // explicitly restricted to graduate students
 const W_NO_URL = -10;                  // no application URL
 const W_AMBIGUOUS_ELIGIBILITY = -5;    // eligibility field missing or ambiguous
 const W_DEADLINE_EXPIRED = -15;        // deadline has passed
@@ -146,27 +148,6 @@ const SOCAL_LOCATION_PATTERNS: RegExp[] = [
 ];
 
 /**
- * Eligibility terms indicating undergrad accessibility.
- * Do NOT include bare 'junior' or 'senior' — these appear in seniority titles
- * (Junior Analyst, Senior Scientist). Require student-context phrases instead.
- */
-const UNDERGRAD_TERMS = [
-  'undergraduate', 'undergrad', "bachelor's", 'bachelor', 'bs student',
-  'ba student', 'sophomore', 'freshman', 'all majors',
-  'current students', 'university students', 'college students',
-  'pursuing a degree', 'pursuing a bachelor',
-  // Student-context phrases for junior/senior
-  'college junior', 'rising junior', 'junior standing', 'junior year',
-  'college senior', 'rising senior', 'senior standing', 'senior year',
-];
-
-/** Eligibility terms indicating recent-graduate accessibility. */
-const RECENT_GRAD_TERMS = [
-  'recent graduate', 'new grad', 'entry-level', 'entry level',
-  '0-1 year', '0-2 year', 'no experience required', 'new graduates',
-];
-
-/**
  * Title terms indicating excessive seniority (strong signal).
  * Do NOT include bare 'fellow' — student/research fellowships are not seniority.
  * "Postdoctoral Fellow" and "Research Fellow" should not be penalized as seniority.
@@ -221,36 +202,13 @@ const ADVANCED_DEGREE_NOT_REQUIRED_PHRASES = [
   'ba/bs/ms/phd', 'all degree levels',
 ];
 
-/** Terms suggesting master's degree is preferred or required. */
-const MASTERS_PREFERRED_PATTERNS = [
-  /\bmaster's required\b/i,
-  /\bmaster's preferred\b/i,
-  /\bmasters required\b/i,
-  /\bmaster's degree required\b/i,
-  /\bms required\b/i,
-  /\bms preferred\b/i,
-  /\bmsc required\b/i,
-  /\bgraduate degree required\b/i,
-  /\bgraduate students only\b/i,
-];
-const BACHELORS_OR_MASTERS_ACCEPTED_PATTERNS = [
-  /\b(bs|b\.s\.|ba|b\.a\.|bachelor'?s?)\s*(\/|\bor\b)\s*(ms|m\.s\.|master'?s?|msc)\b/i,
-  /\b(ms|m\.s\.|master'?s?|msc)\s*(\/|\bor\b)\s*(bs|b\.s\.|ba|b\.a\.|bachelor'?s?)\b/i,
-  /\bbachelor'?s?\s+or\s+master'?s?\s+degree\b/i,
-];
-
-/** Terms indicating restriction to graduate students. */
-const GRAD_ONLY = [
-  'graduate students only', 'phd students only',
-  'doctoral students only', 'must be enrolled in a graduate program',
-];
-
 // ============================================================
 // SCORING INPUT
 // ============================================================
 
 /** Input to scoreIngestionCandidate — fields derived from NormalizedSourcePosting. */
 export interface ScoringInput {
+  employerName?: string | null;
   titleRaw: string | null;
   titleNormalized: string | null;
   locationNormalized: string | null;
@@ -262,6 +220,28 @@ export interface ScoringInput {
   descriptionText: string | null;
   closesAt: string | null;
   uncertaintyFlags: UncertaintyFlag[];
+}
+
+export interface GraduateScoreBreakdown extends ScoreBreakdown {
+  taxonomyClassification: Classification;
+}
+
+let taxonomy: ReturnType<typeof loadTaxonomy> | null = null;
+
+function getTaxonomy(): ReturnType<typeof loadTaxonomy> {
+  taxonomy ??= loadTaxonomy();
+  return taxonomy;
+}
+
+/** Exposes the exact canonical classification used by the legacy ingestion adapter. */
+export function classifyScoringInput(input: ScoringInput): Classification {
+  return classify({
+    title: input.titleRaw ?? input.titleNormalized ?? '',
+    employer: input.employerName ?? '',
+    body: input.descriptionText ?? '',
+    location: input.locationNormalized ?? undefined,
+    url: input.canonicalUrl ?? undefined,
+  }, getTaxonomy());
 }
 
 // ============================================================
@@ -319,7 +299,7 @@ function isSoCalLocation(locationNormalized: string | null): boolean {
 export function scoreIngestionCandidate(
   input: ScoringInput,
   now: Date = new Date(),
-): ScoreBreakdown {
+): GraduateScoreBreakdown {
   let raw = BASELINE;
   const positive: ScoreReason[] = [];
   const negative: ScoreReason[] = [];
@@ -342,23 +322,30 @@ export function scoreIngestionCandidate(
   const locationLower = (input.locationNormalized ?? '').toLowerCase();
   const descLower = (input.descriptionText?.slice(0, 2000) ?? '').toLowerCase();
   const eligibility = descLower; // use description as proxy for eligibility
+  const taxonomyClassification = classifyScoringInput(input);
 
-  // --- 1. Biotechnology / life-science relevance ---
+  // --- 1. Canonical graduate-science relevance ---
   const bioStrong = BIOTECH_TITLE_STRONG.some((t) => titleLower.includes(t));
   const bioModerate = !bioStrong && BIOTECH_TITLE_MODERATE.some((t) => titleLower.includes(t));
   const bioDept = BIOTECH_DEPARTMENTS.some((t) => deptLower.includes(t) || allDepts.includes(t));
 
-  if (bioStrong) {
-    addPositive('biotech_relevance', W_BIOTECH_TITLE_STRONG, `strong biotech/life-science signal in title: "${input.titleRaw}"`);
-  } else if (bioModerate) {
-    addPositive('biotech_relevance', W_BIOTECH_TITLE_MODERATE, `moderate biotech/science signal in title: "${input.titleRaw}"`);
-  }
-  if (bioDept) {
-    addPositive('biotech_relevance', W_BIOTECH_DEPT, `biotech/life-science department: "${input.department ?? input.departments.join(', ')}"`);
+  if (taxonomyClassification.lanes.length > 0) {
+    addPositive(
+      'scientific_relevance',
+      W_CANONICAL_LANE,
+      `canonical scientific lane: ${taxonomyClassification.lanes.map((lane) => lane.label).join(', ')}`,
+    );
+  } else if (bioStrong || bioModerate || bioDept) {
+    addPositive('scientific_relevance', W_BROAD_BIOSCIENCE, 'broad bioscience signal requires officer review');
+  } else {
+    addNegative(
+      'scientific_relevance',
+      W_NO_SCIENTIFIC_MATCH,
+      taxonomyClassification.dropReason ?? 'no scientific lane matched',
+    );
   }
 
-  // --- 2. Undergraduate / recent-grad accessibility ---
-  // Derive eligibility flags from description when not already present
+  // --- 2. Graduate stage and structural access ---
   const hasDescription = !!input.descriptionText?.trim();
   let eligibilityMissing = input.uncertaintyFlags.includes('eligibility_missing');
   let eligibilityAmbiguous = input.uncertaintyFlags.includes('eligibility_ambiguous');
@@ -367,21 +354,24 @@ export function scoreIngestionCandidate(
     eligibilityMissing = true;
   }
 
-  const isUndergrad = UNDERGRAD_TERMS.some((t) => eligibility.includes(t));
-  const isRecentGrad = !isUndergrad && RECENT_GRAD_TERMS.some((t) => eligibility.includes(t));
-  const isGradOnly = GRAD_ONLY.some((t) => eligibility.includes(t));
+  const stageId = taxonomyClassification.stage.id;
+  const isExplicitMsc = ['msc_year1', 'msc_year2', 'msc_any'].includes(stageId);
+  const isNonMscStage = ['undergrad_only', 'phd_only', 'postbac_stage'].includes(stageId);
 
-  if (isUndergrad) {
-    addPositive('undergrad_access', W_UNDERGRAD_EXPLICIT, 'explicitly mentions undergraduate eligibility');
-  } else if (isRecentGrad) {
-    addPositive('undergrad_access', W_RECENT_GRAD, 'recent-graduate or entry-level language in description');
-  } else if (hasDescription && !isGradOnly) {
-    // Content exists but no clear accessibility or exclusion signal
+  if (isExplicitMsc) {
+    addPositive('graduate_access', W_MSC_EXPLICIT, taxonomyClassification.stage.label);
+  } else if (isNonMscStage) {
+    addNegative('graduate_access', W_NON_MSC_STAGE, taxonomyClassification.stage.label);
+  } else if (hasDescription) {
     eligibilityAmbiguous = true;
   }
 
-  if (isGradOnly) {
-    addNegative('undergrad_access', W_GRAD_ONLY, 'description restricts eligibility to graduate students');
+  if (taxonomyClassification.structuralGates.length > 0) {
+    addNegative(
+      'structural_gate',
+      W_STRUCTURAL_GATE,
+      `restricted by ${taxonomyClassification.structuralGates.map((gate) => gate.id.replaceAll('_', ' ')).join(', ')}`,
+    );
   }
 
   // --- 3. Role type ---
@@ -420,16 +410,9 @@ export function scoreIngestionCandidate(
   // Check both title and description, but distinguish required from preferred/contextual
   const combinedForDegree = [titleLower, eligibility].join(' ');
   const needsPhD = hasAdvancedDegreeRequired(combinedForDegree) || hasPostdocDegreeRequired(titleLower, eligibility);
-  const hasBachelorsAlternative = BACHELORS_OR_MASTERS_ACCEPTED_PATTERNS.some((re) => re.test(eligibility));
-  const prefersMasters =
-    !needsPhD &&
-    !hasBachelorsAlternative &&
-    MASTERS_PREFERRED_PATTERNS.some((re) => re.test(eligibility));
 
   if (needsPhD) {
     addNegative('degree_req', W_ADVANCED_DEGREE, 'PhD, MD, or postdoc credential required');
-  } else if (prefersMasters) {
-    addNegative('degree_req', W_MASTERS_PREFERRED, "master's degree preferred or required");
   }
 
   // --- 7. Unrelated department ---
@@ -473,7 +456,11 @@ export function scoreIngestionCandidate(
   if (eligibilityMissing) derivedFlags.add('eligibility_missing');
   if (eligibilityAmbiguous) derivedFlags.add('eligibility_ambiguous');
 
-  const total = Math.max(0, Math.min(100, raw));
+  // Non-MSc stages must stay below the candidate-creation threshold of 35.
+  // They remain reviewable without outranking valid graduate opportunities.
+  const total = isNonMscStage
+    ? Math.max(0, Math.min(25, raw))
+    : Math.max(0, Math.min(100, raw));
   return {
     version: SCORE_VERSION,
     total,
@@ -481,5 +468,6 @@ export function scoreIngestionCandidate(
     positiveReasons: positive,
     negativeReasons: negative,
     uncertaintyFlags: [...derivedFlags],
+    taxonomyClassification,
   };
 }

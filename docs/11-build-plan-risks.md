@@ -35,7 +35,9 @@ Rules: deploy from week 1 and demo on production; import the real spreadsheet in
 - *Implied endorsement / bad posting.* Disclaimer footer; "report a problem" path via /submit; officers can hide instantly (no deploy).
 
 **Scope/behavioral**
-- *Temptation to add scraping later.* The architecture has no fetch-external-site code path on purpose; `source_records.refresh_policy` documents the manual process per source. Keep it that way — restricted platforms are handled only via manually entered links and reviewed submissions.
+- *Source-policy violations.* Automated fetch exists only for enabled sources with
+  recorded policy and robots checks. Restricted or uncertain platforms stay manual;
+  all retrieved content remains private until officer review.
 - *Feature creep (student accounts, chat, notifications).* The MVP gate and this doc are the defense: every new feature must name the officer-hours it costs per week to maintain.
 
 **Technical**

@@ -1,6 +1,8 @@
 # CSULB Biotech Career Hub
 
-A student-maintained career-resource and internship-tracking platform. Officers import the club's internship spreadsheet, review and deduplicate records, and publish an approved, searchable board. No scraping — data enters only via CSV import, manual entry, or voluntary reviewed submissions.
+A student-maintained graduate internship tracker. Officers review spreadsheet
+imports, voluntary submissions, and candidates collected from explicitly approved
+public sources before anything reaches the searchable board.
 
 ## Publishing to GitHub (like the alumni hub, plus a backend)
 
@@ -21,11 +23,13 @@ account is exactly the handoff risk to avoid repeating.
 
 ## Quickstart
 
-1. Create a Supabase project (club account). SQL editor → run `supabase/migrations/0001_init.sql`, then `supabase/seed.sql`.
+1. Create a club-owned Supabase project. Apply every executable file in
+   `supabase/migrations/` in numeric order, then run `supabase/seed.sql`.
+   Never run files under `supabase/proposals/`.
 2. Auth → create officer users (invite; signups disabled). Insert each into `officers`:
    `insert into officers (user_id, display_name) values ('<auth uid>', 'Name');`
 3. `cp .env.example .env.local` and fill keys (Supabase → Settings → API).
-4. `npm install && npm run dev` → http://localhost:3000. Sign in at `/admin/login`, import a CSV at `/admin/import` (a source must be selected — seed.sql creates "Club Internship Spreadsheet").
+4. `npm ci && npm run dev` → http://localhost:3000. Sign in at `/admin/login`, then use `/admin/import`. CSV works immediately; direct Sheet sync requires the five server-only Google variables documented in `.env.example` and `docs/12-sheets-integration.md`.
 5. Deploy: push to GitHub → import in Vercel → set the same three env vars. See `docs/07-deployment.md`.
 
 ## Deliverable map
@@ -36,7 +40,7 @@ account is exactly the handoff risk to avoid repeating.
 | B. MVP scope | `docs/02-mvp-scope.md` |
 | C. Architecture · N. Repo structure | `docs/03-architecture.md` |
 | D. Database schema design | `docs/04-database-schema.md` |
-| E. Supabase SQL schema | `supabase/migrations/0001_init.sql` (+ `seed.sql`) |
+| E. Supabase SQL schema | ordered `supabase/migrations/*.sql` (+ `seed.sql`) |
 | F. TypeScript types | `src/lib/types.ts` |
 | G. CSV import design + code | `docs/08-import-dedupe-scoring.md`, `src/lib/csvImport.ts`, `src/app/admin/import/actions.ts` |
 | H. Deduplication | same doc, `src/lib/dedupe.ts` |
@@ -51,16 +55,28 @@ account is exactly the handoff risk to avoid repeating.
 
 ## Non-negotiable invariants (read before contributing)
 
+Architecture ownership is mapped in `docs/pipeline-integration.md`. The small
+root `normalize`/`dedupe` modules remain the CSV and opportunity bridge; the
+`ingestion/` namespace owns source acquisition and persistence; `pipeline/`
+owns evidence-bound classification/extraction experiments. Do not add a fourth
+path.
+
 1. Public pages read only `public_*` views. Never query base tables from a student-facing page.
 2. Nothing becomes public without `review_status='approved'` + `public_safe=true`, set by an officer.
 3. **Approved public records are import-immutable.** Re-imports may only refresh `last_seen_at`; field differences open `import_changed` review tasks. Published listings change only by officer action.
 4. Every CSV import requires a `source_record`. Provenance is not optional.
 5. Imported spreadsheet notes land in `private_notes`. Only officer-written text goes in `public_notes`.
-6. No code that fetches data from external sites. Sources are refreshed manually per `source_records.refresh_policy`.
-7. No server action calls `createServiceClient()` before `await requireOfficer()` succeeds.
+6. Automated retrieval is limited to enabled `job_sources` that have recorded
+   policy and robots checks. Prohibited or uncertain sources stay manual.
+7. Officer server actions call `createServiceClient()` only after `requireOfficer()`.
+   The sole public exception is the narrow, validated, rate-limited submission RPC;
+   it can create private submissions but cannot publish or modify opportunities.
 8. All user-supplied filter/search input passes `sanitizeSearchTerm()` before reaching a query.
 9. Enums live in the SQL migration and `src/lib/types.ts` — change both in the same PR.
-10. `SUPABASE_SERVICE_ROLE_KEY` is server-only; it must never gain a `NEXT_PUBLIC_` prefix.
+10. `SUPABASE_SECRET_KEY` is server-only; it must never gain a `NEXT_PUBLIC_`
+    prefix. `SUPABASE_SERVICE_ROLE_KEY` is a temporary legacy fallback only.
+11. Google Sheet intake uses a fixed file, range, and source UUID with a read-only
+    service account. Browser input can never choose the spreadsheet or authorize publication.
 
 ## For future officers
 Start with `HANDOFF.md` (operational runbook), then `docs/01` and `docs/02`.

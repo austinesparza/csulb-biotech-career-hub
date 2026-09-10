@@ -1,27 +1,19 @@
-// Canonical focus areas: career categories the club tracks. Used to populate
-// the board filter, the personal-tuning checkboxes, and quick-add suggestions.
-// Officers extend this list here; data with other labels still works (matching
-// is substring-based), it just won't appear as a preset option.
+// Legacy display adapter. Classification keeps scientific subject, job function,
+// and method separate. Older records still have one `focus_area` string, so the
+// public filter uses scientific lane labels as its controlled suggestions while
+// preserving any labels already stored in the database.
 
 export const FOCUS_AREAS = [
-  'Research & Development',
-  'Quality Assurance',
-  'Quality Control',
-  'Manufacturing & Operations',
-  'Process Development',
-  'Regulatory Affairs',
-  'Clinical Research',
-  'Data Science & Informatics',
-  'Software & Engineering',
-  'Business Development',
-  'Marketing & Sales',
-  'Science Communication',
-  'Supply Chain & Logistics',
-  'Project Management',
-  'Legal & Intellectual Property',
-  'Finance & Consulting',
-  'Environmental & Sustainability',
-  'Education & Outreach',
+  'Cancer and oncology',
+  'Genomics and genetics',
+  'Single-cell and spatial',
+  'Bioinformatics and computational biology',
+  'Biological data science and ML',
+  'Diagnostics and clinical data',
+  'Bioprocess and manufacturing science',
+  'Protein science and drug discovery',
+  'Neuroscience and neurodegeneration',
+  'Immunology and infectious disease',
 ] as const;
 
 /** Canonical list merged with whatever labels exist in current data. */

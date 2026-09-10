@@ -1,13 +1,7 @@
-name: Publish reviewed opportunity data
+name: Stage reviewed opportunity data
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - data/reviewed-opportunities.json
-      - scripts/publish-reviewed-data.mjs
-      - .github/workflows/publish-reviewed-data.yml
 
 permissions:
   contents: read
@@ -17,15 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     environment: Production
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - name: Validate reviewed data
         run: node scripts/publish-reviewed-data.mjs
-      - name: Publish to Supabase
+      - name: Stage drafts in Supabase
         run: node scripts/publish-reviewed-data.mjs --apply
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
