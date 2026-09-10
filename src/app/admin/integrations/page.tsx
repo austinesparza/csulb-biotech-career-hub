@@ -85,7 +85,8 @@ export default async function IntegrationsPage() {
       <article className="rounded-xl p-5" style={{ border: '1px solid var(--line)', background: 'var(--brand-soft)' }}>
         <h2 className="font-semibold">Operator actions</h2>
         <div className="mt-4 flex flex-wrap gap-2 text-sm">
-          <Link className="primary-button" href="/admin/import">Sync intake</Link>\n          <Link className="secondary-button" href="/admin/sources">Manage sources</Link>
+          <Link className="primary-button" href="/admin/import">Sync intake</Link>
+          <Link className="secondary-button" href="/admin/sources">Manage sources</Link>
           <Link className="secondary-button" href="/admin/review">Review queue</Link>
           <a className="secondary-button" href="/api/export?format=csv">Export approved</a>
         </div>
