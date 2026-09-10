@@ -55,7 +55,7 @@ export interface SourceRunReport {
   warnings: string[];
 }
 
-type ConnectorPort = (source: RunnableJobSource, context: { db: SupabaseClient }) => Promise<ConnectorFetchResult>;
+type ConnectorPort = (source: RunnableJobSource, context: { db: SupabaseClient; privateTest?: boolean }) => Promise<ConnectorFetchResult>;
 
 function failure(source: RunnableJobSource, message: string): ConnectorFetchResult {
   return {
@@ -77,21 +77,27 @@ function failure(source: RunnableJobSource, message: string): ConnectorFetchResu
   };
 }
 
-class SourceTierStore implements TierStore {
-  constructor(private readonly db: SupabaseClient, private readonly source: RunnableJobSource) {}
+export class SourceTierStore implements TierStore {
+  constructor(
+    private readonly db: SupabaseClient,
+    private readonly source: RunnableJobSource,
+    private readonly persistChanges = true,
+  ) {}
 
   async get(): Promise<TierState> {
     return { sourceId: this.source.id, tier: this.source.fetch_tier, cleanRuns: this.source.tier_clean_runs };
   }
 
   async set(state: TierState): Promise<void> {
-    const { error } = await this.db.from("job_sources").update({
-      fetch_tier: state.tier,
-      tier_clean_runs: state.cleanRuns,
-      tier_reason: state.reason ?? null,
-      tier_changed_at: new Date().toISOString(),
-    }).eq("id", this.source.id);
-    if (error) throw new Error(`save fetch tier state: ${error.message}`);
+    if (this.persistChanges) {
+      const { error } = await this.db.from("job_sources").update({
+        fetch_tier: state.tier,
+        tier_clean_runs: state.cleanRuns,
+        tier_reason: state.reason ?? null,
+        tier_changed_at: new Date().toISOString(),
+      }).eq("id", this.source.id);
+      if (error) throw new Error(`save fetch tier state: ${error.message}`);
+    }
     this.source.fetch_tier = state.tier;
     this.source.tier_clean_runs = state.cleanRuns;
   }
@@ -202,11 +208,11 @@ export function staticPageResult(source: RunnableJobSource, rawText: string, out
   };
 }
 
-async function fetchStaticPage(source: RunnableJobSource, db: SupabaseClient): Promise<ConnectorFetchResult> {
+async function fetchStaticPage(source: RunnableJobSource, db: SupabaseClient, privateTest = false): Promise<ConnectorFetchResult> {
   const tiers = [conditionalGetTier(async (url, options) => safeFetch(url, options))];
   if (process.env.PIPELINE_SCRAPLING_ENABLED === "true") tiers.push(scraplingTier(createScraplingClient()));
   if (process.env.SCRAPEGRAPH_API_KEY) tiers.push(scrapeGraphTier(createScrapeGraphClient()));
-  const chain = createFetchChain(tiers, new SourceTierStore(db, source), {
+  const chain = createFetchChain(tiers, new SourceTierStore(db, source, !privateTest), {
     budgetPerPeriod: Number(process.env.SCRAPEGRAPH_MONTHLY_BUDGET ?? 1),
   });
   const fetcher = chain(source.id);
@@ -221,9 +227,9 @@ async function fetchStaticPage(source: RunnableJobSource, db: SupabaseClient): P
   }
 }
 
-export function defaultConnector(source: RunnableJobSource, context: { db: SupabaseClient }): Promise<ConnectorFetchResult> {
+export function defaultConnector(source: RunnableJobSource, context: { db: SupabaseClient; privateTest?: boolean }): Promise<ConnectorFetchResult> {
   if (source.source_kind === "static_html" || source.source_kind === "schema_org") {
-    return fetchStaticPage(source, context.db);
+    return fetchStaticPage(source, context.db, context.privateTest);
   }
   if (source.source_kind !== "greenhouse") {
     return Promise.resolve(failure(
@@ -282,7 +288,10 @@ export async function runClaimedFetch(params: {
   if (error) throw new Error(`load job source: ${error.message}`);
   if (!data) throw new Error(`job source ${params.claim.job_source_id} not found`);
   const source = data as RunnableJobSource;
-  const result = governanceFailure(source, params.privateTest) ?? await (params.connector ?? defaultConnector)(source, { db: params.db });
+  const result = governanceFailure(source, params.privateTest) ?? await (params.connector ?? defaultConnector)(source, {
+    db: params.db,
+    privateTest: params.privateTest,
+  });
   const summary = await persistFetchResultWithSupabase({
     db: params.db as unknown as IngestionDbClient,
     storage: params.storage,
