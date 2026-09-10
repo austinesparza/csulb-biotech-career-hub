@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { authorizeCronRequest } from "@/lib/cron/auth";
+import { authorizeCronRequest } from "../lib/cron/auth";
 
 const SECRET = "a-secure-cron-secret-that-is-longer-than-32-characters";
 
