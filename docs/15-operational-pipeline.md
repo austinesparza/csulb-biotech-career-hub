@@ -1,6 +1,6 @@
 # Operational pipeline and rollout
 
-Status: production foundation active; governed scheduling pending officer source approval, September 10, 2026
+Status: production schema and schedules active; no machine source is configured or enabled, September 10, 2026
 
 ## The short answer
 
@@ -32,17 +32,17 @@ flowchart TD
 | --- | --- | --- |
 | Public suggestions | `user_submissions` and `/admin/review?tab=submissions` | Working |
 | Spreadsheet intake | One-click read-only Sheet sync or CSV upload at `/admin/import`; original rows saved in `raw_import_rows` | Implemented, officer-triggered |
-| Official Greenhouse feed | `scripts/run-ingestion-worker.ts` and the tested Greenhouse connector | Implemented, not scheduled |
-| Public program pages | Conditional fetch with optional Scrapling and ScrapeGraphAI fallback | Implemented, not scheduled |
+| Official Greenhouse feed | `scripts/run-ingestion-worker.ts` and the tested Greenhouse connector | Implemented; no approved production source configured |
+| Public program pages | Conditional fetch with optional Scrapling and ScrapeGraphAI fallback | Implemented; no approved production source configured |
 | Raw archive | Private `source-payloads` storage plus `source_payloads` metadata and hashes | Implemented |
-| Search lead archive | Private `discovery_leads` plus immutable observations | Implemented in migration 0013, not applied |
+| Search lead archive | Private `discovery_leads` plus immutable observations | Migration 0013 is applied; no search provider is connected |
 | Posting history | `source_postings` plus immutable `source_posting_versions` | Implemented |
 | Classification | Versioned graduate taxonomy in `taxonomy/lanes.yaml` | Implemented |
 | Extraction | `scripts/run-extraction-worker.ts`, local OmniRoute adapter, quote binding, transit sentinel | Implemented, model disabled by default |
 | Officer decision | `/admin/review` plus atomic `decide_opportunity_review` | Working after migration 0011 |
 | Public board | `public_opportunities` read by the dynamic `/internships` route | Working after migration 0011 |
-| Source scheduling | Two authenticated Vercel cron routes plus idempotent queue RPCs | Implemented; activates when officers enable governed sources |
-| Direct Google Sheet sync | Fixed file/range, read-only service account, existing CSV import path | Implemented, not configured |
+| Source scheduling | Two authenticated Vercel cron routes plus idempotent queue RPCs | Deployed; safely processes zero sources until officers enable one |
+| Direct Google Sheet sync | Fixed file/range, read-only service account, existing CSV import path | Configured in production; first officer-triggered sync not yet proven |
 | Integration status | `/admin/integrations` reports each durable handoff | Implemented |
 
 ## Receive and archive rules
@@ -127,7 +127,7 @@ The Hobby-plan deployment uses both available Vercel cron slots:
 | `/api/cron/ingest` | Daily at 14:00 | Idempotently queues due governed sources, claims a bounded batch, archives payloads, normalizes records, and creates private review work |
 | `/api/cron/health` | Mondays at 16:00 | Creates deduplicated officer tasks for degraded sources and public records not checked in 14 days |
 
-Both routes require Vercel's `Authorization: Bearer $CRON_SECRET` header, reject preview execution, cap work per request, and have no publication operation. Officers manage allowlisted sources and can run one immediately at `/admin/sources`.
+Both routes require Vercel's `Authorization: Bearer $CRON_SECRET` header, reject preview execution, cap work per request, mark every response private/no-store, and have no publication operation. Officers manage allowlisted sources at `/admin/sources`. A normal manual run requires an enabled, resumed source. A reviewed source can also be tested privately while disabled or paused; the test is marked in the run log, archives evidence and review work, does not change source health, and cannot publish.
 
 Headless Scrapling remains a private-worker fallback because the browser and Python runtime are not suitable for a Vercel Function. The Vercel loop runs ordinary conditional HTTP, Greenhouse, schema.org, and optionally the hosted text-only ScrapeGraph fallback when separately configured. Model extraction remains opt-in in a private worker and never approves.
 
@@ -149,14 +149,22 @@ Each run must record a stable run ID, query or source ID, taxonomy version, retr
 
 Recommended activation sequence:
 
-1. Apply migrations through 0013 to a preview Supabase project.
-2. Seed one disabled Greenhouse source and one disabled public program page.
-3. Run the ingestion worker manually and inspect the private payload, posting, version, draft, and task.
+1. Keep the disposable migration and RLS workflow green before every production schema change.
+2. Add one real employer source only after an officer records its terms and robots review; leave it disabled.
+3. Click **Test privately** and inspect the marked run, private payload, posting, version, draft, and task before enabling it.
 4. Run extraction on at least 30 real officer-labelled postings. Keep learned ranking disabled until the evaluation gate passes.
 5. Test approve, archive, reject, and changed-approved behavior with officer and anonymous clients.
-6. Enable one source at low frequency.
+6. Enable that reviewed source at low frequency.
 7. Add a scheduler only after two clean weeks and a source-health alert.
 8. Configure direct Sheet sync only after the app review queue has become the officers' normal workspace; run a preview sync before production.
+
+## Security-advisor disposition
+
+- The seven `security_definer_view` findings are the original public projection design. The fixed views expose only approved, public-safe columns while base tables remain unreadable to anonymous users. Converting them blindly to invoker views would break the public board or require a new direct base-table access model. Treat this as a documented design exception until that access model is deliberately redesigned and acceptance-tested.
+- `is_officer()` is intentionally executable only by `authenticated` and `service_role`; the proxy and officer RLS policies use it. Anonymous and `PUBLIC` execution are revoked.
+- `public_submission_daily_limit` intentionally has no user policy. All public, anonymous, and authenticated grants are revoked; only the service role maintains this private anti-abuse counter.
+- `pg_trgm` predates automated ingestion and supports the existing title/company similarity indexes. Move it to a dedicated extension schema only in a tested migration.
+- Leaked-password protection cannot be enabled on the current Supabase Free plan. Officers should use unique 12+ character passwords and the project should enable the feature if upgraded.
 
 ## Improvements still needed
 
