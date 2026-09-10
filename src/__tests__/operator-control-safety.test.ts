@@ -6,6 +6,7 @@ const sourcePage = readFileSync('src/app/admin/sources/page.tsx', 'utf8');
 const sourceRunner = readFileSync('src/lib/ingestion/source-runner.ts', 'utf8');
 const ingestRoute = readFileSync('src/app/api/cron/ingest/route.ts', 'utf8');
 const healthRoute = readFileSync('src/app/api/cron/health/route.ts', 'utf8');
+const integrationPage = readFileSync('src/app/admin/integrations/page.tsx', 'utf8');
 
 describe('operator control safety', () => {
   it('marks private source tests and does not activate source health', () => {
@@ -23,5 +24,14 @@ describe('operator control safety', () => {
       expect(route).toContain('return json({ ok: false, error: "unauthorized" }, 401)');
       expect(route).not.toContain('NextResponse.json({ ok: false, error: "unauthorized" }');
     }
+  });
+
+  it('reports operational readiness without exposing the cron secret', () => {
+    expect(integrationPage).toContain('cronSecret.length >= 32');
+    expect(integrationPage).toContain('The secret value is never displayed');
+    expect(integrationPage).not.toContain('{cronSecret}');
+    expect(integrationPage).toContain('Machine source controls');
+    expect(integrationPage).toContain('Officer continuity');
+    expect(integrationPage).toContain('Use a reviewed private test before enabling one');
   });
 });

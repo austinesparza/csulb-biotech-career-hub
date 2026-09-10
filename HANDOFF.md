@@ -20,6 +20,8 @@
    During development, this must be one officer's personal address, not the club mailbox.
 7. `/admin/sources`: leave new sources disabled, record terms and robots review,
    then use **Test privately**. Inspect the marked run and evidence before enabling scheduling.
+8. Check Vercel Web Analytics for public route usage. Officer, authentication,
+   API routes, query parameters, and URL fragments are excluded by the application.
 
 ## Monthly
 - `/admin` → Export approved CSV → save to the club backup location.

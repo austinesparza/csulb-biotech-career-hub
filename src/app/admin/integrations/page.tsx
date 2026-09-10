@@ -25,7 +25,22 @@ function StatusCard({
 export default async function IntegrationsPage() {
   await requireOfficer();
   const db = createServiceClient();
-  const [latestImport, latestFetch, latestExtraction, publicCount, reviewCount, leadCount] = await Promise.all([
+  const sheetReady = googleSheetsConfigured();
+  const sheetSourceId = process.env.GOOGLE_SHEETS_SOURCE_RECORD_ID?.trim();
+  const cronSecret = process.env.CRON_SECRET?.trim();
+  const cronReady = Boolean(cronSecret && cronSecret.length >= 32);
+  const [
+    latestImport,
+    latestFetch,
+    latestExtraction,
+    publicCount,
+    reviewCount,
+    leadCount,
+    sourceCount,
+    enabledSourceCount,
+    officerCount,
+    sheetSource,
+  ] = await Promise.all([
     db.from('import_runs').select('id, filename, status, started_at, finished_at, total_rows, inserted_count, updated_count, error_count')
       .order('started_at', { ascending: false }).limit(1).maybeSingle(),
     db.from('source_fetch_runs').select('id, status, scheduled_for, started_at, finished_at, records_seen, records_new, records_changed, error_class')
@@ -35,12 +50,20 @@ export default async function IntegrationsPage() {
     db.from('public_opportunities').select('*', { count: 'exact', head: true }),
     db.from('review_tasks').select('*', { count: 'exact', head: true }).in('status', ['open', 'in_progress']),
     db.from('discovery_leads').select('*', { count: 'exact', head: true }).eq('officer_status', 'new'),
+    db.from('job_sources').select('*', { count: 'exact', head: true }),
+    db.from('job_sources').select('*', { count: 'exact', head: true }).eq('enabled', true),
+    db.from('officers').select('*', { count: 'exact', head: true }).eq('is_active', true),
+    sheetReady && sheetSourceId
+      ? db.from('source_records').select('id, name, last_imported_at').eq('id', sheetSourceId).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ]);
 
-  const sheetReady = googleSheetsConfigured();
   const importRow = latestImport.data;
   const fetchRow = latestFetch.data;
   const extractionRow = latestExtraction.data;
+  const sourceQueriesFailed = Boolean(sourceCount.error || enabledSourceCount.error);
+  const configuredSources = sourceCount.count ?? 0;
+  const enabledSources = enabledSourceCount.count ?? 0;
 
   return <div className="space-y-7">
     <div>
@@ -54,9 +77,27 @@ export default async function IntegrationsPage() {
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       <StatusCard
         title="Google Sheet → private intake"
-        state={!sheetReady ? 'Waiting' : latestImport.error || importRow?.status === 'failed' ? 'Attention' : importRow?.status === 'completed' ? 'Ready' : 'Waiting'}
-        detail={sheetReady ? `Last import: ${when(importRow?.finished_at ?? importRow?.started_at)}` : 'Read-only Sheet credentials are not configured.'}
-        footnote={importRow ? `${importRow.filename} · ${importRow.status} · ${importRow.total_rows} rows · ${importRow.error_count} errors` : 'No import run has been recorded.'}
+        state={!sheetReady ? 'Waiting' : sheetSource.error || !sheetSource.data || latestImport.error || importRow?.status === 'failed' ? 'Attention' : importRow?.status === 'completed' ? 'Ready' : 'Waiting'}
+        detail={!sheetReady ? 'Read-only Sheet credentials are not configured.' : sheetSource.error || !sheetSource.data ? 'The configured Sheet source record is unavailable.' : `Last import: ${when(importRow?.finished_at ?? importRow?.started_at ?? sheetSource.data.last_imported_at)}`}
+        footnote={importRow ? `${importRow.filename} · ${importRow.status} · ${importRow.total_rows} rows · ${importRow.error_count} errors` : sheetSource.data ? `${sheetSource.data.name} is connected, but no import run has been recorded.` : 'No import run has been recorded.'}
+      />
+      <StatusCard
+        title="Scheduled orchestration"
+        state={cronReady ? 'Ready' : 'Attention'}
+        detail={cronReady ? 'Daily ingestion and weekly health endpoints have a valid authorization secret.' : 'CRON_SECRET is missing or shorter than 32 characters.'}
+        footnote="The secret value is never displayed. Schedules are declared in vercel.json and endpoints fail closed when authorization is absent."
+      />
+      <StatusCard
+        title="Machine source controls"
+        state={sourceQueriesFailed ? 'Attention' : configuredSources > 0 && enabledSources > 0 ? 'Ready' : 'Waiting'}
+        detail={sourceQueriesFailed ? 'Source registry counts are unavailable.' : `${configuredSources} configured source${configuredSources === 1 ? '' : 's'}; ${enabledSources} enabled.`}
+        footnote={configuredSources === 0 ? 'No production machine source exists. Use a reviewed private test before enabling one.' : enabledSources === 0 ? 'Scheduling is intentionally idle until an officer enables a reviewed source.' : 'Only sources with completed terms and robots review can be enabled.'}
+      />
+      <StatusCard
+        title="Officer continuity"
+        state={officerCount.error || (officerCount.count ?? 0) < 2 ? 'Attention' : 'Ready'}
+        detail={officerCount.error ? 'Active officer count is unavailable.' : `${officerCount.count ?? 0} active officer account${officerCount.count === 1 ? '' : 's'}.`}
+        footnote={(officerCount.count ?? 0) < 2 ? 'Add and test a second named officer before relying on this system during officer turnover.' : 'At least two named officers can maintain the review workflow.'}
       />
       <StatusCard
         title="Approved sources → raw archive"

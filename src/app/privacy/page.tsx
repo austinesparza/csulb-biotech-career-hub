@@ -28,9 +28,11 @@ export default function PrivacyPage() {
           only to authorized club officers, and never published with a listing.
         </p>
         <p style={{ color: 'var(--ink-soft)' }}>
-          Filter preferences stay in your browser. Vercel and Supabase may process
-          routine technical logs needed to host and protect the site. We do not sell
-          personal information.
+          Filter preferences stay in your browser. We use Vercel Web Analytics for
+          aggregate public-page usage. Analytics is disabled on officer, authentication,
+          and API routes, and query parameters are removed before an event is sent.
+          Vercel and Supabase may also process routine technical logs needed to host
+          and protect the site. We do not sell personal information.
         </p>
       </section>
 
