@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,19 +13,28 @@ export default function LoginPage() {
     <div className="mx-auto max-w-sm space-y-4">
       <h1 className="text-xl font-bold">Officer sign-in</h1>
       <form
+        method="post"
         onSubmit={async (e) => {
           e.preventDefault();
-          setPending(true);
-          setError(null);
-          const form = new FormData(e.currentTarget);
-          const supabase = createClient();
-          const { error } = await supabase.auth.signInWithPassword({
-            email: String(form.get('email')),
-            password: String(form.get('password')),
-          });
-          setPending(false);
-          if (error) setError(error.message);
-          else router.push('/admin');
+          try {
+            setPending(true);
+            setError(null);
+            const form = new FormData(e.currentTarget);
+            const supabase = createClient();
+            const { error } = await supabase.auth.signInWithPassword({
+              email: String(form.get('email')),
+              password: String(form.get('password')),
+            });
+            if (error) setError(error.message);
+            else {
+              router.push('/admin');
+              router.refresh();
+            }
+          } catch {
+            setError('Sign-in could not reach the authentication service. Please try again.');
+          } finally {
+            setPending(false);
+          }
         }}
         className="space-y-3"
       >
@@ -35,8 +45,11 @@ export default function LoginPage() {
         <button disabled={pending} className="w-full rounded bg-gray-900 px-4 py-2 text-white disabled:opacity-50">
           {pending ? 'Signing in…' : 'Sign in'}
         </button>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" aria-live="polite" className="text-sm text-red-600">{error}</p>}
       </form>
+      <p className="text-sm">
+        <Link className="underline" href="/auth/forgot-password">Forgot your password?</Link>
+      </p>
       <p className="text-xs text-gray-500">
         Accounts are created by the webmaster in the Supabase dashboard and added to the
         officers allowlist. There is no self-signup.
