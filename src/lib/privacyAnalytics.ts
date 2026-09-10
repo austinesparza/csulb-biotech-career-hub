@@ -2,7 +2,7 @@ import type { BeforeSendEvent } from '@vercel/analytics/react';
 
 const PRIVATE_PATH_PREFIXES = ['/admin', '/api', '/auth'];
 
-function isPrivatePath(pathname: string) {
+export function isPrivatePath(pathname: string) {
   return PRIVATE_PATH_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
