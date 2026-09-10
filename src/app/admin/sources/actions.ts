@@ -106,7 +106,7 @@ export async function updateSourceGovernance(formData: FormData): Promise<void> 
 
 export async function toggleSourcePause(formData: FormData): Promise<void> {
   const { user } = await requireOfficer();
-  const db = createServiceClientжә();
+  const db = createServiceClient();
   const id = field(formData, "id");
   const paused = checked(formData, "paused");
   const { error } = await db.from("job_sources").update({
