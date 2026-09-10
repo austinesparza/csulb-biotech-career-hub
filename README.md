@@ -30,7 +30,9 @@ account is exactly the handoff risk to avoid repeating.
    `insert into officers (user_id, display_name) values ('<auth uid>', 'Name');`
 3. `cp .env.example .env.local` and fill keys (Supabase → Settings → API).
 4. `npm ci && npm run dev` → http://localhost:3000. Sign in at `/admin/login`, then use `/admin/import`. CSV works immediately; direct Sheet sync requires the five server-only Google variables documented in `.env.example` and `docs/12-sheets-integration.md`.
-5. Deploy: push to GitHub → import in Vercel → set the same three env vars. See `docs/07-deployment.md`.
+5. Deploy: push to GitHub → import in Vercel → configure the required Supabase
+   variables. Add the production-only cron and Google Sheet variables before
+   using scheduled ingestion or direct Sheet sync. See `docs/07-deployment.md`.
 
 ## Deliverable map
 
