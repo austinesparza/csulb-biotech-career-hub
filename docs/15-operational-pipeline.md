@@ -1,6 +1,6 @@
 # Operational pipeline and rollout
 
-Status: implemented but disabled pending preview-database validation, September 10, 2026
+Status: production foundation active; governed scheduling pending officer source approval, September 10, 2026
 
 ## The short answer
 
@@ -41,7 +41,7 @@ flowchart TD
 | Extraction | `scripts/run-extraction-worker.ts`, local OmniRoute adapter, quote binding, transit sentinel | Implemented, model disabled by default |
 | Officer decision | `/admin/review` plus atomic `decide_opportunity_review` | Working after migration 0011 |
 | Public board | `public_opportunities` read by the dynamic `/internships` route | Working after migration 0011 |
-| Source scheduling | Queue claim exists; no recurring job is enabled | Deliberately disabled |
+| Source scheduling | Two authenticated Vercel cron routes plus idempotent queue RPCs | Implemented; activates when officers enable governed sources |
 | Direct Google Sheet sync | Fixed file/range, read-only service account, existing CSV import path | Implemented, not configured |
 | Integration status | `/admin/integrations` reports each durable handoff | Implemented |
 
@@ -117,6 +117,19 @@ The canonical terms live in `src/lib/pipeline/taxonomy/lanes.yaml`. `search-plan
 Tests assert that all ten lanes receive official ATS and LinkedIn query families. The opportunity and eligibility vocabulary is intentionally separate from scientific-lane terms, so a posting can omit “genomics” yet still match methods such as variant curation or RNA-seq.
 
 Lane search is only one pass. A separate employer-inventory plan searches every known employer for broad internship, co-op, technology, data, R&D, career-program, and student-program language without requiring a scientific term. This is the pass that captures generic titles such as J&J's “Technology 2027 Co-Op.” Every returned result is archived first and classified second.
+
+## Production operating loop
+
+The Hobby-plan deployment uses both available Vercel cron slots:
+
+| Endpoint | UTC schedule | Purpose |
+| --- | --- | --- |
+| `/api/cron/ingest` | Daily at 14:00 | Idempotently queues due governed sources, claims a bounded batch, archives payloads, normalizes records, and creates private review work |
+| `/api/cron/health` | Mondays at 16:00 | Creates deduplicated officer tasks for degraded sources and public records not checked in 14 days |
+
+Both routes require Vercel's `Authorization: Bearer $CRON_SECRET` header, reject preview execution, cap work per request, and have no publication operation. Officers manage allowlisted sources and can run one immediately at `/admin/sources`.
+
+Headless Scrapling remains a private-worker fallback because the browser and Python runtime are not suitable for a Vercel Function. The Vercel loop runs ordinary conditional HTTP, Greenhouse, schema.org, and optionally the hosted text-only ScrapeGraph fallback when separately configured. Model extraction remains opt-in in a private worker and never approves.
 
 ## Recurring agent design
 
