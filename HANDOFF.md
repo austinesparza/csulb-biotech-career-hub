@@ -22,6 +22,8 @@
    then use **Test privately**. Inspect the marked run and evidence before enabling scheduling.
 8. Check Vercel Web Analytics for public route usage. Officer, authentication,
    API routes, query parameters, and URL fragments are excluded by the application.
+   Confirm the Vercel dashboard says Web Analytics is enabled; installing the
+   application component does not replace that project setting.
 
 ## Monthly
 - `/admin` → Export approved CSV → save to the club backup location.
@@ -75,6 +77,8 @@ second independent version.
 - **Site seems down:** free-tier Supabase pauses after inactivity; open the Supabase dashboard and restore. Vercel status: check the deployments tab.
 - **Officer sign-in fails:** use `/auth/forgot-password`, follow the newest email,
   then return to `/admin/login`. The account must also have an active row in `officers`.
+  Production acceptance also requires custom SMTP and a successful inbox delivery test;
+  Supabase's built-in sender is not a dependable production mail service.
 - **Cron route returns 401:** confirm `CRON_SECRET` is at least 32 characters and
   is scoped to Production. Never put it in a URL or a public environment variable.
 - **Mentor asks to be removed:** people table → `public_safe=false`, note it in `consent_notes`. Done.

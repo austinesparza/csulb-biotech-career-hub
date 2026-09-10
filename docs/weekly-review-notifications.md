@@ -45,7 +45,8 @@ preferred long-term sender.
 
 ## Activation checklist
 
-1. Apply migration `0007_opportunity_audience.sql`.
+1. Confirm all executable migrations are applied. The audience reconciliation is
+   `20260910072453_reconcile_opportunity_audience.sql` in the current repository.
 2. Confirm the production review dashboard works for at least two officers.
 3. Verify the single development recipient directly. Do not include the club
    mailbox during development or acceptance testing.
