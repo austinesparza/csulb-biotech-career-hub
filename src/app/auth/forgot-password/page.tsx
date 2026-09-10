@@ -1,20 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useState, useSyncExternalStore } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-const subscribeToHydration = () => () => {};
-
 export default function ForgotPasswordPage() {
-  const ready = useSyncExternalStore(
-    subscribeToHydration,
-    () => true,
-    () => false,
-  );
+  const [ready, setReady] = useState(false);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setReady(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
