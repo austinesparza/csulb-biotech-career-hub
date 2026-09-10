@@ -2,15 +2,55 @@
 // service client (after requireOfficer); the client list handles the
 // guardrailed approve flow.
 import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
+import type { ReviewTask, UserSubmission } from '@/lib/types';
 import { ReviewList, type ReviewRow } from './review-list';
+import { SubmissionList } from './submission-list';
+import { TaskList } from './task-list';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ReviewPage() {
+type ReviewTab = 'opportunities' | 'submissions' | 'tasks';
+
+function TabNav({ selected }: { selected: ReviewTab }) {
+  const tabs: Array<[ReviewTab, string]> = [
+    ['opportunities', 'Opportunities'], ['submissions', 'Submissions'], ['tasks', 'Tasks'],
+  ];
+  return <nav className="flex flex-wrap gap-2" aria-label="Review queues">{tabs.map(([key, label]) => (
+    <a key={key} className={selected === key ? 'primary-button' : 'secondary-button'} href={key === 'opportunities' ? '/admin/review' : `/admin/review?tab=${key}`}>{label}</a>
+  ))}</nav>;
+}
+
+export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   await requireOfficer();
   const db = createServiceClient();
+  const requested = (await searchParams).tab;
+  const selected: ReviewTab = requested === 'submissions' || requested === 'tasks' ? requested : 'opportunities';
 
-  const { data } = await db
+  if (selected === 'submissions') {
+    const { data, error } = await db.from('user_submissions').select('*')
+      .in('status', ['new', 'in_review']).order('created_at', { ascending: true }).limit(100);
+    const rows = (data ?? []) as UserSubmission[];
+    return <div className="space-y-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Officer review</h1>
+      <TabNav selected={selected} />
+      <p className="max-w-2xl text-sm">Suggestions stay private here. Creating a draft sends an opportunity through the normal officer review; it does not publish it.</p>
+      {error ? <p role="alert">Could not load submissions: {error.message}</p> : <SubmissionList rows={rows} />}
+    </div>;
+  }
+
+  if (selected === 'tasks') {
+    const { data, error } = await db.from('review_tasks').select('*')
+      .in('status', ['open', 'in_progress']).order('priority', { ascending: true }).order('created_at', { ascending: true }).limit(100);
+    const rows = (data ?? []) as ReviewTask[];
+    return <div className="space-y-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Officer review</h1>
+      <TabNav selected={selected} />
+      <p className="max-w-2xl text-sm">Tasks flag changes, possible duplicates, broken links, and source-health problems for an officer to resolve.</p>
+      {error ? <p role="alert">Could not load tasks: {error.message}</p> : <TaskList rows={rows} />}
+    </div>;
+  }
+
+  const { data, error } = await db
     .from('opportunities')
     .select(
       'id, title, posting_url, location, eligibility, focus_area, deadline, deadline_text, ' +
@@ -76,11 +116,12 @@ export default async function ReviewPage() {
           {rows.length} pending · sorted by relevance
         </span>
       </div>
+      <TabNav selected={selected} />
       <p className="max-w-2xl text-sm" style={{ color: 'var(--ink-soft)' }}>
         Nothing goes public until you approve it here. Open the posting link first,
         then confirm the public notes contain no private information.
       </p>
-      <ReviewList rows={rows} />
+      {error ? <p role="alert">Could not load opportunities: {error.message}</p> : <ReviewList rows={rows} />}
     </div>
   );
 }

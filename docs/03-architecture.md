@@ -59,7 +59,7 @@ csulb-biotech-career-hub/
 ├── HANDOFF.md                 # officer runbook (finished in M1)
 ├── docs/                      # design docs (this folder)
 ├── supabase/
-│   ├── migrations/0001_init.sql
+│   ├── migrations/            # executable, ordered schema history
 │   └── seed.sql
 ├── src/
 │   ├── app/

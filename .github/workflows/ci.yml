@@ -20,6 +20,7 @@ jobs:
       - run: npm test
       - run: npm run test:pipeline
       - run: npm run test:digest
+      - run: npm run test:publish-data
       - run: npm run test:schema
 
   build:

@@ -27,9 +27,6 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
     .from('public_opportunities')
     .select('*')
     .in('audience_bucket', ['graduate', 'mixed']);
-  if (q) query = query.or(`title.ilike.%${q}%,company_name.ilike.%${q}%`);
-  if (focus) query = query.ilike('focus_area', `%${focus}%`);
-  if (loc) query = query.ilike('location', `%${loc}%`);
   if (paid) query = query.in('paid_status', ['paid', 'stipend']);
   query = sort === 'deadline'
     ? query.order('deadline', { ascending: true, nullsFirst: false })
@@ -40,7 +37,17 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
         : query.order('relevance_score', { ascending: false, nullsFirst: false });
 
   const { data, error } = await query.limit(200);
-  const opportunities = (data ?? []) as PublicOpportunity[];
+  const normalized = (value: unknown) => String(value ?? '').toLocaleLowerCase();
+  const includes = (value: unknown, term: string | null | undefined) => !term || normalized(value).includes(term.toLocaleLowerCase());
+  const opportunities = ((data ?? []) as PublicOpportunity[]).filter((row) => {
+    const searchable = [
+      row.company_name, row.title, row.location, row.eligibility, row.focus_area,
+      ...(row.scientific_lanes ?? []), ...(row.job_functions ?? []), ...(row.methods ?? []),
+    ].join(' ');
+    return includes(searchable, q)
+      && (!focus || includes([row.focus_area, ...(row.scientific_lanes ?? [])].join(' '), focus))
+      && includes(row.location, loc);
+  });
 
   return (
     <div className="site-wrap">

@@ -26,4 +26,7 @@
 3. Review HANDOFF.md together: weekly review-queue routine, monthly export/backup, semester report generation, "who to call" list.
 
 ## Local development
-`cp .env.example .env.local`, fill keys from Supabase dashboard, `npm install`, `npm run dev`. No Docker required (point local dev at the hosted Supabase project; the club scale doesn't justify local Postgres).
+`cp .env.example .env.local`, fill keys from Supabase dashboard, `npm ci`,
+`npm run dev`. Day-to-day app development may point at a non-production Supabase
+project; migration pull requests are also tested against the disposable local
+database in the **Database contracts** workflow.

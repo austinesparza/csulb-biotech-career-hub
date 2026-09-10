@@ -297,6 +297,11 @@ export interface PublicOpportunity {
   application_type: string | null;
   audience_bucket: AudienceBucket;
   audience_reason: string | null;
+  scientific_lanes: string[];
+  job_functions: string[];
+  methods: string[];
+  industry_context: string[];
+  graduate_stage: GraduateStage;
   status: Extract<OpportunityStatus, 'open_verified' | 'open_unverified'>;
   public_notes: string | null;
   relevance_score: number | null;

@@ -1,11 +1,13 @@
 # HANDOFF.md — Officer Runbook
 
-> Fill the bracketed items during setup (Issue #13). A new officer should be able to run everything using only this file.
+> Resolve each **Not documented** item before treating this as a complete handoff.
 
 ## Accounts & credentials
-- GitHub org: [org name] — repo `csulb-biotech-career-hub`
-- Supabase project: [url] — owner: [club email]; credentials in [password manager location]
-- Vercel team: [name] — production: [domain]
+- GitHub: `austinesparza/csulb-biotech-career-hub` — personal ownership is a
+  transition risk; move it to a club organization when available.
+- Supabase project URL, owner, and password-manager location: **Not documented — launch blocker.**
+- Vercel: CSULB Biotechnology Club — production:
+  `https://csulb-biotech-career-hub.vercel.app/`.
 - At least two active officers + one advisor must hold access at all times.
 
 ## Weekly routine (~25 min)
@@ -17,7 +19,8 @@
    During development, this must be one officer's personal address, not the club mailbox.
 
 ## Monthly
-- `/admin` → Export approved CSV → save to [backup location].
+- `/admin` → Export approved CSV → save to the club backup location.
+  Backup owner and location: **Not documented — launch blocker.**
 - Review `open_unverified` older than 30 days: verify (Mark checked) or expire.
 - Review open review_tasks older than 2 weeks.
 
@@ -49,6 +52,7 @@ npm run lint
 npm test
 npm run test:pipeline
 npm run test:digest
+npm run test:publish-data
 npm run test:schema
 npm run build
 ```

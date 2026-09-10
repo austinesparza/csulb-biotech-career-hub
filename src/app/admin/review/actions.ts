@@ -4,6 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
 import type { AudienceBucket, GraduateStage } from '@/lib/types';
+import { quickAddOpportunity } from '@/app/admin/add/actions';
 
 const PUBLISHABLE_AUDIENCES: AudienceBucket[] = ['graduate', 'mixed'];
 const PUBLISHABLE_STAGES: GraduateStage[] = [
@@ -26,6 +27,92 @@ function revalidatePublic() {
   revalidatePath('/');
   revalidatePath('/internships');
   revalidatePath('/companies');
+  revalidatePath('/admin/review');
+}
+
+function requiredFormText(formData: FormData, name: string): string {
+  const value = String(formData.get(name) ?? '').trim();
+  if (!value) throw new Error(`${name.replaceAll('_', ' ')} is required`);
+  return value;
+}
+
+/** Resolve a non-opportunity submission after an officer has checked it. */
+export async function resolveSubmission(formData: FormData): Promise<void> {
+  const { user } = await requireOfficer();
+  const id = requiredFormText(formData, 'id');
+  const status = requiredFormText(formData, 'status');
+  if (!['approved', 'rejected', 'spam'].includes(status)) throw new Error('Invalid submission decision');
+  const db = createServiceClient();
+  const { data, error } = await db.from('user_submissions').update({
+    status,
+    notes: String(formData.get('notes') ?? '').trim() || null,
+    reviewed_by: user.id,
+    reviewed_at: new Date().toISOString(),
+  }).eq('id', id).in('status', ['new', 'in_review']).select('id').maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Submission was already resolved');
+  revalidatePath('/admin');
+  revalidatePath('/admin/review');
+}
+
+/** Convert a public suggestion to a private draft in the normal review queue. */
+export async function convertSubmissionToDraft(formData: FormData): Promise<void> {
+  const { user } = await requireOfficer();
+  const id = requiredFormText(formData, 'id');
+  const db = createServiceClient();
+  const { data: submission, error: loadError } = await db
+    .from('user_submissions')
+    .select('id, submission_type, status, created_opportunity_id')
+    .eq('id', id)
+    .single();
+  if (loadError || !submission) throw new Error(loadError?.message ?? 'Submission not found');
+  if (submission.submission_type !== 'opportunity') throw new Error('Only opportunity suggestions can become drafts');
+  if (submission.created_opportunity_id) throw new Error('This submission already has a review draft');
+  if (!['new', 'in_review'].includes(submission.status)) throw new Error('This submission is already resolved');
+
+  const { data: source, error: sourceError } = await db
+    .from('source_records')
+    .select('id')
+    .eq('name', 'Student Submissions Form')
+    .single();
+  if (sourceError || !source) throw new Error('Student Submissions Form source is missing');
+
+  await db.from('user_submissions').update({ status: 'in_review' }).eq('id', id);
+  const draft = new FormData();
+  draft.set('company', requiredFormText(formData, 'company'));
+  draft.set('title', requiredFormText(formData, 'title'));
+  draft.set('posting_url', requiredFormText(formData, 'posting_url'));
+  draft.set('private_notes', String(formData.get('details') ?? '').trim());
+  draft.set('source_record_id', source.id);
+  const created = await quickAddOpportunity(draft);
+
+  const { data: updated, error: updateError } = await db.from('user_submissions').update({
+    status: 'approved',
+    reviewed_by: user.id,
+    reviewed_at: new Date().toISOString(),
+    created_opportunity_id: created.id,
+    notes: 'Converted to a private review draft. Publication still requires officer approval.',
+  }).eq('id', id).is('created_opportunity_id', null).select('id').maybeSingle();
+  if (updateError) throw new Error(updateError.message);
+  if (!updated) throw new Error('Submission was converted concurrently; review the opportunity queue');
+  revalidatePath('/admin');
+  revalidatePath('/admin/review');
+}
+
+export async function resolveReviewTask(formData: FormData): Promise<void> {
+  const { user } = await requireOfficer();
+  const id = requiredFormText(formData, 'id');
+  const status = requiredFormText(formData, 'status');
+  if (!['done', 'dismissed'].includes(status)) throw new Error('Invalid task decision');
+  const db = createServiceClient();
+  const { data, error } = await db.from('review_tasks').update({
+    status,
+    resolved_at: new Date().toISOString(),
+    decided_by: user.id,
+  }).eq('id', id).in('status', ['open', 'in_progress']).select('id').maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Task was already resolved');
+  revalidatePath('/admin');
   revalidatePath('/admin/review');
 }
 

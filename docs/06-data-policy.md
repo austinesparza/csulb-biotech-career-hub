@@ -11,11 +11,17 @@
 7. **Provenance on every public record.** Every import requires a named source; cards show source name and `last_checked_at`; `open_unverified` postings carry a visible "not yet re-verified" label.
 
 ## Source rules
-Every source lives in `source_records` with `access_level` and a human-readable `refresh_policy`. For sources that prohibit automated access, the policy field says so and the only allowed entries are manually pasted links, voluntary submissions, or officer-typed records. The app contains no code that fetches external sites.
+Every source lives in `source_records` with `access_level` and a human-readable
+`refresh_policy`. Automated retrieval is limited to enabled sources with recorded
+policy and robots checks. Prohibited or uncertain sources remain manual. Retrieved
+content stays private until evidence checks and officer review are complete.
 
 ## Data minimization
 - Students: no accounts, no tracking beyond Vercel's default analytics (can be disabled).
-- Submissions: name/email optional; auto-delete rejected/spam submissions after 90 days (manual purge button in MVP).
+- Submissions: name/email optional. The public form uses a server action and a
+  validated, globally bounded database RPC; browser clients cannot insert into the
+  table. Rejected/spam retention cleanup remains an operations task until the purge
+  routine is implemented.
 - People: store only what will be displayed plus consent metadata.
 
 ## Officer checklist before approving anything public

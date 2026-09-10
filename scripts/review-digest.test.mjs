@@ -46,10 +46,21 @@ test('digest counts graduate, urgent, unresolved, and restricted records', () =>
     },
   ];
   const digest = buildReviewDigest(rows, { now: new Date('2026-09-07T12:00:00Z'), dashboardUrl: 'https://example.org/admin/review' });
-  assert.deepEqual(digest.counts, { total: 3, urgent: 1, graduates: 1, unresolved: 1, restricted: 1 });
+  assert.deepEqual(digest.counts, { total: 3, submissions: 0, urgent: 1, graduates: 1, unresolved: 1, restricted: 1 });
   assert.match(digest.subject, /3 opportunities ready for review/);
   assert.doesNotMatch(digest.html, /<script>/);
   assert.match(digest.html, /&lt;script&gt;Unresolved&lt;\/script&gt;/);
+});
+
+test('digest labels public submissions without exposing contact details', () => {
+  const digest = buildReviewDigest([{
+    origin: 'submission', title: 'Submitted role', posting_url: 'https://example.org/role',
+    audience_bucket: 'unknown', companies: { name: 'Example Bio' }, submitter_email: 'private@example.org',
+  }]);
+  assert.equal(digest.counts.submissions, 1);
+  assert.match(digest.subject, /1 items ready for review/);
+  assert.match(digest.text, /\[SUBMISSION\]/);
+  assert.doesNotMatch(digest.text + digest.html, /private@example\.org/);
 });
 
 test('raw email is base64url MIME without injected subject lines', () => {

@@ -1,6 +1,8 @@
 # D. Database Schema (design)
 
-Implemented in `supabase/migrations/0001_init.sql` (deliverable E). Postgres, all PKs `uuid default gen_random_uuid()`, all tables have `created_at`/`updated_at`, RLS enabled.
+Implemented by the ordered files in `supabase/migrations/` (deliverable E).
+`0001_init.sql` is the bootstrap; later files are additive and must also be
+applied. Postgres, UUID primary keys, public views, and RLS form the data boundary.
 
 ## Entity relationships
 
@@ -70,6 +72,8 @@ Public visibility = `status IN (open_verified, open_unverified) AND review_statu
 ## Security model
 1. RLS on every base table; only `is_officer()` (SECURITY DEFINER check against `officers`) may select/insert/update.
 2. Anon role gets SELECT only on `public_*` views, which include only public-safe columns (no `private_notes`, no `email` unless `contact_public`). `authenticated` gets the same view-only grants — a signed-in non-officer sees nothing extra.
-3. `user_submissions` additionally allows anon INSERT (the submit form) — insert-only, never read.
-4. Service-role key used only in server actions, and only after `requireOfficer()` succeeds; anon key in the browser.
+3. Browser roles cannot insert into `user_submissions`. The public form reaches a
+   server-only, validated, globally bounded RPC that can create private submissions only.
+4. Officer service-role actions require `requireOfficer()`. The submission RPC is
+   the deliberately narrow public exception and cannot publish an opportunity.
 5. Approved+public opportunities are never field-mutated by imports (app-level rule in `decideUpdatePolicy`, see docs/08).

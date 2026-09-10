@@ -2,11 +2,28 @@
 // server-side in every action via requireOfficer(); this is just the first door.
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { buildContentSecurityPolicy, securityHeaders } from '@/lib/security-headers';
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
 export async function proxy(request: NextRequest) {
-  const response = NextResponse.next({ request });
+  const nonce = btoa(crypto.randomUUID());
+  const csp = buildContentSecurityPolicy({
+    nonce,
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    development: process.env.NODE_ENV === 'development',
+  });
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+  requestHeaders.set('Content-Security-Policy', csp);
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  const applyHeaders = <T extends NextResponse>(target: T): T => {
+    for (const [name, value] of Object.entries(securityHeaders(csp))) target.headers.set(name, value);
+    return target;
+  };
+  const isAdmin = request.nextUrl.pathname.startsWith('/admin');
+  if (!isAdmin) return applyHeaders(response);
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -21,9 +38,19 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const isLogin = request.nextUrl.pathname.startsWith('/admin/login');
   if (!user && !isLogin) {
-    return NextResponse.redirect(new URL('/admin/login', request.url));
+    const redirect = NextResponse.redirect(new URL('/admin/login', request.url));
+    for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
+    return applyHeaders(redirect);
   }
-  return response;
+  return applyHeaders(response);
 }
 
-export const config = { matcher: ['/admin/:path*'] };
+export const config = {
+  matcher: [{
+    source: '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    missing: [
+      { type: 'header', key: 'next-router-prefetch' },
+      { type: 'header', key: 'purpose', value: 'prefetch' },
+    ],
+  }],
+};

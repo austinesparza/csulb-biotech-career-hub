@@ -5,9 +5,10 @@ Work top to bottom. Check each box. Details live in docs/07-deployment.md; this 
 ## Phase 1: Prove the build (~15 min)
 
 - [ ] Unzip the repo, `cd csulb-biotech-career-hub`
-- [ ] `npm install`
-- [ ] `npm run typecheck` — should pass
-- [ ] `npm run build` — must pass before anything else. If it fails, fix before proceeding; nothing downstream matters until this is green.
+- [ ] `npm ci`
+- [ ] Run `npm run typecheck`, `npm run lint`, `npm test`,
+      `npm run test:pipeline`, `npm run test:digest`, `npm run test:publish-data`,
+      `npm run test:schema`, and `npm run build`.
 - [ ] Create the GitHub repo under the CLUB org (not a personal account), push, protect `main`
 
 ## Phase 2: Supabase (~20 min)
@@ -15,6 +16,8 @@ Work top to bottom. Check each box. Details live in docs/07-deployment.md; this 
 - [ ] Create project on a club-owned account (credentials into the shared password manager)
 - [ ] Apply executable migrations in numeric order. Do not run anything under
       `supabase/proposals/`. Test new migrations against a preview database first.
+- [ ] Confirm the pull request's **Database contracts** check passed against a
+      disposable clean database before applying any migration to production.
 - [ ] Run `supabase/seed.sql`
 - [ ] Run `supabase/seed_historical.sql` ONCE (past cycles: 2024-2025 post +
       2025-2026 sheet, ~50 archive records + ~30 companies + 2 resources)
@@ -45,7 +48,7 @@ Work top to bottom. Check each box. Details live in docs/07-deployment.md; this 
 ## Phase 5: Announce (~10 min)
 
 - [ ] Add a Career Hub link to the club website nav
-- [ ] Fill in the bracketed items in HANDOFF.md (credentials locations, backup location)
+- [ ] Resolve every item marked **Not documented** in HANDOFF.md.
 - [ ] Post in the club Discord/newsletter
 - [ ] Put the weekly 25-minute review routine on an officer's calendar — an
       unstaffed board goes stale, and stale is worse than nothing
@@ -58,6 +61,5 @@ the same CSV and confirm zero approved listings changed.
 
 ## After launch (in order, from docs/10-github-issues.md)
 
-Issue 21 (edit approved records) → Issue 7 (dry-run import) → Issue 14 (submit
-form) → Issue 25 (accessibility audit) → then the M2/M3 content pages and Sheet
-sync. Optimize nothing until the weekly routine has survived three real weeks.
+Keep the review queue staffed for three real weeks before enabling recurring
+source discovery. Model extraction remains advisory and may never publish.

@@ -59,12 +59,11 @@ single `focus_area` column; new structured records use `scientific_lanes`,
 
 ## Digest ownership
 
-`scripts/review-digest.mjs` is the current production entrypoint. It owns the
-Supabase query, configuration checks, Gmail transport, HTML escaping, and the
-scheduled GitHub workflow. `pipeline/digest.ts` is a pure, tested formatter for
-future source-health, evidence, stale-record, recruiting-window, and submission
-sections. It is not a second delivery path. When those inputs exist in the live
-schema, feed its output into the existing script and retain one workflow.
+`scripts/review-digest.mjs` is the production entrypoint. It owns the Supabase
+query, combined opportunity/submission reminder, configuration checks, Gmail
+transport, HTML escaping, and scheduled workflow. `pipeline/digest.ts` remains a
+pure formatter experiment for future source-health, evidence, stale-record, and
+recruiting-window sections; it is not a second delivery path.
 
 ## Controls
 
@@ -91,8 +90,7 @@ schema, feed its output into the existing script and retain one workflow.
 5. Select an extraction model only after it passes the eval gate with zero
    fabrications, at least 0.95 precision on critical fields, and at least 0.70
    recall on the expanded set.
-6. Add a real preview-database RLS test. The earlier workflow referenced a test
-   file that did not exist, so that job was removed rather than left as false
-   assurance.
+6. Keep the disposable **Database contracts** workflow green, then repeat the RLS
+   acceptance checks against a preview project before applying migrations live.
 7. Benchmark lexical and hybrid retrieval on the real corpus. Keep pgvector in
    proposals until hybrid retrieval materially improves the agreed metrics.

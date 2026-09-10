@@ -17,7 +17,7 @@ This is a repository-level audit. It verifies migrations, application code, scri
 | Area | Current behavior | Assessment |
 | --- | --- | --- |
 | Public board | Reads the restricted `public_opportunities` view and shows only approved, public-safe graduate or mixed records | Safe |
-| Public submissions | `/submit` validates the URL, applies field limits and a honeypot, then inserts into `user_submissions` | Safe intake |
+| Public submissions | `/submit` validates through a server action; a bounded RPC inserts a private `user_submissions` row | Safe intake |
 | Officer quick add | `/admin/add` creates an opportunity in `needs_review` | Working |
 | CSV import | Stores raw rows, normalizes, deduplicates, scores, and queues new records for review | Working manual path |
 | Officer review | Officers edit, approve, reject, or hide `opportunities` in `needs_review` | Working for opportunity records |
@@ -32,8 +32,8 @@ The public safety boundary is sound: an opportunity is visible only after it is 
 
 | Priority | Gap | Why it matters | Fix |
 | --- | --- | --- | --- |
-| P0 | New `user_submissions` are counted on `/admin`, but there is no submissions inbox | A valid suggestion can sit unseen | Build `/admin/submissions` with open, claim, reject, spam, and convert-to-draft actions |
-| P0 | Weekly email only queries `opportunities.status = needs_review` | Officers are not reminded about public suggestions | Add new and in-review submissions to the digest |
+| Done | `/admin/review?tab=submissions` handles new/in-review submissions | Suggestions enter the staffed review path | Monitor volume and officer response time |
+| Done | Weekly email includes pending opportunities and submissions | Officers receive one combined reminder | Add changed/stale task summaries after usage validates the format |
 | P0 | Relevance scoring is undergraduate-oriented | The model rewards undergraduate wording and penalizes master's requirements | Replace it before automated discovery is enabled |
 | P0 | There is no production ingestion runner | The tested Greenhouse connector never runs outside tests | Add a scheduled worker and source registry operations |
 | P1 | `FOCUS_AREAS` mixes scientific domains and job functions | The filter says scientific lane but contains QA, sales, legal, and finance | Split scientific lane, job function, methods, and eligibility |
@@ -49,7 +49,8 @@ The public safety boundary is sound: an opportunity is visible only after it is 
 ### Public suggestion
 
 1. A visitor submits a link and optional details at `/submit`.
-2. The browser writes an insert-only row to `user_submissions`.
+2. A server action validates the form and invokes the narrow, globally bounded
+   `accept_public_submission` RPC. Browser roles cannot insert into the table.
 3. The admin home count increases.
 4. The workflow stops. The review page does not read this table, and the digest does not include it.
 
@@ -72,7 +73,8 @@ The public safety boundary is sound: an opportunity is visible only after it is 
 ### Reviewed JSON
 
 1. An officer edits `data/reviewed-opportunities.json` in GitHub.
-2. A merge to `main` triggers `publish-reviewed-data.yml`.
+2. An officer manually dispatches `publish-reviewed-data.yml`; it stages new
+   records and change tasks but never publishes them.
 3. The script validates each record and writes it to Supabase.
 
 This path is useful as a controlled batch loader, but it should not remain a second everyday editing system after the admin workflow is complete.
@@ -520,6 +522,8 @@ Do not optimize one combined score. A search can have good precision while missi
 
 ## Immediate recommendation
 
-The next implementation should be the officer submissions inbox plus digest coverage. It fixes a real reliability hole with little model risk. After that, replace the undergraduate scoring model and data labels. Only then should recurring discovery be enabled.
+The submissions inbox and digest coverage are implemented. Next, exercise the
+workflow with officers, expand the extraction golden set, and validate migrations
+against preview data. Enable recurring discovery only after those gates hold.
 
 The right spreadsheet integration is a sanitized officer mirror, not a second source of truth. The right AI integration is evidence-backed drafting, not automated approval.

@@ -1,10 +1,7 @@
 'use client';
-// Public submission form (Issue 14). Inserts into user_submissions via the
-// anon key, which RLS restricts to INSERT only; submissions are never
-// readable publicly and never publish anything directly.
 import { useState } from 'react';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
-import { createClient } from '@/lib/supabase/client';
+import { submitSuggestion } from './actions';
 
 const inputStyle = { border: '1px solid var(--line)' } as const;
 
@@ -17,30 +14,11 @@ export default function SubmitPage() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
 
-    // Honeypot: real users never see or fill this field.
-    if (String(fd.get('website') ?? '').trim() !== '') { setDone(true); return; }
-
-    const url = String(fd.get('url') ?? '').trim();
-    if (!/^https?:\/\//i.test(url)) {
-      setError('A valid link starting with http(s):// is required.');
-      return;
-    }
     setPending(true);
     setError(null);
-    const supabase = createClient();
-    const { error: dbError } = await supabase.from('user_submissions').insert({
-      submission_type: String(fd.get('type') ?? 'opportunity'),
-      payload: {
-        url,
-        company: String(fd.get('company') ?? '').trim() || null,
-        title: String(fd.get('title') ?? '').trim() || null,
-        details: String(fd.get('details') ?? '').trim() || null,
-      },
-      submitter_name: String(fd.get('name') ?? '').trim() || null,
-      submitter_email: String(fd.get('email') ?? '').trim() || null,
-    });
+    const result = await submitSuggestion(fd);
     setPending(false);
-    if (dbError) setError('Could not send right now. Please email us instead.');
+    if (!result.ok) setError(result.error);
     else setDone(true);
   }
 
@@ -80,7 +58,7 @@ export default function SubmitPage() {
         </label>
         <label className="mt-3 block font-medium">
           Link *
-          <input name="url" type="url" required placeholder="https://" maxLength={500}
+          <input name="url" type="url" required placeholder="https://" pattern="https://.*" maxLength={500}
             className="mt-1 w-full rounded-md bg-white px-3 py-2 font-normal" style={inputStyle} />
         </label>
         <div className="grid gap-x-3 sm:grid-cols-2">

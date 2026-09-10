@@ -39,7 +39,8 @@ Postings imported and approved, dead-link rate on the public board, submissions 
 
 Build **only** this, end to end, before anything else:
 
-1. Supabase schema (migration `0001_init.sql`) with RLS and public views.
+1. Ordered Supabase migrations in `supabase/migrations/` with RLS, review RPCs,
+   ingestion provenance, and public views.
 2. Officer login (Supabase email auth + `officers` allowlist).
 3. CSV import: upload → raw rows stored → normalize → dedupe → everything lands as `needs_review`. Every import requires a named source.
 4. Review queue: approve / edit / mark duplicate / reject, set status and public-safe.

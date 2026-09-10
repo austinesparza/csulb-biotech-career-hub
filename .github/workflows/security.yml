@@ -7,8 +7,8 @@
 #    Renovate updates these SHAs and leaves the version in the comment.
 # 2. `permissions` is read-only at the top and elevated per job.
 # 3. `pull_request` (NOT `pull_request_target`) is used, so forked PR code runs
-#    without access to repository secrets. Live preview-database RLS coverage is
-#    tracked separately until the real test harness and environment exist.
+#    without access to repository secrets. Migration and RLS contracts run in a
+#    separate disposable local Supabase job with no production credentials.
 # 4. Untrusted code and privileged credentials never share a job.
 #
 name: security

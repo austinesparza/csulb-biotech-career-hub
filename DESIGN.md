@@ -2,10 +2,10 @@
 name: CSULB Biotechnology Club — Career Hub
 concept: The annotated record
 surfaces:
-  public: [/, /internships, /companies, /about, /submit]
+  public: [/, /internships, /calendar, /eligibility, /companies, /about, /submit, /privacy]
   instrument: [/admin, /admin/review, /admin/import, /admin/duplicates, /admin/add]
-status: Derived from the shipped static hub design system. Verified WCAG 2.2 AA
-  at 1440 / 1024 / 768 / 390 / 320 with zero contrast failures.
+status: Derived from the shipped static hub design system. Token contrast and
+  dimension separation are automated; responsive reflow still requires visual QA.
 ---
 
 # DESIGN.md
@@ -89,7 +89,8 @@ statement text at `clamp(2.25rem, 1.4rem + 3vw, 3.5rem)`.
 Line heights: 1.08 tight (display), 1.25 snug (titles), 1.55 body.
 Body measure caps at ~62ch; record focus lines at ~64ch.
 
-Self-host the fonts. The installed app must work offline.
+Use the resilient system font stacks in `globals.css`; the app must not depend on
+a third-party font request to render.
 
 ## Spacing and layout
 
@@ -161,7 +162,7 @@ transitions.
 
 WCAG 2.2 AA is a requirement, not a goal.
 
-- Every text pair measured ≥4.5:1. Verified pairs live in `styles.css` comments.
+- Core text pairs are measured at ≥4.5:1 by `src/__tests__/design/tokens.test.ts`.
 - Status never communicated by colour alone
 - Visible focus states on every interactive element
 - Dialog moves focus to the title, restores to the trigger on close

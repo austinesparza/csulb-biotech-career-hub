@@ -34,6 +34,16 @@ function formatDate(value: string) {
 }
 
 function graduateStage(o: PublicOpportunity): string {
+  const reviewed: Partial<Record<PublicOpportunity['graduate_stage'], string>> = {
+    msc_year_1: 'First-year MSc student',
+    msc_year_2: 'Second-year MSc student',
+    msc_any: 'Current MSc student',
+    mixed_graduate: 'Current MSc or PhD student',
+    graduate_unspecified: 'Graduate student, year not specified',
+  };
+  if (o.graduate_stage && reviewed[o.graduate_stage]) return reviewed[o.graduate_stage]!;
+
+  // Compatibility fallback for rows created before graduate_stage was added.
   const text = `${o.eligibility ?? ''} ${o.audience_reason ?? ''}`.toLowerCase();
   if (/first year completed|first program year/.test(text) && /continued enrollment|return/.test(text)) {
     return 'First-year MSc, returning for year two';

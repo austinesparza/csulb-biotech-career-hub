@@ -18,7 +18,9 @@ Design principle: boring, fast, readable. Tailwind, no component library, server
 
 **7. `/resources` Resource Library** — Filterable list by type/tag/pathway; mirrors "Career & Club Resources" and "Resource posts" on the existing site. (M3)
 
-**8. `/submit` Submit an Opportunity** — Public form → `user_submissions` insert (honeypot field + length limits, no captcha for MVP). Confirmation: "Thanks — an officer will review before anything is published." (M2)
+**8. `/submit` Submit an Opportunity** — Public form → server validation → bounded
+private intake RPC → `user_submissions` (honeypot and database field limits).
+Confirmation: "Thanks — an officer will review before anything is published."
 
 **9. `/about` About the Career Hub** — How records get here (import → officer review → publish), what the statuses mean, disclaimer: *listings are shared for information; inclusion is not an endorsement by the club or CSULB*, and how to report a bad link. (M1, one static page)
 
