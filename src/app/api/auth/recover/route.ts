@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { isTrustedFormPost, privateRedirect } from '@/lib/auth-request';
 
 function recoveryPage(request: NextRequest, params: Record<string, string>) {
   const target = new URL('/auth/forgot-password', request.nextUrl.origin);
   Object.entries(params).forEach(([key, value]) => target.searchParams.set(key, value));
-  return NextResponse.redirect(target, 303);
+  return privateRedirect(target);
 }
 
 function publicSiteOrigin(request: NextRequest) {
@@ -18,6 +19,10 @@ function publicSiteOrigin(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isTrustedFormPost(request)) {
+    return recoveryPage(request, { error: 'invalid' });
+  }
+
   const form = await request.formData();
   const email = String(form.get('email') ?? '').trim();
 
