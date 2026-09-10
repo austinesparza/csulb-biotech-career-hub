@@ -36,6 +36,7 @@ export async function GET(request: Request) {
     limit,
   });
   const failed = reports.filter((report) => report.status === "failed");
+  let extractionFailed = false;
   let extraction: { status: "disabled" } | { status: "completed"; saved: number; evidenceFailures: number; errors: number } = { status: "disabled" };
   if (process.env.PIPELINE_MODEL_ENABLED === "true") {
     const modelName = process.env.PIPELINE_MODEL_NAME?.trim();
@@ -58,20 +59,10 @@ export async function GET(request: Request) {
       evidenceFailures: modelReport.evidenceFailures,
       errors: modelReport.errors.length,
     };
-    if (modelReport.errors.length) failed.push({
-      fetchRunId: "extraction",
-      jobSourceId: "extraction",
-      sourceKind: "unknown",
-      status: "failed",
-      recordsSeen: modelReport.inspected,
-      recordsArchived: modelReport.saved,
-      reviewTasksCreated: 0,
-      error: `${modelReport.errors.length} extraction records failed`,
-      warnings: [],
-    });
+    extractionFailed = modelReport.errors.length > 0;
   }
   const response = {
-    ok: failed.length === 0,
+    ok: failed.length === 0 && !extractionFailed,
     scheduled: Array.isArray(scheduled) ? scheduled.length : 0,
     claimed: reports.length,
     completed: reports.length - failed.length,
@@ -83,7 +74,7 @@ export async function GET(request: Request) {
     reports,
   };
   return NextResponse.json(response, {
-    status: failed.length ? 500 : 200,
+    status: failed.length || extractionFailed ? 500 : 200,
     headers: { "Cache-Control": "no-store" },
   });
 }
