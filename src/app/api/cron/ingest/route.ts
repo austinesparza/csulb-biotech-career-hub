@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 
 import { authorizeCronRequest } from "@/lib/cron/auth";
 import { runIngestionBatch } from "@/lib/ingestion/source-runner";
-import { createPipelineServiceClient } from "@/lib/pipeline/store-supabase";
+import { runExtractionBatch } from "@/lib/pipeline/extraction-runner";
+import { createOpenAiCompatibleExtractionModel } from "@/lib/pipeline/model-openai";
+import { createPipelineServiceClient, SupabaseExtractionStore } from "@/lib/pipeline/store-supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,6 +36,40 @@ export async function GET(request: Request) {
     limit,
   });
   const failed = reports.filter((report) => report.status === "failed");
+  let extraction: { status: "disabled" } | { status: "completed"; saved: number; evidenceFailures: number; errors: number } = { status: "disabled" };
+  if (process.env.PIPELINE_MODEL_ENABLED === "true") {
+    const modelName = process.env.PIPELINE_MODEL_NAME?.trim();
+    if (!modelName) {
+      return NextResponse.json({ ok: false, stage: "extraction", error: "PIPELINE_MODEL_NAME is required" }, { status: 500 });
+    }
+    const modelReport = await runExtractionBatch({
+      store: new SupabaseExtractionStore(db),
+      model: createOpenAiCompatibleExtractionModel({
+        model: modelName,
+        baseUrl: process.env.PIPELINE_MODEL_BASE_URL ?? "http://127.0.0.1:20128/v1",
+        apiKey: process.env.PIPELINE_MODEL_API_KEY,
+        allowRemote: process.env.PIPELINE_ALLOW_REMOTE_MODEL === "true",
+      }),
+      limit,
+    });
+    extraction = {
+      status: "completed",
+      saved: modelReport.saved,
+      evidenceFailures: modelReport.evidenceFailures,
+      errors: modelReport.errors.length,
+    };
+    if (modelReport.errors.length) failed.push({
+      fetchRunId: "extraction",
+      jobSourceId: "extraction",
+      sourceKind: "unknown",
+      status: "failed",
+      recordsSeen: modelReport.inspected,
+      recordsArchived: modelReport.saved,
+      reviewTasksCreated: 0,
+      error: `${modelReport.errors.length} extraction records failed`,
+      warnings: [],
+    });
+  }
   const response = {
     ok: failed.length === 0,
     scheduled: Array.isArray(scheduled) ? scheduled.length : 0,
@@ -43,6 +79,7 @@ export async function GET(request: Request) {
     recordsSeen: reports.reduce((sum, report) => sum + report.recordsSeen, 0),
     recordsArchived: reports.reduce((sum, report) => sum + report.recordsArchived, 0),
     reviewTasksCreated: reports.reduce((sum, report) => sum + report.reviewTasksCreated, 0),
+    extraction,
     reports,
   };
   return NextResponse.json(response, {
