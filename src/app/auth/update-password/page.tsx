@@ -118,7 +118,7 @@ export default function UpdatePasswordPage() {
           <input id="confirmation" name="confirmation" type="password" autoComplete="new-password"
             minLength={12} required disabled={!ready || pending} className="w-full rounded border px-3 py-2" />
           <button disabled={!ready || pending} className="w-full rounded bg-gray-900 px-4 py-2 text-white disabled:opacity-50">
-            {pending ? 'Updating…' : ready ? 'Update password' : 'Validating link…'}
+            {pending ? 'Updating…' : ready ? 'Update password' : error ? 'Reset link unavailable' : 'Validating link…'}
           </button>
         </form>
       )}
