@@ -12,6 +12,6 @@ describe('authentication form safety', () => {
 
   it('keeps password recovery disabled until its client handler is ready', () => {
     expect(forgotPasswordPage).toContain('disabled={!ready || pending}');
-    expect(forgotPasswordPage).toContain('useSyncExternalStore');
+    expect(forgotPasswordPage).toContain('window.setTimeout(() => setReady(true), 0)');
   });
 });
