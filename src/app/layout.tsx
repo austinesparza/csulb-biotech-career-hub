@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BrandMark } from '@/components/brand-mark';
+import { PrivacyAnalytics } from '@/components/privacy-analytics';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
 import './globals.css';
 
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </footer>
+        <PrivacyAnalytics />
       </body>
     </html>
   );
