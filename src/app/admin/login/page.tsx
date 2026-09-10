@@ -1,51 +1,33 @@
-'use client';
-import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
-export default function LoginPage() {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+type LoginPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+const errors: Record<string, string> = {
+  invalid: 'Enter a valid email address and password.',
+  credentials: 'The email or password was not accepted.',
+  not_officer: 'This account does not have active officer access.',
+  unavailable: 'Sign-in is temporarily unavailable. Please try again.',
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const errorCode = typeof params.error === 'string' ? params.error : '';
+  const error = errors[errorCode];
 
   return (
     <div className="mx-auto max-w-sm space-y-4">
       <h1 className="text-xl font-bold">Officer sign-in</h1>
-      <form
-        method="post"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          try {
-            setPending(true);
-            setError(null);
-            const form = new FormData(e.currentTarget);
-            const supabase = createClient();
-            const { error } = await supabase.auth.signInWithPassword({
-              email: String(form.get('email')),
-              password: String(form.get('password')),
-            });
-            if (error) setError(error.message);
-            else {
-              router.push('/admin');
-              router.refresh();
-            }
-          } catch {
-            setError('Sign-in could not reach the authentication service. Please try again.');
-          } finally {
-            setPending(false);
-          }
-        }}
-        className="space-y-3"
-      >
-        <input name="email" type="email" required placeholder="Email"
+      <form method="post" action="/api/auth/login" className="space-y-3">
+        <input name="email" type="email" autoComplete="username" required placeholder="Email"
           className="w-full rounded border px-3 py-2" />
-        <input name="password" type="password" required placeholder="Password"
+        <input name="password" type="password" autoComplete="current-password" required placeholder="Password"
           className="w-full rounded border px-3 py-2" />
-        <button disabled={pending} className="w-full rounded bg-gray-900 px-4 py-2 text-white disabled:opacity-50">
-          {pending ? 'Signing in…' : 'Sign in'}
+        <button className="w-full rounded bg-gray-900 px-4 py-2 text-white">
+          Sign in
         </button>
-        {error && <p role="alert" aria-live="polite" className="text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       </form>
       <p className="text-sm">
         <Link className="underline" href="/auth/forgot-password">Forgot your password?</Link>

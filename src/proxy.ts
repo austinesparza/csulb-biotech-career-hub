@@ -19,6 +19,7 @@ export async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   const applyHeaders = <T extends NextResponse>(target: T): T => {
     for (const [name, value] of Object.entries(securityHeaders(csp))) target.headers.set(name, value);
+    if (isAdmin) target.headers.set('Cache-Control', 'private, no-store');
     return target;
   };
   const isAdmin = request.nextUrl.pathname.startsWith('/admin');
@@ -41,6 +42,33 @@ export async function proxy(request: NextRequest) {
     const redirect = NextResponse.redirect(new URL('/admin/login', request.url));
     for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
     return applyHeaders(redirect);
+  }
+
+  if (user) {
+    const { data: isOfficer, error: officerError } = await supabase.rpc('is_officer');
+    if (officerError) {
+      console.error('[auth/proxy] officer check failed', {
+        code: officerError.code,
+        message: officerError.message,
+      });
+    }
+
+    if (isOfficer === true && isLogin) {
+      const redirect = NextResponse.redirect(new URL('/admin', request.url));
+      for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
+      return applyHeaders(redirect);
+    }
+
+    if (isOfficer !== true) {
+      await supabase.auth.signOut();
+      if (!isLogin) {
+        const target = new URL('/admin/login', request.url);
+        target.searchParams.set('error', officerError ? 'unavailable' : 'not_officer');
+        const redirect = NextResponse.redirect(target);
+        for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
+        return applyHeaders(redirect);
+      }
+    }
   }
   return applyHeaders(response);
 }
