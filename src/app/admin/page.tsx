@@ -59,6 +59,11 @@ export default async function AdminHome() {
         <a href="/api/export?format=csv" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
           Export approved (CSV)
         </a>
+        <form method="post" action="/api/auth/logout">
+          <button className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
+            Sign out
+          </button>
+        </form>
       </div>
     </div>
   );
