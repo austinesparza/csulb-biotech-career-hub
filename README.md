@@ -29,7 +29,7 @@ account is exactly the handoff risk to avoid repeating.
 2. Auth → create officer users (invite; signups disabled). Insert each into `officers`:
    `insert into officers (user_id, display_name) values ('<auth uid>', 'Name');`
 3. `cp .env.example .env.local` and fill keys (Supabase → Settings → API).
-4. `npm ci && npm run dev` → http://localhost:3000. Sign in at `/admin/login`, import a CSV at `/admin/import` (a source must be selected — seed.sql creates "Club Internship Spreadsheet").
+4. `npm ci && npm run dev` → http://localhost:3000. Sign in at `/admin/login`, then use `/admin/import`. CSV works immediately; direct Sheet sync requires the five server-only Google variables documented in `.env.example` and `docs/12-sheets-integration.md`.
 5. Deploy: push to GitHub → import in Vercel → set the same three env vars. See `docs/07-deployment.md`.
 
 ## Deliverable map
@@ -75,6 +75,8 @@ path.
 9. Enums live in the SQL migration and `src/lib/types.ts` — change both in the same PR.
 10. `SUPABASE_SECRET_KEY` is server-only; it must never gain a `NEXT_PUBLIC_`
     prefix. `SUPABASE_SERVICE_ROLE_KEY` is a temporary legacy fallback only.
+11. Google Sheet intake uses a fixed file, range, and source UUID with a read-only
+    service account. Browser input can never choose the spreadsheet or authorize publication.
 
 ## For future officers
 Start with `HANDOFF.md` (operational runbook), then `docs/01` and `docs/02`.

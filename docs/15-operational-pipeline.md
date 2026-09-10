@@ -31,7 +31,7 @@ flowchart TD
 | Stage | Implementation | Current state |
 | --- | --- | --- |
 | Public suggestions | `user_submissions` and `/admin/review?tab=submissions` | Working |
-| Spreadsheet intake | CSV export followed by `/admin/import`; original rows saved in `raw_import_rows` | Working, officer-triggered |
+| Spreadsheet intake | One-click read-only Sheet sync or CSV upload at `/admin/import`; original rows saved in `raw_import_rows` | Implemented, officer-triggered |
 | Official Greenhouse feed | `scripts/run-ingestion-worker.ts` and the tested Greenhouse connector | Implemented, not scheduled |
 | Public program pages | Conditional fetch with optional Scrapling and ScrapeGraphAI fallback | Implemented, not scheduled |
 | Raw archive | Private `source-payloads` storage plus `source_payloads` metadata and hashes | Implemented |
@@ -42,7 +42,8 @@ flowchart TD
 | Officer decision | `/admin/review` plus atomic `decide_opportunity_review` | Working after migration 0011 |
 | Public board | `public_opportunities` read by the dynamic `/internships` route | Working after migration 0011 |
 | Source scheduling | Queue claim exists; no recurring job is enabled | Deliberately disabled |
-| Direct Google Sheet sync | Not implemented | Use CSV path until preview-tested |
+| Direct Google Sheet sync | Fixed file/range, read-only service account, existing CSV import path | Implemented, not configured |
+| Integration status | `/admin/integrations` reports each durable handoff | Implemented |
 
 ## Receive and archive rules
 
@@ -95,13 +96,13 @@ Graphify is development-only. It indexes the repository to help maintainers trac
 The current safe path is:
 
 1. Officers maintain the Google Sheet or Excel workbook.
-2. Export the intake tab as CSV.
-3. Upload it at `/admin/import` and select its `source_records` entry.
-4. The import archives every original row, normalizes it, detects duplicates, and creates private drafts or change tasks.
+2. At `/admin/import`, click `Sync from Google Sheet`. For Excel or a Google outage, upload a CSV and select the source.
+3. The import archives every original row, normalizes it, detects duplicates, and creates private drafts or change tasks.
+4. Officers check `/admin/integrations` for the recorded run and any failures.
 5. Officers complete `/admin/review`.
 6. Approval immediately changes what the dynamic public board reads.
 
-A future direct Sheet sync should remove only steps 2 and 3. It should use a club-owned service account with read access to one spreadsheet, preserve every retrieved row in `raw_import_rows`, and invoke the same import service as CSV. Sheet edits must never set `public_safe`, `review_status`, or public status directly.
+The Sheet connection uses a club-owned service account with the `spreadsheets.readonly` OAuth scope and Viewer access to one file. The file ID, bounded tab range, and `source_records` UUID are fixed in server-only configuration. Sheet columns that look like approval controls are intentionally ignored. Sheet edits cannot set `public_safe`, `review_status`, or public status.
 
 ## Search coverage
 
@@ -142,13 +143,13 @@ Recommended activation sequence:
 5. Test approve, archive, reject, and changed-approved behavior with officer and anonymous clients.
 6. Enable one source at low frequency.
 7. Add a scheduler only after two clean weeks and a source-health alert.
-8. Add direct Sheet sync after the app review queue has become the officers’ normal workspace.
+8. Configure direct Sheet sync only after the app review queue has become the officers' normal workspace; run a preview sync before production.
 
 ## Improvements still needed
 
 1. Add production connectors for Ashby, Lever, and USAJOBS to the canonical persistence runner. Pure parsers exist, but live connector calls have not been verified.
 2. Connect a search provider to the private lead archive before recurring lane scouts are enabled. The archive and resolution model exist, but no scheduled provider calls them yet.
-3. Add one-way Google Sheet import and sanitized export. Do not build two-way field sync.
+3. Preview-test the one-way Google Sheet import against the current officer workbook and document the service-account owner and rotation process. Do not build two-way field sync.
 4. Increase the real golden set from 3 to at least 30 labelled postings across all lanes and edge cases.
 5. Benchmark hybrid retrieval on the real corpus before applying any pgvector proposal.
 6. Add metrics for missed roles, officer corrections, unresolved LinkedIn leads, source staleness, and time from discovery to publication.

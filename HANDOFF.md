@@ -11,11 +11,12 @@
 - At least two active officers + one advisor must hold access at all times.
 
 ## Weekly routine (~25 min)
-1. If the spreadsheet changed: export CSV → `/admin/import` → select the source → upload.
-2. `/admin/review`: clear the queue. Open each posting link before approving. Move anything student-useful from private notes into public notes; everything else stays private.
-3. Click "expire past-deadline" sweep.
-4. Check new submissions and any "import changed" tasks (a re-import found differences on an already-published listing — apply manually or dismiss).
-5. Check the configured private review inbox for "Career Hub:" subject lines.
+1. If the spreadsheet changed: `/admin/import` → Sync from Google Sheet. If unavailable, export CSV → select the source → upload.
+2. Open `/admin/integrations` and confirm the import completed with the expected row and error counts.
+3. `/admin/review`: clear the queue. Open each posting link before approving. Move anything student-useful from private notes into public notes; everything else stays private.
+4. Click "expire past-deadline" sweep.
+5. Check new submissions and any "import changed" tasks (a re-import found differences on an already-published listing — apply manually or dismiss).
+6. Check the configured private review inbox for "Career Hub:" subject lines.
    During development, this must be one officer's personal address, not the club mailbox.
 
 ## Monthly
@@ -65,6 +66,8 @@ second independent version.
 - **Bad record on the public board:** `/admin/review` → find it → Hide. Instant, no deploy.
 - **Import fails "could not find required columns":** a header was renamed in the sheet. Add the new name to `HEADER_ALIASES` in `src/lib/csvImport.ts` (or rename the column back) and re-import.
 - **Import fails "source record is required":** pick a source in the dropdown; if the source is new, add it under Sources first.
+- **Sheet sync says it is not configured:** verify all five `GOOGLE_*` server variables, confirm the source UUID exists, and confirm the service-account email has Viewer access to only the intended workbook.
+- **Sheet sync reads the wrong columns:** keep the intake headers aligned with `HEADER_ALIASES` and the configured bounded range. Never map `Publish Decision` or `Public Safe?` into the importer.
 - **Site seems down:** free-tier Supabase pauses after inactivity; open the Supabase dashboard and restore. Vercel status: check the deployments tab.
 - **Mentor asks to be removed:** people table → `public_safe=false`, note it in `consent_notes`. Done.
 
