@@ -1,4 +1,4 @@
-import { defaultConnector, sourceGovernanceError, staticPageResult, type RunnableJobSource } from "../../lib/ingestion/source-runner";
+import { defaultConnector, SourceTierStore, sourceGovernanceError, staticPageResult, type RunnableJobSource } from "../../lib/ingestion/source-runner";
 
 let pass = 0;
 let fail = 0;
@@ -59,6 +59,23 @@ console.log("\n=== Private source tests preserve governance without enabling sch
   ok("private tests still require terms review", sourceGovernanceError({ ...disabled, terms_reviewed: false, terms_review_date: null }, true) === "source terms review is incomplete");
   ok("private tests still require robots review", sourceGovernanceError({ ...disabled, robots_reviewed: false }, true) === "source robots review is incomplete");
   ok("private tests may run a reviewed paused source without resuming it", sourceGovernanceError({ ...disabled, automatic_scheduling_paused_at: "2026-09-10T00:00:00Z" }, true) === null);
+}
+
+console.log("\n=== Private source tests keep adaptive tier state ephemeral ===\n");
+{
+  let writes = 0;
+  const fakeDb = {
+    from: () => ({
+      update: () => {
+        writes += 1;
+        return { eq: async () => ({ error: null }) };
+      },
+    }),
+  };
+  const privateSource = { ...source };
+  await new SourceTierStore(fakeDb as never, privateSource, false).set({ sourceId: source.id, tier: 2, cleanRuns: 1 });
+  ok("private tier transitions do not write source state", writes === 0);
+  ok("private tier transitions remain available inside the current fetch chain", privateSource.fetch_tier === 2 && privateSource.tier_clean_runs === 1);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
