@@ -1,4 +1,4 @@
-import { defaultConnector, staticPageResult, type RunnableJobSource } from "../../lib/ingestion/source-runner";
+import { defaultConnector, sourceGovernanceError, staticPageResult, type RunnableJobSource } from "../../lib/ingestion/source-runner";
 
 let pass = 0;
 let fail = 0;
@@ -49,6 +49,16 @@ console.log("\n=== Unsupported connector is retained as a failed run ===\n");
   const result = await defaultConnector(unsupported, { db: {} as never });
   ok("does not silently skip unsupported sources", !result.ok && /retained/.test(result.error.message), result.error?.message);
   ok("does not fabricate candidates", !result.ok && result.candidates.length === 0);
+}
+
+console.log("\n=== Private source tests preserve governance without enabling scheduling ===\n");
+{
+  const disabled = { ...source, enabled: false };
+  ok("normal runs reject disabled sources", sourceGovernanceError(disabled) === "source is disabled");
+  ok("private tests may run a reviewed disabled source", sourceGovernanceError(disabled, true) === null);
+  ok("private tests still require terms review", sourceGovernanceError({ ...disabled, terms_reviewed: false, terms_review_date: null }, true) === "source terms review is incomplete");
+  ok("private tests still require robots review", sourceGovernanceError({ ...disabled, robots_reviewed: false }, true) === "source robots review is incomplete");
+  ok("private tests may run a reviewed paused source without resuming it", sourceGovernanceError({ ...disabled, automatic_scheduling_paused_at: "2026-09-10T00:00:00Z" }, true) === null);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
