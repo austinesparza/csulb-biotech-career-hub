@@ -13,6 +13,7 @@ export default function LoginPage() {
     <div className="mx-auto max-w-sm space-y-4">
       <h1 className="text-xl font-bold">Officer sign-in</h1>
       <form
+        method="post"
         onSubmit={async (e) => {
           e.preventDefault();
           try {
