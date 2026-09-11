@@ -42,7 +42,7 @@ export default async function AdminHome() {
       </div>
       <div className="flex flex-wrap gap-3 text-sm">
         <Link href="/admin/import" className="rounded-md px-4 py-2 font-medium text-white" style={{ background: 'var(--ink)' }}>
-          Import CSV
+          Sync spreadsheet
         </Link>
         <Link href="/admin/add" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
           Add a posting
@@ -65,6 +65,17 @@ export default async function AdminHome() {
           </button>
         </form>
       </div>
+      <section className="rounded-xl bg-white p-5" style={{ border: '1px solid var(--line)' }}>
+        <h2 className="font-semibold">Spreadsheet to website</h2>
+        <ol className="mt-3 grid gap-3 text-sm md:grid-cols-3">
+          <li><strong>1. Sync</strong><br /><span style={{ color: 'var(--ink-soft)' }}>Copy Sheet rows into the private database archive.</span></li>
+          <li><strong>2. Review</strong><br /><span style={{ color: 'var(--ink-soft)' }}>Open each private draft and approve it as a signed-in officer.</span></li>
+          <li><strong>3. Publish</strong><br /><span style={{ color: 'var(--ink-soft)' }}>Approved records appear on the public site immediately.</span></li>
+        </ol>
+        <p className="mt-4 text-xs" style={{ color: 'var(--ink-soft)' }}>
+          Sheet cells labeled Publish Decision or Public Safe are review notes only. They never publish by themselves.
+        </p>
+      </section>
     </div>
   );
 }

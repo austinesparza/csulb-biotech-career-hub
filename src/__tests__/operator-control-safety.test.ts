@@ -7,6 +7,9 @@ const sourceRunner = readFileSync('src/lib/ingestion/source-runner.ts', 'utf8');
 const ingestRoute = readFileSync('src/app/api/cron/ingest/route.ts', 'utf8');
 const healthRoute = readFileSync('src/app/api/cron/health/route.ts', 'utf8');
 const integrationPage = readFileSync('src/app/admin/integrations/page.tsx', 'utf8');
+const adminPage = readFileSync('src/app/admin/page.tsx', 'utf8');
+const importPage = readFileSync('src/app/admin/import/page.tsx', 'utf8');
+const sheetSync = readFileSync('src/app/admin/import/sheet-sync.tsx', 'utf8');
 
 describe('operator control safety', () => {
   it('marks private source tests and does not activate source health', () => {
@@ -33,5 +36,13 @@ describe('operator control safety', () => {
     expect(integrationPage).toContain('Machine source controls');
     expect(integrationPage).toContain('Officer continuity');
     expect(integrationPage).toContain('Use a reviewed private test before enabling one');
+  });
+
+  it('makes the spreadsheet review boundary explicit to officers', () => {
+    expect(adminPage).toContain('Spreadsheet to website');
+    expect(adminPage).toContain('They never publish by themselves');
+    expect(importPage).toContain('Sheet approval is not website approval');
+    expect(sheetSync).toContain('This creates private drafts');
+    expect(sheetSync).toContain('Review private drafts');
   });
 });

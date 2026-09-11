@@ -15,6 +15,9 @@ export function SheetSync() {
         Reads the configured intake tab once and sends every row through the same private archive,
         deduplication, and officer-review path as a CSV upload.
       </p>
+      <p className="mt-2 text-xs font-medium" style={{ color: 'var(--restricted)' }}>
+        This creates private drafts. Sheet checkboxes and decisions do not publish them.
+      </p>
     </div>
     <button
       type="button"
@@ -43,7 +46,7 @@ export function SheetSync() {
         {summary.errors.length} errors
       </p>
       <p className="mt-1 text-xs">Range: {summary.sheetRange}</p>
-      <a href="/admin/review" className="mt-2 inline-block underline">Open review queue →</a>
+      <a href="/admin/review" className="primary-button mt-3 inline-block">Review private drafts</a>
     </div> : null}
   </section>;
 }
