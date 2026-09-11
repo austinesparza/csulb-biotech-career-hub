@@ -1,10 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest } from 'next/server';
 import { isTrustedFormPost, privateRedirect } from '@/lib/auth-request';
-import {
-  OFFICER_OTP_COOKIE_MAX_AGE_SECONDS,
-  OFFICER_OTP_EMAIL_COOKIE,
-} from '@/lib/officer-otp';
 
 function loginPage(request: NextRequest, params: Record<string, string>) {
   const target = new URL('/admin/login', request.nextUrl.origin);
@@ -25,10 +21,7 @@ export async function POST(request: NextRequest) {
   }
 
   const form = await request.formData();
-  const storedEmail = request.cookies.get(OFFICER_OTP_EMAIL_COOKIE)?.value;
-  const email = String(
-    form.get('email') ?? storedEmail ?? '',
-  ).trim().toLowerCase();
+  const email = String(form.get('email') ?? '').trim().toLowerCase();
   if (!/^\S+@\S+\.\S+$/.test(email)) {
     return loginPage(request, { error: 'invalid' });
   }
@@ -39,40 +32,31 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       { auth: { persistSession: false } },
     );
+    const emailRedirectTo = new URL('/auth/email-link', request.nextUrl.origin).toString();
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: false },
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo,
+      },
     });
 
     if (error) {
-      console.error('[auth/email-otp/request] request rejected', {
+      console.error('[auth/email-link/request] request rejected', {
         code: error.code,
         status: error.status,
         message: error.message,
       });
       if (isRateLimited(error.status, error.code)) {
-        return loginPage(request, {
-          error: 'rate_limited',
-          ...(storedEmail ? { sent: '1' } : {}),
-        });
+        return loginPage(request, { error: 'rate_limited' });
       }
     }
 
     // Keep this response generic so the route never reveals whether an email
     // address belongs to an officer or even exists in Supabase Auth.
-    const response = loginPage(request, { sent: '1' });
-    response.cookies.set({
-      name: OFFICER_OTP_EMAIL_COOKIE,
-      value: email,
-      httpOnly: true,
-      sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: OFFICER_OTP_COOKIE_MAX_AGE_SECONDS,
-    });
-    return response;
+    return loginPage(request, { sent: '1' });
   } catch (error) {
-    console.error('[auth/email-otp/request] request failed', {
+    console.error('[auth/email-link/request] request failed', {
       message: error instanceof Error ? error.message : 'Unknown error',
     });
     return loginPage(request, { error: 'unavailable' });

@@ -2,9 +2,11 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { authorizeCronRequest } from "@/lib/cron/auth";
+import { googleSheetsConfigured } from "@/lib/google-sheets";
 import { runIngestionBatch } from "@/lib/ingestion/source-runner";
 import { runExtractionBatch } from "@/lib/pipeline/extraction-runner";
 import { createOpenAiCompatibleExtractionModel } from "@/lib/pipeline/model-openai";
+import { syncReviewQueueToGoogleSheet } from "@/lib/review-sheet-sync";
 import { createPipelineServiceClient, SupabaseExtractionStore } from "@/lib/pipeline/store-supabase";
 
 export const runtime = "nodejs";
@@ -65,8 +67,33 @@ export async function GET(request: Request) {
     };
     extractionFailed = modelReport.errors.length > 0;
   }
+  let sheetSyncFailed = false;
+  let sheetSync:
+    | { status: "disabled" }
+    | { status: "completed"; appended: number; refreshed: number; linked: number; alreadyPresent: number }
+    | { status: "failed"; error: string } = { status: "disabled" };
+
+  if (googleSheetsConfigured()) {
+    try {
+      const report = await syncReviewQueueToGoogleSheet({ db, limit });
+      sheetSync = {
+        status: "completed",
+        appended: report.appended,
+        refreshed: report.refreshed,
+        linked: report.linked,
+        alreadyPresent: report.alreadyPresent,
+      };
+    } catch (error) {
+      sheetSyncFailed = true;
+      sheetSync = {
+        status: "failed",
+        error: error instanceof Error ? error.message.slice(0, 500) : "Unknown Sheet sync failure",
+      };
+    }
+  }
+
   const response = {
-    ok: failed.length === 0 && !extractionFailed,
+    ok: failed.length === 0 && !extractionFailed && !sheetSyncFailed,
     scheduled: Array.isArray(scheduled) ? scheduled.length : 0,
     claimed: reports.length,
     completed: reports.length - failed.length,
@@ -75,7 +102,8 @@ export async function GET(request: Request) {
     recordsArchived: reports.reduce((sum, report) => sum + report.recordsArchived, 0),
     reviewTasksCreated: reports.reduce((sum, report) => sum + report.reviewTasksCreated, 0),
     extraction,
+    sheetSync,
     reports,
   };
-  return json(response, failed.length || extractionFailed ? 500 : 200);
+  return json(response, failed.length || extractionFailed || sheetSyncFailed ? 500 : 200);
 }

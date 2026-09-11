@@ -1,9 +1,25 @@
-export interface ImplicitRecoverySession {
+export interface ImplicitAuthSession {
   accessToken: string;
   refreshToken: string;
 }
 
 const MAX_FRAGMENT_LENGTH = 8_192;
+
+function readImplicitSession(
+  hash: string,
+  expectedType: 'recovery' | 'magiclink',
+): ImplicitAuthSession | null {
+  if (!hash.startsWith('#') || hash.length > MAX_FRAGMENT_LENGTH) return null;
+
+  const params = new URLSearchParams(hash.slice(1));
+  if (params.get('type') !== expectedType) return null;
+
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+  if (!accessToken || !refreshToken) return null;
+
+  return { accessToken, refreshToken };
+}
 
 /**
  * Supabase's legacy/default recovery email can return an implicit session in
@@ -11,15 +27,15 @@ const MAX_FRAGMENT_LENGTH = 8_192;
  * reject that otherwise-valid callback unless we establish the session
  * explicitly. Only recovery callbacks are accepted here.
  */
-export function readImplicitRecoverySession(hash: string): ImplicitRecoverySession | null {
-  if (!hash.startsWith('#') || hash.length > MAX_FRAGMENT_LENGTH) return null;
+export function readImplicitRecoverySession(hash: string): ImplicitAuthSession | null {
+  return readImplicitSession(hash, 'recovery');
+}
 
-  const params = new URLSearchParams(hash.slice(1));
-  if (params.get('type') !== 'recovery') return null;
-
-  const accessToken = params.get('access_token');
-  const refreshToken = params.get('refresh_token');
-  if (!accessToken || !refreshToken) return null;
-
-  return { accessToken, refreshToken };
+/**
+ * The hosted Supabase magic-link template also returns an implicit session.
+ * Keep it separate from recovery so a password-reset link can never be treated
+ * as a normal officer sign-in link.
+ */
+export function readImplicitMagicLinkSession(hash: string): ImplicitAuthSession | null {
+  return readImplicitSession(hash, 'magiclink');
 }

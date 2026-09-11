@@ -4,7 +4,9 @@ import { createSign } from 'node:crypto';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const SHEETS_ORIGIN = 'https://sheets.googleapis.com';
-const READ_ONLY_SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
+const MAX_WRITE_RANGES = 150;
+const MAX_WRITE_ROWS = 100;
 const MAX_ROWS = 5_000;
 const MAX_COLUMNS = 60;
 const MAX_CELLS = 100_000;
@@ -84,7 +86,7 @@ function serviceAccountAssertion(config: GoogleSheetsConfig, now: number): strin
   const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
   const payload = base64url(JSON.stringify({
     iss: config.serviceAccountEmail,
-    scope: READ_ONLY_SCOPE,
+    scope: SHEETS_SCOPE,
     aud: TOKEN_URL,
     iat: now,
     exp: now + 3_600,
@@ -155,4 +157,105 @@ export async function fetchGoogleSheet(
     rowCount: rows.length - 1,
     columnCount: rows.reduce((max, row) => Math.max(max, row.length), 0),
   };
+}
+
+
+export interface GoogleSheetValueUpdate {
+  range: string;
+  values: string[][];
+}
+
+export interface GoogleSheetWrite {
+  updates?: GoogleSheetValueUpdate[];
+  appendRows?: string[][];
+}
+
+export interface GoogleSheetWriteSummary {
+  updatedRanges: number;
+  appendedRows: number;
+}
+
+function validateWriteRows(rows: string[][], label: string): void {
+  if (rows.length > MAX_WRITE_ROWS) {
+    throw new Error(`${label} exceeds the ${MAX_WRITE_ROWS}-row safety limit`);
+  }
+  for (const row of rows) {
+    if (row.length > MAX_COLUMNS) {
+      throw new Error(`${label} exceeds the ${MAX_COLUMNS}-column safety limit`);
+    }
+    if (row.some((cell) => typeof cell !== 'string' || cell.length > 5_000)) {
+      throw new Error(`${label} contains an invalid or oversized cell`);
+    }
+  }
+}
+
+/**
+ * Writes only explicit ranges and appends supplied by the governed review-sheet
+ * planner. Values use RAW input so source text cannot become a spreadsheet
+ * formula after the planner escapes formula-leading characters.
+ */
+export async function writeGoogleSheet(
+  config: GoogleSheetsConfig,
+  write: GoogleSheetWrite,
+  options: { fetchImpl?: FetchLike; now?: number } = {},
+): Promise<GoogleSheetWriteSummary> {
+  const updates = write.updates ?? [];
+  const appendRows = write.appendRows ?? [];
+  if (updates.length > MAX_WRITE_RANGES) {
+    throw new Error(`Google Sheet write exceeds the ${MAX_WRITE_RANGES}-range safety limit`);
+  }
+  updates.forEach((update, index) => validateWriteRows(update.values, `Update ${index + 1}`));
+  validateWriteRows(appendRows, 'Append');
+
+  if (updates.length === 0 && appendRows.length === 0) {
+    return { updatedRanges: 0, appendedRows: 0 };
+  }
+
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const now = options.now ?? Math.floor(Date.now() / 1_000);
+  const token = await accessToken(config, fetchImpl, now);
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  };
+
+  if (updates.length > 0) {
+    const response = await fetchImpl(
+      new URL(`/v4/spreadsheets/${encodeURIComponent(config.spreadsheetId)}/values:batchUpdate`, SHEETS_ORIGIN),
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          valueInputOption: 'RAW',
+          includeValuesInResponse: false,
+          data: updates.map((update) => ({
+            range: update.range,
+            majorDimension: 'ROWS',
+            values: update.values,
+          })),
+        }),
+        signal: AbortSignal.timeout(20_000),
+        cache: 'no-store',
+      },
+    );
+    if (!response.ok) throw new Error(`Google Sheets update failed (${response.status})`);
+  }
+
+  if (appendRows.length > 0) {
+    const path = `/v4/spreadsheets/${encodeURIComponent(config.spreadsheetId)}/values/${encodeURIComponent(config.range)}:append`;
+    const url = new URL(path, SHEETS_ORIGIN);
+    url.searchParams.set('valueInputOption', 'RAW');
+    url.searchParams.set('insertDataOption', 'INSERT_ROWS');
+    const response = await fetchImpl(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ majorDimension: 'ROWS', values: appendRows }),
+      signal: AbortSignal.timeout(20_000),
+      cache: 'no-store',
+    });
+    if (!response.ok) throw new Error(`Google Sheets append failed (${response.status})`);
+  }
+
+  return { updatedRanges: updates.length, appendedRows: appendRows.length };
 }

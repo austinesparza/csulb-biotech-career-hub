@@ -19,6 +19,7 @@ import {
 import { normalizeCompanyName } from '@/lib/normalize';
 import { scoreOpportunity } from '@/lib/relevance';
 import { fetchGoogleSheet, readGoogleSheetsConfig } from '@/lib/google-sheets';
+import { syncReviewQueueToGoogleSheet, type ReviewSheetSyncSummary } from '@/lib/review-sheet-sync';
 import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
 
 export interface ImportSummary {
@@ -320,4 +321,16 @@ export async function syncGoogleSheet(): Promise<GoogleSheetSyncSummary> {
     uploadedBy: user.id,
   });
   return { ...summary, sheetRange: snapshot.range, sheetRows: snapshot.rowCount };
+}
+
+
+/**
+ * Officer-triggered push of machine-discovered private candidates to the
+ * Review Queue tab. System columns are refreshed, officer decision columns are
+ * preserved, and no publication field is changed.
+ */
+export async function syncMachineReviewQueueToSheet(): Promise<ReviewSheetSyncSummary> {
+  await requireOfficer();
+  const db = createServiceClient();
+  return syncReviewQueueToGoogleSheet({ db });
 }

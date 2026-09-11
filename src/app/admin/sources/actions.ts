@@ -3,9 +3,11 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 
+import { googleSheetsConfigured } from "@/lib/google-sheets";
 import { runClaimedFetch } from "@/lib/ingestion/source-runner";
 import { governedStarterSource, GREENHOUSE_POLICY_LINKS } from "@/lib/ingestion/starter-sources";
 import { assertSafePublicUrl } from "@/lib/pipeline/safe-fetch";
+import { syncReviewQueueToGoogleSheet } from "@/lib/review-sheet-sync";
 import { createServiceClient, requireOfficer } from "@/lib/supabase/server";
 
 const KINDS = new Set(["greenhouse", "static_html", "schema_org"]);
@@ -190,7 +192,18 @@ export async function runSourceNow(formData: FormData): Promise<void> {
   }).select("id, job_source_id").single();
   if (error || !run) throw new Error(`Could not start source run: ${error?.message ?? "unknown error"}`);
 
-  await runClaimedFetch({ db, storage: db.storage, claim: run });
+  const report = await runClaimedFetch({ db, storage: db.storage, claim: run });
+  if (report.status !== "failed" && googleSheetsConfigured()) {
+    try {
+      await syncReviewQueueToGoogleSheet({ db });
+    } catch (sheetError) {
+      refresh();
+      const message = sheetError instanceof Error ? sheetError.message : "unknown error";
+      throw new Error(
+        `Source run ${report.fetchRunId} was archived, but the Review Queue Sheet update failed: ${message}. Use Spreadsheet intake to retry the Sheet push without rerunning the source.`,
+      );
+    }
+  }
   refresh();
 }
 

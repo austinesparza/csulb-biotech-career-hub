@@ -10,6 +10,8 @@ const integrationPage = readFileSync('src/app/admin/integrations/page.tsx', 'utf
 const adminPage = readFileSync('src/app/admin/page.tsx', 'utf8');
 const importPage = readFileSync('src/app/admin/import/page.tsx', 'utf8');
 const sheetSync = readFileSync('src/app/admin/import/sheet-sync.tsx', 'utf8');
+const reviewSheetSync = readFileSync('src/lib/review-sheet-sync.ts', 'utf8');
+const googleSheets = readFileSync('src/lib/google-sheets.ts', 'utf8');
 const reviewCard = readFileSync('src/app/admin/review/review-card.tsx', 'utf8');
 const manageActions = readFileSync('src/app/admin/manage/actions.ts', 'utf8');
 
@@ -56,10 +58,24 @@ describe('operator control safety', () => {
     expect(adminPage).toContain('Spreadsheet to website');
     expect(adminPage).toContain('They never publish by themselves');
     expect(importPage).toContain('Sheet approval is not website approval');
-    expect(sheetSync).toContain('This creates private drafts');
-    expect(sheetSync).toContain('Review private drafts');
+    expect(sheetSync).toContain('Push discoveries to Sheet');
+    expect(sheetSync).toContain('Pull decisions from Sheet');
+    expect(sheetSync).toContain('Neither direction publishes automatically');
+    expect(sheetSync).toContain('Confirm decisions and publish');
     expect(reviewCard).toContain('Confirm Sheet approval and publish');
     expect(reviewCard).toContain('Review or change imported details');
+  });
+
+  it('pushes governed discoveries to the Sheet without owning officer decisions', () => {
+    expect(ingestRoute).toContain('syncReviewQueueToGoogleSheet');
+    expect(ingestRoute).toContain('sheetSyncFailed');
+    expect(reviewSheetSync).toContain("opportunity_source_links!inner");
+    expect(reviewSheetSync).toContain("candidateId.startsWith('AUTO-')");
+    expect(reviewSheetSync).toContain('row.slice(0, 20)');
+    expect(reviewSheetSync).toContain('X${byRecord.rowNumber}:X');
+    expect(googleSheets).toContain('https://www.googleapis.com/auth/spreadsheets');
+    expect(googleSheets).toContain("valueInputOption: 'RAW'");
+    expect(googleSheets).toContain("insertDataOption', 'INSERT_ROWS'");
   });
 
   it('keeps post-publication corrections behind officer verification', () => {

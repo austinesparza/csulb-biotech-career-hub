@@ -99,3 +99,15 @@ or changing recipients. Never commit an address, OAuth token, or Supabase secret
 - Never publish a person without recorded consent.
 - Never enable an automated source until its terms, robots policy, owner, and
   refresh policy are recorded. Keep prohibited or uncertain sources manual.
+
+
+## Scheduled Sheet handoff
+
+The daily ingestion cron and the officer **Run and archive now** action push
+machine-discovered private candidates into the configured Review Queue. The
+Spreadsheet intake screen also provides an idempotent retry button. Officer
+decisions still return through the existing Sheet import and require a signed-in
+publication confirmation.
+
+The primary officer sign-in uses Supabase's default hosted email link and does
+not require a custom email template or custom SMTP on the Free plan.
