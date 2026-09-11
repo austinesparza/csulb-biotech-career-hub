@@ -240,7 +240,7 @@ export function defaultConnector(source: RunnableJobSource, context: { db: Supab
   const configured = source.config_json.boardToken;
   const boardToken = typeof configured === "string" ? configured : source.source_identifier;
   if (!boardToken) return Promise.resolve(failure(source, "Greenhouse source requires source_identifier or config_json.boardToken"));
-  return fetchGreenhouseJobs({ boardToken });
+  return fetchGreenhouseJobs({ boardToken, employerName: source.source_name });
 }
 
 export function sourceGovernanceError(source: RunnableJobSource, privateTest = false): string | null {

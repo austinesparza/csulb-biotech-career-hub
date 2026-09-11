@@ -278,6 +278,18 @@ describe('normalizeGreenhouseJob', () => {
     expect(posting.employerNameRaw).toBeNull();
     expect(posting.employerNameNormalized).toBeNull();
   });
+
+  it('uses the governed board name when the caller supplies it', () => {
+    const posting = normalizeGreenhouseJob(
+      INTERNSHIP_JOB,
+      BOARD_TOKEN,
+      FETCHED_AT,
+      'Lab Genomics Inc.',
+    );
+    expect(posting.employerNameRaw).toBe('Lab Genomics Inc.');
+    expect(posting.employerNameNormalized).toBe('lab genomics');
+    expect(posting.uncertaintyFlags).not.toContain('employer_name_missing');
+  });
 });
 
 // ============================================================
@@ -296,6 +308,18 @@ describe('fetchGreenhouseJobs', () => {
     expect(result.error).toBeNull();
     expect(result.candidates.length).toBeGreaterThan(0);
     expect(result.httpStatus).toBe(200);
+  });
+
+  it('enriches every candidate with the governed employer name', async () => {
+    const result = await fetchGreenhouseJobs({
+      boardToken: 'labgenomicsinc',
+      employerName: 'Lab Genomics Inc.',
+      fetchFn: mockFetch(loadFixture('greenhouse-normal.json')),
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.candidates.every((candidate) => candidate.employerNameRaw === 'Lab Genomics Inc.')).toBe(true);
+    expect(result.candidates.every((candidate) => !candidate.uncertaintyFlags.includes('employer_name_missing'))).toBe(true);
   });
 
   it('preserves raw response text', async () => {

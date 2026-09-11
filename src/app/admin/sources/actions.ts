@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 
 import { runClaimedFetch } from "@/lib/ingestion/source-runner";
+import { governedStarterSource, GREENHOUSE_POLICY_LINKS } from "@/lib/ingestion/starter-sources";
 import { assertSafePublicUrl } from "@/lib/pipeline/safe-fetch";
 import { createServiceClient, requireOfficer } from "@/lib/supabase/server";
 
@@ -32,7 +33,6 @@ export async function createJobSource(formData: FormData): Promise<void> {
   const interval = Number(field(formData, "fetch_interval_hours") || 24);
   const termsReviewed = checked(formData, "terms_reviewed");
   const robotsReviewed = checked(formData, "robots_reviewed");
-  const enabled = checked(formData, "enabled");
 
   if (!sourceName) throw new Error("Source name is required.");
   if (!KINDS.has(sourceKind)) throw new Error("Unsupported source kind.");
@@ -42,10 +42,6 @@ export async function createJobSource(formData: FormData): Promise<void> {
   if (sourceKind === "greenhouse" && !sourceIdentifier) {
     throw new Error("Greenhouse sources require the board token.");
   }
-  if (enabled && (!termsReviewed || !robotsReviewed)) {
-    throw new Error("Record both terms and robots review before enabling a source.");
-  }
-
   const { data: provenance, error: provenanceError } = await db.from("source_records").insert({
     name: sourceName,
     source_type: "website_page",
@@ -67,7 +63,7 @@ export async function createJobSource(formData: FormData): Promise<void> {
     source_kind: sourceKind,
     source_identifier: sourceIdentifier,
     careers_url: careersUrl,
-    enabled,
+    enabled: false,
     fetch_interval_hours: interval,
     terms_reviewed: termsReviewed,
     terms_review_date: termsReviewed ? new Date().toISOString().slice(0, 10) : null,
@@ -78,6 +74,61 @@ export async function createJobSource(formData: FormData): Promise<void> {
   if (error) {
     await db.from("source_records").delete().eq("id", provenance.id);
     throw new Error(`Could not create job source: ${error.message}`);
+  }
+  refresh();
+}
+
+export async function createStarterSource(formData: FormData): Promise<void> {
+  const { user } = await requireOfficer();
+  const db = createServiceClient();
+  const starter = governedStarterSource(field(formData, "starter_id"));
+  if (!starter) throw new Error("Unknown starter source.");
+
+  const careersUrl = (await assertSafePublicUrl(starter.careersUrl)).toString();
+  const { data: existing, error: existingError } = await db.from("job_sources")
+    .select("id")
+    .eq("source_kind", "greenhouse")
+    .eq("source_identifier", starter.boardToken)
+    .limit(1);
+  if (existingError) throw new Error(`Could not check starter source: ${existingError.message}`);
+  if ((existing ?? []).length > 0) {
+    refresh();
+    return;
+  }
+
+  const { data: provenance, error: provenanceError } = await db.from("source_records").insert({
+    name: `${starter.sourceName} careers board`,
+    source_type: "website_page",
+    url: careersUrl,
+    owner: "CSULB Biotechnology Club",
+    access_level: "officers",
+    canonical_status: "active",
+    refresh_policy: `Every ${starter.fetchIntervalHours} hours after policy review`,
+    public_safe: false,
+    notes: `Governed starter source. ${starter.rationale}`,
+  }).select("id").single();
+  if (provenanceError || !provenance) {
+    throw new Error(`Could not create starter provenance: ${provenanceError?.message ?? "unknown error"}`);
+  }
+
+  const { error } = await db.from("job_sources").insert({
+    source_record_id: provenance.id,
+    source_name: starter.sourceName,
+    source_kind: "greenhouse",
+    source_identifier: starter.boardToken,
+    careers_url: careersUrl,
+    enabled: false,
+    fetch_interval_hours: starter.fetchIntervalHours,
+    terms_reviewed: false,
+    terms_review_date: null,
+    robots_reviewed: false,
+    notes: `Starter added disabled. Review ${GREENHOUSE_POLICY_LINKS.apiDocumentation}, ${GREENHOUSE_POLICY_LINKS.apiRobots}, and ${GREENHOUSE_POLICY_LINKS.boardRobots} before testing or enabling.`,
+    created_by: user.id,
+    updated_by: user.id,
+  });
+  if (error) {
+    await db.from("source_records").delete().eq("id", provenance.id);
+    throw new Error(`Could not create starter source: ${error.message}`);
   }
   refresh();
 }

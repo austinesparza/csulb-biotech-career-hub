@@ -1,6 +1,6 @@
 # Operational pipeline and rollout
 
-Status: production schema and schedules active; no machine source is configured or enabled, September 10, 2026
+Status: production schema and schedules active; no machine source is configured or enabled, September 11, 2026. The officer source screen includes three verified starter feeds that are always added disabled.
 
 ## The short answer
 
@@ -32,7 +32,7 @@ flowchart TD
 | --- | --- | --- |
 | Public suggestions | `user_submissions` and `/admin/review?tab=submissions` | Working |
 | Spreadsheet intake | One-click read-only Sheet sync or CSV upload at `/admin/import`; original rows saved in `raw_import_rows` | Implemented, officer-triggered |
-| Official Greenhouse feed | `scripts/run-ingestion-worker.ts` and the tested Greenhouse connector | Implemented; no approved production source configured |
+| Official Greenhouse feed | `scripts/run-ingestion-worker.ts`, the tested Greenhouse connector, and disabled starter setup at `/admin/sources` | Implemented; no approved production source configured |
 | Public program pages | Conditional fetch with optional Scrapling and ScrapeGraphAI fallback | Implemented; no approved production source configured |
 | Raw archive | Private `source-payloads` storage plus `source_payloads` metadata and hashes | Implemented |
 | Search lead archive | Private `discovery_leads` plus immutable observations | Migration 0013 is applied; no search provider is connected |
@@ -150,13 +150,18 @@ Each run must record a stable run ID, query or source ID, taxonomy version, retr
 Recommended activation sequence:
 
 1. Keep the disposable migration and RLS workflow green before every production schema change.
-2. Add one real employer source only after an officer records its terms and robots review; leave it disabled.
-3. Click **Test privately** and inspect the marked run, private payload, posting, version, draft, and task before enabling it.
-4. Run extraction on at least 30 real officer-labelled postings. Keep learned ranking disabled until the evaluation gate passes.
-5. Test approve, archive, reject, and changed-approved behavior with officer and anonymous clients.
-6. Enable that reviewed source at low frequency.
-7. Add a scheduler only after two clean weeks and a source-health alert.
-8. Configure direct Sheet sync only after the app review queue has become the officers' normal workspace. Then run one bounded, officer-triggered production sync and inspect the private archive and review queue before making it routine. Keep privileged secrets out of Preview.
+2. At `/admin/sources`, add one verified starter feed. It is always created disabled and unreviewed.
+3. Open the source board, Greenhouse GET documentation, and both robots files from the source screen. Record both policy checks.
+4. Click **Test privately** and inspect the marked run, private payload, posting, version, draft, and task before enabling it.
+5. Run extraction on at least 30 real officer-labelled postings. Keep learned ranking disabled until the evaluation gate passes.
+6. Test approve, archive, reject, and changed-approved behavior with officer and anonymous clients.
+7. Enable that reviewed source at daily frequency. The existing scheduler will pick it up when due.
+8. Add further sources only after the first source has clean run history and a working source-health alert.
+9. Configure direct Sheet sync only after the app review queue has become the officers' normal workspace. Then run one bounded, officer-triggered production sync and inspect the private archive and review queue before making it routine. Keep privileged secrets out of Preview.
+
+The initial starter cohort, verified against live public Greenhouse GET feeds on September 11, 2026, is Xaira Therapeutics, Ginkgo Bioworks, and Flagship Pioneering's co-op program. A live connector check observed 52 records and retained all 52 for private archival. Score version 3 routed 11 scientifically relevant internships and co-ops toward review and held unrelated or full-time roles below the review threshold. This check did not write to production.
+
+Maintainers can repeat the read-only live check with `npm run sources:verify`. The command prints only source names, counts, candidate titles, scores, classifications, and canonical URLs. It never prints raw descriptions and has no database client.
 
 ## Security-advisor disposition
 

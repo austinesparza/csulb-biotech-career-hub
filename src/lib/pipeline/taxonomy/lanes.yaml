@@ -11,8 +11,8 @@
 # Stage and gates classify the record for officer review; they do not silently
 # remove an otherwise relevant posting.
 
-version: 3
-updated: 2026-09-08
+version: 4
+updated: 2026-09-11
 
 # =============================================================================
 # SCIENTIFIC LANES — the subject matter
@@ -282,3 +282,5 @@ exclude_titles:
   - "supply chain planner"
   - legal counsel
   - communications intern
+  - communications
+  - public affairs

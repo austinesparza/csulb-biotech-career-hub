@@ -53,7 +53,7 @@ Every connector produces `NormalizedSourcePosting` objects. Key invariants:
 | `externalPostingId` | `string \| null` | Greenhouse job post ID |
 | `internalJobId` | `string \| null` | Greenhouse internal job ID |
 | `requisitionId` | `string \| null` | HR requisition number |
-| `employerNameRaw` | `string \| null` | Raw employer name (null for Greenhouse list endpoint) |
+| `employerNameRaw` | `string \| null` | Governed source name when supplied; otherwise null |
 | `employerNameNormalized` | `string \| null` | Lowercase, suffixes stripped |
 | `titleRaw` | `string \| null` | Original title as fetched |
 | `titleNormalized` | `string \| null` | Lowercase, Unicode-aware punctuation stripped, entities decoded |
@@ -75,7 +75,7 @@ Every connector produces `NormalizedSourcePosting` objects. Key invariants:
 | `sourceUpdatedAt` | `string \| null` | Strict RFC3339 `updated_at`, stored canonically as UTC ISO (`toISOString`) |
 | `sourceMetadata` | `unknown \| null` | Raw `metadata` array from Greenhouse API, if present |
 | `relevanceScore` | `number` | 0–100 clamped |
-| `relevanceScoreVersion` | `number` | Positive integer; currently 2 |
+| `relevanceScoreVersion` | `number` | Positive integer; currently 3 |
 | `scoreBreakdown` | `ScoreBreakdown` | Full scoring breakdown including derived `uncertaintyFlags` |
 | `uncertaintyFlags` | `UncertaintyFlag[]` | Fields that could not be determined |
 | `fetchedAt` | `string` | ISO timestamp of the fetch operation |
@@ -105,11 +105,11 @@ never discards source data.
 | `jobs[n].metadata` | `sourceMetadata` | Preserved as raw array for provenance; not included in scoring |
 | `jobs[n].content` | `descriptionText` | Also used for eligibility and remote-type inference |
 
-`employerNameRaw` and `employerNameNormalized` are **null** for the Greenhouse
-jobs-list endpoint, which does not include employer name per job. The caller
-(Phase 2B worker) that knows the board's employer name should enrich these
-fields before storing. The `employer_name_missing` uncertainty flag is set on
-every job from this connector.
+The Greenhouse jobs-list endpoint does not include employer name per job. The
+production runner supplies the officer-controlled `job_sources.source_name`, so
+`employerNameRaw` and `employerNameNormalized` are populated before scoring and
+storage. Direct connector calls that omit the name retain null values and the
+`employer_name_missing` uncertainty flag.
 
 Individual job-detail requests (`GET /v1/boards/{token}/jobs/{id}`) are **not**
 made in Phase 2A to avoid N+1 fetches. They are deferred to Phase 2B.
@@ -579,13 +579,11 @@ addressed in later phases:
 **Why Vitest?** Minimal configuration, TypeScript-native, Node.js environment,
 no Babel required. Appropriate for a small, officer-maintained student project.
 
-**Why no employer name from Greenhouse?** The Greenhouse jobs-list endpoint
+**Where does the employer name come from?** The Greenhouse jobs-list endpoint
 (`/v1/boards/{token}/jobs?content=true`) does not include employer name in
-individual job objects. The board-level employer name is available at
-`/v1/boards/{token}` (a separate request). To avoid an extra N+1-style
-preambule request, the employer name is left null and flagged with
-`employer_name_missing`. The calling worker in Phase 2B should resolve this
-before storage.
+individual job objects. The production runner uses the officer-controlled
+source registry name instead of making an additional request or trusting page
+text. Direct connector tests may omit it and retain `employer_name_missing`.
 
 **Why is `updated_at` excluded from the material hash but `descriptionNormalized`
 included?** `updated_at` changes on any Greenhouse-side edit (including internal

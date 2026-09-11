@@ -52,6 +52,48 @@ describe('scoreIngestionCandidate', () => {
     expect(breakdown.total).toBeGreaterThan(50);
   });
 
+  it('archives but does not queue a full-time science role that mentions a masters degree', () => {
+    const breakdown = scoreIngestionCandidate({
+      ...BASE_INPUT,
+      titleRaw: 'Scientist II, Genomics',
+      titleNormalized: 'scientist ii genomics',
+      classification: 'research',
+      descriptionText: "Full-time scientist role. A master's or PhD degree is required. Perform genomic analysis.",
+    });
+
+    expect(breakdown.total).toBeLessThan(35);
+    expect(breakdown.negativeReasons.some((reason) => reason.category === 'scope_gate')).toBe(true);
+  });
+
+  it('keeps a scientifically relevant masters co-op above the review threshold', () => {
+    const breakdown = scoreIngestionCandidate({
+      ...BASE_INPUT,
+      titleRaw: 'Genomics Co-Op',
+      titleNormalized: 'genomics co-op',
+      classification: 'internship',
+      descriptionText: "Six-month genomics co-op for master's students. Work includes RNA sequencing.",
+    });
+
+    expect(breakdown.total).toBeGreaterThanOrEqual(35);
+    expect(breakdown.taxonomyClassification.opportunityType?.id).toBe('coop');
+  });
+
+  it('keeps excluded non-science student roles below the review threshold', () => {
+    const breakdown = scoreIngestionCandidate({
+      ...BASE_INPUT,
+      employerName: 'Flagship Pioneering',
+      titleRaw: 'Communications and Public Affairs Co-Op',
+      titleNormalized: 'communications and public affairs co-op',
+      department: null,
+      departments: [],
+      classification: 'internship',
+      descriptionText: "Co-op for master's students supporting public affairs and company communications.",
+    });
+
+    expect(breakdown.total).toBeLessThan(35);
+    expect(breakdown.taxonomyClassification.keep).toBe(false);
+  });
+
   it('gives positive points for a canonical scientific lane', () => {
     const breakdown = scoreIngestionCandidate(BASE_INPUT);
     const hasBiotechReason = breakdown.positiveReasons.some(

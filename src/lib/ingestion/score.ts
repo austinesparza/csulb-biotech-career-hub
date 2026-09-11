@@ -17,6 +17,8 @@
  *                 penalty, unrelated-discipline penalty, ambiguous eligibility.
  *   v2: graduate-first relevance from the canonical pipeline taxonomy. Stage,
  *       structural gates and scientific lanes are classified independently.
+ *   v3: only scientifically relevant student programs may cross the review
+ *       threshold. Full-time roles remain archived but do not flood officers.
  */
 
 import { classify, loadTaxonomy, type Classification } from '../pipeline/classify';
@@ -28,7 +30,7 @@ import type { OpportunityClassification, RemoteType, ScoreBreakdown, ScoreReason
 // relevance_score and relevance_score_version must always be updated together.
 // ============================================================
 
-export const SCORE_VERSION = 2;
+export const SCORE_VERSION = 3;
 
 // ============================================================
 // SCORING WEIGHTS
@@ -62,6 +64,7 @@ const W_NO_URL = -10;                  // no application URL
 const W_AMBIGUOUS_ELIGIBILITY = -5;    // eligibility field missing or ambiguous
 const W_DEADLINE_EXPIRED = -15;        // deadline has passed
 const W_DEADLINE_UPCOMING = 5;         // deadline within 90 days (soon)
+const W_OUTSIDE_PROGRAM_SCOPE = -50;   // not a scientifically relevant student program
 
 // ============================================================
 // TERM LISTS
@@ -323,6 +326,9 @@ export function scoreIngestionCandidate(
   const descLower = (input.descriptionText?.slice(0, 2000) ?? '').toLowerCase();
   const eligibility = descLower; // use description as proxy for eligibility
   const taxonomyClassification = classifyScoringInput(input);
+  const isReviewScopedProgram = taxonomyClassification.keep
+    && taxonomyClassification.opportunityType !== null
+    && (input.classification === 'internship' || input.classification === 'fellowship');
 
   // --- 1. Canonical graduate-science relevance ---
   const bioStrong = BIOTECH_TITLE_STRONG.some((t) => titleLower.includes(t));
@@ -371,6 +377,15 @@ export function scoreIngestionCandidate(
       'structural_gate',
       W_STRUCTURAL_GATE,
       `restricted by ${taxonomyClassification.structuralGates.map((gate) => gate.id.replaceAll('_', ' ')).join(', ')}`,
+    );
+  }
+
+  if (!isReviewScopedProgram) {
+    addNegative(
+      'scope_gate',
+      W_OUTSIDE_PROGRAM_SCOPE,
+      taxonomyClassification.dropReason
+        ?? 'not classified as an internship, co-op, fellowship, or other student program',
     );
   }
 
@@ -456,9 +471,9 @@ export function scoreIngestionCandidate(
   if (eligibilityMissing) derivedFlags.add('eligibility_missing');
   if (eligibilityAmbiguous) derivedFlags.add('eligibility_ambiguous');
 
-  // Non-MSc stages must stay below the candidate-creation threshold of 35.
-  // They remain reviewable without outranking valid graduate opportunities.
-  const total = isNonMscStage
+  // Non-MSc stages and non-program roles must stay below the candidate-creation
+  // threshold of 35. Every record is still archived with its full evidence.
+  const total = isNonMscStage || !isReviewScopedProgram
     ? Math.max(0, Math.min(25, raw))
     : Math.max(0, Math.min(100, raw));
   return {
