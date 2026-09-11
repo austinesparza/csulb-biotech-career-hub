@@ -29,7 +29,8 @@
     "omniroute:stop": ".tools/omniroute/node_modules/.bin/omniroute stop",
     "ingest:worker": "node --conditions=react-server --import tsx scripts/run-ingestion-worker.ts",
     "extract:worker": "node --conditions=react-server --import tsx scripts/run-extraction-worker.ts",
-    "sources:verify": "node --conditions=react-server --import tsx scripts/verify-starter-sources.ts"
+    "sources:verify": "node --conditions=react-server --import tsx scripts/verify-starter-sources.ts",
+    "discovery:plan": "node --conditions=react-server --import tsx scripts/plan-employer-discovery.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
