@@ -11,6 +11,7 @@ source_records 1──* import_runs 1──* raw_import_rows *──? opportunit
 source_records 1──* opportunities
 companies      1──* opportunities
 opportunities  *──? opportunities (duplicate_of, self-ref)
+opportunities  1──* opportunity_revisions (append-only corrections)
 people         1──? mentorship_profiles
 people         1──* events (speaker)
 career_paths   1──* resources
@@ -32,6 +33,13 @@ officers       *──1 auth.users
 **companies** — `name, name_normalized (unique), website, location, industry_tags text[], description, public_safe, notes_private`
 
 **opportunities** — full spec: `company_id, source_record_id (nullable for legacy rows only; import flow always sets it), title, posting_url, location, eligibility, focus_area, deadline (date, strictly validated), deadline_text (original), start_date_text, paid_status (paid|unpaid|stipend|unknown), application_type, source_status_raw, status (11-value enum), public_notes, private_notes (imports land here), date_added, first_seen_at, last_seen_at, last_checked_at, relevance_score, relevance_reasons text[], review_status (pending|approved|rejected|changes_requested), public_safe, dedupe_key (strict: company|full title|url), family_key (season/year-stripped, flagging only), duplicate_of`
+
+**opportunity_revisions** — append-only officer audit trail for post-publication
+changes: `opportunity_id, revision_number, action (correction|unpublish|restore),
+reason, changed_by, restored_revision_id, before_snapshot, after_snapshot,
+created_at`. Browser roles cannot write it. The service-only atomic revision RPC
+checks officer identity, optimistic concurrency, the public boundary, and duplicate
+identity before changing the canonical opportunity and inserting its audit row.
 
 **people** — mentors/alumni/speakers/officers: `full_name, role_types person_role[], email, linkedin_url, affiliation, title, bio, photo_url, contact_public (bool — email/LinkedIn hidden unless true), consent_on_file, consent_date, consent_notes, public_safe`
 
@@ -77,3 +85,5 @@ Public visibility = `status IN (open_verified, open_unverified) AND review_statu
 4. Officer service-role actions require `requireOfficer()`. The submission RPC is
    the deliberately narrow public exception and cannot publish an opportunity.
 5. Approved+public opportunities are never field-mutated by imports (app-level rule in `decideUpdatePolicy`, see docs/08).
+6. Officers correct or remove an approved listing through `/admin/manage`. Every
+   change is atomic, requires a reason, and can be restored without deleting history.

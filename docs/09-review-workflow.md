@@ -3,6 +3,8 @@
 ## The invariants
 1. A record is public **iff** `public_safe = true` AND `review_status = 'approved'` AND `status ∈ {open_verified, open_unverified}`. Enforced by the `public_opportunities` view; no app code can bypass it.
 2. Once approved and public, a record is **import-immutable**: re-imports touch `last_seen_at` only and open `import_changed` tasks for differences. Only officers change published listings.
+3. Officer corrections are **audited and reversible**: `/admin/manage` writes the
+   canonical record and an immutable before/after revision in one transaction.
 
 ## Lifecycle
 
@@ -33,6 +35,17 @@ Notes rule shown in the UI: *imported spreadsheet notes land in private_notes an
 
 ## `import_changed` tasks
 When a re-import finds an approved record whose source row changed (deadline moved, URL changed, status column updated), the task shows a field-level diff. The officer either applies the change manually (and re-verifies the link) or dismisses the task. This is deliberate friction: published listings only change by officer action.
+
+## Published corrections and rollback (`/admin/manage`)
+Search by company, title, or location, open the editor, correct the public fields,
+and give a short reason. Saving requires the officer to re-check the official
+source and public-safety box. The public view changes immediately without a deploy.
+
+**Remove from website** changes the canonical record to `hidden` and clears its
+public-safe flag. It does not delete the opportunity. **Restore state before this
+change** restores the chosen revision's prior snapshot and records the restore as
+a new revision. The `updated_at` concurrency check prevents one officer from
+overwriting a newer change made after their page loaded.
 
 ## Submissions (M2)
 The **Submissions** tab shows new and in-review payloads plus optional private
