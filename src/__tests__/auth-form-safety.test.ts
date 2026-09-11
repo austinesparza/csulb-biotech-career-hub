@@ -6,6 +6,8 @@ const updatePasswordPage = readFileSync('src/app/auth/update-password/page.tsx',
 const loginPage = readFileSync('src/app/admin/login/page.tsx', 'utf8');
 const recoveryRoute = readFileSync('src/app/api/auth/recover/route.ts', 'utf8');
 const loginRoute = readFileSync('src/app/api/auth/login/route.ts', 'utf8');
+const emailOtpRequestRoute = readFileSync('src/app/api/auth/email-otp/request/route.ts', 'utf8');
+const emailOtpVerifyRoute = readFileSync('src/app/api/auth/email-otp/verify/route.ts', 'utf8');
 const logoutRoute = readFileSync('src/app/api/auth/logout/route.ts', 'utf8');
 const adminPage = readFileSync('src/app/admin/page.tsx', 'utf8');
 const authRequest = readFileSync('src/lib/auth-request.ts', 'utf8');
@@ -59,6 +61,32 @@ describe('authentication form safety', () => {
     expect(loginRoute).not.toMatch(/SERVICE_ROLE|SUPABASE_SECRET_KEY/);
   });
 
+  it('uses passwordless email OTP as the primary officer sign-in', () => {
+    expect(loginPage).toContain('action="/api/auth/email-otp/request"');
+    expect(loginPage).toContain('action="/api/auth/email-otp/verify"');
+    expect(loginPage).toContain('autoComplete="one-time-code"');
+    expect(emailOtpRequestRoute).toContain('signInWithOtp');
+    expect(emailOtpRequestRoute).toContain('shouldCreateUser: false');
+    expect(emailOtpRequestRoute).toContain('httpOnly: true');
+    expect(emailOtpRequestRoute).toContain("sameSite: 'strict'");
+    expect(emailOtpRequestRoute).not.toMatch(/SERVICE_ROLE|SUPABASE_SECRET_KEY/);
+    expect(emailOtpVerifyRoute).toContain('verifyOtp');
+    expect(emailOtpVerifyRoute).toContain("type: 'email'");
+    expect(emailOtpVerifyRoute).toContain('OFFICER_OTP_EMAIL_COOKIE');
+    expect(emailOtpVerifyRoute).toContain(".from('officers')");
+    expect(emailOtpVerifyRoute).toContain(".eq('is_active', true)");
+    expect(emailOtpVerifyRoute).not.toMatch(/SERVICE_ROLE|SUPABASE_SECRET_KEY/);
+  });
+
+  it('keeps OTP requests private, same-origin, and resistant to account enumeration', () => {
+    expect(emailOtpRequestRoute).toContain('isTrustedFormPost(request)');
+    expect(emailOtpVerifyRoute).toContain('isTrustedFormPost(request)');
+    expect(emailOtpRequestRoute).toContain("loginPage(request, { sent: '1' })");
+    expect(emailOtpRequestRoute).toContain('never reveals whether an email');
+    expect(emailOtpRequestRoute).toContain("error: 'rate_limited'");
+    expect(loginPage).toContain('If that email belongs to an officer account');
+  });
+
   it('provides a POST-only server sign-out control', () => {
     expect(adminPage).toContain('action="/api/auth/logout"');
     expect(adminPage).toContain('method="post"');
@@ -72,6 +100,8 @@ describe('authentication form safety', () => {
     expect(loginRoute).toContain('isTrustedFormPost(request)');
     expect(logoutRoute).toContain('isTrustedFormPost(request)');
     expect(recoveryRoute).toContain('isTrustedFormPost(request)');
+    expect(emailOtpRequestRoute).toContain('isTrustedFormPost(request)');
+    expect(emailOtpVerifyRoute).toContain('isTrustedFormPost(request)');
     expect(authRequest).toContain("request.headers.get('origin')");
     expect(authRequest).toContain("request.headers.get('sec-fetch-site')");
     expect(authRequest).toContain("'Cache-Control', 'private, no-store'");
