@@ -206,3 +206,30 @@ an accidental preview secret cannot be used by admin actions, public intake, or
 pipeline workers.
 
 The ingestion and extraction commands require service-role database credentials. They should run only in a private worker environment. They are not browser commands and are not enabled by installing the packages.
+
+## Alumni employer discovery inventory
+
+The bounded employer-first plan is seeded from a privacy-safe snapshot of
+`austinesparza/csulb-alumni-hub/data/companies.json`. The snapshot is pinned to
+an upstream commit, collapses duplicate location rows, and retains only company
+metadata plus aggregate local alumni counts. Alumni names, profile URLs,
+coordinates, and upstream row identifiers are excluded.
+
+Run a planning pass without fetching any site:
+
+```bash
+npm run discovery:plan
+```
+
+Optional environment filters are
+`EMPLOYER_DISCOVERY_CYCLE_YEAR`, `EMPLOYER_DISCOVERY_LIMIT` (maximum 50),
+`EMPLOYER_DISCOVERY_REGIONS`, and `EMPLOYER_DISCOVERY_INDUSTRIES`. Comma
+separates filter values. The command emits five auditable queries per employer.
+
+The officer workbook contains the same sanitized inventory in the
+`Employer Inventory` tab. Inventory membership is not fetch authorization.
+Each exact ATS or program source still requires a terms review, robots review,
+private test, and explicit enablement. Query execution also remains disabled
+until an approved search provider is configured; returned leads must be written
+to the private `discovery_leads` archive.
+

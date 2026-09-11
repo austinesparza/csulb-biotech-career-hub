@@ -1,0 +1,3176 @@
+{
+  "_meta": {
+    "sourceRepository": "austinesparza/csulb-alumni-hub",
+    "sourcePath": "data/companies.json",
+    "sourceCommit": "a5a9ab8adc2d65e3f883ecb6281bf0dc49a92b77",
+    "sourceRows": 196,
+    "uniqueEmployers": 185,
+    "privacy": "Company-level metadata and aggregate counts only. Alumni names, profile URLs, coordinates, and source row IDs are intentionally excluded."
+  },
+  "employers": [
+    {
+      "company": "Kite Pharma",
+      "website": "https://www.kitepharma.com/",
+      "industries": [
+        "Cell & Gene Therapy"
+      ],
+      "descriptions": [
+        "Engineered Autologous T Cell Therapy, CAR-T"
+      ],
+      "locations": [
+        "CA - El Segundo",
+        "CA - Oceanside",
+        "CA - Santa Monica"
+      ],
+      "regions": [
+        "LA - South Bay / LBC",
+        "San Diego"
+      ],
+      "localAlumniCount": 7
+    },
+    {
+      "company": "PolyPeptide Group",
+      "website": "https://www.polypeptide.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Polypeptide Manufacturing"
+      ],
+      "locations": [
+        "CA - San Diego",
+        "CA - Torrance"
+      ],
+      "regions": [
+        "LA - South Bay / LBC",
+        "San Diego"
+      ],
+      "localAlumniCount": 6
+    },
+    {
+      "company": "Zymo Research",
+      "website": "https://www.zymoresearch.com/",
+      "industries": [
+        "Research Tools"
+      ],
+      "descriptions": [
+        "Epigenetics, DNA, RNA research products"
+      ],
+      "locations": [
+        "CA - Irvine",
+        "CA - Tustin"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 6
+    },
+    {
+      "company": "Freudenberg Medical",
+      "website": "https://www.freudenbergmedical.com/en/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Design, development and manufacturing for medical devices, in-vitro diagnostics, minimally invasive solutions, specialty components, and biopharma tubing"
+      ],
+      "locations": [
+        "CA - Baldwin Park",
+        "CA - Carpinteria"
+      ],
+      "regions": [
+        "LA - East / SGV",
+        "Ventura / SB"
+      ],
+      "localAlumniCount": 5
+    },
+    {
+      "company": "Medtronic",
+      "website": "https://www.medtronic.com/us-en/index.html",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Medical Devices"
+      ],
+      "locations": [
+        "CA - Carlsbad",
+        "CA - Santa Ana"
+      ],
+      "regions": [
+        "Orange County",
+        "San Diego"
+      ],
+      "localAlumniCount": 5
+    },
+    {
+      "company": "Orchid Orthopedic Solutions",
+      "website": "https://www.orchid-ortho.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Contract Medical Device Work"
+      ],
+      "locations": [
+        "CA - Arcadia",
+        "CA - Santa Ana"
+      ],
+      "regions": [
+        "LA - East / SGV",
+        "Orange County"
+      ],
+      "localAlumniCount": 4
+    },
+    {
+      "company": "Abbott",
+      "website": "https://www.abbott.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Device Manufacturing"
+      ],
+      "locations": [
+        "CA - Sylmar"
+      ],
+      "regions": [
+        "LA - West / Valley"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Amgen",
+      "website": "https://www.amgen.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecules, Biologics"
+      ],
+      "locations": [
+        "CA - Thousand Oaks"
+      ],
+      "regions": [
+        "Ventura / SB"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Autonomous Medical Devices",
+      "website": "https://amdilabs.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "POC Molecular Diagnostics"
+      ],
+      "locations": [
+        "CA - Santa Ana"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Beckman Coulter Diagnostics",
+      "website": "https://www.beckmancoulter.com",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Diagnostics, Equipment"
+      ],
+      "locations": [
+        "CA - Brea"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Boston Scientific",
+      "website": "https://www.bostonscientific.com/en-US/home.html",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Medical Devices"
+      ],
+      "locations": [
+        "CA - Valencia"
+      ],
+      "regions": [
+        "LA - West / Valley"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Bristol Myers Squibb",
+      "website": "https://www.bms.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecules, Biologics"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "CenExel Clinical Research",
+      "website": "https://cenexelresearch.com/act/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Clinical Research"
+      ],
+      "locations": [
+        "CA - Anaheim"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Crinetics Pharmaceuticals",
+      "website": "https://crinetics.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecules"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Dendreon",
+      "website": "https://www.dendreon.com/",
+      "industries": [
+        "Cell & Gene Therapy"
+      ],
+      "descriptions": [
+        "Autologous Cell Therapy, Contract Cell Therapy Manufacturing"
+      ],
+      "locations": [
+        "CA - Seal Beach"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "EAG Laboratories",
+      "website": "https://www.eag.com/industry/pharmaceuticals/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Analytical & Synthesis Services"
+      ],
+      "locations": [
+        "CA - El Segundo",
+        "CA - Irvine",
+        "CA - San Diego"
+      ],
+      "regions": [
+        "LA - South Bay / LBC",
+        "Orange County",
+        "San Diego"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Eli Lilly",
+      "website": "https://www.lilly.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Biologics Discovery"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Grifols",
+      "website": "https://www.grifols.com/en/home",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Diagnostics, Plasma Derivatives"
+      ],
+      "locations": [
+        "CA - Los Angeles"
+      ],
+      "regions": [
+        "LA - South Bay / LBC"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Illumina",
+      "website": "https://www.illumina.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Genomic tools, research products, molecular diagnostics, NGS"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Johnson and Johnson Innovative Medicine",
+      "website": "https://innovativemedicine.jnj.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecules, Biologics"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "M3 Wake Research",
+      "website": "https://wakeresearch.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Clinical Research"
+      ],
+      "locations": [
+        "CA - Encino",
+        "CA - Los Alamitos",
+        "CA - Newport Beach"
+      ],
+      "regions": [
+        "LA - West / Valley",
+        "Orange County"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Masimo",
+      "website": "https://www.masimo.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Noninvasive patient monitoring"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Neurocrine Biosciences",
+      "website": "https://www.neurocrine.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecules"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Ossur",
+      "website": "https://www.ossur.com/en-us",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Orthopedic Devices"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Pfizer",
+      "website": "https://www.pfizer.com/",
+      "industries": [
+        "Research Tools"
+      ],
+      "descriptions": [
+        "Peptides, Monoclonal Antibodies"
+      ],
+      "locations": [
+        "CA - La Jolla"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Phenomenex",
+      "website": "https://www.phenomenex.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "HPLC Products"
+      ],
+      "locations": [
+        "CA - Torrance"
+      ],
+      "regions": [
+        "LA - South Bay / LBC"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "QuidelOrtho",
+      "website": "https://www.quidelortho.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Molecular Diagnostics"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Sekisui Diagnostics",
+      "website": "https://sekisuidiagnostics.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Diagnostics"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "TriLink Biotechnologies",
+      "website": "https://www.trilinkbiotech.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Custom Nucleotides"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Vertex",
+      "website": "https://www.vrtx.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecules"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 3
+    },
+    {
+      "company": "Advanced Bionics",
+      "website": "https://www.advancedbionics.com/us/en/home",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Cochlear Implants"
+      ],
+      "locations": [
+        "CA - Valencia"
+      ],
+      "regions": [
+        "LA - West / Valley"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Advanced Sterilization Products",
+      "website": "https://www.asp.com/en-us",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Sterilization Products"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Alcon",
+      "website": "https://www.alcon.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Eye-Care Products"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Ambry Genetics",
+      "website": "https://www.ambrygen.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Genetic Testing"
+      ],
+      "locations": [
+        "CA - Aliso Viejo"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Applied BioCode",
+      "website": "https://www.apbiocode.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Bar-coded Magnetic Beads, Assays, Multiplexed Systems"
+      ],
+      "locations": [
+        "CA - Santa Fe Springs"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Applied Medical",
+      "website": "https://www.appliedmedical.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Surgical Devices"
+      ],
+      "locations": [
+        "CA - Rancho Santa Margarita"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Argá Medtech",
+      "website": "https://argamedtech.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Cardiac Ablation System"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Argonaut Manufacturing Services",
+      "website": "https://www.argonautms.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Argonaut is a CMO dedicated to serving highly-innovative companies in biopharmaceuticals and molecular diagnostics. Specializing in formulation, filling, finishing and final kitting."
+      ],
+      "locations": [
+        "CA - Carlsbad"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Armata Pharmaceuticals",
+      "website": "https://www.armatapharma.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Natural and synthetic bacteriophage-based therapies"
+      ],
+      "locations": [
+        "CA - Los Angeles"
+      ],
+      "regions": [
+        "LA - South Bay / LBC"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Arrowhead Pharmaceuticals",
+      "website": "https://arrowheadpharma.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "RNAi"
+      ],
+      "locations": [
+        "CA - Pasadena"
+      ],
+      "regions": [
+        "LA - East / SGV"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Aspen Medical products",
+      "website": "https://www.aspenmp.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Upper and lower spinal orthotics"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Avidity Biosciences",
+      "website": "https://www.aviditybiosciences.com/",
+      "industries": [
+        "Research Tools"
+      ],
+      "descriptions": [
+        "Antibody-Oligonucleotide Conjugates"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "AVITA Medical",
+      "website": "https://avitamedical.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Autologous Skin Cell Harvesting & Treatments Device"
+      ],
+      "locations": [
+        "CA - Valencia"
+      ],
+      "regions": [
+        "LA - West / Valley"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Axonics",
+      "website": "https://www.axonics.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Sacral Neuromodulation Device"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Bachem",
+      "website": "https://www.bachem.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Contract Peptides, Oligos"
+      ],
+      "locations": [
+        "CA - Torrance"
+      ],
+      "regions": [
+        "LA - South Bay / LBC"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Bio-Rad",
+      "website": "https://www.bio-rad.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Research & Diagnostic Products"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Biolase",
+      "website": "https://www.biolase.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Dental Lasers"
+      ],
+      "locations": [
+        "CA - Foothill Ranch"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Biomerica",
+      "website": "https://biomerica.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Diagnostic Tests"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Bolt Medical",
+      "website": "https://boltmed.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Intravascular Lithotripsy"
+      ],
+      "locations": [
+        "CA - Carlsbad"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Concuir Consulting",
+      "website": "https://concuir.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Management Consulting - Program and project management, project strategy and delivery, change management, quality, remediation consulting."
+      ],
+      "locations": [
+        "CA - Laguna Hills"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Dexcom",
+      "website": "https://www.dexcom.com/en-us",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Glucose Monitors"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Edwards Lifesciences",
+      "website": "https://www.edwards.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Medical Devices"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Endologix",
+      "website": "https://endologix.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Medical Devices"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Fujifilm Diosynth",
+      "website": "https://fujifilmdiosynth.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Biologics Development & Manufacturing"
+      ],
+      "locations": [
+        "CA - Thousand Oaks"
+      ],
+      "regions": [
+        "Ventura / SB"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Fulgent Genetics",
+      "website": "https://www.fulgentgenetics.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Next-gen Sequencing"
+      ],
+      "locations": [
+        "CA - El Monte"
+      ],
+      "regions": [
+        "LA - East / SGV"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Genentech",
+      "website": "https://www.gene.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecules, Biologics"
+      ],
+      "locations": [
+        "CA - Oceanside"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Gilead",
+      "website": "https://www.gilead.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecules"
+      ],
+      "locations": [
+        "CA - Oceanside"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Glaukos",
+      "website": "https://www.glaukos.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Glaucoma Devices"
+      ],
+      "locations": [
+        "CA - San Clemente"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Halozyme Therapeutics",
+      "website": "https://halozyme.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Extracellular Matrix, Licensed out"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Hologic",
+      "website": "https://www.hologic.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Diagnostic, Imaging"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Horizon Surgical Systems",
+      "website": "https://horizonsurgicalsystems.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Robotic Cataract Surgical Devices"
+      ],
+      "locations": [
+        "CA - Malibu"
+      ],
+      "regions": [
+        "LA - West / Valley"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "ICU Medical",
+      "website": "https://www.icumed.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Disposable medical products"
+      ],
+      "locations": [
+        "CA - San Clemente"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "ImmunityBio",
+      "website": "https://immunitybio.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Cellular therapy"
+      ],
+      "locations": [
+        "CA - El Segundo"
+      ],
+      "regions": [
+        "LA - South Bay / LBC"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Inari Medical",
+      "website": "https://www.inarimedical.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Catheter-based technologies for the treatment of venous thromboembolism"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Integra LifeSciences",
+      "website": "https://www.integralife.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Medical Devices"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "IQVIA",
+      "website": "https://www.iqvia.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Clinical Research"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Irvine Clinical Research",
+      "website": "https://www.irvineclinical.com/",
+      "industries": [
+        "CRO / CMO"
+      ],
+      "descriptions": [
+        "Clinical Trials"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "KARL STORZ Endoscopy",
+      "website": "https://www.karlstorz.com/us/en/index.htm?target=",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Endoscopy"
+      ],
+      "locations": [
+        "CA - El Segundo"
+      ],
+      "regions": [
+        "LA - South Bay / LBC"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "LGM Pharma",
+      "website": "https://lgmpharma.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Sourcing, warehousing & distribution of quality CGMP APIs to pharma & biotech companies."
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "McGuff Pharmaceuticals",
+      "website": "https://www.mcguffpharmaceuticals.com/",
+      "industries": [
+        "CRO / CMO"
+      ],
+      "descriptions": [
+        "Contract Manufacturing"
+      ],
+      "locations": [
+        "CA - Santa Ana"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Meissner",
+      "website": "https://www.meissner.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Lab Systems"
+      ],
+      "locations": [
+        "CA - Camarillo"
+      ],
+      "regions": [
+        "Ventura / SB"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Millipore",
+      "website": "https://www.emdmillipore.com/US/en",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Purification, Analytic Biologics, Discovery"
+      ],
+      "locations": [
+        "CA - Temecula"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Miltenyi Biotec",
+      "website": "https://www.miltenyibiotec.com/IE-en/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Magnetic Cell Sorting Products"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "NAMSA",
+      "website": "https://namsa.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Medical Research Organization - Medical Devices"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "NeoGenomics",
+      "website": "https://www.neogenomics.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Genetic & Diagnostic Testing"
+      ],
+      "locations": [
+        "CA - Aliso Viejo"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Nihon Kohden",
+      "website": "https://www.nihonkohden.com/index.html",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Medical Electronic Equipment"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Nitto Avecia Pharma Services",
+      "website": "https://www.aveciapharma.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Pharma Development"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Optimum Therapeutics",
+      "website": "https://optimumtx.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Drug delivery technology"
+      ],
+      "locations": [
+        "CA - Carlsbad"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "OrthAlign",
+      "website": "https://www.orthalign.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Inertial Navigation systems for joint replacement surgery"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "PHASE Scientific Americas",
+      "website": "https://www.phasescientificamericas.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Diagnostics"
+      ],
+      "locations": [
+        "CA - Garden Grove"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Quantimetrix",
+      "website": "https://quantimetrix.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Urinalysis Dipstick"
+      ],
+      "locations": [
+        "CA - Redondo Beach"
+      ],
+      "regions": [
+        "LA - South Bay / LBC"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Resonetics",
+      "website": "https://resonetics.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Contract Medical Device Manufacturing & Development"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "RxSight",
+      "website": "https://rxsight.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Adjustable intraocular lenses"
+      ],
+      "locations": [
+        "CA - Aliso Viejo"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Seegene",
+      "website": "https://www.seegene.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Diagnostics"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Siegfried",
+      "website": "https://www.siegfried.ch/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Contract Drug Manufacturing, APIS, Development"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "SpyGlass Pharma",
+      "website": "https://www.spyglasspharma.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Intraocular Drug Delivery"
+      ],
+      "locations": [
+        "CA - Aliso Viejo"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Tandem Diabetes",
+      "website": "https://www.tandemdiabetes.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Touchscreen Insulin Pump"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Tarsus Pharmaceuticals",
+      "website": "https://tarsusrx.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Blepharitis Treatment"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Telesair",
+      "website": "https://www.telesair.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Noninvasive Ventilator"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Theragent",
+      "website": "https://theragent.com/",
+      "industries": [
+        "Cell & Gene Therapy"
+      ],
+      "descriptions": [
+        "Cell Therapy CDMO"
+      ],
+      "locations": [
+        "CA - Arcadia"
+      ],
+      "regions": [
+        "LA - East / SGV"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Thermo Fisher",
+      "website": "https://www.thermofisher.com/us/en/home.html",
+      "industries": [
+        "Research Tools"
+      ],
+      "descriptions": [
+        "Molecular Biology & Biotech Lab Products"
+      ],
+      "locations": [
+        "CA - Carlsbad"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Twist Bioscience",
+      "website": "https://www.twistbioscience.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Synthetic DNA, genes and libraries"
+      ],
+      "locations": [
+        "CA - Carlsbad"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "Vividion Therapeutics",
+      "website": "https://vividion.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Proprietary Screening"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 2
+    },
+    {
+      "company": "AbbVie",
+      "website": "https://www.abbvie.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecules, Biologics"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Acutus Medical",
+      "website": "https://www.acutusmedical.com/us/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Complex Cardiac Arrhythmias Diagnostics"
+      ],
+      "locations": [
+        "CA - Carlsbad"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Agendia",
+      "website": "https://agendia.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Breast Cancer Assay"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Altasciences",
+      "website": "https://www.altasciences.com/",
+      "industries": [
+        "CRO / CMO"
+      ],
+      "descriptions": [
+        "Contract Research"
+      ],
+      "locations": [
+        "CA - Cypress"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Amphastar Pharmaceuticals",
+      "website": "https://amphastar.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Generic Small Molecules"
+      ],
+      "locations": [
+        "CA - Rancho Cucamonga"
+      ],
+      "regions": [
+        "LA - East / SGV"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Arcturus Therapeutics",
+      "website": "https://arcturusrx.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Lipid nanoparticle (LNP) mRNA drug delivery systems"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Atara Biotherapeutics",
+      "website": "https://www.atarabio.com/",
+      "industries": [
+        "Cell & Gene Therapy"
+      ],
+      "descriptions": [
+        "Peptibody, Monoclonal Antibody, Cell Therapy"
+      ],
+      "locations": [
+        "CA - Thousand Oaks"
+      ],
+      "regions": [
+        "Ventura / SB"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Autobahn Therapeutics",
+      "website": "https://autobahntx.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Remyelination program for multiple sclerosis"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Azzur",
+      "website": "https://azzur.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Consulting"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "BALT",
+      "website": "https://baltgroup.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Products for the interventional access and treatment of neurovascular diseases"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Bausch Health",
+      "website": "https://www.bauschhealth.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecules"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Beta Bionics",
+      "website": "https://www.betabionics.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Artificial Pancreas"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "BioDuro",
+      "website": "https://www.bioduro.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Fully integrated CRDMO from target identification through commercial drug product manufacturing"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "BlossomHill Therapeutics",
+      "website": "https://bhtherapeutics.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecule Drug Discovery"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Boundless Bio",
+      "website": "https://boundlessbio.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Cancer Treatments targeting extra-chromosomal DNA"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Bright Uro",
+      "website": "https://brighturo.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Urology Diagnostic Device"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Calidi Biotherapeutics",
+      "website": "https://www.calidibio.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Oncolytic Viruses"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Capstan Therapeutics",
+      "website": "https://www.capstantx.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Lipid Nanoparticles to enable engineering or ablation of pathogenic cells in the body"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Cardiff Oncology",
+      "website": "https://cardiffoncology.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Cancer Therapy"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "CBCC Global Research",
+      "website": "https://www.cbcc.global/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Clinical Services"
+      ],
+      "locations": [
+        "CA - Bakersfield"
+      ],
+      "regions": [
+        "Central CA"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Cidara Therapeutics",
+      "website": "https://www.cidara.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small molecules, peptide"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "ClinDatrix",
+      "website": "https://clindatrix.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Clinical Research"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Confluent Medical Technologies",
+      "website": "https://confluentmedical.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Contract Medical Devices, Nitinol, Catheters, Textiles"
+      ],
+      "locations": [
+        "CA - Laguna Niguel"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Contineum Therapeutics",
+      "website": "https://www.contineum-tx.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecule for MS"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "CorDx",
+      "website": "https://cordx.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Diagnostics"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "CovarsaDx",
+      "website": "https://covarsadx.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "CRO for IVD & Clinical Research"
+      ],
+      "locations": [
+        "CA - Downey"
+      ],
+      "regions": [
+        "LA - South Bay / LBC"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Cullgen",
+      "website": "https://www.cullgen.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Protein Degradation Technology"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Diality",
+      "website": "https://www.diality.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Hemodialysis System"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Diazyme Laboratories",
+      "website": "https://www.diazyme.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Diagnostic Reagents"
+      ],
+      "locations": [
+        "CA - Poway"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Discover Echo",
+      "website": "https://discover-echo.com/",
+      "industries": [
+        "CRO / CMO"
+      ],
+      "descriptions": [
+        "Microscopy"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "DxTerity",
+      "website": "https://dxterity.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Genomic Testing"
+      ],
+      "locations": [
+        "CA - Torrance"
+      ],
+      "regions": [
+        "LA - South Bay / LBC"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "EntroGen",
+      "website": "https://entrogen.com/web3/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Molecular Diagnostics"
+      ],
+      "locations": [
+        "CA - Woodland Hills"
+      ],
+      "regions": [
+        "LA - West / Valley"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "enVVeno Medical",
+      "website": "https://envveno.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Bioprosthetic Devices & Technologies"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "eXoZymes",
+      "website": "https://exozymes.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Enzyme Systems for Biomanufacturing"
+      ],
+      "locations": [
+        "CA - Monrovia"
+      ],
+      "regions": [
+        "LA - East / SGV"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Field Medical",
+      "website": "https://www.fieldmedicalinc.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Cardiac Ablation Technology"
+      ],
+      "locations": [
+        "CA - Cardiff"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "GeneTex",
+      "website": "https://www.genetex.com/",
+      "industries": [
+        "Research Tools"
+      ],
+      "descriptions": [
+        "Research Antibodies"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Genomic Testing Cooperative",
+      "website": "https://genomictestingcooperative.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Diagnostics"
+      ],
+      "locations": [
+        "CA - Lake Forest"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Hardy Diagnostics",
+      "website": "https://hardydiagnostics.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Plate Reader Device"
+      ],
+      "locations": [
+        "CA - Santa Maria"
+      ],
+      "regions": [
+        "Central CA"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Immunis",
+      "website": "https://immunisbiomedical.com/home/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Secretome Technology"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Implen",
+      "website": "https://www.implen.de/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Spectroscopy instruments and consumables for the non-destructive analysis of ultra low volume samples"
+      ],
+      "locations": [
+        "CA - Westlake Village"
+      ],
+      "regions": [
+        "LA - West / Valley"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Inhibrx Biosciences",
+      "website": "https://inhibrx.com/",
+      "industries": [
+        "Research Tools"
+      ],
+      "descriptions": [
+        "Antibodies, Fusion Proteins"
+      ],
+      "locations": [
+        "CA - La Jolla"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Integrated Endoscopy",
+      "website": "https://www.iescope.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Reusable Arthroscopes"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Ionis Pharmaceuticals",
+      "website": "https://ionis.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "RNA"
+      ],
+      "locations": [
+        "CA - Carlsbad"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "iRhythm Technologies",
+      "website": "https://www.irhythmtech.com/us/en",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Remote heart analysis"
+      ],
+      "locations": [
+        "CA - Cypress"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "JenaValve",
+      "website": "https://jenavalve.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Transcatheter aortic valve replacement system"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "joimax",
+      "website": "https://www.joimax.com/en/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Endoscopic Minimally Invasive Spinal Surgery"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Life Science Outsourcing",
+      "website": "https://lso-inc.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Medical device contract manufacturing"
+      ],
+      "locations": [
+        "CA - Brea"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Lotus Clinical Research",
+      "website": "https://lotuscr.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Clinical Research"
+      ],
+      "locations": [
+        "CA - Pasadena"
+      ],
+      "regions": [
+        "LA - East / SGV"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "MannKind",
+      "website": "https://mannkindcorp.com/",
+      "industries": [
+        "Cell & Gene Therapy"
+      ],
+      "descriptions": [
+        "Inhalable Biologics, Gene Therapy"
+      ],
+      "locations": [
+        "CA - Westlake Village"
+      ],
+      "regions": [
+        "LA - West / Valley"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Matrix Biomed",
+      "website": null,
+      "industries": [
+        "Cell & Gene Therapy"
+      ],
+      "descriptions": [
+        "Gene therapy for various cancers"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "MDxHealth",
+      "website": "https://mdxhealth.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Molecular Diagnostics"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "MEI Pharma",
+      "website": "https://meipharma.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecules"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "MilliporeSigma",
+      "website": "https://www.sigmaaldrich.com/US/en",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Clinical Manufacturing"
+      ],
+      "locations": [
+        "CA - Carlsbad"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Modulo Bio",
+      "website": "https://www.modulo.bio/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Small Molecules for Neurological Conditions"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Monobind",
+      "website": "https://www.monobind.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "IVD"
+      ],
+      "locations": [
+        "CA - Lake Forest"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Mosaic ImmunoEngineering",
+      "website": "https://www.mosaicie.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Nanotechnology-based immunotherapy"
+      ],
+      "locations": [
+        "CA - Huntington Beach"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "NantHealth",
+      "website": "https://nanthealth.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Diagnostics"
+      ],
+      "locations": [
+        "CA - El Segundo"
+      ],
+      "regions": [
+        "LA - South Bay / LBC"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "NeurOptics",
+      "website": "https://neuroptics.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Pupillometry"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Okami Medical",
+      "website": "https://okamimedical.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Vascular Occlusion System"
+      ],
+      "locations": [
+        "CA - Aliso Viejo"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Omnica",
+      "website": "https://www.omnica.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Contract Medical Device Design & Manufacturing"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Pangea Laboratory",
+      "website": "https://pangealab.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Cancer Diagnostics"
+      ],
+      "locations": [
+        "CA - Tustin"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Peninsula Research Associates",
+      "website": "https://peninsularesearch.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Clinical Research"
+      ],
+      "locations": [
+        "CA - Rolling Hills Estates"
+      ],
+      "regions": [
+        "Other SoCal"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Precision Stability Storage",
+      "website": "https://precisionstabilitystorage.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Biostorage, Pharma Stability Storage"
+      ],
+      "locations": [
+        "CA - El Segundo"
+      ],
+      "regions": [
+        "LA - South Bay / LBC"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "PrimeVax Immuno-Oncology",
+      "website": "https://www.primevax.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Dengue Virus combined with autologous dendritic cells"
+      ],
+      "locations": [
+        "CA - Orange"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Primrose Bio",
+      "website": "https://www.primrosebio.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Bacterial modification"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Prodo Laboratories",
+      "website": "https://prodolabs.com/",
+      "industries": [
+        "Research Tools"
+      ],
+      "descriptions": [
+        "Diabetes Research Products"
+      ],
+      "locations": [
+        "CA - Aliso Viejo"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Progenesis",
+      "website": "https://progenesis.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Genetic Carrier Screening"
+      ],
+      "locations": [
+        "CA - La Jolla"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Prominex",
+      "website": "https://prominex.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "POC Diagnostics"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "ProSciento",
+      "website": "https://prosciento.com/",
+      "industries": [
+        "CRO / CMO"
+      ],
+      "descriptions": [
+        "Clinical Research, Regulatory Development"
+      ],
+      "locations": [
+        "CA - Chula Vista"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Protomer Technologies",
+      "website": "https://www.protomer.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Glucose-responsive Insulin"
+      ],
+      "locations": [
+        "CA - Pasadena"
+      ],
+      "regions": [
+        "LA - East / SGV"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Puma Biotechnology",
+      "website": "https://pumabiotechnology.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Acquisition & Development of cancer therapies"
+      ],
+      "locations": [
+        "CA - Los Angeles"
+      ],
+      "regions": [
+        "LA - South Bay / LBC"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "QT Medical",
+      "website": "https://www.qtmedical.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Portable ECG machine"
+      ],
+      "locations": [
+        "CA - Diamond Bar"
+      ],
+      "regions": [
+        "LA - East / SGV"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "ResearchDx",
+      "website": "https://researchdx.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Diagnostics"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "ReShape Lifesciences",
+      "website": "https://www.reshapelifesciences.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Weight loss device"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Resilience",
+      "website": "https://resilience.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Biomanufacturing"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Scale Biosciences",
+      "website": "https://scale.bio/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Single-Cell Spatial Biology Tech"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "SeqOnce Biosciences",
+      "website": "https://seqonce.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Rapid & Simple Library Construction for NGS"
+      ],
+      "locations": [
+        "CA - Carlsbad"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Singular Genomics",
+      "website": "https://www.singulargenomics.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Genomics"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Spinal Elements",
+      "website": "https://spinalelements.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Spinal Implants"
+      ],
+      "locations": [
+        "CA - Carlsbad"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Square-1 Engineering",
+      "website": "https://www.sqr1services.com/",
+      "industries": [
+        "Med Devices"
+      ],
+      "descriptions": [
+        "Medical device consulting - R&D, Quality, Compliance, RA, Manufacturing"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Stason Pharmaceuticals",
+      "website": "https://stasonpharma.com/",
+      "industries": [
+        "CRO / CMO"
+      ],
+      "descriptions": [
+        "CDMO"
+      ],
+      "locations": [
+        "CA - Irvine"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "StrokeDx",
+      "website": "https://www.stroke-dx.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Stroke Diagnostics Machine"
+      ],
+      "locations": [
+        "CA - Pasadena"
+      ],
+      "regions": [
+        "LA - East / SGV"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "TAE Life Sciences",
+      "website": "https://taelifesciences.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Boron Neutron Capture Therapy"
+      ],
+      "locations": [
+        "CA - Foothill Ranch"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Tanvex BioPharma",
+      "website": null,
+      "industries": [
+        "CRO / CMO"
+      ],
+      "descriptions": [
+        "Biologics Services, CDMO"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Teco Diagnostics",
+      "website": "https://www.tecodiagnostics.com/",
+      "industries": [
+        "Diagnostics"
+      ],
+      "descriptions": [
+        "Diagnostics"
+      ],
+      "locations": [
+        "CA - Anaheim"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Tr1X",
+      "website": "https://www.tr1x.bio/",
+      "industries": [
+        "CRO / CMO"
+      ],
+      "descriptions": [
+        "Regulatory T cell-based products"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Treeline Biosciences",
+      "website": "https://treeline.bio/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Molecular targets in oncology that are validated but difficult to drug"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Vertos Medical",
+      "website": "https://www.vertosmed.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Minimally invasive patented procedure for lumbar spinal stenosis"
+      ],
+      "locations": [
+        "CA - Aliso Viejo"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "ViaLase",
+      "website": "https://www.vialase.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Glaucoma Laser"
+      ],
+      "locations": [
+        "CA - Aliso Viejo"
+      ],
+      "regions": [
+        "Orange County"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Vironexis Biotherapeutics",
+      "website": "https://vironexis.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "T Cell Immunotherapy"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Zafrens",
+      "website": "https://www.zafrens.com/",
+      "industries": [
+        "Biopharma"
+      ],
+      "descriptions": [
+        "Cell Analysis Enabled by Nanofabrication"
+      ],
+      "locations": [
+        "CA - San Diego"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 1
+    },
+    {
+      "company": "Active Motif",
+      "website": "https://www.activemotif.com/",
+      "industries": [
+        "Research Tools"
+      ],
+      "descriptions": [
+        "Epigenetics Research products"
+      ],
+      "locations": [
+        "CA - Carlsbad"
+      ],
+      "regions": [
+        "San Diego"
+      ],
+      "localAlumniCount": 0
+    }
+  ]
+}
