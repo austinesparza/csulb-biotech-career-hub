@@ -56,6 +56,13 @@ if (!/create\s+or\s+replace\s+function\s+public\.archive_discovery_lead/i.test(s
 if (!/set\s+graduate_stage\s*=\s*'graduate_unspecified'/i.test(sql)) {
   failures.push('graduate-stage backfill is missing');
 }
+if (!/create\s+table(?:\s+if\s+not\s+exists)?\s+public\.opportunity_revisions\b/i.test(sql)
+    || !/create\s+or\s+replace\s+function\s+public\.revise_published_opportunity\b/i.test(sql)) {
+  failures.push('audited published-opportunity correction path is missing');
+}
+if (!/trg_opportunity_revisions_append_only/i.test(sql)) {
+  failures.push('opportunity revision history is not protected as append-only');
+}
 
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL ${failure}`);

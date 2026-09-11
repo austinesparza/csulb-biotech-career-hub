@@ -50,6 +50,9 @@ export default async function AdminHome() {
         <Link href="/admin/review" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
           Open review queue
         </Link>
+        <Link href="/admin/manage" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
+          Correct published records
+        </Link>
         <Link href="/admin/duplicates" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
           Scan for duplicates
         </Link>

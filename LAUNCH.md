@@ -53,6 +53,8 @@ Work top to bottom. Check each box. Details live in docs/07-deployment.md; this 
 - [ ] Read the import summary: errors and ignored columns tell you what the sheet
       needs (or what `HEADER_ALIASES` needs)
 - [ ] `/admin/review` → work the queue: open each link, set notes, approve/reject
+- [ ] `/admin/manage` → open one published record, confirm the correction form and
+      revision history are available, without saving a test change to production
 - [x] Confirm no demo row remains. The production public view currently contains
       four reviewed opportunity records and no demo-titled record.
 - [ ] Check `/internships` as a logged-out student on your phone

@@ -76,6 +76,11 @@ export function parseDeadline(value: string): string | null {
   if (!s) return null;
   if (NON_DATE_EXACT.test(s)) return null;
 
+  // ISO must be checked before month/day/year. Otherwise the latter can match
+  // the trailing `27-03-15` inside `2027-03-15` and reject a valid date.
+  const iso = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (iso) return toIsoDate(Number(iso[1]), Number(iso[2]), Number(iso[3]));
+
   // Search (not anchor) so dates inside phrases are still found.
   const mdy = s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
   if (mdy) {
@@ -83,8 +88,6 @@ export function parseDeadline(value: string): string | null {
     const y = yRaw.length === 2 ? `20${yRaw}` : yRaw;
     return toIsoDate(Number(y), Number(m), Number(d));
   }
-  const iso = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (iso) return toIsoDate(Number(iso[1]), Number(iso[2]), Number(iso[3]));
 
   if (NON_DATE_PHRASE.test(s)) return null;
 

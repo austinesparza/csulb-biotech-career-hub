@@ -11,6 +11,7 @@ const adminPage = readFileSync('src/app/admin/page.tsx', 'utf8');
 const importPage = readFileSync('src/app/admin/import/page.tsx', 'utf8');
 const sheetSync = readFileSync('src/app/admin/import/sheet-sync.tsx', 'utf8');
 const reviewCard = readFileSync('src/app/admin/review/review-card.tsx', 'utf8');
+const manageActions = readFileSync('src/app/admin/manage/actions.ts', 'utf8');
 
 describe('operator control safety', () => {
   it('marks private source tests and does not activate source health', () => {
@@ -47,5 +48,12 @@ describe('operator control safety', () => {
     expect(sheetSync).toContain('Review private drafts');
     expect(reviewCard).toContain('Confirm Sheet approval and publish');
     expect(reviewCard).toContain('Review or change imported details');
+  });
+
+  it('keeps post-publication corrections behind officer verification', () => {
+    expect(adminPage).toContain('Correct published records');
+    expect(manageActions.indexOf('await requireOfficer()')).toBeLessThan(manageActions.indexOf('createServiceClient()'));
+    expect(manageActions).toContain('validateRevisionReason');
+    expect(manageActions).toContain('p_expected_updated_at');
   });
 });

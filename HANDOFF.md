@@ -16,11 +16,13 @@
 3. `/admin/review`: clear the queue. Open each posting link before approving. Move anything student-useful from private notes into public notes; everything else stays private.
 4. Click "expire past-deadline" sweep.
 5. Check new submissions and any "import changed" tasks (a re-import found differences on an already-published listing — apply manually or dismiss).
-6. Check the configured private review inbox for "Career Hub:" subject lines.
+6. If a published listing is wrong, open `/admin/manage`, correct or remove it,
+   record why, and use revision history if a change must be undone.
+7. Check the configured private review inbox for "Career Hub:" subject lines.
    During development, this must be one officer's personal address, not the club mailbox.
-7. `/admin/sources`: leave new sources disabled, record terms and robots review,
+8. `/admin/sources`: leave new sources disabled, record terms and robots review,
    then use **Test privately**. Inspect the marked run and evidence before enabling scheduling.
-8. Check Vercel Web Analytics for public route usage. Officer, authentication,
+9. Check Vercel Web Analytics for public route usage. Officer, authentication,
    API routes, query parameters, and URL fragments are excluded by the application.
    Confirm the Vercel dashboard says Web Analytics is enabled; installing the
    application component does not replace that project setting.
@@ -69,7 +71,9 @@ Claude Code cannot see it, link that skill into `.claude/skills/`. Do not copy a
 second independent version.
 
 ## Common fixes
-- **Bad record on the public board:** `/admin/review` → find it → Hide. Instant, no deploy.
+- **Bad record on the public board:** `/admin/manage` → find it → correct the
+  public fields or **Remove from website**. Every change is logged. Use **Restore
+  state before this change** to roll back. No deploy is needed.
 - **Import fails "could not find required columns":** a header was renamed in the sheet. Add the new name to `HEADER_ALIASES` in `src/lib/csvImport.ts` (or rename the column back) and re-import.
 - **Import fails "source record is required":** pick a source in the dropdown; if the source is new, add it under Sources first.
 - **Sheet sync says it is not configured:** verify all five `GOOGLE_*` server variables, confirm the source UUID exists, and confirm the service-account email has Viewer access to only the intended workbook.
