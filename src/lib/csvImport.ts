@@ -11,6 +11,7 @@ import {
   parseDeadline,
   parsePaidStatus,
 } from './normalize';
+import { deriveSheetAudienceDefaults } from './sheet-review';
 
 /** Canonical fields the importer knows about. */
 export type CanonicalField =
@@ -107,6 +108,11 @@ export function rowToDraft(
     .map(([label, value]) => `${label}: ${value}`);
   const notes = cleanText(get('notes'));
   const privateNotes = [notes, ...officerContext].filter(Boolean).join('\n') || null;
+  const audienceDefaults = deriveSheetAudienceDefaults({
+    graduateAccess: get('graduate_access'),
+    eligibility: get('eligibility'),
+    keyEvidence: get('key_evidence'),
+  });
 
   const draft: OpportunityDraft = {
     companyName,
@@ -121,6 +127,9 @@ export function rowToDraft(
     paid_status: parsePaidStatus(get('paid_status')),
     application_type: cleanText(get('application_type')),
     source_status_raw: cleanText(get('source_status_raw')),
+    audience_bucket: audienceDefaults.audienceBucket,
+    audience_reason: audienceDefaults.audienceReason || null,
+    graduate_stage: audienceDefaults.graduateStage,
     // Spreadsheet notes are officer-facing until proven otherwise: PRIVATE by
     // default. The review UI lets an officer copy sanitized text to public_notes.
     private_notes: privateNotes,

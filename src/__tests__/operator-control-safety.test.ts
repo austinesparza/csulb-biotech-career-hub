@@ -10,6 +10,7 @@ const integrationPage = readFileSync('src/app/admin/integrations/page.tsx', 'utf
 const adminPage = readFileSync('src/app/admin/page.tsx', 'utf8');
 const importPage = readFileSync('src/app/admin/import/page.tsx', 'utf8');
 const sheetSync = readFileSync('src/app/admin/import/sheet-sync.tsx', 'utf8');
+const reviewCard = readFileSync('src/app/admin/review/review-card.tsx', 'utf8');
 
 describe('operator control safety', () => {
   it('marks private source tests and does not activate source health', () => {
@@ -44,5 +45,7 @@ describe('operator control safety', () => {
     expect(importPage).toContain('Sheet approval is not website approval');
     expect(sheetSync).toContain('This creates private drafts');
     expect(sheetSync).toContain('Review private drafts');
+    expect(reviewCard).toContain('Confirm Sheet approval and publish');
+    expect(reviewCard).toContain('Review or change imported details');
   });
 });

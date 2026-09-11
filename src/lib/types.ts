@@ -163,6 +163,10 @@ export interface OpportunityDraft {
   paid_status: PaidStatus;
   application_type: string | null;
   source_status_raw: string | null;
+  /** Evidence-backed defaults from the officer workbook. These remain private until approval. */
+  audience_bucket: AudienceBucket;
+  audience_reason: string | null;
+  graduate_stage: GraduateStage;
   /** Spreadsheet Notes column lands PRIVATE by default; officer promotes at review. */
   private_notes: string | null;
   date_added: string | null;

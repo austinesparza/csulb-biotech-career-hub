@@ -187,6 +187,10 @@ button, input, select { font: inherit; }
 .review-score { color: var(--ink-faint); font-family: var(--mono); font-size: .7rem; white-space: nowrap; }
 .review-muted { margin-top: 6px; color: var(--ink-soft); font-size: .82rem; }
 .review-private, .evidence-warning { margin: 14px 0 0; padding: 10px 12px; border-left: 3px solid var(--restricted); background: var(--restricted-tint); font-size: .82rem; }
+.review-private summary, .review-form summary { min-height: 44px; cursor: pointer; display: flex; align-items: center; font-weight: 700; }
+.review-private p { margin-top: 8px; white-space: pre-line; }
+.sheet-review-status { margin-top: 14px; padding: 10px 12px; border-left: 3px solid var(--teal); background: var(--teal-tint); font-size: .82rem; }
+.review-form { margin-top: 14px; }
 .review-evidence { margin-top: 18px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .review-evidence > summary, .source-text > summary { min-height: 44px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: 700; }
 .review-evidence > summary span { margin-left: auto; font-family: var(--mono); font-size: .68rem; font-weight: 500; }

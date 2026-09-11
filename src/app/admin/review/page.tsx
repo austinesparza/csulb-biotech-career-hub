@@ -3,6 +3,7 @@
 // guardrailed approve flow.
 import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
 import type { ReviewTask, UserSubmission } from '@/lib/types';
+import { readSheetReviewIntent } from '@/lib/sheet-review';
 import { ReviewList, type ReviewRow } from './review-list';
 import { SubmissionList } from './submission-list';
 import { TaskList } from './task-list';
@@ -63,21 +64,35 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     .order('relevance_score', { ascending: false, nullsFirst: false })
     .limit(100);
 
-  const opportunities = (data ?? []) as unknown as Omit<ReviewRow, 'extraction'>[];
+  const opportunities = (data ?? []) as unknown as Omit<ReviewRow, 'extraction' | 'sheet_review'>[];
   const ids = opportunities.map((row) => row.id);
   const latestByOpportunity = new Map<string, NonNullable<ReviewRow['extraction']>>();
+  const sheetReviewByOpportunity = new Map<string, NonNullable<ReviewRow['sheet_review']>>();
 
   if (ids.length > 0) {
+    const [rawResult, extractionResult] = await Promise.all([
+      db.from('raw_import_rows')
+        .select('matched_opportunity_id, raw, created_at')
+        .in('matched_opportunity_id', ids)
+        .order('created_at', { ascending: false }),
+      db.from('pipeline_extractions')
+        .select(
+          'id, opportunity_id, created_at, evidence_ok, binding_failures, injection_flags, classification, ' +
+          'fields, bindings, source_posting_versions(normalized_json)',
+        )
+        .in('opportunity_id', ids)
+        .order('created_at', { ascending: false }),
+    ]);
+
+    const rawRows = rawResult.data;
+    for (const item of (rawRows ?? []) as Array<{ matched_opportunity_id: string | null; raw: Record<string, unknown> }>) {
+      if (!item.matched_opportunity_id || sheetReviewByOpportunity.has(item.matched_opportunity_id)) continue;
+      sheetReviewByOpportunity.set(item.matched_opportunity_id, readSheetReviewIntent(item.raw));
+    }
+
     // Evidence is additive. Records created before the extraction pipeline still
     // appear in the same queue with no evidence panel.
-    const { data: extractions } = await db
-      .from('pipeline_extractions')
-      .select(
-        'id, opportunity_id, created_at, evidence_ok, binding_failures, injection_flags, classification, ' +
-        'fields, bindings, source_posting_versions(normalized_json)',
-      )
-      .in('opportunity_id', ids)
-      .order('created_at', { ascending: false });
+    const extractions = extractionResult.data;
 
     for (const item of (extractions ?? []) as unknown as Array<Record<string, unknown>>) {
       const opportunityId = item.opportunity_id as string | null;
@@ -106,6 +121,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   const rows: ReviewRow[] = opportunities.map((row) => ({
     ...row,
     extraction: latestByOpportunity.get(row.id) ?? null,
+    sheet_review: sheetReviewByOpportunity.get(row.id) ?? null,
   }));
 
   return (

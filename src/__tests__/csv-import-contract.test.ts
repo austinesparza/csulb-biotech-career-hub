@@ -70,6 +70,9 @@ describe('officer workbook import contract', () => {
       posting_url: 'https://example.org/jobs/1',
       eligibility: "Master's students eligible",
       source_status_raw: 'Open',
+      audience_bucket: 'graduate',
+      audience_reason: "Posting explicitly names master's students.",
+      graduate_stage: 'graduate_unspecified',
     });
     expect(result.draft.private_notes).toBe([
       'Verify continued enrollment.',
