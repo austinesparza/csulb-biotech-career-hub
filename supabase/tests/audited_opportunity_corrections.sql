@@ -66,7 +66,7 @@ begin
 
   begin
     perform public.revise_published_opportunity(
-      v_opportunity, v_user, v_updated_at, 'correction',
+      v_opportunity, v_user, v_updated_at - interval '1 microsecond', 'correction',
       'Attempted a stale concurrent correction.', '{"title":"Stale title"}'::jsonb,
       true, true, null
     );
