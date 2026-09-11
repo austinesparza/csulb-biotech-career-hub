@@ -29,7 +29,14 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPasswor
       )}
       {error === 'send_failed' && (
         <p role="alert" className="text-sm text-red-600">
-          The authentication service could not accept the request. Wait briefly, then try once more.
+          The authentication service could not accept the request. Do not keep retrying.
+          Contact the webmaster if this continues.
+        </p>
+      )}
+      {error === 'rate_limited' && (
+        <p role="alert" className="text-sm text-red-600">
+          Too many reset emails were requested. Supabase has temporarily paused new messages.
+          Wait about one hour, then request one new link and use only the newest email.
         </p>
       )}
       <Link className="text-sm underline" href="/admin/login">Return to officer sign-in</Link>

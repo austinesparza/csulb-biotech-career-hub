@@ -25,6 +25,15 @@ describe('authentication form safety', () => {
     expect(recoveryRoute).not.toMatch(/SERVICE_ROLE|SUPABASE_SECRET_KEY/);
   });
 
+  it('distinguishes recovery rate limits without encouraging repeated requests', () => {
+    expect(recoveryRoute).toContain("error.status === 429");
+    expect(recoveryRoute).toContain("'over_email_send_rate_limit'");
+    expect(recoveryRoute).toContain("error: rateLimited ? 'rate_limited' : 'send_failed'");
+    expect(forgotPasswordPage).toContain("error === 'rate_limited'");
+    expect(forgotPasswordPage).toContain('Wait about one hour');
+    expect(forgotPasswordPage).toContain('use only the newest email');
+  });
+
   it('fails closed when a recovery session cannot be established promptly', () => {
     expect(updatePasswordPage).toContain('SESSION_CHECK_TIMEOUT_MS');
     expect(updatePasswordPage).toContain('Recovery session validation timed out');
