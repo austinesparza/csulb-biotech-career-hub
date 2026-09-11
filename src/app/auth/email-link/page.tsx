@@ -58,12 +58,14 @@ export default function OfficerEmailLinkPage() {
         }
 
         const { data: officer, error: officerError } = await withTimeout(
-          supabase
-            .from('officers')
-            .select('user_id')
-            .eq('user_id', data.user.id)
-            .eq('is_active', true)
-            .maybeSingle(),
+          Promise.resolve(
+            supabase
+              .from('officers')
+              .select('user_id')
+              .eq('user_id', data.user.id)
+              .eq('is_active', true)
+              .maybeSingle(),
+          ),
         );
         if (!active) return;
         if (officerError || !officer) {
