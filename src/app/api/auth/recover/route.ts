@@ -44,7 +44,11 @@ export async function POST(request: NextRequest) {
       status: error.status,
       message: error.message,
     });
-    return recoveryPage(request, { error: 'send_failed' });
+    const rateLimited = error.status === 429 || [
+      'over_email_send_rate_limit',
+      'over_request_rate_limit',
+    ].includes(error.code ?? '');
+    return recoveryPage(request, { error: rateLimited ? 'rate_limited' : 'send_failed' });
   }
 
   return recoveryPage(request, { sent: '1' });
