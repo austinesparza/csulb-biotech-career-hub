@@ -89,6 +89,10 @@ recruiting-window sections; it is not a second delivery path.
   a source, apply a migration, or publish a record.
 - See `docs/15-operational-pipeline.md` for the exact Sheet, LinkedIn, archive,
   officer-review, and website flow.
+- `/admin/sources` includes a small, dated set of live-verified Greenhouse
+  starter feeds. A starter is always added disabled and unreviewed. It cannot
+  run on the scheduler until an officer records policy review, privately tests
+  it, and explicitly enables it.
 
 ## Remaining work before a live extraction run
 

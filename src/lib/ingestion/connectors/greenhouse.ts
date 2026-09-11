@@ -241,6 +241,7 @@ export function normalizeGreenhouseJob(
   job: GreenhouseJob,
   boardToken: string,
   fetchedAt: string,
+  employerName?: string,
 ): NormalizedSourcePosting {
   const flags: UncertaintyFlag[] = [];
 
@@ -253,11 +254,11 @@ export function normalizeGreenhouseJob(
   const identityKey = makeGreenhouseIdentityKey(boardToken, externalPostingId);
 
   // --- Employer name ---
-  // Greenhouse job boards do not include employer name in job objects;
-  // it is available only at the board level. We leave it null here — the
-  // calling code that knows the board name should enrich this field.
-  const employerNameRaw: string | null = null;
-  const employerNameNormalized: string | null = null;
+  // Greenhouse job boards do not include employer name in job objects. The
+  // governed source registry supplies it when known; direct connector callers
+  // may omit it and retain the uncertainty flag.
+  const employerNameRaw = employerName?.trim() || null;
+  const employerNameNormalized = normalizeEmployerName(employerNameRaw);
   if (!employerNameRaw) flags.push('employer_name_missing');
 
   // --- Title ---
@@ -729,7 +730,7 @@ export async function fetchGreenhouseJobs(
       recordsSeen++;
       const safeId = `job:${job.id}`;
       try {
-        const posting = normalizeGreenhouseJob(job, boardToken, fetchedAt);
+        const posting = normalizeGreenhouseJob(job, boardToken, fetchedAt, config.employerName);
         if (!posting.canonicalUrl) {
           // URL is invalid or missing — skip this record
           recordsSkipped++;

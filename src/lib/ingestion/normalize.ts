@@ -377,7 +377,10 @@ export function normalizeEmploymentType(value: string | null | undefined): strin
 // OPPORTUNITY CLASSIFICATION
 // ============================================================
 
-const INTERNSHIP_SIGNALS = /\bintern(ship)?\b/i;
+// The normalized persistence model has no separate co-op classification.
+// Co-ops are student work programs, so classify them with internships while
+// the canonical taxonomy still records their adjacent-term distinction.
+const INTERNSHIP_SIGNALS = /\bintern(ship)?\b|\bco[\s-]?op\b|\bcooperative education\b/i;
 /**
  * Fellowship signals: match "fellowship" but not bare "fellow" which appears in
  * "postdoctoral fellow", "research fellow", "senior fellow", etc. and should not

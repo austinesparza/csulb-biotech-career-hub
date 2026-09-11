@@ -23,6 +23,18 @@ describe('operator control safety', () => {
     expect(sourceRunner).toContain('if (this.persistChanges)');
   });
 
+  it('adds curated starter feeds only as disabled unreviewed sources', () => {
+    expect(sourceActions).toContain('createStarterSource');
+    expect(sourceActions).toContain('enabled: false');
+    expect(sourceActions).toContain('terms_reviewed: false');
+    expect(sourceActions).toContain('robots_reviewed: false');
+    expect(sourcePage).toContain('Add disabled source');
+    expect(sourcePage).toContain('Save disabled source');
+    expect(sourcePage).toContain('run one private test');
+    expect(sourcePage).toContain('Latest private test:');
+    expect(sourcePage).toContain('Open review queue');
+  });
+
   it('marks every cron response private and non-cacheable', () => {
     for (const route of [ingestRoute, healthRoute]) {
       expect(route).toContain('"Cache-Control": "private, no-store"');

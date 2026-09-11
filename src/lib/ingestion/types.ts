@@ -419,6 +419,11 @@ export interface GreenhouseConnectorConfig {
   /** Board token (e.g. "mycompany"). Validated before use. */
   boardToken: string;
   /**
+   * Officer-controlled employer name for this board. Greenhouse's list endpoint
+   * does not include the employer, so the governed source registry supplies it.
+   */
+  employerName?: string;
+  /**
    * Fetch timeout in milliseconds. Defaults to 30 000.
    * Must be a finite integer in the range [100, 120000].
    */

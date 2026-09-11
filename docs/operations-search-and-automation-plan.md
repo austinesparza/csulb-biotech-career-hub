@@ -26,7 +26,7 @@ history records the same change as
 | Officer review | Officers edit, approve, reject, or hide `opportunities` in `needs_review` | Working for opportunity records |
 | GitHub staging | Reviewed JSON is validated and staged as private drafts or change tasks | Working; it cannot approve or publish |
 | Weekly email | Monday GitHub Action summarizes private review work when production mail configuration is valid | Implemented; delivery acceptance remains manual |
-| Source ingestion | Daily authenticated Vercel orchestration claims bounded Greenhouse and governed public-page runs and archives payloads | Deployed; zero production machine sources are configured |
+| Source ingestion | Daily authenticated Vercel orchestration claims bounded Greenhouse and governed public-page runs and archives payloads | Deployed; zero production machine sources are configured; three verified feeds can be added disabled from `/admin/sources` |
 | Fetch fallbacks | Scrapling and ScrapeGraphAI are wired as fetch-only public-page tiers | Implemented, disabled by default |
 | Extraction | An OmniRoute-compatible worker writes quote-bound private extraction records | Implemented, disabled by default |
 | Scheduled orchestration | Daily ingestion and weekly health routes are deployed with fail-closed authorization | Active but intentionally idle with zero enabled sources; no search provider is connected |
@@ -109,7 +109,10 @@ The database and code can represent:
 
 The Greenhouse connector is defensive and extensively tested. The authenticated
 daily Vercel route calls the bounded worker, but production currently has zero
-configured sources, so it performs no external fetches.
+configured sources, so it performs no external fetches. The officer source
+screen provides a small, dated starter cohort. Adding one normally avoids an
+existing matching board and always creates an unreviewed, disabled source. Policy review, a private test,
+and explicit enablement remain separate officer actions.
 
 ## Target pipeline
 

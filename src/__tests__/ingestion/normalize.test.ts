@@ -308,6 +308,11 @@ describe('classifyOpportunity', () => {
     const { classification } = classifyOpportunity('Biotechnology Intern', null, null);
     expect(classification).toBe('internship');
   });
+  it('classifies co-op titles as internship work programs', () => {
+    const { classification, inferred } = classifyOpportunity('Genomics Co-Op', null, null);
+    expect(classification).toBe('internship');
+    expect(inferred).toBe(false);
+  });
   it('classifies fellowship from title', () => {
     const { classification } = classifyOpportunity('NIH Summer Fellowship', null, null);
     expect(classification).toBe('fellowship');
