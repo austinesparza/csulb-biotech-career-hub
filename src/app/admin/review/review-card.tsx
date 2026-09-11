@@ -5,6 +5,7 @@ import type { Classification } from '@/lib/pipeline/classify';
 import { PRIORITY_FIELDS } from '@/lib/pipeline/extraction-schema';
 import { segment, type Span } from '@/lib/pipeline/highlight';
 import type { AudienceBucket, GraduateStage, PaidStatus } from '@/lib/types';
+import type { SheetReviewIntent } from '@/lib/sheet-review';
 import { approveOpportunity, archiveForAudience, rejectOpportunity } from './actions';
 
 interface ExtractedField {
@@ -56,6 +57,7 @@ export interface ReviewRow {
   methods: string[];
   companies: { name: string; public_safe: boolean } | null;
   extraction: ReviewExtraction | null;
+  sheet_review: SheetReviewIntent | null;
 }
 
 const AUDIENCE_OPTIONS: Array<{ value: AudienceBucket; label: string }> = [
@@ -174,13 +176,25 @@ function EvidencePanel({ extraction }: { extraction: ReviewExtraction }) {
 }
 
 export function ReviewCard({ row }: { row: ReviewRow }) {
-  const [sourceConfirmed, setSourceConfirmed] = useState(false);
-  const [publicSafeConfirmed, setPublicSafeConfirmed] = useState(false);
+  const sheetApproval = row.sheet_review?.decision === 'approve'
+    && row.sheet_review.publicSafe
+    && Boolean(row.posting_url);
+  const initialAudience = row.audience_bucket !== 'unknown'
+    ? row.audience_bucket
+    : row.sheet_review?.audienceBucket ?? 'unknown';
+  const initialStage = row.graduate_stage !== 'unknown'
+    ? row.graduate_stage
+    : row.sheet_review?.graduateStage ?? 'unknown';
+  const initialReason = row.audience_reason?.trim()
+    ? row.audience_reason
+    : row.sheet_review?.audienceReason ?? '';
+  const [sourceConfirmed, setSourceConfirmed] = useState(sheetApproval);
+  const [publicSafeConfirmed, setPublicSafeConfirmed] = useState(sheetApproval);
   const [status, setStatus] = useState<'open_verified' | 'open_unverified'>('open_verified');
   const [publicNotes, setPublicNotes] = useState(row.public_notes ?? '');
-  const [audienceBucket, setAudienceBucket] = useState<AudienceBucket>(row.audience_bucket ?? 'unknown');
-  const [audienceReason, setAudienceReason] = useState(row.audience_reason ?? '');
-  const [graduateStage, setGraduateStage] = useState<GraduateStage>(row.graduate_stage ?? 'unknown');
+  const [audienceBucket, setAudienceBucket] = useState<AudienceBucket>(initialAudience);
+  const [audienceReason, setAudienceReason] = useState(initialReason);
+  const [graduateStage, setGraduateStage] = useState<GraduateStage>(initialStage);
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -212,6 +226,10 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
     && PUBLISHABLE_STAGES.has(graduateStage) && !pending;
   const canArchive = sourceConfirmed && publicSafeConfirmed && audienceReady
     && ['ineligible', 'adjacent', 'special'].includes(audienceBucket) && !pending;
+  const sheetApprovalReady = sheetApproval
+    && ['graduate', 'mixed'].includes(initialAudience)
+    && PUBLISHABLE_STAGES.has(initialStage)
+    && initialReason.trim().length >= 8;
 
   if (done) {
     return <li className="review-record review-record-done"><span>{row.title}</span> · {done}</li>;
@@ -233,47 +251,63 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
       <p className="review-muted">{meta}</p>
       {row.extraction && <EvidencePanel extraction={row.extraction} />}
 
-      {row.private_notes && <p className="review-private"><strong>Private note:</strong> {row.private_notes}</p>}
+      {row.sheet_review?.decision && (
+        <p className="sheet-review-status">
+          <strong>Spreadsheet review:</strong> {row.sheet_review.decision === 'approve' ? 'Approve' : 'Reject'}
+          {' · '}public-safe {row.sheet_review.publicSafe ? 'checked' : 'not checked'}
+          {row.sheet_review.reviewer ? ` · ${row.sheet_review.reviewer}` : ''}
+        </p>
+      )}
 
-      <label className="review-field">
-        Public note
-        <textarea value={publicNotes} onChange={(event) => setPublicNotes(event.target.value)} rows={2} maxLength={500}
-          placeholder="Optional. Keep it factual and student-safe." />
-      </label>
+      {row.private_notes && (
+        <details className="review-private">
+          <summary>Spreadsheet notes and evidence</summary>
+          <p>{row.private_notes}</p>
+        </details>
+      )}
 
-      <div className="review-grid">
+      <details className="review-form" open={!sheetApprovalReady}>
+        <summary>{sheetApprovalReady ? 'Review or change imported details' : 'Complete review details'}</summary>
         <label className="review-field">
-          Audience
-          <select value={audienceBucket} onChange={(event) => setAudienceBucket(event.target.value as AudienceBucket)}>
-            {AUDIENCE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
+          Public note
+          <textarea value={publicNotes} onChange={(event) => setPublicNotes(event.target.value)} rows={2} maxLength={500}
+            placeholder="Optional. Keep it factual and student-safe." />
         </label>
+
+        <div className="review-grid">
+          <label className="review-field">
+            Audience
+            <select value={audienceBucket} onChange={(event) => setAudienceBucket(event.target.value as AudienceBucket)}>
+              {AUDIENCE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
+          <label className="review-field">
+            Master&apos;s stage
+            <select value={graduateStage} onChange={(event) => setGraduateStage(event.target.value as GraduateStage)}>
+              {STAGE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
+        </div>
+
         <label className="review-field">
-          Master&apos;s stage
-          <select value={graduateStage} onChange={(event) => setGraduateStage(event.target.value as GraduateStage)}>
-            {STAGE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
+          Evidence for the audience decision
+          <input value={audienceReason} onChange={(event) => setAudienceReason(event.target.value)} maxLength={300}
+            placeholder="Example: Posting accepts students currently enrolled in a master's program." />
         </label>
-      </div>
 
-      <label className="review-field">
-        Evidence for the audience decision
-        <input value={audienceReason} onChange={(event) => setAudienceReason(event.target.value)} maxLength={300}
-          placeholder="Example: Posting accepts students currently enrolled in a master's program." />
-      </label>
-
-      <div className="review-checks">
-        <label>
-          <input type="checkbox" checked={sourceConfirmed} onChange={(event) => setSourceConfirmed(event.target.checked)} />
-          <span>I checked {row.posting_url ? (
-            <a href={row.posting_url} target="_blank" rel="noopener noreferrer nofollow" onClick={() => setSourceConfirmed(true)}>the official posting</a>
-          ) : 'an official source'} and it matches this record</span>
-        </label>
-        <label>
-          <input type="checkbox" checked={publicSafeConfirmed} onChange={(event) => setPublicSafeConfirmed(event.target.checked)} />
-          <span>Public fields contain no private information</span>
-        </label>
-      </div>
+        <div className="review-checks">
+          <label>
+            <input type="checkbox" checked={sourceConfirmed} onChange={(event) => setSourceConfirmed(event.target.checked)} />
+            <span>I checked {row.posting_url ? (
+              <a href={row.posting_url} target="_blank" rel="noopener noreferrer nofollow" onClick={() => setSourceConfirmed(true)}>the official posting</a>
+            ) : 'an official source'} and it matches this record</span>
+          </label>
+          <label>
+            <input type="checkbox" checked={publicSafeConfirmed} onChange={(event) => setPublicSafeConfirmed(event.target.checked)} />
+            <span>Public fields contain no private information</span>
+          </label>
+        </div>
+      </details>
 
       <div className="review-actions">
         <select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}>
@@ -289,7 +323,7 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
             });
             setDone('approved and published');
           } catch (caught) { setError(caught instanceof Error ? caught.message : 'Approval failed'); }
-        })}>{pending ? 'Saving…' : 'Approve'}</button>
+        })}>{pending ? 'Saving…' : sheetApprovalReady ? 'Confirm Sheet approval and publish' : 'Approve'}</button>
         <button disabled={!canArchive} onClick={() => startTransition(async () => {
           setError(null);
           try {

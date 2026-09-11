@@ -179,6 +179,9 @@ async function importCsvText(input: {
             paid_status: draft.paid_status,
             application_type: draft.application_type,
             source_status_raw: draft.source_status_raw,
+            audience_bucket: draft.audience_bucket,
+            audience_reason: draft.audience_reason,
+            graduate_stage: draft.graduate_stage,
             relevance_score: score,
             relevance_reasons: reasons,
           })
@@ -221,6 +224,9 @@ async function importCsvText(input: {
         paid_status: draft.paid_status,
         application_type: draft.application_type,
         source_status_raw: draft.source_status_raw,
+        audience_bucket: draft.audience_bucket,
+        audience_reason: draft.audience_reason,
+        graduate_stage: draft.graduate_stage,
         private_notes: draft.private_notes, // imported notes stay private until reviewed
         date_added: draft.date_added,
         status: 'needs_review',
