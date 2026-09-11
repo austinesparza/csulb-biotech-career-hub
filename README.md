@@ -82,3 +82,11 @@ path.
 
 ## For future officers
 Start with `HANDOFF.md` (operational runbook), then `docs/01` and `docs/02`.
+
+
+### Continuous discovery
+
+Governed sources can run from the daily Vercel schedule or from officer
+controls. Results are archived in Supabase and synchronized to the officer
+Review Queue Sheet. See
+[scheduled Sheet ingestion](docs/scheduled-sheet-ingestion.md).

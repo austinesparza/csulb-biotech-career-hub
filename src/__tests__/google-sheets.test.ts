@@ -4,6 +4,7 @@ import {
   fetchGoogleSheet,
   googleSheetsConfigured,
   readGoogleSheetsConfig,
+  writeGoogleSheet,
   type GoogleSheetsConfig,
 } from '../lib/google-sheets';
 
@@ -44,7 +45,7 @@ describe('Google Sheet configuration', () => {
   });
 });
 
-describe('read-only Google Sheet client', () => {
+describe('governed Google Sheet client', () => {
   it('uses a scoped service-account token and reads only the configured range', async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = [];
     const fetchImpl = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -69,7 +70,7 @@ describe('read-only Google Sheet client', () => {
     const payload = JSON.parse(Buffer.from(assertion.split('.')[1], 'base64url').toString());
     expect(payload).toMatchObject({
       iss: config().serviceAccountEmail,
-      scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
+      scope: 'https://www.googleapis.com/auth/spreadsheets',
       aud: 'https://oauth2.googleapis.com/token',
       iat: 1_789_000_000,
       exp: 1_789_003_600,
@@ -93,4 +94,41 @@ describe('read-only Google Sheet client', () => {
       .mockResolvedValueOnce(new Response('private spreadsheet contents', { status: 403 })) as typeof fetch;
     await expect(fetchGoogleSheet(config(), { fetchImpl })).rejects.toThrow('Google Sheets read failed (403)');
   });
+
+  it('updates explicit ranges and appends rows without returning Sheet contents', async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchImpl = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(input), init });
+      if (calls.length === 1) {
+        return new Response(JSON.stringify({ access_token: 'short-lived-token' }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    }) as typeof fetch;
+
+    const summary = await writeGoogleSheet(config(), {
+      updates: [{ range: 'Opportunities!X2:X2', values: [['record-id']] }],
+      appendRows: [['AUTO-1234', 'Needs review']],
+    }, { fetchImpl, now: 1_789_000_000 });
+
+    expect(summary).toEqual({ updatedRanges: 1, appendedRows: 1 });
+    expect(calls).toHaveLength(3);
+    expect(calls[1].url).toContain('/values:batchUpdate');
+    expect(calls[1].init?.method).toBe('POST');
+    expect(JSON.parse(String(calls[1].init?.body))).toMatchObject({
+      valueInputOption: 'RAW',
+      data: [{ range: 'Opportunities!X2:X2', values: [['record-id']] }],
+    });
+    expect(calls[2].url).toContain('/values/Opportunities!A1%3AN5000:append');
+    expect(calls[2].url).toContain('insertDataOption=INSERT_ROWS');
+    expect(calls[2].init?.method).toBe('POST');
+  });
+
+  it('rejects oversized writes before requesting a Google token', async () => {
+    const fetchImpl = vi.fn() as typeof fetch;
+    const rows = Array.from({ length: 101 }, () => ['x']);
+    await expect(writeGoogleSheet(config(), { appendRows: rows }, { fetchImpl }))
+      .rejects.toThrow('100-row safety limit');
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
 });

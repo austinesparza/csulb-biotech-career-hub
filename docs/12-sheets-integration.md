@@ -51,3 +51,14 @@ Exports read `public_opportunities` (the public view), so an export physically c
    remains blocked intentionally, so do not put the service key in Preview.
 
 If direct sync is unavailable, export the tab as CSV and upload it at `/admin/import`. Both paths invoke the same importer and trust model.
+
+
+## Machine discovery writeback
+
+The production integration is now two-way at the review boundary. Governed
+machine discoveries are appended or refreshed in the `Review Queue` tab. Only
+system-owned columns are refreshed for `AUTO-` rows. Officer notes and decision
+columns are never overwritten.
+
+See [Scheduled discovery and Sheet handoff](./scheduled-sheet-ingestion.md) for
+the schedule, retry, idempotency, and publication boundaries.

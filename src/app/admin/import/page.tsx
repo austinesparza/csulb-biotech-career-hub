@@ -20,7 +20,7 @@ export default async function ImportPage() {
       <div>
       <h1 className="text-2xl font-bold">Spreadsheet intake</h1>
       <p className="text-sm text-gray-600">
-        Rows are stored raw, normalized,
+        Use this two-way review handoff for scheduled or on-command discoveries and officer decisions. Rows are stored raw, normalized,
         deduplicated, and queued as <code>needs_review</code>. Nothing goes public here.
         Records already approved and public are never changed by an import. Differences
         are flagged for review instead.
@@ -29,8 +29,8 @@ export default async function ImportPage() {
       <aside className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950" style={{ border: '1px solid #f3d38a' }}>
         <p className="font-semibold">Sheet approval is not website approval</p>
         <p className="mt-1">
-          Publish Decision and Public Safe cells are preserved as officer workspace notes,
-          but they cannot publish a record. Sync first, then approve the private draft in
+          Machine discoveries are pushed into system-owned Sheet columns without overwriting officer notes or decisions. Publish Decision and Public Safe cells are preserved as officer workspace notes,
+          but they cannot publish a record. Pull decisions, then approve the private draft in
           the signed-in review queue. The public site updates as soon as that approval succeeds.
         </p>
       </aside>
