@@ -31,7 +31,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <nav className="site-nav" aria-label="Primary navigation">
               <Link href="/internships">Opportunities</Link>
               <Link href="/calendar">Calendar</Link>
-              <Link href="/eligibility">Eligibility</Link>
+              <Link href="/eligibility">Prepare</Link>
               <Link href="/companies">Employers</Link>
               <Link href="/about">About</Link>
             </nav>
