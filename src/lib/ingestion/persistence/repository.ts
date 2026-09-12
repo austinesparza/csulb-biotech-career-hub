@@ -10,6 +10,7 @@ import type {
   SourceFetchErrorClass,
   SourceFetchRunStatus,
 } from '../types';
+import type { AudienceBucket, GraduateStage, PaidStatus } from '../../types';
 
 export interface IngestionClock {
   now(): Date;
@@ -100,6 +101,20 @@ export interface OpportunityRow {
   application_type: string | null;
   source_status_raw: string | null;
   status: string;
+  audience_bucket?: AudienceBucket;
+  audience_reason?: string | null;
+  scientific_lanes?: string[];
+  job_functions?: string[];
+  methods?: string[];
+  graduate_stage?: GraduateStage;
+  eligibility_status?: 'confirmed' | 'possible' | 'not_eligible' | 'unknown';
+  eligibility_evidence?: string | null;
+  continued_enrollment_required?: boolean | null;
+  work_authorization?: string | null;
+  application_opened_at?: string | null;
+  last_checked_at?: string | null;
+  source_check_result?: 'open' | 'closed' | 'changed' | 'missing' | 'error' | 'unknown';
+  discovery_route?: 'manual' | 'public_submission' | 'spreadsheet' | 'official_feed' | 'employer_inventory' | 'program_page' | 'web_search';
 }
 
 export interface OpportunitySourceLinkRow {
@@ -260,6 +275,22 @@ export interface IngestionRepository {
     deadlineText: string | null;
     applicationType: string | null;
     sourceStatusRaw: string | null;
+    eligibility: string | null;
+    paidStatus: PaidStatus;
+    audienceBucket: AudienceBucket;
+    audienceReason: string | null;
+    scientificLanes: string[];
+    jobFunctions: string[];
+    methods: string[];
+    graduateStage: GraduateStage;
+    eligibilityStatus: 'possible' | 'not_eligible' | 'unknown';
+    eligibilityEvidence: string | null;
+    continuedEnrollmentRequired: boolean | null;
+    workAuthorization: string | null;
+    applicationOpenedAt: string | null;
+    lastCheckedAt: string;
+    sourceCheckResult: 'open';
+    discoveryRoute: 'official_feed';
     relevanceScore: number;
     relevanceReasons: string[];
     observedAtIso: string;
@@ -273,7 +304,7 @@ export interface IngestionRepository {
     focusArea: string | null;
     deadline: string | null;
     deadlineText: string | null;
-    paidStatus: 'unknown';
+    paidStatus: PaidStatus;
     applicationType: string | null;
     sourceStatusRaw: string | null;
     relevanceScore: number;
@@ -560,6 +591,22 @@ export function createSupabaseIngestionRepository(params: {
         deadline_text: input.deadlineText,
         application_type: input.applicationType,
         source_status_raw: input.sourceStatusRaw,
+        eligibility: input.eligibility,
+        paid_status: input.paidStatus,
+        audience_bucket: input.audienceBucket,
+        audience_reason: input.audienceReason,
+        scientific_lanes: input.scientificLanes,
+        job_functions: input.jobFunctions,
+        methods: input.methods,
+        graduate_stage: input.graduateStage,
+        eligibility_status: input.eligibilityStatus,
+        eligibility_evidence: input.eligibilityEvidence,
+        continued_enrollment_required: input.continuedEnrollmentRequired,
+        work_authorization: input.workAuthorization,
+        application_opened_at: isoDateOrNull(input.applicationOpenedAt),
+        last_checked_at: input.lastCheckedAt,
+        source_check_result: input.sourceCheckResult,
+        discovery_route: input.discoveryRoute,
         relevance_score: input.relevanceScore,
         relevance_reasons: input.relevanceReasons,
         last_seen_at: input.observedAtIso,

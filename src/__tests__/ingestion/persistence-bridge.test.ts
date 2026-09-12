@@ -298,6 +298,22 @@ class FakeRepository implements IngestionRepository {
     opp.deadline_text = input.deadlineText;
     opp.application_type = input.applicationType;
     opp.source_status_raw = input.sourceStatusRaw;
+    opp.eligibility = input.eligibility;
+    opp.paid_status = input.paidStatus;
+    opp.audience_bucket = input.audienceBucket;
+    opp.audience_reason = input.audienceReason;
+    opp.scientific_lanes = input.scientificLanes;
+    opp.job_functions = input.jobFunctions;
+    opp.methods = input.methods;
+    opp.graduate_stage = input.graduateStage;
+    opp.eligibility_status = input.eligibilityStatus;
+    opp.eligibility_evidence = input.eligibilityEvidence;
+    opp.continued_enrollment_required = input.continuedEnrollmentRequired;
+    opp.work_authorization = input.workAuthorization;
+    opp.application_opened_at = input.applicationOpenedAt;
+    opp.last_checked_at = input.lastCheckedAt;
+    opp.source_check_result = input.sourceCheckResult;
+    opp.discovery_route = input.discoveryRoute;
     opp.last_seen_at = input.observedAtIso;
     opp.review_status = 'pending';
     opp.public_safe = false;
@@ -483,6 +499,82 @@ describe('ingestion persistence bridge', () => {
     expect(repo.opportunities[0].public_safe).toBe(false);
     expect(repo.links[0]?.match_type).toBe('exact');
     expect(repo.links[0]?.is_primary).toBe(true);
+  });
+
+  it('populates source-backed review fields without inventing unstated requirements', async () => {
+    const repo = new FakeRepository();
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({
+        titleRaw: 'Computational Biology Graduate Intern',
+        descriptionText: [
+          'Applicants must be enrolled in a Bachelor\'s or Master\'s degree program in computational biology.',
+          'Candidates must return to school after the internship.',
+          'Must be authorized to work in the United States; visa sponsorship is not available.',
+          'The pay range is $30 to $38 per hour. Work includes Python and RNA sequencing.',
+        ].join(' '),
+      })]),
+    });
+
+    expect(repo.opportunities[0]).toMatchObject({
+      audience_bucket: 'mixed',
+      graduate_stage: 'msc_any',
+      eligibility_status: 'possible',
+      continued_enrollment_required: true,
+      source_check_result: 'open',
+      discovery_route: 'official_feed',
+      paid_status: 'paid',
+      application_opened_at: '2026-07-01',
+      last_checked_at: '2026-07-13T00:00:00.000Z',
+    });
+    expect(repo.opportunities[0].eligibility_evidence).toContain("Master's degree program");
+    expect(repo.opportunities[0].work_authorization).toContain('visa sponsorship');
+    expect(repo.opportunities[0].scientific_lanes?.length).toBeGreaterThan(0);
+  });
+
+  it('leaves graduate access unknown when the source does not state it', async () => {
+    const repo = new FakeRepository();
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({
+        titleRaw: 'Protein Research Intern',
+        descriptionText: 'Support protein purification and assay development in a paid internship.',
+      })]),
+    });
+
+    expect(repo.opportunities[0]).toMatchObject({
+      audience_bucket: 'unknown',
+      graduate_stage: 'unknown',
+      eligibility_status: 'unknown',
+      eligibility_evidence: null,
+      continued_enrollment_required: null,
+      work_authorization: null,
+      paid_status: 'paid',
+    });
+  });
+
+  it('does not treat the verb master as graduate eligibility evidence', async () => {
+    const repo = new FakeRepository();
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({
+        titleRaw: 'Automation Research Intern',
+        descriptionText: 'Master the automation platform and support molecular biology workflows.',
+      })]),
+    });
+
+    expect(repo.opportunities[0]).toMatchObject({
+      audience_bucket: 'unknown',
+      graduate_stage: 'unknown',
+      eligibility_status: 'unknown',
+      eligibility_evidence: null,
+    });
   });
 
   it('preserves private-test provenance when finalizing a run', async () => {

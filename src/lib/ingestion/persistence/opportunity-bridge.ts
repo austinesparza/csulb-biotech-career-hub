@@ -9,6 +9,8 @@ import {
 } from '../../dedupe';
 import type { PersistedLinkMatchType, NormalizedSourcePosting } from '../types';
 import { ensureOpenSourceReviewTask } from './review-tasks';
+import { classifyScoringInput } from '../score';
+import type { AudienceBucket, GraduateStage, PaidStatus } from '../../types';
 import type {
   IngestionRepository,
   JobSourceRow,
@@ -17,6 +19,120 @@ import type {
 } from './repository';
 
 export const PENDING_OPPORTUNITY_MIN_SCORE = 35;
+
+const ELIGIBILITY_SIGNAL = /\b(master(?:'s|s)|master(?: degree| students?| program| candidates?)|m\.?s\.?c?|graduate students?|graduate degree|bachelor'?s?|undergraduate|ph\.?d\.?|doctoral|degree program|currently enrolled|pursuing an? (?:advanced|graduate) degree)\b/i;
+const WORK_AUTHORIZATION_SIGNAL = /\b(work authorization|authorized to work|visa sponsorship|sponsorship|citizenship|required citizen|permanent resident|cpt|opt)\b/i;
+const CONTINUED_ENROLLMENT_SIGNAL = /\b(return(?:ing)? to (?:school|college|university|the program)|remain enrolled|continued? enrollment|continuing (?:their|your) (?:degree|studies|education)|enrolled .* (?:after|following) (?:the )?(?:internship|co-op))\b/i;
+
+function sourceSnippets(text: string | null, signal: RegExp, limit = 3): string[] {
+  if (!text?.trim()) return [];
+  const sentences = text
+    .split(/(?<=[.!?])\s+|\s*[•▪◦]\s*/)
+    .map((value) => value.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  const matches = sentences.filter((sentence) => signal.test(sentence));
+  const candidates = matches.length > 0 ? matches : [text.replace(/\s+/g, ' ').trim()];
+  const snippets: string[] = [];
+
+  for (const candidate of candidates) {
+    const match = candidate.match(signal);
+    if (!match?.index && match?.index !== 0) continue;
+    const start = Math.max(0, match.index - 140);
+    const end = Math.min(candidate.length, match.index + match[0].length + 180);
+    const prefix = start > 0 ? '…' : '';
+    const suffix = end < candidate.length ? '…' : '';
+    const snippet = `${prefix}${candidate.slice(start, end).trim()}${suffix}`;
+    if (!snippets.includes(snippet)) snippets.push(snippet);
+    if (snippets.length >= limit) break;
+  }
+  return snippets;
+}
+
+function mapGraduateStage(stageId: string): GraduateStage {
+  if (stageId === 'msc_year1') return 'msc_year_1';
+  if (stageId === 'msc_year2') return 'msc_year_2';
+  if (stageId === 'msc_any') return 'msc_any';
+  if (stageId === 'phd_only') return 'doctoral_only';
+  if (stageId === 'undergrad_only' || stageId === 'postbac_stage') return 'not_msc';
+  return 'unknown';
+}
+
+function mapAudienceBucket(
+  suggestedBucket: ReturnType<typeof classifyScoringInput>['suggestedBucket'],
+  stageId: string,
+  evidence: string | null,
+): AudienceBucket {
+  if (suggestedBucket === 'graduate') {
+    return evidence && /\bbachelor'?s?|\bundergraduate\b/i.test(evidence) ? 'mixed' : 'graduate';
+  }
+  if (suggestedBucket === 'special') return 'special';
+  if (suggestedBucket === 'adjacent') return 'adjacent';
+  if (suggestedBucket === 'excluded') return stageId === 'undergrad_only' ? 'undergraduate' : 'ineligible';
+  return 'unknown';
+}
+
+function inferPaidStatus(text: string | null): PaidStatus {
+  if (!text) return 'unknown';
+  if (/\bunpaid\b/i.test(text)) return 'unpaid';
+  if (/\bstipend(?:ed)?\b/i.test(text)) return 'stipend';
+  if (/\bpaid (?:internship|co-op|position|opportunity)\b|\b(?:hourly|salary|pay|compensation) (?:rate|range)\b|\$\s?\d/i.test(text)) return 'paid';
+  return 'unknown';
+}
+
+export function deriveOpportunityEnrichment(posting: NormalizedSourcePosting) {
+  const classification = classifyScoringInput({
+    employerName: posting.employerNameRaw ?? posting.employerNameNormalized,
+    titleRaw: posting.titleRaw,
+    titleNormalized: posting.titleNormalized,
+    locationNormalized: posting.locationNormalized,
+    department: posting.department,
+    departments: posting.departments,
+    classification: posting.classification,
+    remoteType: posting.remoteType,
+    canonicalUrl: posting.canonicalUrl,
+    descriptionText: posting.descriptionText,
+    closesAt: posting.closesAt,
+    uncertaintyFlags: posting.uncertaintyFlags,
+  });
+  const eligibilityEvidence = sourceSnippets(posting.descriptionText, ELIGIBILITY_SIGNAL).join(' | ') || null;
+  const workAuthorization = sourceSnippets(posting.descriptionText, WORK_AUTHORIZATION_SIGNAL, 2).join(' | ') || null;
+  const continuedEnrollmentEvidence = sourceSnippets(posting.descriptionText, CONTINUED_ENROLLMENT_SIGNAL, 1);
+  const graduateStage = mapGraduateStage(classification.stage.id);
+  const audienceBucket = classification.keep
+    ? mapAudienceBucket(classification.suggestedBucket, classification.stage.id, eligibilityEvidence)
+    : 'unknown';
+  const eligibilityStatus = !classification.stage.eligible
+    ? 'not_eligible' as const
+    : eligibilityEvidence && graduateStage !== 'unknown'
+      ? 'possible' as const
+      : 'unknown' as const;
+  const methods = [...new Set([
+    ...classification.methods.wet_lab,
+    ...classification.methods.dry_lab,
+    ...classification.methods.stats,
+  ])];
+
+  return {
+    eligibility: eligibilityEvidence,
+    paidStatus: inferPaidStatus(posting.descriptionText),
+    audienceBucket,
+    audienceReason: eligibilityEvidence
+      ? `${classification.stage.label}: ${eligibilityEvidence}`
+      : 'Graduate access is not stated clearly in the authoritative source; officer verification is required.',
+    scientificLanes: classification.lanes.map((lane) => lane.label),
+    jobFunctions: classification.functions.map((jobFunction) => jobFunction.label),
+    methods,
+    graduateStage,
+    eligibilityStatus,
+    eligibilityEvidence,
+    continuedEnrollmentRequired: continuedEnrollmentEvidence.length > 0 ? true : null,
+    workAuthorization,
+    applicationOpenedAt: posting.postedAt,
+    lastCheckedAt: posting.fetchedAt,
+    sourceCheckResult: 'open' as const,
+    discoveryRoute: 'official_feed' as const,
+  };
+}
 
 function postingToDraft(posting: NormalizedSourcePosting, companyId: string | null) {
   const title = posting.titleRaw ?? posting.titleNormalized ?? 'Untitled opportunity';
@@ -34,11 +150,11 @@ function postingToDraft(posting: NormalizedSourcePosting, companyId: string | nu
     title,
     posting_url: posting.canonicalUrl,
     location: posting.locationRaw,
-    eligibility: null,
+    ...deriveOpportunityEnrichment(posting),
     focus_area: posting.focusArea,
     deadline: posting.closesAt,
     deadline_text: posting.closesAt,
-    paid_status: 'unknown' as const,
+    paid_status: inferPaidStatus(posting.descriptionText),
     application_type: posting.employmentType,
     source_status_raw: 'open',
     dedupe_key: dedupeKey,
@@ -195,6 +311,22 @@ export async function bridgeOpportunityForSourcePosting(params: {
             deadlineText: draft.deadline_text,
             applicationType: draft.application_type,
             sourceStatusRaw: draft.source_status_raw,
+            eligibility: draft.eligibility,
+            paidStatus: draft.paidStatus,
+            audienceBucket: draft.audienceBucket,
+            audienceReason: draft.audienceReason,
+            scientificLanes: draft.scientificLanes,
+            jobFunctions: draft.jobFunctions,
+            methods: draft.methods,
+            graduateStage: draft.graduateStage,
+            eligibilityStatus: draft.eligibilityStatus,
+            eligibilityEvidence: draft.eligibilityEvidence,
+            continuedEnrollmentRequired: draft.continuedEnrollmentRequired,
+            workAuthorization: draft.workAuthorization,
+            applicationOpenedAt: draft.applicationOpenedAt,
+            lastCheckedAt: draft.lastCheckedAt,
+            sourceCheckResult: draft.sourceCheckResult,
+            discoveryRoute: draft.discoveryRoute,
             relevanceScore: posting.relevanceScore,
             relevanceReasons: [`score:${posting.relevanceScore}`],
             observedAtIso: posting.fetchedAt,
@@ -257,6 +389,39 @@ export async function bridgeOpportunityForSourcePosting(params: {
       sourcePostingId: sourcePosting.id,
       matchType,
       requestPrimary: true,
+    });
+
+    // The concurrency-safe insert RPC intentionally has a narrow, stable
+    // signature. Fill the evidence-backed review fields immediately afterward,
+    // guarded by the same pending-only compare-and-set used for refreshes.
+    await repository.updateOpportunityDraftFromPosting(pending.id, {
+      title: draft.title,
+      postingUrl: draft.posting_url,
+      location: draft.location,
+      focusArea: draft.focus_area,
+      deadline: draft.deadline,
+      deadlineText: draft.deadline_text,
+      applicationType: draft.application_type,
+      sourceStatusRaw: draft.source_status_raw,
+      eligibility: draft.eligibility,
+      paidStatus: draft.paidStatus,
+      audienceBucket: draft.audienceBucket,
+      audienceReason: draft.audienceReason,
+      scientificLanes: draft.scientificLanes,
+      jobFunctions: draft.jobFunctions,
+      methods: draft.methods,
+      graduateStage: draft.graduateStage,
+      eligibilityStatus: draft.eligibilityStatus,
+      eligibilityEvidence: draft.eligibilityEvidence,
+      continuedEnrollmentRequired: draft.continuedEnrollmentRequired,
+      workAuthorization: draft.workAuthorization,
+      applicationOpenedAt: draft.applicationOpenedAt,
+      lastCheckedAt: draft.lastCheckedAt,
+      sourceCheckResult: draft.sourceCheckResult,
+      discoveryRoute: draft.discoveryRoute,
+      relevanceScore: posting.relevanceScore,
+      relevanceReasons: [`score:${posting.relevanceScore}`],
+      observedAtIso: posting.fetchedAt,
     });
 
     if (companyResolution.matchedFuzzy) {

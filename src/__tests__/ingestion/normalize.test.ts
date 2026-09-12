@@ -89,6 +89,18 @@ describe('htmlToText', () => {
     const html = '<p>Research &amp; Development</p>';
     expect(htmlToText(html)).toBe('Research & Development');
   });
+  it('strips HTML that the ATS returned as escaped markup', () => {
+    const html = '&lt;p&gt;Applicants need a Master&amp;#39;s degree.&lt;/p&gt;';
+    expect(htmlToText(html)).toBe("Applicants need a Master's degree.");
+  });
+  it('removes scripts after escaped markup is decoded', () => {
+    const html = '&lt;script&gt;secret()&lt;/script&gt;&lt;p&gt;Public role&lt;/p&gt;';
+    expect(htmlToText(html)).toBe('Public role');
+  });
+  it('preserves list-item boundaries for evidence extraction', () => {
+    const html = '&lt;ul&gt;&lt;li&gt;First claim&lt;/li&gt;&lt;li&gt;Second claim&lt;/li&gt;&lt;/ul&gt;';
+    expect(htmlToText(html)).toBe('• First claim • Second claim');
+  });
   it('replaces block tags with spaces', () => {
     const html = '<p>First paragraph</p><p>Second paragraph</p>';
     const result = htmlToText(html);

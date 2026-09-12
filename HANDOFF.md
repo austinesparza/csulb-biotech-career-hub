@@ -121,5 +121,12 @@ columns. Evidence, enrollment, work-authorization, and genuine source-check fiel
 round-trip into structured private database columns; officer decision cells remain
 non-publishing review intent.
 
+For governed machine sources, the same deterministic classifier that scores a
+posting also fills graduate stage, audience, scientific lanes, job functions,
+named methods, paid status, source dates, and bounded exact-source snippets for
+eligibility, continued enrollment, and work authorization. Missing claims remain
+explicitly unknown for officer review. Optional model extraction can enrich this
+private record but is not required for a complete queue handoff.
+
 The primary officer sign-in uses Supabase's default hosted email link and does
 not require a custom email template or custom SMTP on the Free plan.

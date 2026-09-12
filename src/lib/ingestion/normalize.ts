@@ -96,22 +96,24 @@ export function decodeHtmlEntities(value: string): string {
 
 /**
  * Convert an HTML string to plain text:
- * 1. Remove script and style tag content entirely (including content between tags).
- * 2. Replace block-level tags with spaces.
- * 3. Strip all remaining tags.
- * 4. Decode entities.
- * 5. Collapse whitespace.
+ * 1. Decode direct and double-escaped entities used by some ATS feeds.
+ * 2. Remove script and style tag content entirely (including content between tags).
+ * 3. Replace block-level tags with separators.
+ * 4. Strip all remaining tags.
+ * 5. Decode any remaining text entities.
+ * 6. Collapse whitespace.
  *
  * Returns null for null/empty input.
  * Does not execute scripts or perform network requests.
  */
 export function htmlToText(html: string | null | undefined): string | null {
   if (!html) return null;
-  let text = html
+  let text = decodeHtmlEntities(decodeHtmlEntities(html))
     // Remove script and style content entirely (including content between tags)
     .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
-    // Replace block tags with spaces for readability
-    .replace(/<\/?(p|br|div|li|tr|h[1-6]|blockquote|pre|ul|ol|table|thead|tbody|section|article)[^>]*>/gi, ' ')
+    // Preserve list boundaries so later evidence extraction cannot join claims.
+    .replace(/<li[^>]*>/gi, ' • ')
+    .replace(/<\/?(p|br|div|tr|h[1-6]|blockquote|pre|ul|ol|table|thead|tbody|section|article)[^>]*>/gi, ' ')
     // Strip all remaining tags
     .replace(/<[^>]*>/g, ' ');
   text = decodeHtmlEntities(text);

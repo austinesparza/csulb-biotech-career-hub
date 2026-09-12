@@ -9,10 +9,13 @@
 5. Vercel calls `/api/cron/ingest` at 14:00 UTC every day.
 6. The cron queues only due, enabled, unpaused sources and runs a bounded batch.
 7. Every response is archived before normalization, scoring, or optional model extraction.
-8. Machine-created review candidates fill unused rows in the configured `Review Queue` Sheet tab.
-9. Officers work in the Sheet, then use **Pull decisions from Sheet** in the portal.
-10. Publication still requires **Confirm Sheet approval and publish** while signed in.
-11. The next queue sync copies database-finalized rows to `Archive`, then removes
+8. A deterministic source pass maps graduate stage, audience, scientific lanes,
+   job functions, named methods, compensation status, source dates, and exact
+   eligibility, enrollment, and work-authorization snippets. Unstated claims stay unknown.
+9. Machine-created review candidates fill unused rows in the configured `Review Queue` Sheet tab.
+10. Officers work in the Sheet, then use **Pull decisions from Sheet** in the portal.
+11. Publication still requires **Confirm Sheet approval and publish** while signed in.
+12. The next queue sync copies database-finalized rows to `Archive`, then removes
     them from `Review Queue`.
 
 The same Sheet push runs after **Run and archive now**. If the source run
@@ -70,8 +73,9 @@ production environment variables. No browser receives the service-account key.
 
 ## Agentic and model boundary
 
-Deterministic retrieval, URL safety, archival, identity matching, and lifecycle
-rules run before any model. A configured model may classify archived text and
+Deterministic retrieval, URL safety, archival, identity matching, canonical
+classification, and conservative source-evidence extraction run before any model.
+A configured model may further classify archived text and
 extract evidence-bearing fields. Unsupported claims remain unknown, evidence
 binding failures are retained, and model output cannot approve or publish.
 
