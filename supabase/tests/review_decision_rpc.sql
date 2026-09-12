@@ -39,7 +39,7 @@ begin
     'review rpc test biotech|graduate review rpc intern'
   ) returning id into v_opportunity;
   insert into public.review_tasks (task_type, entity_table, entity_id)
-  values ('new_opportunity', 'opportunities', v_opportunity);
+  values ('new_import', 'opportunities', v_opportunity);
 
   perform public.decide_opportunity_review(
     v_opportunity, v_user, 'approve', 'open_verified', '', true,
