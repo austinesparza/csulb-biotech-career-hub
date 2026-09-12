@@ -15,6 +15,15 @@ const SYSTEM_MEMORY = [
   ['Measure the model', 'Predictions are tested against later seasons. A current employer source still decides what is open and who can apply.'],
 ] as const;
 
+const RESEARCH_METHODS = [
+  ['Observe', 'Collect official feeds, employer pages, program records, and student leads as source observations.'],
+  ['Preserve', 'Keep raw text, URLs, timestamps, and field-level evidence connected to every candidate.'],
+  ['Label', 'Turn officer decisions, corrections, and reasons into evaluation labels the system can learn from.'],
+  ['Benchmark', 'Compare every candidate method against the same labeled cases and must-not-miss roles.'],
+  ['Learn', 'Let models reorder search and review work only after they outperform the deterministic baseline.'],
+  ['Audit', 'Track misses, precision, source yield, drift, and the exact model and taxonomy version used.'],
+] as const;
+
 export default function AboutPage() {
   return (
     <div className="about-page">
@@ -68,26 +77,26 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="about-tools">
-        <div className="site-wrap about-tools-grid">
-          <div>
-            <h2>More reach without less care.</h2>
+      <section className="about-methods" aria-labelledby="methods-title">
+        <div className="site-wrap">
+          <header className="about-methods-intro">
+            <h2 id="methods-title">We study the search itself.</h2>
             <p>
-              Automation helps a small student team watch many more employers. Evidence,
-              review, and an archive keep that scale accountable. The goal is simple:
-              fewer opportunities lost because a student lacked time, a connection, or
-              advance knowledge of the recruiting season.
+              Recruiting knowledge is unevenly distributed. We preserve each search,
+              source, and review decision so wider coverage can be tested against accuracy
+              instead of assumed to be progress.
             </p>
+          </header>
+          <div className="about-method-grid">
+            {RESEARCH_METHODS.map(([title, body]) => (
+              <article key={title}><h3>{title}</h3><p>{body}</p></article>
+            ))}
           </div>
-          <div className="about-tool-list" aria-label="Career Hub capabilities">
-            <span>Official ATS and employer feeds</span>
-            <span>Immutable source observations</span>
-            <span>Field-level evidence</span>
-            <span>Degree and enrollment checks</span>
-            <span>Deadline conflict detection</span>
-            <span>Duplicate and repost matching</span>
-            <span>Human publication gates</span>
-            <span>Audited, reversible corrections</span>
+          <div className="about-experiment" aria-label="Machine learning research plan">
+            <div><span>Current baseline</span><strong>Rules, taxonomy, and BM25 retrieval</strong></div>
+            <div><span>Next controlled study</span><strong>Compare general, budget, and biomedical embedders</strong></div>
+            <div><span>Promotion gate</span><strong>Higher recall, bounded precision loss, and no new total misses</strong></div>
+            <div><span>Publication boundary</span><strong>An officer still decides what reaches students</strong></div>
           </div>
         </div>
       </section>

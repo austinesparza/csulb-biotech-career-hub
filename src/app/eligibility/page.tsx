@@ -9,12 +9,12 @@ const SIGNALS = [
 ] as const;
 
 const CHECKS = [
-  ['The project', 'What problem will you help solve?'],
-  ['The ownership', 'What will be yours to run, build, analyze, or deliver?'],
-  ['The skills', 'Which methods, systems, and decisions will you practice?'],
-  ['The mentorship', 'Who will review your work, and how often?'],
-  ['The practical fit', 'Do the pay, timing, location, and requirements work for you?'],
-  ['The evidence', 'Does the live employer posting support every important claim?'],
+  ['Technical depth', 'Will you practice a method enough to become trusted with it?'],
+  ['Useful output', 'Will you leave behind a result, workflow, analysis, or decision?'],
+  ['Transferable skill', 'Will the capability matter beyond one platform, lab, or company?'],
+  ['Visible contribution', 'Will people who understand the work see what you contributed?'],
+  ['A clear story', 'Can you explain the problem, your reasoning, and what changed?'],
+  ['Future options', 'Could the role lead to a return offer, referral, publication, or stronger next move?'],
 ] as const;
 
 const RESOURCES = [
@@ -111,7 +111,7 @@ export default function PreparationPage() {
           />
         </div>
         <div className="prepare-choice-copy">
-          <h2 id="choice-title">Choose the project before the logo.</h2>
+          <h2 id="choice-title">Choose what the role will leave you with.</h2>
           <div className="prepare-check-grid">
             {CHECKS.map(([title, body]) => (
               <article key={title}><h3>{title}</h3><p>{body}</p></article>
