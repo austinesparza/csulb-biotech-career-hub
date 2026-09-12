@@ -9,9 +9,10 @@ import { validateBoardToken } from '../../lib/ingestion/connectors/greenhouse';
 
 describe('governed starter sources', () => {
   it('uses a small unique cohort of valid public Greenhouse boards', () => {
-    expect(GOVERNED_STARTER_SOURCES).toHaveLength(3);
-    expect(new Set(GOVERNED_STARTER_SOURCES.map((source) => source.id)).size).toBe(3);
-    expect(new Set(GOVERNED_STARTER_SOURCES.map((source) => source.boardToken)).size).toBe(3);
+    expect(GOVERNED_STARTER_SOURCES.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(GOVERNED_STARTER_SOURCES.map((source) => source.id)).size).toBe(GOVERNED_STARTER_SOURCES.length);
+    expect(new Set(GOVERNED_STARTER_SOURCES.map((source) => source.boardToken)).size).toBe(GOVERNED_STARTER_SOURCES.length);
+    expect(GOVERNED_STARTER_SOURCES.map((source) => source.boardToken)).not.toContain('fspco-op012325');
 
     for (const source of GOVERNED_STARTER_SOURCES) {
       expect(validateBoardToken(source.boardToken).valid).toBe(true);
