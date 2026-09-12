@@ -3,16 +3,16 @@ import Link from 'next/link';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
 
 const SYSTEM_STEPS = [
-  ['Search beyond one network', 'Employer feeds, program pages, the club archive, and student leads widen the places we can look.'],
-  ['Keep the source close', 'Dates, degree language, pay, methods, and location remain connected to the text that supports them.'],
-  ['Treat uncertainty as information', 'A similar title, missing date, or changed requirement creates review work instead of a confident guess.'],
-  ['Publish what we can defend', 'A role reaches the public board only after its current employer page and important claims have been checked.'],
+  ['Look in more places', 'Employer feeds, program pages, past club records, and student leads widen the search.'],
+  ['Save the evidence', 'Dates, degree language, pay, methods, and location stay connected to the source text.'],
+  ['Flag what is uncertain', 'A missing date or changed requirement becomes review work. It does not become a guess.'],
+  ['Check before publishing', 'A role reaches the board only after its employer page and important claims have been reviewed.'],
 ] as const;
 
 const SYSTEM_MEMORY = [
-  ['Turn listings into labels', 'Employer, role family, month first seen, audience, deadline language, and review outcome become a structured learning record.'],
-  ['Test the pattern', 'Past cycles can rank where we search and flag an unusual change. New cycles let us measure whether those signals were useful.'],
-  ['Keep evidence in charge', 'A model may suggest where to look. Only a current source can establish that a role is open or that a student is eligible.'],
+  ['Preserve the season', 'Employer, role family, month first seen, audience, deadline language, and review outcome become a record we can study.'],
+  ['Learn what repeats', 'Earlier cycles help us decide when to search, which programs tend to return, and what deserves another look.'],
+  ['Measure the model', 'Predictions are tested against later seasons. A current employer source still decides what is open and who can apply.'],
 ] as const;
 
 export default function AboutPage() {
@@ -20,11 +20,11 @@ export default function AboutPage() {
     <div className="about-page">
       <header className="about-hero site-wrap">
         <div>
-          <h1>Good opportunities should not depend on good luck.</h1>
+          <h1>Talent is everywhere. Access is not.</h1>
           <p>
-            Biotech recruiting rewards time, networks, and knowledge that students do
-            not receive equally. The Career Hub watches more places, makes the evidence
-            easier to read, and carries what we learn from one class into the next.
+            Biotech roles are scattered across career sites, short recruiting windows,
+            and programs students may never hear about. The Career Hub searches more
+            widely, shows its evidence, and preserves what each class learns for the next.
           </p>
         </div>
         <figure>
@@ -41,7 +41,7 @@ export default function AboutPage() {
       <section className="about-system" aria-labelledby="system-title">
         <div className="site-wrap">
           <header>
-            <h2 id="system-title">What happens before a role reaches the board.</h2>
+            <h2 id="system-title">A search students can inspect.</h2>
           </header>
           <div className="about-system-grid">
             {SYSTEM_STEPS.map(([title, body]) => (
@@ -71,11 +71,12 @@ export default function AboutPage() {
       <section className="about-tools">
         <div className="site-wrap about-tools-grid">
           <div>
-            <h2>A wider search. A fairer starting point.</h2>
+            <h2>More reach without less care.</h2>
             <p>
-              Automation gives a student search more reach. Evidence and review keep
-              that reach accountable. Together, they reduce the advantage of having
-              extra time, an inside contact, or prior knowledge of the recruiting cycle.
+              Automation helps a small student team watch many more employers. Evidence,
+              review, and an archive keep that scale accountable. The goal is simple:
+              fewer opportunities lost because a student lacked time, a connection, or
+              advance knowledge of the recruiting season.
             </p>
           </div>
           <div className="about-tool-list" aria-label="Career Hub capabilities">

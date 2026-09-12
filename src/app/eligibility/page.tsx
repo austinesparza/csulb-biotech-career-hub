@@ -2,10 +2,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const SIGNALS = [
-  ['A real problem', 'Work the team genuinely needs done.'],
-  ['Someone who teaches', 'A manager or mentor who explains how good work is judged.'],
-  ['Skills you can carry', 'Methods, tools, and decisions you will understand well enough to use again.'],
-  ['A workable offer', 'Pay, timing, location, and support that make participation possible.'],
+  ['Real work', 'A question, process, or product the team genuinely needs.'],
+  ['Real teaching', 'Someone who makes time to show you how the work is done and judged.'],
+  ['A new capability', 'A method or way of thinking you can use long after the role ends.'],
+  ['Room to participate', 'Pay, timing, location, and support that make the experience possible.'],
 ] as const;
 
 const CHECKS = [
@@ -70,17 +70,16 @@ export default function PreparationPage() {
     <div className="prepare-page">
       <header className="prepare-hero site-wrap">
         <div className="prepare-hero-copy">
-          <h1>Choose work that teaches you something.</h1>
+          <h1>An internship should change what you can do.</h1>
           <p>
-            The best internship is not always the biggest name. Look for real
-            responsibility, close guidance, skills you can carry forward, and a path
-            you can actually afford to take.
+            Look past the title. The right role gives you a real problem, someone who
+            will teach you, and enough support to do the work well.
           </p>
         </div>
         <div className="prepare-hero-image">
           <Image
-            src="/brand/discipline-diagnostics.webp"
-            alt="Fluorescence microscopy panels used in molecular diagnostics research"
+            src="/brand/prepare-students.webp"
+            alt="Biotechnology students working together at a laboratory bench"
             fill
             preload
             sizes="(max-width: 820px) 100vw, 48vw"
@@ -90,7 +89,7 @@ export default function PreparationPage() {
 
       <section className="prepare-signals" aria-labelledby="signals-title">
         <div className="site-wrap">
-          <h2 id="signals-title">Before you apply, ask what you will leave with.</h2>
+          <h2 id="signals-title">What makes the experience worth your time.</h2>
           <div className="prepare-signal-grid">
             {SIGNALS.map(([title, body]) => (
               <article key={title}><h3>{title}</h3><p>{body}</p></article>
@@ -109,7 +108,7 @@ export default function PreparationPage() {
           />
         </div>
         <div className="prepare-choice-copy">
-          <h2 id="choice-title">Look beneath the title.</h2>
+          <h2 id="choice-title">Read the work, not the brand.</h2>
           <div className="prepare-check-grid">
             {CHECKS.map(([title, body]) => (
               <article key={title}><h3>{title}</h3><p>{body}</p></article>
@@ -120,8 +119,8 @@ export default function PreparationPage() {
 
       <section className="trusted-resources site-wrap" aria-labelledby="resources-title">
         <header>
-          <h2 id="resources-title">Good places to start.</h2>
-          <p>Current directories, practical guidance, and one clearly labeled record of an older search cycle.</p>
+          <h2 id="resources-title">Useful places to begin.</h2>
+          <p>Current program directories, practical application help, and one clearly labeled record of an earlier search cycle.</p>
         </header>
         <div className="resource-grid">
           {RESOURCES.map((resource) => (

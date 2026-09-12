@@ -777,3 +777,142 @@ body {
   .resource-grid { grid-template-columns: 1fr; }
   .resource-copy { min-height: auto; }
 }
+
+/* Calendar workspace */
+.deadline-exporter {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto;
+  gap: 24px 42px;
+  margin-bottom: 28px;
+  padding: 26px;
+  border: 1px solid var(--line-strong);
+  background: #f0eadb;
+}
+.deadline-exporter h2 { color: var(--teal-deep); font-size: 1.7rem; font-weight: 500; }
+.deadline-exporter > div:first-child p { max-width: 56ch; margin-top: 7px; color: var(--ink-soft); font-family: var(--serif); font-size: .9rem; }
+.deadline-exporter fieldset { display: flex; flex-wrap: wrap; align-content: center; gap: 8px; margin: 0; padding: 0; border: 0; }
+.deadline-exporter legend { width: 100%; margin-bottom: 5px; color: var(--ink-faint); font-size: .68rem; font-weight: 750; text-transform: uppercase; }
+.deadline-exporter fieldset label { display: flex; align-items: center; gap: 7px; border: 1px solid var(--line-dark); border-radius: 999px; background: white; padding: 8px 11px; cursor: pointer; font-size: .72rem; font-weight: 700; }
+.deadline-exporter input { accent-color: var(--teal-deep); }
+.deadline-export-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 9px; padding-top: 18px; border-top: 1px solid var(--line-strong); }
+.deadline-export-actions p { margin-right: auto; color: var(--ink-faint); font-family: var(--mono); font-size: .72rem; }
+.deadline-export-actions button:not(.primary-button) { border: 0; background: transparent; color: var(--teal); padding: 8px; cursor: pointer; font-size: .74rem; font-weight: 750; text-decoration: underline; text-underline-offset: .2em; }
+.deadline-export-actions button:disabled { cursor: not-allowed; opacity: .45; }
+.deadline-calendar-scroll { overflow-x: auto; padding-bottom: 10px; }
+.deadline-calendar-months { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(760px, 100%), 1fr)); gap: 24px; min-width: min(760px, 100%); }
+.deadline-month { border: 1px solid var(--line-strong); background: rgba(255,255,255,.8); }
+.deadline-month > header { display: flex; justify-content: space-between; align-items: baseline; padding: 19px 22px; border-bottom: 1px solid var(--line-strong); background: var(--teal-deep); color: white; }
+.deadline-month > header span { font-family: var(--serif); font-size: 2rem; }
+.deadline-month > header strong { color: #efc86f; font-family: var(--mono); font-size: .8rem; font-weight: 500; }
+.deadline-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); background: #eae4d6; }
+.deadline-weekdays span { padding: 8px; border-right: 1px solid var(--line); color: var(--ink-faint); text-align: center; font-family: var(--mono); font-size: .63rem; text-transform: uppercase; }
+.deadline-days { display: grid; grid-template-columns: repeat(7, minmax(92px, 1fr)); margin: 0; padding: 0; list-style: none; }
+.deadline-days > li { min-height: 112px; padding: 8px; border-top: 1px solid var(--line); border-right: 1px solid var(--line); }
+.deadline-days > li:nth-child(7n) { border-right: 0; }
+.deadline-days > li > time { color: var(--ink-faint); font-family: var(--mono); font-size: .68rem; }
+.deadline-days > li.has-deadline { background: #fff5d8; }
+.deadline-calendar-event { display: grid; gap: 5px; margin-top: 7px; padding-top: 7px; border-top: 2px solid var(--gold-mark); }
+.deadline-calendar-event label { display: flex; align-items: start; gap: 6px; color: var(--teal-deep); cursor: pointer; font-size: .68rem; font-weight: 800; }
+.deadline-calendar-event strong { font-family: var(--serif); font-size: .76rem; line-height: 1.25; }
+.deadline-calendar-event > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.deadline-calendar-event a, .deadline-calendar-event button { border: 0; background: transparent; color: var(--teal); padding: 0; cursor: pointer; font-size: .62rem; font-weight: 750; text-decoration: underline; text-underline-offset: .15em; }
+.deadline-planner-note { margin: 10px 0 0; color: var(--ink-faint); font-size: .7rem; }
+.undated-section { margin-top: 46px; padding-top: 28px; border-top: 1px solid var(--line-strong); }
+.undated-section > header { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.2fr); gap: 24px; align-items: baseline; margin-bottom: 18px; }
+.undated-section > header h2 { color: var(--teal-deep); font-size: 1.75rem; font-weight: 500; }
+.undated-section > header p { color: var(--ink-soft); font-family: var(--serif); font-size: .86rem; }
+.undated-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.undated-grid > li { padding: 18px; border: 1px solid var(--line); background: rgba(255,255,255,.65); }
+.undated-grid > li > span { color: var(--gold-mark); font-family: var(--mono); font-size: .62rem; text-transform: uppercase; }
+.undated-grid h3 { margin-top: 12px; color: var(--ink); font-size: 1.1rem; }
+.undated-grid p { margin-top: 5px; color: var(--ink-soft); font-size: .76rem; }
+
+/* Current and historical employer directory */
+.company-directory-summary { display: grid; grid-template-columns: repeat(3, 1fr); margin-bottom: 18px; border-block: 1px solid var(--line-strong); }
+.company-directory-summary > div { display: grid; gap: 2px; padding: 18px 20px 18px 0; border-right: 1px solid var(--line); }
+.company-directory-summary > div + div { padding-left: 20px; }
+.company-directory-summary > div:last-child { border-right: 0; }
+.company-directory-summary strong { color: var(--teal-deep); font-family: var(--serif); font-size: 2rem; font-weight: 500; }
+.company-directory-summary span { color: var(--ink-faint); font-size: .68rem; text-transform: uppercase; }
+.company-current-warning { margin-bottom: 16px; border-left: 3px solid var(--gold-mark); padding: 10px 14px; background: #fff5d8; color: var(--ink-soft); font-size: .78rem; }
+.company-status-tabs { display: inline-flex; gap: 4px; margin: 4px 0 14px; padding: 3px; border: 1px solid var(--line-dark); border-radius: 999px; background: white; }
+.company-status-tabs button { min-height: 38px; border: 0; border-radius: 999px; background: transparent; padding: 0 15px; color: var(--ink-soft); cursor: pointer; font-size: .72rem; font-weight: 750; }
+.company-status-tabs button[aria-pressed="true"] { background: var(--teal-deep); color: white; }
+.company-filters { grid-template-columns: minmax(260px, 1.2fr) minmax(190px, .7fr) auto; }
+.company-directory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.company-directory-card { min-height: 0; padding: 22px; }
+.company-directory-topline { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
+.company-record-badges { display: flex; flex-wrap: wrap; justify-content: end; gap: 5px; }
+.company-record-badges span { border-radius: 999px; padding: 4px 8px; font-size: .62rem; font-weight: 800; text-transform: uppercase; }
+.company-current-badge { background: #d9efe7; color: #145f4b; }
+.company-archive-badge { background: #f7e7b8; color: #76500e; }
+.company-history { margin-top: 20px; border-top: 1px solid var(--line-strong); }
+.company-history summary { padding: 14px 0; color: var(--teal-deep); cursor: pointer; font-size: .76rem; font-weight: 800; }
+.company-history ol { display: grid; gap: 8px; max-height: 470px; overflow-y: auto; margin: 0; padding: 0 6px 0 0; list-style: none; }
+.company-history li { padding: 13px; border: 1px solid var(--line); background: #f7f3e9; }
+.company-history li > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.company-history li > div span { color: var(--gold-mark); font-family: var(--mono); font-size: .58rem; text-transform: uppercase; }
+.company-history li > div span + span::before { content: "·"; margin-right: 6px; }
+.company-history h3 { margin-top: 7px; color: var(--ink); font-size: .92rem; }
+.company-history li p { margin-top: 5px; color: var(--ink-faint); font-size: .68rem; }
+.company-history li a { display: inline-block; margin-top: 8px; font-size: .68rem; font-weight: 750; }
+.company-history-note { margin-top: 10px; color: var(--ink-faint); font-size: .67rem; }
+
+/* Rebalanced editorial pages */
+.prepare-hero { grid-template-columns: minmax(0, 1.02fr) minmax(430px, .98fr); min-height: 610px; }
+.prepare-hero-copy h1 { max-width: 12.5ch; font-size: clamp(3.7rem, 5.7vw, 5.9rem); line-height: .96; }
+.prepare-hero-image { min-height: 500px; }
+.prepare-hero-image img { object-position: 58% center; filter: saturate(.88) contrast(1.03); }
+.about-hero { grid-template-columns: minmax(0, 1fr) minmax(430px, .95fr); min-height: 600px; }
+.about-hero h1 { max-width: 11.5ch; font-size: clamp(3.8rem, 5.7vw, 5.9rem); line-height: .95; }
+.about-hero p { max-width: 50ch; font-size: 1.08rem; line-height: 1.55; }
+.about-hero figure { min-height: 500px; }
+.about-system-grid article { min-height: 185px; }
+.about-system-grid p { margin-top: 14px; }
+.about-memory-copy p { line-height: 1.45; }
+
+/* Visual footer */
+.site-footer { padding: 0; border-top: 0; background: var(--navy); color: white; }
+.footer-visual { display: grid; grid-template-columns: 2fr 1.1fr .9fr 1.35fr; min-height: 330px; }
+.footer-image { position: relative; overflow: hidden; }
+.footer-image img { object-fit: cover; }
+.footer-image-cells img { object-position: center; }
+.footer-image-neurons img { object-position: 54% center; }
+.footer-image-protein img { object-position: center; }
+.footer-invitation { display: grid; align-content: center; padding: clamp(28px, 4vw, 58px); background: #efb33f; color: #123f36; }
+.footer-invitation p { max-width: 9ch; font-family: var(--serif); font-size: clamp(2.25rem, 3.4vw, 3.9rem); line-height: .96; letter-spacing: -.035em; }
+.footer-invitation a { display: inline-flex; justify-content: space-between; gap: 18px; margin-top: 30px; padding-top: 13px; border-top: 1px solid rgba(18,63,54,.45); color: #123f36; font-size: .76rem; font-weight: 800; text-decoration: none; }
+.site-footer .footer-grid { grid-template-columns: minmax(260px, .8fr) minmax(0, 1.2fr); align-items: start; padding-block: 40px 48px; }
+.site-footer .footer-identity { color: white; }
+.site-footer .footer-title { color: white; }
+.site-footer .footer-grid p { color: #b8c5cf; }
+.footer-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+.footer-links > div { display: grid; align-content: start; gap: 7px; }
+.footer-links span { margin-bottom: 5px; color: #d9c58d; font-family: var(--mono); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; }
+.site-footer .footer-links a { color: #e8edf1; font-size: .74rem; text-decoration: none; }
+.site-footer .footer-links a:hover { color: #efc86f; }
+
+@media (max-width: 980px) {
+  .deadline-exporter { grid-template-columns: 1fr; }
+  .deadline-export-actions { grid-column: auto; }
+  .company-directory-grid { grid-template-columns: 1fr; }
+  .footer-visual { grid-template-columns: 1.5fr 1fr 1fr; }
+  .footer-invitation { grid-column: 1 / -1; min-height: 240px; }
+  .footer-invitation p { max-width: 14ch; }
+}
+
+@media (max-width: 700px) {
+  .deadline-exporter { padding: 20px; }
+  .deadline-days { grid-template-columns: repeat(7, minmax(86px, 1fr)); }
+  .undated-section > header, .undated-grid { grid-template-columns: 1fr; }
+  .company-directory-summary { grid-template-columns: 1fr; }
+  .company-directory-summary > div, .company-directory-summary > div + div { padding: 13px 0; border-right: 0; border-bottom: 1px solid var(--line); }
+  .company-status-tabs { display: flex; width: 100%; overflow-x: auto; border-radius: 4px; }
+  .company-status-tabs button { flex: none; border-radius: 2px; }
+  .prepare-hero-copy h1, .about-hero h1 { max-width: 12ch; font-size: clamp(3rem, 14vw, 4.5rem); }
+  .footer-visual { grid-template-columns: 1fr 1fr; }
+  .footer-image-cells { grid-column: 1 / -1; min-height: 250px; }
+  .footer-image-neurons, .footer-image-protein { min-height: 180px; }
+  .footer-invitation { min-height: 250px; padding: 28px; }
+  .site-footer .footer-grid, .footer-links { grid-template-columns: 1fr; }
+}

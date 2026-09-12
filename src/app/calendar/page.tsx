@@ -32,17 +32,17 @@ export default async function CalendarPage() {
   return (
     <div className="site-wrap">
       <header className="page-head">
-        <h1>Recruiting calendar</h1>
+        <h1>Application calendar</h1>
         <p className="lede">
-          Historical timing is inferred from past recruiting cycles. Current openings and
-          deadlines are shown only when a reviewed source states them.
+          Keep the dates that matter now, then use earlier cycles to know when to start looking.
+          Every current deadline comes from a reviewed employer source.
         </p>
       </header>
 
       <section className="editorial-strip">
         <div className="margin-note">
-          <h2>Deadlines you can keep</h2>
-          <p>Select the roles you care about and download reminders for your calendar.</p>
+          <h2>Dates on the board</h2>
+          <p>A calendar for stated deadlines. Roles without a fixed date stay separate below.</p>
         </div>
         <div>
           {error && <div className="notice"><span>!</span><span>Could not load the calendar.</span></div>}
@@ -55,19 +55,25 @@ export default async function CalendarPage() {
             location: o.location,
             url: o.posting_url,
           }))} />}
-          {undated.length > 0 && <ol className="timeline-list timeline-undated">
+          {undated.length > 0 && <section className="undated-section" aria-labelledby="undated-title">
+            <header>
+              <h2 id="undated-title">Open without a fixed deadline</h2>
+              <p>These roles are current, but the reviewed posting did not give us a calendar date.</p>
+            </header>
+            <ol className="undated-grid">
             {undated.map((o) => (
-              <li className="timeline-row" key={o.id}>
-                <span className="timeline-date">Open, no fixed date</span>
-                <div className="timeline-line timeline-line-open">
-                  <h2>{o.title}</h2>
+              <li key={o.id}>
+                <span>Deadline not stated</span>
+                <div>
+                  <h3>{o.title}</h3>
                   <p><strong>{o.company_name}</strong>{o.location ? ` · ${o.location}` : ''}</p>
                   <p>{o.deadline_text ?? 'No deadline stated'}</p>
                   {o.posting_url && <p><a href={o.posting_url} target="_blank" rel="noopener noreferrer nofollow">Official posting ↗</a></p>}
                 </div>
               </li>
             ))}
-          </ol>}
+            </ol>
+          </section>}
         </div>
       </section>
 
