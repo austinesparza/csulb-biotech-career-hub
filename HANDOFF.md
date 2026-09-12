@@ -121,6 +121,10 @@ columns. Evidence, enrollment, work-authorization, and genuine source-check fiel
 round-trip into structured private database columns; officer decision cells remain
 non-publishing review intent.
 
+The queue sync evaluates up to 50 candidates independently of the smaller source
+fetch batch. This prevents the same top-ranked rows from starving lower-ranked
+candidates on later daily runs.
+
 For governed machine sources, the same deterministic classifier that scores a
 posting also fills graduate stage, audience, scientific lanes, job functions,
 named methods, paid status, source dates, and bounded exact-source snippets for

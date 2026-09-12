@@ -69,6 +69,9 @@ describe('operator control safety', () => {
   it('pushes governed discoveries to the Sheet without owning officer decisions', () => {
     expect(ingestRoute).toContain('syncReviewQueueToGoogleSheet');
     expect(ingestRoute).toContain('sheetSyncFailed');
+    expect(ingestRoute).toContain('PIPELINE_SHEET_SYNC_LIMIT ?? 50');
+    expect(ingestRoute).toContain('limit: sheetSyncLimit');
+    expect(ingestRoute).not.toContain('syncReviewQueueToGoogleSheet({ db, limit })');
     expect(reviewSheetSync).toContain("opportunity_source_links!inner");
     expect(reviewSheetSync).toContain(".eq('source_record_id', config.sourceRecordId)");
     expect(reviewSheetSync).toContain("candidateId.startsWith('AUTO-')");

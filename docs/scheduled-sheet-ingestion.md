@@ -38,7 +38,8 @@ For a new machine candidate it writes a neutral row:
 
 Text that begins with a spreadsheet formula character is escaped before writing.
 Writes use the Google Sheets `RAW` input mode and are capped at 50 candidates
-per run. New candidates take the first unused row inside the configured bounded
+per sync, independently of the smaller source-fetch batch limit. New candidates
+take the first unused row inside the configured bounded
 range, including preformatted rows whose only value is an unchecked `FALSE`
 checkbox. A full range raises an operator-visible error instead of placing rows
 below the visible queue. Existing rows are matched by Supabase Record ID, then by canonical official
