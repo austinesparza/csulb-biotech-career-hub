@@ -317,31 +317,41 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
         <button disabled={!canApprove} onClick={() => startTransition(async () => {
           setError(null);
           try {
-            await approveOpportunity({
+            const result = await approveOpportunity({
               id: row.id, status, publicNotes, makeCompanyPublic: !(row.companies?.public_safe ?? false),
               audienceBucket, audienceReason, graduateStage, finalFields, sourceConfirmed, publicSafeConfirmed,
             });
+            if (!result.ok) { setError(result.error); return; }
             setDone('approved and published');
           } catch (caught) { setError(caught instanceof Error ? caught.message : 'Approval failed'); }
         })}>{pending ? 'Saving…' : sheetApprovalReady ? 'Confirm Sheet approval and publish' : 'Approve'}</button>
         <button disabled={!canArchive} onClick={() => startTransition(async () => {
           setError(null);
           try {
-            await archiveForAudience({
+            const result = await archiveForAudience({
               id: row.id, audienceBucket: audienceBucket as 'ineligible' | 'adjacent' | 'special',
               audienceReason, graduateStage, sourceConfirmed, publicSafeConfirmed,
             });
+            if (!result.ok) { setError(result.error); return; }
             setDone('kept outside the public board');
           } catch (caught) { setError(caught instanceof Error ? caught.message : 'Archive failed'); }
         })}>Keep outside board</button>
         <button disabled={pending} onClick={() => startTransition(async () => {
           setError(null);
-          try { await rejectOpportunity(row.id, 'not_relevant'); setDone('rejected as not relevant'); }
+          try {
+            const result = await rejectOpportunity(row.id, 'not_relevant');
+            if (!result.ok) { setError(result.error); return; }
+            setDone('rejected as not relevant');
+          }
           catch (caught) { setError(caught instanceof Error ? caught.message : 'Rejection failed'); }
         })}>Not relevant</button>
         <button disabled={pending} onClick={() => startTransition(async () => {
           setError(null);
-          try { await rejectOpportunity(row.id, 'hidden'); setDone('hidden'); }
+          try {
+            const result = await rejectOpportunity(row.id, 'hidden');
+            if (!result.ok) { setError(result.error); return; }
+            setDone('hidden');
+          }
           catch (caught) { setError(caught instanceof Error ? caught.message : 'Hide failed'); }
         })}>Hide</button>
       </div>

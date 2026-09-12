@@ -175,41 +175,90 @@ export async function toggleSourcePause(formData: FormData): Promise<void> {
   refresh();
 }
 
-export async function runSourceNow(formData: FormData): Promise<void> {
-  await requireOfficer();
-  const db = createServiceClient();
-  const id = field(formData, "id");
-  const { data: source, error: sourceError } = await db.from("job_sources")
-    .select("id, enabled, automatic_scheduling_paused_at")
-    .eq("id", id)
-    .maybeSingle();
-  if (sourceError || !source) throw new Error("Source not found.");
-  if (!source.enabled || source.automatic_scheduling_paused_at) {
-    throw new Error("Enable and resume the source before running it.");
-  }
-  const { data: run, error } = await db.from("source_fetch_runs").insert({
-    job_source_id: id,
-    trigger_kind: "manual",
-    status: "running",
-    scheduled_for: new Date().toISOString(),
-    started_at: new Date().toISOString(),
-    worker_id: `officer:${randomUUID()}`,
-  }).select("id, job_source_id").single();
-  if (error || !run) throw new Error(`Could not start source run: ${error?.message ?? "unknown error"}`);
+export interface SourceRunActionState {
+  status: "idle" | "success" | "error";
+  message: string;
+  runId?: string;
+}
 
-  const report = await runClaimedFetch({ db, storage: db.storage, claim: run });
-  if (report.status !== "failed" && googleSheetsConfigured()) {
-    try {
-      await syncReviewQueueToGoogleSheet({ db });
-    } catch (sheetError) {
-      refresh();
-      const message = sheetError instanceof Error ? sheetError.message : "unknown error";
-      throw new Error(
-        `Source run ${report.fetchRunId} was archived, but the Review Queue Sheet update failed: ${message}. Use Spreadsheet intake to retry the Sheet push without rerunning the source.`,
-      );
-    }
+function safeSourceRunError(error: unknown): string {
+  const message = error instanceof Error ? error.message : "";
+  if (message === "Not signed in") return "Your officer session expired. Refresh and sign in again.";
+  if (message === "Not an active officer") return "This account is not an active officer.";
+  if (message === "Source not found." || message === "Enable and resume the source before running it.") return message;
+  if (/^Source run [0-9a-f-]+ was archived, but the Review Queue Sheet update failed:/.test(message)) return message;
+  if (message.startsWith("Could not start source run:")) {
+    return "The database rejected the source-run record. No source fetch started.";
   }
-  refresh();
+  return "The source run failed before completion. No opportunity was published.";
+}
+
+export async function runSourceNow(
+  _previousState: SourceRunActionState,
+  formData: FormData,
+): Promise<SourceRunActionState> {
+  const id = field(formData, "id");
+  console.info("[source-run] action received", { sourceId: id || null });
+  try {
+    await requireOfficer();
+    const db = createServiceClient();
+    const { data: source, error: sourceError } = await db.from("job_sources")
+      .select("id, source_name, enabled, automatic_scheduling_paused_at")
+      .eq("id", id)
+      .maybeSingle();
+    if (sourceError || !source) throw new Error("Source not found.");
+    if (!source.enabled || source.automatic_scheduling_paused_at) {
+      throw new Error("Enable and resume the source before running it.");
+    }
+    const { data: run, error } = await db.from("source_fetch_runs").insert({
+      job_source_id: id,
+      trigger_kind: "manual",
+      status: "running",
+      scheduled_for: new Date().toISOString(),
+      started_at: new Date().toISOString(),
+      worker_id: `officer:${randomUUID()}`,
+    }).select("id, job_source_id").single();
+    if (error || !run) throw new Error(`Could not start source run: ${error?.message ?? "unknown error"}`);
+    console.info("[source-run] fetch record created", { sourceId: id, runId: run.id });
+
+    const report = await runClaimedFetch({ db, storage: db.storage, claim: run });
+    console.info("[source-run] fetch completed", {
+      sourceId: id,
+      runId: report.fetchRunId,
+      status: report.status,
+      recordsSeen: report.recordsSeen,
+      reviewTasksCreated: report.reviewTasksCreated,
+    });
+    if (report.status === "failed") {
+      refresh();
+      return {
+        status: "error",
+        runId: report.fetchRunId,
+        message: `The source fetch failed and was archived as run ${report.fetchRunId}. No opportunity was published.`,
+      };
+    }
+    if (googleSheetsConfigured()) {
+      try {
+        await syncReviewQueueToGoogleSheet({ db });
+      } catch (sheetError) {
+        refresh();
+        const message = sheetError instanceof Error ? sheetError.message : "unknown error";
+        throw new Error(
+          `Source run ${report.fetchRunId} was archived, but the Review Queue Sheet update failed: ${message}. Use Spreadsheet intake to retry the Sheet push without rerunning the source.`,
+        );
+      }
+    }
+    refresh();
+    return {
+      status: "success",
+      runId: report.fetchRunId,
+      message: `${source.source_name}: ${report.recordsSeen} records checked and ${report.reviewTasksCreated} review tasks created.`,
+    };
+  } catch (error) {
+    const message = safeSourceRunError(error);
+    console.error("[source-run] action failed", { sourceId: id || null, error: message });
+    return { status: "error", message };
+  }
 }
 
 export async function testSourceNow(formData: FormData): Promise<void> {
