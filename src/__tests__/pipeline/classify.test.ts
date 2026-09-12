@@ -53,6 +53,17 @@ ok("Amgen stage = msc_year2 (year-one-completed rule)", c3.stage.id === "msc_yea
 ok("Amgen lane = bioprocess", c3.lanes[0]?.id === "bioprocess", c3.lanes.map(l=>l.id).join(","));
 ok("Amgen return rule flagged", c3.personalGates.includes("return_rule"));
 
+const autonomousLab = P(
+  "Software Intern, Autonomous Lab",
+  "Ginkgo Bioworks",
+  `Build Python-based protocols that control liquid handlers and robotic arms in an autonomous lab.
+   Integrate experimental data pipelines for AI model training and laboratory automation. No college degree is required.`,
+);
+const c3b = classify(autonomousLab, tax);
+ok("scientific software internship is kept", c3b.keep, c3b.dropReason);
+ok("scientific software maps to laboratory automation", c3b.lanes.some((lane) => lane.id === "lab_automation"), c3b.lanes.map(l=>l.id).join(","));
+ok("scientific software with unclear degree access requires review", c3b.suggestedBucket === "needs_review", c3b.suggestedBucket);
+
 console.log("\n=== Should BUCKET, not drop ===\n");
 
 const ibri = P(

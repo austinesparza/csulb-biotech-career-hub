@@ -198,6 +198,7 @@ export async function persistFetchResult(params: {
   };
   const result = params.fetchResult;
   let staleObservationCount = 0;
+  let persistenceStage = 'store_raw_payload';
 
   try {
     const payload = await storeRawPayload({
@@ -214,7 +215,8 @@ export async function persistFetchResult(params: {
     }
 
     if (result.ok && payload) {
-      for (const candidate of result.candidates) {
+      for (const [candidateIndex, candidate] of result.candidates.entries()) {
+      persistenceStage = `persist_posting_observation:${candidateIndex + 1}/${result.candidates.length}`;
       const normalizedSnapshot = toNormalizedSnapshot(candidate);
 
       const upsertInput = {
@@ -275,6 +277,15 @@ export async function persistFetchResult(params: {
         counters.recordsReviewed += 1;
       }
 
+      // A newly archived posting below the review threshold cannot have an
+      // existing opportunity link. Avoid running the much heavier company and
+      // opportunity matching bridge for it. If its score or source material
+      // changes later, the existing posting still goes through the bridge.
+      if (upsert.created && candidate.relevanceScore < PENDING_OPPORTUNITY_MIN_SCORE) {
+        continue;
+      }
+
+      persistenceStage = `bridge_opportunity:${candidateIndex + 1}/${result.candidates.length}`;
       await bridgeOpportunityForSourcePosting({
         repository: params.repository,
         jobSource,
@@ -340,6 +351,7 @@ export async function persistFetchResult(params: {
         payloadStored: payloadId != null,
         payloadId,
         persistenceError: error instanceof Error ? error.message : String(error),
+        persistenceStage,
         staleObservationCount,
       }),
       finishedAtIso: clock.now().toISOString(),

@@ -198,6 +198,7 @@ export async function runSourceNow(
   formData: FormData,
 ): Promise<SourceRunActionState> {
   const id = field(formData, "id");
+  let runId: string | undefined;
   console.info("[source-run] action received", { sourceId: id || null });
   try {
     await requireOfficer();
@@ -219,6 +220,7 @@ export async function runSourceNow(
       worker_id: `officer:${randomUUID()}`,
     }).select("id, job_source_id").single();
     if (error || !run) throw new Error(`Could not start source run: ${error?.message ?? "unknown error"}`);
+    runId = run.id;
     console.info("[source-run] fetch record created", { sourceId: id, runId: run.id });
 
     const report = await runClaimedFetch({ db, storage: db.storage, claim: run });
@@ -255,9 +257,12 @@ export async function runSourceNow(
       message: `${source.source_name}: ${report.recordsSeen} records checked and ${report.reviewTasksCreated} review tasks created.`,
     };
   } catch (error) {
-    const message = safeSourceRunError(error);
+    const safeMessage = safeSourceRunError(error);
+    const message = runId && safeMessage === "The source run failed before completion. No opportunity was published."
+      ? `${safeMessage} Run ID: ${runId}.`
+      : safeMessage;
     console.error("[source-run] action failed", { sourceId: id || null, error: message });
-    return { status: "error", message };
+    return { status: "error", message, ...(runId ? { runId } : {}) };
   }
 }
 

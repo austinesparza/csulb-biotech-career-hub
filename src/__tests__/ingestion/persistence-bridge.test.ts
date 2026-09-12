@@ -764,6 +764,9 @@ describe('ingestion persistence bridge', () => {
 
   it('enforces pending opportunity safety gates for low score', async () => {
     const repo = new FakeRepository();
+    repo.resolveCompanyId = async () => {
+      throw new Error('new low-score postings must not enter the opportunity bridge');
+    };
     await persistFetchResult({
       repository: repo,
       fetchRunId: 'run-1',

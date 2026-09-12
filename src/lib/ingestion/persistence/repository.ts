@@ -211,6 +211,29 @@ function isDuplicateKeyError(error: { message?: string; code?: string } | null |
   return error.code === '23505' || /duplicate key|already exists/i.test(error.message ?? '');
 }
 
+function isTransientGatewayError(error: { message?: string; code?: string } | null | undefined): boolean {
+  if (!error) return false;
+  const message = error.message ?? '';
+  return error.code === '502'
+    || error.code === '503'
+    || error.code === '504'
+    || /\b(?:bad gateway|gateway timeout|service unavailable|upstream request timeout)\b/i.test(message);
+}
+
+async function runIdempotentRpcWithRetry<T>(
+  operation: string,
+  call: () => Promise<{ data: T; error: { message: string; code?: string } | null }>,
+): Promise<{ data: T; error: { message: string; code?: string } | null }> {
+  const first = await call();
+  if (!isTransientGatewayError(first.error)) return first;
+
+  console.warn('[ingestion-rpc] transient gateway failure; retrying idempotent operation', {
+    operation,
+    code: first.error?.code ?? null,
+  });
+  return call();
+}
+
 function isoDateOrNull(value: string | null): string | null {
   if (!value) return null;
   return value.slice(0, 10);
@@ -441,7 +464,9 @@ export function createSupabaseIngestionRepository(params: {
           'The non-transactional fallback has been removed.'
         );
       }
-      const { data, error } = await db.rpc('persist_posting_observation', {
+      const { data, error } = await runIdempotentRpcWithRetry(
+        'persist_posting_observation',
+        () => db.rpc!('persist_posting_observation', {
         p_fetch_run_id:             input.fetchRunId,
         p_job_source_id:            input.jobSourceId,
         p_identity_key:             input.identityKey,
@@ -472,7 +497,8 @@ export function createSupabaseIngestionRepository(params: {
         p_connector_version:        input.connectorVersion,
         p_normalized_json:          input.normalizedJson,
         p_min_score_for_review:     input.minScoreForReview,
-      });
+        }),
+      );
       if (error) throw new Error(error.message);
       const row = Array.isArray(data) ? data[0] : data;
       const version: SourcePostingVersionRow | null = row.version_id
@@ -627,7 +653,9 @@ export function createSupabaseIngestionRepository(params: {
       // Use the advisory-lock RPC when available to prevent duplicate pending
       // opportunities when concurrent fetch runs race on the same dedupe key.
       if (db.rpc) {
-        const { data: rpcData, error: rpcError } = await db.rpc('create_pending_opportunity', {
+        const { data: rpcData, error: rpcError } = await runIdempotentRpcWithRetry(
+          'create_pending_opportunity',
+          () => db.rpc!('create_pending_opportunity', {
           p_company_id:        input.companyId,
           p_source_record_id:  input.sourceRecordId,
           p_title:             input.title,
@@ -644,7 +672,8 @@ export function createSupabaseIngestionRepository(params: {
           p_dedupe_key:        input.dedupeKey,
           p_family_key:        input.familyKey,
           p_observed_at:       input.observedAtIso,
-        });
+          }),
+        );
         if (rpcError) throw new Error(rpcError.message);
         const rpcRow = Array.isArray(rpcData) ? rpcData[0] : rpcData;
         const { data: opp, error: fetchError } = await db.from('opportunities').select(
