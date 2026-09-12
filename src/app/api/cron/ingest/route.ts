@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { authorizeCronRequest } from "@/lib/cron/auth";
 import { googleSheetsConfigured } from "@/lib/google-sheets";
 import { runIngestionBatch } from "@/lib/ingestion/source-runner";
+import { createBraveSearchProvider } from "@/lib/pipeline/brave-search";
+import { runEmployerDiscoveryBatch } from "@/lib/pipeline/discovery-runner";
 import { runExtractionBatch } from "@/lib/pipeline/extraction-runner";
 import { createOpenAiCompatibleExtractionModel } from "@/lib/pipeline/model-openai";
 import { syncReviewQueueToGoogleSheet } from "@/lib/review-sheet-sync";
@@ -42,6 +44,42 @@ export async function GET(request: Request) {
     limit,
   });
   const failed = reports.filter((report) => report.status === "failed");
+  let discoveryFailed = false;
+  let discovery:
+    | { status: "disabled" }
+    | { status: "completed"; employers: number; queries: number; results: number; archived: number; errors: number }
+    | { status: "failed"; error: string } = { status: "disabled" };
+  if (process.env.DISCOVERY_SEARCH_ENABLED === "true") {
+    try {
+      const apiKey = process.env.BRAVE_SEARCH_API_KEY?.trim();
+      if (!apiKey) throw new Error("BRAVE_SEARCH_API_KEY is required");
+      const provider = createBraveSearchProvider({
+        apiKey,
+        storageRightsConfirmed: process.env.BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED === "true",
+      });
+      const discoveryReport = await runEmployerDiscoveryBatch({
+        db,
+        provider,
+        employerLimit: Math.max(1, Math.min(Number(process.env.EMPLOYER_DISCOVERY_BATCH_SIZE ?? 1) || 1, 5)),
+        resultsPerQuery: Math.max(1, Math.min(Number(process.env.EMPLOYER_DISCOVERY_RESULTS_PER_QUERY ?? 5) || 5, 10)),
+      });
+      discoveryFailed = discoveryReport.errors.length > 0;
+      discovery = {
+        status: "completed",
+        employers: discoveryReport.employers,
+        queries: discoveryReport.queries,
+        results: discoveryReport.results,
+        archived: discoveryReport.archived,
+        errors: discoveryReport.errors.length,
+      };
+    } catch (error) {
+      discoveryFailed = true;
+      discovery = {
+        status: "failed",
+        error: error instanceof Error ? error.message.slice(0, 500) : "Unknown discovery failure",
+      };
+    }
+  }
   let extractionFailed = false;
   let extraction: { status: "disabled" } | { status: "completed"; saved: number; evidenceFailures: number; errors: number } = { status: "disabled" };
   if (process.env.PIPELINE_MODEL_ENABLED === "true") {
@@ -70,7 +108,7 @@ export async function GET(request: Request) {
   let sheetSyncFailed = false;
   let sheetSync:
     | { status: "disabled" }
-    | { status: "completed"; appended: number; refreshed: number; linked: number; alreadyPresent: number }
+    | { status: "completed"; appended: number; refreshed: number; linked: number; alreadyPresent: number; archived: number }
     | { status: "failed"; error: string } = { status: "disabled" };
 
   if (googleSheetsConfigured()) {
@@ -82,6 +120,7 @@ export async function GET(request: Request) {
         refreshed: report.refreshed,
         linked: report.linked,
         alreadyPresent: report.alreadyPresent,
+        archived: report.archived,
       };
     } catch (error) {
       sheetSyncFailed = true;
@@ -93,7 +132,7 @@ export async function GET(request: Request) {
   }
 
   const response = {
-    ok: failed.length === 0 && !extractionFailed && !sheetSyncFailed,
+    ok: failed.length === 0 && !discoveryFailed && !extractionFailed && !sheetSyncFailed,
     scheduled: Array.isArray(scheduled) ? scheduled.length : 0,
     claimed: reports.length,
     completed: reports.length - failed.length,
@@ -101,9 +140,10 @@ export async function GET(request: Request) {
     recordsSeen: reports.reduce((sum, report) => sum + report.recordsSeen, 0),
     recordsArchived: reports.reduce((sum, report) => sum + report.recordsArchived, 0),
     reviewTasksCreated: reports.reduce((sum, report) => sum + report.reviewTasksCreated, 0),
+    discovery,
     extraction,
     sheetSync,
     reports,
   };
-  return json(response, failed.length || extractionFailed || sheetSyncFailed ? 500 : 200);
+  return json(response, failed.length || discoveryFailed || extractionFailed || sheetSyncFailed ? 500 : 200);
 }

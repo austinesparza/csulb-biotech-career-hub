@@ -14,6 +14,7 @@ const MAX_CELLS = 100_000;
 export interface GoogleSheetsConfig {
   spreadsheetId: string;
   range: string;
+  archiveRange: string;
   sourceRecordId: string;
   serviceAccountEmail: string;
   privateKey: string;
@@ -72,6 +73,7 @@ export function readGoogleSheetsConfig(env: Environment = process.env): GoogleSh
   return {
     spreadsheetId,
     range: required(env, 'GOOGLE_SHEETS_RANGE'),
+    archiveRange: env.GOOGLE_SHEETS_ARCHIVE_RANGE?.trim() || "'Archive'!A1:Z5000",
     sourceRecordId,
     serviceAccountEmail,
     privateKey,
@@ -115,6 +117,7 @@ async function accessToken(config: GoogleSheetsConfig, fetchImpl: FetchLike, now
 }
 
 function normalizeRows(input: unknown): string[][] {
+  if (input === undefined) return [];
   if (!Array.isArray(input)) throw new Error('Google Sheets returned an invalid values payload');
   const rows = input.map((row) => {
     if (!Array.isArray(row)) throw new Error('Google Sheets returned a malformed row');
@@ -124,20 +127,21 @@ function normalizeRows(input: unknown): string[][] {
   if (rows.length > MAX_ROWS || columnCount > MAX_COLUMNS || rows.length * columnCount > MAX_CELLS) {
     throw new Error(`Configured Sheet range is too large; limit it to ${MAX_ROWS} rows, ${MAX_COLUMNS} columns, and ${MAX_CELLS} cells`);
   }
-  if (rows.length < 2 || rows[0].filter((cell) => cell.trim()).length < 2) {
-    throw new Error('Configured Sheet range must include a header row and at least one data row');
+  if (rows.length > 0 && rows[0].filter((cell) => cell.trim()).length < 2) {
+    throw new Error('Configured Sheet range must include a valid header row');
   }
   return rows;
 }
 
 export async function fetchGoogleSheet(
   config: GoogleSheetsConfig,
-  options: { fetchImpl?: FetchLike; now?: number } = {},
+  options: { fetchImpl?: FetchLike; now?: number; range?: string } = {},
 ): Promise<SheetSnapshot> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const now = options.now ?? Math.floor(Date.now() / 1_000);
   const token = await accessToken(config, fetchImpl, now);
-  const path = `/v4/spreadsheets/${encodeURIComponent(config.spreadsheetId)}/values/${encodeURIComponent(config.range)}`;
+  const range = options.range ?? config.range;
+  const path = `/v4/spreadsheets/${encodeURIComponent(config.spreadsheetId)}/values/${encodeURIComponent(range)}`;
   const url = new URL(path, SHEETS_ORIGIN);
   url.searchParams.set('majorDimension', 'ROWS');
   url.searchParams.set('valueRenderOption', 'FORMATTED_VALUE');
@@ -153,7 +157,7 @@ export async function fetchGoogleSheet(
   const rows = normalizeRows(body.values);
   return {
     rows,
-    range: typeof body.range === 'string' ? body.range : config.range,
+    range: typeof body.range === 'string' ? body.range : range,
     rowCount: rows.length - 1,
     columnCount: rows.reduce((max, row) => Math.max(max, row.length), 0),
   };
@@ -197,7 +201,7 @@ function validateWriteRows(rows: string[][], label: string): void {
 export async function writeGoogleSheet(
   config: GoogleSheetsConfig,
   write: GoogleSheetWrite,
-  options: { fetchImpl?: FetchLike; now?: number } = {},
+  options: { fetchImpl?: FetchLike; now?: number; appendRange?: string } = {},
 ): Promise<GoogleSheetWriteSummary> {
   const updates = write.updates ?? [];
   const appendRows = write.appendRows ?? [];
@@ -243,7 +247,8 @@ export async function writeGoogleSheet(
   }
 
   if (appendRows.length > 0) {
-    const path = `/v4/spreadsheets/${encodeURIComponent(config.spreadsheetId)}/values/${encodeURIComponent(config.range)}:append`;
+    const appendRange = options.appendRange ?? config.range;
+    const path = `/v4/spreadsheets/${encodeURIComponent(config.spreadsheetId)}/values/${encodeURIComponent(appendRange)}:append`;
     const url = new URL(path, SHEETS_ORIGIN);
     url.searchParams.set('valueInputOption', 'RAW');
     url.searchParams.set('insertDataOption', 'INSERT_ROWS');
@@ -258,4 +263,149 @@ export async function writeGoogleSheet(
   }
 
   return { updatedRanges: updates.length, appendedRows: appendRows.length };
+}
+
+function sheetTitle(range: string): string {
+  const bang = range.lastIndexOf('!');
+  if (bang < 1) throw new Error('Google Sheet range must include a sheet name');
+  const reference = range.slice(0, bang).trim();
+  if (reference.startsWith("'") && reference.endsWith("'")) {
+    return reference.slice(1, -1).replaceAll("''", "'");
+  }
+  return reference;
+}
+
+interface SheetProperties {
+  sheetId: number;
+  title: string;
+}
+
+async function spreadsheetSheets(
+  config: GoogleSheetsConfig,
+  fetchImpl: FetchLike,
+  now: number,
+): Promise<SheetProperties[]> {
+  const token = await accessToken(config, fetchImpl, now);
+  const url = new URL(`/v4/spreadsheets/${encodeURIComponent(config.spreadsheetId)}`, SHEETS_ORIGIN);
+  url.searchParams.set('fields', 'sheets.properties(sheetId,title)');
+  const response = await fetchImpl(url, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    signal: AbortSignal.timeout(20_000),
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error(`Google Sheets metadata read failed (${response.status})`);
+  const body = await response.json() as { sheets?: Array<{ properties?: Partial<SheetProperties> }> };
+  return (body.sheets ?? []).flatMap((sheet) => {
+    const properties = sheet.properties;
+    return typeof properties?.sheetId === 'number' && typeof properties.title === 'string'
+      ? [{ sheetId: properties.sheetId, title: properties.title }]
+      : [];
+  });
+}
+
+/** Ensure the configured fixed tab exists. Existing tabs are never renamed or replaced. */
+export async function ensureGoogleSheetTab(
+  config: GoogleSheetsConfig,
+  range: string,
+  options: { fetchImpl?: FetchLike; now?: number } = {},
+): Promise<{ created: boolean; sheetId: number }> {
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const now = options.now ?? Math.floor(Date.now() / 1_000);
+  const title = sheetTitle(range);
+  const sheets = await spreadsheetSheets(config, fetchImpl, now);
+  const existing = sheets.find((sheet) => sheet.title === title);
+  if (existing) return { created: false, sheetId: existing.sheetId };
+
+  const token = await accessToken(config, fetchImpl, now);
+  const response = await fetchImpl(
+    new URL(`/v4/spreadsheets/${encodeURIComponent(config.spreadsheetId)}:batchUpdate`, SHEETS_ORIGIN),
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        requests: [{
+          addSheet: {
+            properties: { title, gridProperties: { rowCount: 5_000, columnCount: 26 } },
+          },
+        }],
+      }),
+      signal: AbortSignal.timeout(20_000),
+      cache: 'no-store',
+    },
+  );
+  if (!response.ok) throw new Error(`Google Sheets tab creation failed (${response.status})`);
+  const body = await response.json() as {
+    replies?: Array<{ addSheet?: { properties?: Partial<SheetProperties> } }>;
+  };
+  const sheetId = body.replies?.[0]?.addSheet?.properties?.sheetId;
+  if (typeof sheetId !== 'number') throw new Error('Google Sheets tab creation returned no sheet ID');
+  return { created: true, sheetId };
+}
+
+/**
+ * Delete resolved rows only after their values have been appended to Archive.
+ * Row numbers are applied in descending order so earlier indexes cannot shift.
+ */
+export async function deleteGoogleSheetRows(
+  config: GoogleSheetsConfig,
+  range: string,
+  rowNumbers: number[],
+  options: { fetchImpl?: FetchLike; now?: number } = {},
+): Promise<{ deletedRows: number }> {
+  const uniqueRows = [...new Set(rowNumbers)]
+    .filter((row) => Number.isInteger(row) && row >= 2)
+    .sort((a, b) => b - a);
+  if (uniqueRows.length > MAX_WRITE_ROWS) {
+    throw new Error(`Google Sheet row deletion exceeds the ${MAX_WRITE_ROWS}-row safety limit`);
+  }
+  if (uniqueRows.length === 0) return { deletedRows: 0 };
+
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const now = options.now ?? Math.floor(Date.now() / 1_000);
+  const title = sheetTitle(range);
+  const sheets = await spreadsheetSheets(config, fetchImpl, now);
+  const sheet = sheets.find((item) => item.title === title);
+  if (!sheet) throw new Error(`Google Sheet tab "${title}" does not exist`);
+
+  const token = await accessToken(config, fetchImpl, now);
+  const response = await fetchImpl(
+    new URL(`/v4/spreadsheets/${encodeURIComponent(config.spreadsheetId)}:batchUpdate`, SHEETS_ORIGIN),
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        requests: [
+          ...uniqueRows.map((row) => ({
+            deleteDimension: {
+              range: {
+                sheetId: sheet.sheetId,
+                dimension: 'ROWS',
+                startIndex: row - 1,
+                endIndex: row,
+              },
+            },
+          })),
+          {
+            appendDimension: {
+              sheetId: sheet.sheetId,
+              dimension: 'ROWS',
+              length: uniqueRows.length,
+            },
+          },
+        ],
+      }),
+      signal: AbortSignal.timeout(20_000),
+      cache: 'no-store',
+    },
+  );
+  if (!response.ok) throw new Error(`Google Sheets row deletion failed (${response.status})`);
+  return { deletedRows: uniqueRows.length };
 }

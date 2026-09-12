@@ -52,8 +52,10 @@
 ## Request flows
 - **Student board:** server component → `select * from public_opportunities` with sanitized filters → render. Cacheable, no auth.
 - **Import:** officer uploads CSV + selects source → server action parses (papaparse) → `import_runs` row → `raw_import_rows` bulk insert → normalize → dedupe → upsert as `needs_review` (or touch-and-flag for approved records) → `review_tasks` created → summary UI.
-- **Direct Sheet sync:** officer action reads one configured workbook and bounded
-  range through a read-only service account, then enters the same import pipeline.
+- **Direct Sheet sync:** an officer action reads one configured workbook and
+  bounded range, filters template-only rows, then enters the same import pipeline.
+  Governed machine candidates can be written back to system-owned columns; final
+  database decisions move their rows to the fixed Archive tab.
 - **Governed source run:** authenticated cron or officer action claims a bounded
   source run → safe fetch → immutable payload/version archive → deterministic
   classification and optional evidence-bound extraction → private review task.

@@ -19,7 +19,8 @@ export type CanonicalField =
   | 'focus_area' | 'deadline' | 'start_date_text' | 'paid_status'
   | 'application_type' | 'source_status_raw' | 'notes' | 'date_added'
   | 'candidate_id' | 'requisition' | 'work_pattern' | 'graduate_access'
-  | 'continued_enrollment' | 'work_authorization' | 'key_evidence' | 'last_checked';
+  | 'continued_enrollment' | 'work_authorization' | 'key_evidence' | 'application_opened_at'
+  | 'last_checked';
 
 /** Header aliases, lowercase, punctuation-insensitive. Extend as spreadsheets evolve. */
 const HEADER_ALIASES: Record<CanonicalField, string[]> = {
@@ -35,7 +36,7 @@ const HEADER_ALIASES: Record<CanonicalField, string[]> = {
   application_type: ['application type', 'apply via', 'application method', 'program type'],
   source_status_raw: ['status', 'posting status', 'state', 'open status'],
   notes: ['notes', 'comments', 'additional info', 'officer notes'],
-  date_added: ['date added', 'added', 'date entered', 'posted date'],
+  date_added: ['date added', 'added', 'date entered'],
   candidate_id: ['candidate id'],
   requisition: ['requisition', 'requisition id', 'job id'],
   work_pattern: ['work pattern', 'work format', 'schedule format'],
@@ -43,11 +44,36 @@ const HEADER_ALIASES: Record<CanonicalField, string[]> = {
   continued_enrollment: ['continued enrollment', 'return to school'],
   work_authorization: ['work authorization', 'sponsorship'],
   key_evidence: ['key evidence', 'eligibility evidence'],
+  application_opened_at: ['posted date', 'application opened', 'opening date'],
   last_checked: ['last checked', 'checked date'],
 };
 
 function normalizeHeader(h: string): string {
   return h.toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+const EMPTY_REVIEW_VALUE = /^(not (stated|provided|checked)|unknown|n\/?a|needs (source|officer))/i;
+
+function reviewText(value: string): string | null {
+  const text = cleanText(value);
+  return text && !EMPTY_REVIEW_VALUE.test(text) ? text : null;
+}
+
+function parseContinuedEnrollment(value: string): boolean | null {
+  const text = value.trim().toLowerCase();
+  if (/^(required|yes|true)\b/.test(text)) return true;
+  if (/^(not required|no|false)\b/.test(text)) return false;
+  return null;
+}
+
+function sourceCheckResult(value: string, lastCheckedAt: string | null): OpportunityDraft['source_check_result'] {
+  if (!lastCheckedAt) return 'unknown';
+  const text = value.trim().toLowerCase();
+  if (/^open\b/.test(text)) return 'open';
+  if (/^closed\b/.test(text)) return 'closed';
+  if (/^missing\b|not found|404/.test(text)) return 'missing';
+  if (/^error\b/.test(text)) return 'error';
+  return 'unknown';
 }
 
 /**
@@ -113,6 +139,7 @@ export function rowToDraft(
     eligibility: get('eligibility'),
     keyEvidence: get('key_evidence'),
   });
+  const lastCheckedAt = parseDeadline(get('last_checked'));
 
   const draft: OpportunityDraft = {
     companyName,
@@ -130,6 +157,12 @@ export function rowToDraft(
     audience_bucket: audienceDefaults.audienceBucket,
     audience_reason: audienceDefaults.audienceReason || null,
     graduate_stage: audienceDefaults.graduateStage,
+    eligibility_evidence: reviewText(get('key_evidence')),
+    continued_enrollment_required: parseContinuedEnrollment(get('continued_enrollment')),
+    work_authorization: reviewText(get('work_authorization')),
+    application_opened_at: parseDeadline(get('application_opened_at')),
+    last_checked_at: lastCheckedAt,
+    source_check_result: sourceCheckResult(get('source_status_raw'), lastCheckedAt),
     // Spreadsheet notes are officer-facing until proven otherwise: PRIVATE by
     // default. The review UI lets an officer copy sanitized text to public_notes.
     private_notes: privateNotes,

@@ -20,6 +20,7 @@ import { normalizeCompanyName } from '@/lib/normalize';
 import { scoreOpportunity } from '@/lib/relevance';
 import { fetchGoogleSheet, readGoogleSheetsConfig } from '@/lib/google-sheets';
 import { syncReviewQueueToGoogleSheet, type ReviewSheetSyncSummary } from '@/lib/review-sheet-sync';
+import { filterMeaningfulReviewRows } from '@/lib/sheet-review';
 import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
 
 export interface ImportSummary {
@@ -37,12 +38,15 @@ export interface ImportSummary {
 export interface GoogleSheetSyncSummary extends ImportSummary {
   sheetRange: string;
   sheetRows: number;
+  skippedTemplateRows: number;
 }
 
 /** Columns loaded for dedupe + safe-update comparison. */
 const EXISTING_COLUMNS =
   'id, dedupe_key, family_key, posting_url, title, company_id, review_status, public_safe, ' +
-  'location, eligibility, focus_area, deadline, deadline_text, paid_status, application_type, source_status_raw';
+  'location, eligibility, focus_area, deadline, deadline_text, paid_status, application_type, source_status_raw, ' +
+  'eligibility_evidence, continued_enrollment_required, work_authorization, application_opened_at, ' +
+  'last_checked_at, source_check_result';
 
 type ExistingRow = ExistingOpportunity & Record<string, unknown>;
 
@@ -183,6 +187,15 @@ async function importCsvText(input: {
             audience_bucket: draft.audience_bucket,
             audience_reason: draft.audience_reason,
             graduate_stage: draft.graduate_stage,
+            eligibility_evidence: draft.eligibility_evidence ?? existing.eligibility_evidence,
+            continued_enrollment_required:
+              draft.continued_enrollment_required ?? existing.continued_enrollment_required,
+            work_authorization: draft.work_authorization ?? existing.work_authorization,
+            application_opened_at: draft.application_opened_at ?? existing.application_opened_at,
+            last_checked_at: draft.last_checked_at ?? existing.last_checked_at,
+            source_check_result: draft.source_check_result === 'unknown'
+              ? existing.source_check_result
+              : draft.source_check_result,
             relevance_score: score,
             relevance_reasons: reasons,
           })
@@ -228,6 +241,12 @@ async function importCsvText(input: {
         audience_bucket: draft.audience_bucket,
         audience_reason: draft.audience_reason,
         graduate_stage: draft.graduate_stage,
+        eligibility_evidence: draft.eligibility_evidence,
+        continued_enrollment_required: draft.continued_enrollment_required,
+        work_authorization: draft.work_authorization,
+        application_opened_at: draft.application_opened_at,
+        last_checked_at: draft.last_checked_at,
+        source_check_result: draft.source_check_result,
         private_notes: draft.private_notes, // imported notes stay private until reviewed
         date_added: draft.date_added,
         status: 'needs_review',
@@ -296,7 +315,7 @@ async function importCsvText(input: {
 }
 
 /**
- * Officer-triggered, read-only synchronization from one configured Sheet range.
+ * Officer-triggered intake from one configured Sheet range.
  * It deliberately enters through the same raw-row archive and review rules as a
  * CSV upload. The configured Sheet cannot select a different source or set any
  * publication field.
@@ -314,13 +333,19 @@ export async function syncGoogleSheet(): Promise<GoogleSheetSyncSummary> {
   if (error || !source) throw new Error('The configured Google Sheet source record does not exist.');
 
   const snapshot = await fetchGoogleSheet(config);
+  const filtered = filterMeaningfulReviewRows(snapshot.rows);
   const summary = await importCsvText({
-    text: Papa.unparse(snapshot.rows),
+    text: Papa.unparse(filtered.rows),
     filename: `google-sheet-${new Date().toISOString().slice(0, 10)}.csv`,
     sourceRecordId: config.sourceRecordId,
     uploadedBy: user.id,
   });
-  return { ...summary, sheetRange: snapshot.range, sheetRows: snapshot.rowCount };
+  return {
+    ...summary,
+    sheetRange: snapshot.range,
+    sheetRows: filtered.candidateRows,
+    skippedTemplateRows: filtered.skippedTemplateRows,
+  };
 }
 
 

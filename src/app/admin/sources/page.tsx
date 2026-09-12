@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { GOVERNED_STARTER_SOURCES, GREENHOUSE_POLICY_LINKS } from "@/lib/ingestion/starter-sources";
 import { createServiceClient, requireOfficer } from "@/lib/supabase/server";
-import { createJobSource, createStarterSource, runSourceNow, testSourceNow, toggleSourcePause, updateSourceGovernance } from "./actions";
+import { createJobSource, createStarterSource, runEmployerDiscoveryNow, runSourceNow, testSourceNow, toggleSourcePause, updateSourceGovernance } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -37,6 +37,9 @@ export default async function SourcesPage() {
       .filter((source) => source.source_kind === "greenhouse")
       .map((source) => source.source_identifier),
   );
+  const searchConfigured = process.env.DISCOVERY_SEARCH_ENABLED === "true"
+    && Boolean(process.env.BRAVE_SEARCH_API_KEY?.trim())
+    && process.env.BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED === "true";
 
   return <div className="space-y-8">
     <div>
@@ -84,6 +87,21 @@ export default async function SourcesPage() {
     </section>
 
     <section className="rounded-xl bg-white p-5" style={{ border: "1px solid var(--line)" }}>
+      <h2 className="font-semibold">Employer and LinkedIn lead discovery</h2>
+      <p className="mt-2 max-w-3xl text-sm" style={{ color: "var(--ink-soft)" }}>
+        Search one rotating employer cohort on command. Results enter the private lead archive and officer task queue. LinkedIn results remain leads and cannot establish publication facts.
+      </p>
+      <p className="mt-2 text-xs" style={{ color: "var(--ink-soft)" }}>
+        The search provider stays disabled until its API key and contractual result-storage right are both recorded in production.
+      </p>
+      <form action={runEmployerDiscoveryNow} className="mt-4">
+        <button className="secondary-button" type="submit" disabled={!searchConfigured}>
+          {searchConfigured ? "Run employer discovery now" : "Search provider not configured"}
+        </button>
+      </form>
+    </section>
+
+    <section className="rounded-xl bg-white p-5" style={{ border: "1px solid var(--line)" }}>
       <h2 className="font-semibold">Add a source</h2>
       <form action={createJobSource} className="mt-4 grid gap-4 md:grid-cols-2">
         <label className="text-sm">Source name
@@ -92,6 +110,9 @@ export default async function SourcesPage() {
         <label className="text-sm">Type
           <select className="mt-1 w-full rounded-md border p-2" name="source_kind" defaultValue="greenhouse">
             <option value="greenhouse">Greenhouse feed</option>
+            <option value="ashby">Ashby feed</option>
+            <option value="lever">Lever feed</option>
+            <option value="usajobs">USAJOBS search</option>
             <option value="static_html">Public careers page</option>
             <option value="schema_org">Schema.org jobs page</option>
           </select>
@@ -99,8 +120,8 @@ export default async function SourcesPage() {
         <label className="text-sm md:col-span-2">Public careers URL
           <input className="mt-1 w-full rounded-md border p-2" name="careers_url" type="url" required placeholder="https://boards.greenhouse.io/company" />
         </label>
-        <label className="text-sm">Board token
-          <input className="mt-1 w-full rounded-md border p-2" name="source_identifier" placeholder="Required for Greenhouse only" />
+        <label className="text-sm">Board token or query configuration
+          <input className="mt-1 w-full rounded-md border p-2" name="source_identifier" placeholder="ATS token, or USAJOBS JSON query" />
         </label>
         <label className="text-sm">Check every
           <select className="mt-1 w-full rounded-md border p-2" name="fetch_interval_hours" defaultValue="24">

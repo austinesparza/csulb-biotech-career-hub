@@ -75,6 +75,8 @@ ok("workplace type preserved as evidence", lv.postings[0].rawText.includes("Work
 ok("salary description preserved as evidence", lv.postings[0].rawText.includes("Compensation: $28-$34 per hour"), "");
 ok("list content merged into body", lv.postings[0].rawText.includes("completed at least one year"), "");
 ok("epoch ms timestamps converted", /^20\d\d-/.test(lv.postings[0].postedAt ?? ""), String(lv.postings[0].postedAt));
+const lvBadTimestamp = CONNECTORS.lever.parse('[{"id":"bad-date","text":"Intern","hostedUrl":"https://jobs.lever.co/example/bad-date","createdAt":"not-a-date"}]', { employer: "Amgen", identifier: "example" });
+ok("malformed epoch timestamp does not throw", lvBadTimestamp.postings[0]?.postedAt === null, String(lvBadTimestamp.postings[0]?.postedAt));
 const lvClass = classify({ title: lv.postings[0].title, employer: "Amgen", body: lv.postings[0].rawText }, tax);
 ok("stage = msc_year2", lvClass.stage.id === "msc_year2", lvClass.stage.id);
 ok("lane = bioprocess", lvClass.lanes.some((l) => l.id === "bioprocess"), lvClass.lanes.map((l) => l.id).join(","));
@@ -99,6 +101,8 @@ for (const [kind, connector] of Object.entries(CONNECTORS)) {
   const empty = connector.parse("{}", { employer: "X", identifier: "y" });
   ok(`${kind}: empty object -> warning, no throw`, empty.postings.length === 0 && empty.warnings.length > 0);
 }
+const malformedArrays = CONNECTORS.lever.parse('[{"id":"shape","text":"Intern","hostedUrl":"https://jobs.lever.co/example/shape","lists":{}}]', { employer: "X", identifier: "y" });
+ok("lever: malformed optional arrays do not throw", malformedArrays.postings.length === 1);
 const shortPage = CONNECTORS.page.parse("<html><body><div id=root></div></body></html>", { employer: "Uni", identifier: "https://x.edu/p" });
 ok("page: JS-rendered shell flagged", shortPage.postings.length === 0 && /JS-rendered/.test(shortPage.warnings[0] ?? ""), JSON.stringify(shortPage.warnings));
 

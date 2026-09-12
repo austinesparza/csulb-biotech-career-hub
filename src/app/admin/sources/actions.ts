@@ -8,9 +8,11 @@ import { runClaimedFetch } from "@/lib/ingestion/source-runner";
 import { governedStarterSource, GREENHOUSE_POLICY_LINKS } from "@/lib/ingestion/starter-sources";
 import { assertSafePublicUrl } from "@/lib/pipeline/safe-fetch";
 import { syncReviewQueueToGoogleSheet } from "@/lib/review-sheet-sync";
+import { createBraveSearchProvider } from "@/lib/pipeline/brave-search";
+import { runEmployerDiscoveryBatch } from "@/lib/pipeline/discovery-runner";
 import { createServiceClient, requireOfficer } from "@/lib/supabase/server";
 
-const KINDS = new Set(["greenhouse", "static_html", "schema_org"]);
+const KINDS = new Set(["greenhouse", "ashby", "lever", "usajobs", "static_html", "schema_org"]);
 
 function field(formData: FormData, name: string): string {
   return String(formData.get(name) ?? "").trim();
@@ -43,6 +45,9 @@ export async function createJobSource(formData: FormData): Promise<void> {
   }
   if (sourceKind === "greenhouse" && !sourceIdentifier) {
     throw new Error("Greenhouse sources require the board token.");
+  }
+  if (["ashby", "lever", "usajobs"].includes(sourceKind) && !sourceIdentifier) {
+    throw new Error(`${sourceKind} sources require a board identifier or query configuration.`);
   }
   const { data: provenance, error: provenanceError } = await db.from("source_records").insert({
     name: sourceName,
@@ -233,4 +238,28 @@ export async function testSourceNow(formData: FormData): Promise<void> {
 
   await runClaimedFetch({ db, storage: db.storage, claim: run, privateTest: true });
   refresh();
+}
+
+export async function runEmployerDiscoveryNow(): Promise<void> {
+  await requireOfficer();
+  const apiKey = process.env.BRAVE_SEARCH_API_KEY?.trim();
+  if (process.env.DISCOVERY_SEARCH_ENABLED !== "true" || !apiKey) {
+    throw new Error("Governed search discovery is not configured.");
+  }
+  const provider = createBraveSearchProvider({
+    apiKey,
+    storageRightsConfirmed: process.env.BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED === "true",
+  });
+  const report = await runEmployerDiscoveryBatch({
+    db: createServiceClient(),
+    provider,
+    employerLimit: 1,
+    resultsPerQuery: 5,
+    runId: `officer:${new Date().toISOString()}`,
+  });
+  if (report.errors.length > 0) {
+    throw new Error(`Discovery archived ${report.archived} results with ${report.errors.length} errors. Check runtime logs.`);
+  }
+  refresh();
+  revalidatePath("/admin/review");
 }

@@ -76,7 +76,10 @@ second independent version.
   state before this change** to roll back. No deploy is needed.
 - **Import fails "could not find required columns":** a header was renamed in the sheet. Add the new name to `HEADER_ALIASES` in `src/lib/csvImport.ts` (or rename the column back) and re-import.
 - **Import fails "source record is required":** pick a source in the dropdown; if the source is new, add it under Sources first.
-- **Sheet sync says it is not configured:** verify all five `GOOGLE_*` server variables, confirm the source UUID exists, and confirm the service-account email has Viewer access to only the intended workbook.
+- **Sheet sync says it is not configured:** verify the five required `GOOGLE_*`
+  server variables, confirm the source UUID exists, and confirm the service-account
+  email has Editor access to only the intended workbook. The archive range is optional
+  and defaults to `'Archive'!A1:Z5000`.
 - **Sheet sync reads the wrong columns:** keep the intake headers aligned with `HEADER_ALIASES` and the configured bounded range. Never map `Publish Decision` or `Public Safe?` into the importer.
 - **Site seems down:** free-tier Supabase pauses after inactivity; open the Supabase dashboard and restore. Vercel status: check the deployments tab.
 - **Officer sign-in fails:** use `/auth/forgot-password`, follow the newest email,
@@ -107,7 +110,16 @@ The daily ingestion cron and the officer **Run and archive now** action push
 machine-discovered private candidates into the configured Review Queue. The
 Spreadsheet intake screen also provides an idempotent retry button. Officer
 decisions still return through the existing Sheet import and require a signed-in
-publication confirmation.
+publication confirmation. After the database records a final decision, the next
+queue sync copies the row to `Archive` and removes it from `Review Queue`. A retry
+detects the archived Supabase ID before deleting the queue row.
+
+Queue writes reuse the first empty row inside the configured bounded range,
+including preformatted checkbox rows, and never append below it. Existing manual
+rows link by canonical official URL, while `AUTO-` rows refresh only system-owned
+columns. Evidence, enrollment, work-authorization, and genuine source-check fields
+round-trip into structured private database columns; officer decision cells remain
+non-publishing review intent.
 
 The primary officer sign-in uses Supabase's default hosted email link and does
 not require a custom email template or custom SMTP on the Free plan.

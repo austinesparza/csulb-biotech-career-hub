@@ -1,6 +1,8 @@
 # Operational pipeline and rollout
 
-Status: production schema and schedules active; no machine source is configured or enabled, September 11, 2026. The officer source screen includes three verified starter feeds that are always added disabled.
+Status: production schema and schedules are active as of September 11, 2026.
+Xaira Therapeutics, Ginkgo Bioworks, and Flagship Pioneering co-op are configured,
+governance-reviewed, and disabled pending private persistence tests.
 
 ## The short answer
 
@@ -31,18 +33,18 @@ flowchart TD
 | Stage | Implementation | Current state |
 | --- | --- | --- |
 | Public suggestions | `user_submissions` and `/admin/review?tab=submissions` | Working |
-| Spreadsheet intake | One-click read-only Sheet sync or CSV upload at `/admin/import`; original rows saved in `raw_import_rows` | Implemented, officer-triggered |
-| Official Greenhouse feed | `scripts/run-ingestion-worker.ts`, the tested Greenhouse connector, and disabled starter setup at `/admin/sources` | Implemented; no approved production source configured |
+| Spreadsheet intake | One-click governed Sheet sync or CSV upload at `/admin/import`; original meaningful rows saved in `raw_import_rows` | Implemented, officer-triggered |
+| Official ATS and government feeds | Canonical Greenhouse, Ashby, Lever, and credentialed USAJOBS adapters in the persistence runner | Greenhouse live-read verified; three reviewed Greenhouse sources configured disabled; other kinds require source-level verification |
 | Public program pages | Conditional fetch with optional Scrapling and ScrapeGraphAI fallback | Implemented; no approved production source configured |
 | Raw archive | Private `source-payloads` storage plus `source_payloads` metadata and hashes | Implemented |
-| Search lead archive | Private `discovery_leads` plus immutable observations | Migration 0013 is applied; no search provider is connected |
+| Search lead archive | Private `discovery_leads` plus immutable observations and bounded Brave adapter | Implemented; provider remains disabled until a key and storage rights are confirmed |
 | Posting history | `source_postings` plus immutable `source_posting_versions` | Implemented |
 | Classification | Versioned graduate taxonomy in `taxonomy/lanes.yaml` | Implemented |
 | Extraction | `scripts/run-extraction-worker.ts`, local OmniRoute adapter, quote binding, transit sentinel | Implemented, model disabled by default |
 | Officer decision | `/admin/review` plus atomic `decide_opportunity_review` | Working after migration 0011 |
 | Public board | `public_opportunities` read by the dynamic `/internships` route | Working after migration 0011 |
 | Source scheduling | Two authenticated Vercel cron routes plus idempotent queue RPCs | Deployed; safely processes zero sources until officers enable one |
-| Direct Google Sheet sync | Fixed file/range, read-only service account, existing CSV import path | Production configuration exists; no `import_runs` row yet proves a completed sync |
+| Direct Google Sheet sync | Fixed queue/archive ranges, controlled field ownership, template-row filtering, existing CSV import path | Production configuration exists; two earlier runs exposed blank template rows, which this revision filters before import |
 | Integration status | `/admin/integrations` reports each durable handoff | Implemented |
 
 ## Receive and archive rules
@@ -102,7 +104,12 @@ The current safe path is:
 5. Officers complete `/admin/review`.
 6. Approval immediately changes what the dynamic public board reads.
 
-The Sheet connection uses a club-owned service account with the `spreadsheets.readonly` OAuth scope and Viewer access to one file. The file ID, bounded tab range, and `source_records` UUID are fixed in server-only configuration. Sheet columns that look like approval controls are intentionally ignored. Sheet edits cannot set `public_safe`, `review_status`, or public status.
+The Sheet connection uses a club-owned service account with the `spreadsheets`
+OAuth scope and Editor access to one file. The file ID, bounded queue and archive
+ranges, and `source_records` UUID are fixed in server-only configuration. Sheet
+decision cells are imported only as private review intent. They cannot set
+`public_safe`, `review_status`, or public status without a later authenticated
+portal confirmation. Finalized database rows move to Archive on the next queue sync.
 
 ## Search coverage
 
@@ -173,9 +180,13 @@ Maintainers can repeat the read-only live check with `npm run sources:verify`. T
 
 ## Improvements still needed
 
-1. Add production connectors for Ashby, Lever, and USAJOBS to the canonical persistence runner. Pure parsers exist, but live connector calls have not been verified.
-2. Connect a search provider to the private lead archive before recurring lane scouts are enabled. The archive and resolution model exist, but no scheduled provider calls them yet.
-3. Preview-test the one-way Google Sheet import against the current officer workbook and document the service-account owner and rotation process. Do not build two-way field sync.
+1. Live-verify one governed Ashby board, one Lever board, and one credentialed
+   USAJOBS query before enabling any of those source kinds.
+2. Provision a Brave Search subscription that explicitly grants result storage,
+   then private-test the bounded discovery worker before enabling its feature flag.
+3. Re-run the bounded production Sheet import after deployment and verify that
+   template rows are skipped, only meaningful rows are archived, and finalized
+   records move exactly once to Archive. Document the service-account owner and rotation process.
 4. Increase the real golden set from 3 to at least 30 labelled postings across all lanes and edge cases.
 5. Benchmark hybrid retrieval on the real corpus before applying any pgvector proposal.
 6. Add metrics for missed roles, officer corrections, unresolved LinkedIn leads, source staleness, and time from discovery to publication.
@@ -191,6 +202,7 @@ npm run tools:check
 npm run graphify:build
 npm run omniroute:start
 npm run ingest:worker
+npm run discovery:worker
 PIPELINE_MODEL_ENABLED=true PIPELINE_MODEL_NAME=auto npm run extract:worker
 ```
 
@@ -232,4 +244,3 @@ Each exact ATS or program source still requires a terms review, robots review,
 private test, and explicit enablement. Query execution also remains disabled
 until an approved search provider is configured; returned leads must be written
 to the private `discovery_leads` archive.
-

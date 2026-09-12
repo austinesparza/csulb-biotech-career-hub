@@ -23,7 +23,7 @@ describe('officer workbook import contract', () => {
       application_type: 'Program Type',
       source_status_raw: 'Open Status',
       notes: 'Officer Notes',
-      date_added: 'Posted Date',
+      application_opened_at: 'Posted Date',
       candidate_id: 'Candidate ID',
       requisition: 'Requisition',
       work_pattern: 'Work Pattern',
@@ -53,6 +53,7 @@ describe('officer workbook import contract', () => {
       'Candidate ID': 'CAND-2027-0042',
       Requisition: 'R-12345',
       'Work Pattern': 'Hybrid',
+      'Posted Date': '2026-08-25',
       'Graduate Access': 'Explicit',
       'Continued Enrollment': 'Required',
       'Work Authorization': 'US authorization required',
@@ -73,6 +74,12 @@ describe('officer workbook import contract', () => {
       audience_bucket: 'graduate',
       audience_reason: "Posting explicitly names master's students.",
       graduate_stage: 'graduate_unspecified',
+      eligibility_evidence: "Posting explicitly names master's students.",
+      continued_enrollment_required: true,
+      work_authorization: 'US authorization required',
+      application_opened_at: '2026-08-25',
+      last_checked_at: '2026-09-10',
+      source_check_result: 'open',
     });
     expect(result.draft.private_notes).toBe([
       'Verify continued enrollment.',
@@ -87,5 +94,30 @@ describe('officer workbook import contract', () => {
     ].join('\n'));
     expect(result.draft).not.toHaveProperty('review_status');
     expect(result.draft).not.toHaveProperty('public_safe');
+  });
+
+  it('does not convert placeholders or unchecked status into source evidence', () => {
+    const { mapping } = mapHeaders(OFFICER_REVIEW_HEADERS);
+    const raw = Object.fromEntries(OFFICER_REVIEW_HEADERS.map((header) => [header, ''])) as Record<string, string>;
+    Object.assign(raw, {
+      Employer: 'Example Bio',
+      'Role Title': 'Research Intern',
+      'Open Status': 'Open',
+      'Continued Enrollment': 'Not stated',
+      'Work Authorization': 'Not stated',
+      'Key Evidence': 'Needs source-backed eligibility evidence',
+      'Last Checked': 'Not checked',
+    });
+    const result = rowToDraft(raw, mapping);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.draft).toMatchObject({
+      eligibility_evidence: null,
+      continued_enrollment_required: null,
+      work_authorization: null,
+      application_opened_at: null,
+      last_checked_at: null,
+      source_check_result: 'unknown',
+    });
   });
 });

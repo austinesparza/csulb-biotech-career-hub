@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "next dev",
@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:pipeline": "tsx src/__tests__/pipeline/all.ts",
+    "test:pipeline": "node --import tsx src/__tests__/pipeline/all.ts",
     "test:digest": "node --test scripts/review-digest.test.mjs",
     "test:publish-data": "node --test scripts/publish-reviewed-data.test.mjs",
     "test:schema": "node scripts/check-pipeline-schema.mjs",
@@ -30,7 +30,8 @@
     "ingest:worker": "node --conditions=react-server --import tsx scripts/run-ingestion-worker.ts",
     "extract:worker": "node --conditions=react-server --import tsx scripts/run-extraction-worker.ts",
     "sources:verify": "node --conditions=react-server --import tsx scripts/verify-starter-sources.ts",
-    "discovery:plan": "node --conditions=react-server --import tsx scripts/plan-employer-discovery.ts"
+    "discovery:plan": "node --conditions=react-server --import tsx scripts/plan-employer-discovery.ts",
+    "discovery:worker": "node --conditions=react-server --import tsx scripts/run-discovery-worker.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",

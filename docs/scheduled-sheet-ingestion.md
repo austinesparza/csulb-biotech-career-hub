@@ -9,9 +9,11 @@
 5. Vercel calls `/api/cron/ingest` at 14:00 UTC every day.
 6. The cron queues only due, enabled, unpaused sources and runs a bounded batch.
 7. Every response is archived before normalization, scoring, or optional model extraction.
-8. Machine-created review candidates are appended to the configured `Review Queue` Sheet tab.
+8. Machine-created review candidates fill unused rows in the configured `Review Queue` Sheet tab.
 9. Officers work in the Sheet, then use **Pull decisions from Sheet** in the portal.
 10. Publication still requires **Confirm Sheet approval and publish** while signed in.
+11. The next queue sync copies database-finalized rows to `Archive`, then removes
+    them from `Review Queue`.
 
 The same Sheet push runs after **Run and archive now**. If the source run
 succeeds but Google is unavailable, the archived result is retained and the
@@ -21,7 +23,7 @@ officer can retry **Push discoveries to Sheet** without rerunning the source.
 
 The application writes only the system-owned columns for rows whose Candidate
 ID begins with `AUTO-`. It never overwrites Officer Notes, Publish Decision,
-Public Safe, or GitHub Issue / PR.
+Public Safe, GitHub Issue / PR, or Reviewer.
 
 For a new machine candidate it writes a neutral row:
 
@@ -33,8 +35,19 @@ For a new machine candidate it writes a neutral row:
 
 Text that begins with a spreadsheet formula character is escaped before writing.
 Writes use the Google Sheets `RAW` input mode and are capped at 50 candidates
-per run. Existing rows are matched by Supabase Record ID, then by official
-source URL. This makes retries idempotent.
+per run. New candidates take the first unused row inside the configured bounded
+range, including preformatted rows whose only value is an unchecked `FALSE`
+checkbox. A full range raises an operator-visible error instead of placing rows
+below the visible queue. Existing rows are matched by Supabase Record ID, then by canonical official
+source URL. This also links officer-entered Sheet rows to the private record made
+by their import, without taking ownership of their decision cells. URL matching
+ignores trailing slashes, fragments, and common tracking parameters. Retries remain idempotent.
+
+Resolved rows are archived only after the portal has committed their final
+database state. The app appends the full 26-column row to the fixed Archive tab
+before deleting it from Review Queue. If an append succeeds but deletion fails,
+the next run sees the archived Supabase ID and deletes the queue copy without a
+second archive row.
 
 The Google service account needs the
 `https://www.googleapis.com/auth/spreadsheets` scope and editor access to the
@@ -47,6 +60,9 @@ production environment variables. No browser receives the service-account key.
   disabled or paused. It does not change scheduling or publish.
 - **Run and archive now** runs one enabled, unpaused source and then updates the
   Review Queue.
+- **Run employer discovery now** searches one rotating employer cohort only when
+  the Brave API key and an explicit result-storage-rights confirmation are both set.
+  Every result remains a private lead.
 - **Push discoveries to Sheet** retries only the database-to-Sheet handoff.
 - **Pull decisions from Sheet** archives Sheet rows and updates private drafts.
 - **Confirm Sheet approval and publish** is the only path from a Sheet-reviewed

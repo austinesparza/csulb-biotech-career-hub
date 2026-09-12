@@ -167,6 +167,12 @@ export interface OpportunityDraft {
   audience_bucket: AudienceBucket;
   audience_reason: string | null;
   graduate_stage: GraduateStage;
+  eligibility_evidence: string | null;
+  continued_enrollment_required: boolean | null;
+  work_authorization: string | null;
+  application_opened_at: string | null;
+  last_checked_at: string | null;
+  source_check_result: 'open' | 'closed' | 'changed' | 'missing' | 'error' | 'unknown';
   /** Spreadsheet Notes column lands PRIVATE by default; officer promotes at review. */
   private_notes: string | null;
   date_added: string | null;

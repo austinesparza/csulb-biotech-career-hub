@@ -70,12 +70,23 @@ describe('operator control safety', () => {
     expect(ingestRoute).toContain('syncReviewQueueToGoogleSheet');
     expect(ingestRoute).toContain('sheetSyncFailed');
     expect(reviewSheetSync).toContain("opportunity_source_links!inner");
+    expect(reviewSheetSync).toContain(".eq('source_record_id', config.sourceRecordId)");
     expect(reviewSheetSync).toContain("candidateId.startsWith('AUTO-')");
     expect(reviewSheetSync).toContain('row.slice(0, 20)');
     expect(reviewSheetSync).toContain('X${byRecord.rowNumber}:X');
     expect(googleSheets).toContain('https://www.googleapis.com/auth/spreadsheets');
     expect(googleSheets).toContain("valueInputOption: 'RAW'");
     expect(googleSheets).toContain("insertDataOption', 'INSERT_ROWS'");
+  });
+
+  it('keeps search discovery private and gated by provider storage rights', () => {
+    const action = sourceActions.slice(sourceActions.indexOf('export async function runEmployerDiscoveryNow'));
+    expect(action.indexOf('await requireOfficer()')).toBeLessThan(action.indexOf('createServiceClient()'));
+    expect(action).toContain('BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED');
+    expect(sourcePage).toContain('Search provider not configured');
+    expect(sourcePage).toContain('private lead archive');
+    expect(ingestRoute).toContain('BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED');
+    expect(ingestRoute).not.toContain('decide_opportunity_review');
   });
 
   it('keeps post-publication corrections behind officer verification', () => {

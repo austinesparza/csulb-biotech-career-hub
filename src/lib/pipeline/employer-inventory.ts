@@ -47,6 +47,7 @@ function careersHost(website: string | null): string | null {
  */
 export function selectEmployerDiscoveryCohort(options: {
   limit?: number;
+  offset?: number;
   industries?: string[];
   regions?: string[];
 } = {}): EmployerInventoryRecord[] {
@@ -56,10 +57,13 @@ export function selectEmployerDiscoveryCohort(options: {
   }
   const industries = normalizeFilter(options.industries);
   const regions = normalizeFilter(options.regions);
-  return employerInventory
+  const sorted = employerInventory
     .filter((employer) => intersects(employer.industries, industries) && intersects(employer.regions, regions))
-    .toSorted((a, b) => b.localAlumniCount - a.localAlumniCount || a.company.localeCompare(b.company))
-    .slice(0, limit);
+    .toSorted((a, b) => b.localAlumniCount - a.localAlumniCount || a.company.localeCompare(b.company));
+  const offset = options.offset ?? 0;
+  if (!Number.isInteger(offset) || offset < 0) throw new Error('offset must be a non-negative integer');
+  if (sorted.length === 0) return [];
+  return Array.from({ length: Math.min(limit, sorted.length) }, (_, index) => sorted[(offset + index) % sorted.length]);
 }
 
 /**
@@ -69,6 +73,7 @@ export function selectEmployerDiscoveryCohort(options: {
 export function buildEmployerInventoryDiscoveryPlans(options: {
   cycleYear: number;
   limit?: number;
+  offset?: number;
   industries?: string[];
   regions?: string[];
 }): EmployerDiscoveryCandidate[] {
