@@ -30,6 +30,10 @@ export async function GET(request: Request) {
   const db = createPipelineServiceClient();
   const requestedLimit = Number(process.env.PIPELINE_BATCH_LIMIT ?? 5);
   const limit = Number.isInteger(requestedLimit) ? Math.max(1, Math.min(requestedLimit, 10)) : 5;
+  const requestedSheetSyncLimit = Number(process.env.PIPELINE_SHEET_SYNC_LIMIT ?? 50);
+  const sheetSyncLimit = Number.isInteger(requestedSheetSyncLimit)
+    ? Math.max(1, Math.min(requestedSheetSyncLimit, 50))
+    : 50;
   const { data: scheduled, error: scheduleError } = await db.rpc("schedule_due_source_fetch_runs", {
     p_limit: limit,
   });
@@ -113,7 +117,7 @@ export async function GET(request: Request) {
 
   if (googleSheetsConfigured()) {
     try {
-      const report = await syncReviewQueueToGoogleSheet({ db, limit });
+      const report = await syncReviewQueueToGoogleSheet({ db, limit: sheetSyncLimit });
       sheetSync = {
         status: "completed",
         appended: report.appended,
