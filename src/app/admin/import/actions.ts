@@ -41,6 +41,48 @@ export interface GoogleSheetSyncSummary extends ImportSummary {
   skippedTemplateRows: number;
 }
 
+export type SheetSyncActionResult<T> =
+  | { ok: true; summary: T }
+  | { ok: false; error: string };
+
+function safeSheetSyncError(error: unknown): string {
+  const message = error instanceof Error ? error.message : '';
+
+  if (message === 'Not signed in') {
+    return 'Your officer session has expired. Sign in again, then retry the sync.';
+  }
+  if (message === 'Not an active officer') {
+    return 'This account is not an active officer and cannot sync the review Sheet.';
+  }
+  if (/^Google service-account authentication failed \(\d{3}\)$/.test(message)) {
+    return `${message}. Check the production Google service-account configuration.`;
+  }
+  if (/^Google Sheets (read|metadata read|tab creation|update|append|row deletion) failed \(\d{3}\)$/.test(message)) {
+    return `${message}. Confirm that the configured service account has Editor access to the review Sheet.`;
+  }
+  if (message.startsWith('Review Queue ') || message.startsWith('Archive ')) {
+    return message;
+  }
+  if (message === 'The configured Google Sheet source record does not exist.') {
+    return message;
+  }
+
+  return 'Spreadsheet sync failed before completion. No record was published. Check the production runtime log for the safe server-side diagnostic.';
+}
+
+async function runSheetSyncAction<T>(
+  operation: 'push' | 'pull',
+  run: () => Promise<T>,
+): Promise<SheetSyncActionResult<T>> {
+  try {
+    return { ok: true, summary: await run() };
+  } catch (error) {
+    const safeError = safeSheetSyncError(error);
+    console.error('[spreadsheet-sync] action failed', { operation, error: safeError });
+    return { ok: false, error: safeError };
+  }
+}
+
 /** Columns loaded for dedupe + safe-update comparison. */
 const EXISTING_COLUMNS =
   'id, dedupe_key, family_key, posting_url, title, company_id, review_status, public_safe, ' +
@@ -320,32 +362,34 @@ async function importCsvText(input: {
  * CSV upload. The configured Sheet cannot select a different source or set any
  * publication field.
  */
-export async function syncGoogleSheet(): Promise<GoogleSheetSyncSummary> {
-  const { user } = await requireOfficer();
-  const config = readGoogleSheetsConfig();
+export async function syncGoogleSheet(): Promise<SheetSyncActionResult<GoogleSheetSyncSummary>> {
+  return runSheetSyncAction('pull', async () => {
+    const { user } = await requireOfficer();
+    const config = readGoogleSheetsConfig();
 
-  // Reject a stale/mistyped source binding before making an external request.
-  const db = createServiceClient();
-  const { data: source, error } = await db.from('source_records')
-    .select('id')
-    .eq('id', config.sourceRecordId)
-    .maybeSingle();
-  if (error || !source) throw new Error('The configured Google Sheet source record does not exist.');
+    // Reject a stale/mistyped source binding before making an external request.
+    const db = createServiceClient();
+    const { data: source, error } = await db.from('source_records')
+      .select('id')
+      .eq('id', config.sourceRecordId)
+      .maybeSingle();
+    if (error || !source) throw new Error('The configured Google Sheet source record does not exist.');
 
-  const snapshot = await fetchGoogleSheet(config);
-  const filtered = filterMeaningfulReviewRows(snapshot.rows);
-  const summary = await importCsvText({
-    text: Papa.unparse(filtered.rows),
-    filename: `google-sheet-${new Date().toISOString().slice(0, 10)}.csv`,
-    sourceRecordId: config.sourceRecordId,
-    uploadedBy: user.id,
+    const snapshot = await fetchGoogleSheet(config);
+    const filtered = filterMeaningfulReviewRows(snapshot.rows);
+    const summary = await importCsvText({
+      text: Papa.unparse(filtered.rows),
+      filename: `google-sheet-${new Date().toISOString().slice(0, 10)}.csv`,
+      sourceRecordId: config.sourceRecordId,
+      uploadedBy: user.id,
+    });
+    return {
+      ...summary,
+      sheetRange: snapshot.range,
+      sheetRows: filtered.candidateRows,
+      skippedTemplateRows: filtered.skippedTemplateRows,
+    };
   });
-  return {
-    ...summary,
-    sheetRange: snapshot.range,
-    sheetRows: filtered.candidateRows,
-    skippedTemplateRows: filtered.skippedTemplateRows,
-  };
 }
 
 
@@ -354,8 +398,10 @@ export async function syncGoogleSheet(): Promise<GoogleSheetSyncSummary> {
  * Review Queue tab. System columns are refreshed, officer decision columns are
  * preserved, and no publication field is changed.
  */
-export async function syncMachineReviewQueueToSheet(): Promise<ReviewSheetSyncSummary> {
-  await requireOfficer();
-  const db = createServiceClient();
-  return syncReviewQueueToGoogleSheet({ db });
+export async function syncMachineReviewQueueToSheet(): Promise<SheetSyncActionResult<ReviewSheetSyncSummary>> {
+  return runSheetSyncAction('push', async () => {
+    await requireOfficer();
+    const db = createServiceClient();
+    return syncReviewQueueToGoogleSheet({ db });
+  });
 }

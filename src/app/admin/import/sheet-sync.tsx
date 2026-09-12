@@ -23,12 +23,24 @@ export function SheetSync() {
     startTransition(async () => {
       try {
         if (nextMode === 'pull') {
-          setPullSummary(await syncGoogleSheet());
+          const result = await syncGoogleSheet();
+          if (!result.ok) {
+            setError(result.error);
+            return;
+          }
+          setPullSummary(result.summary);
         } else {
-          setPushSummary(await syncMachineReviewQueueToSheet());
+          const result = await syncMachineReviewQueueToSheet();
+          if (!result.ok) {
+            setError(result.error);
+            return;
+          }
+          setPushSummary(result.summary);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Google Sheet sync failed');
+        setError(err instanceof Error
+          ? err.message
+          : 'The sync request could not reach the server. No record was published.');
       }
     });
   }
@@ -39,6 +51,10 @@ export function SheetSync() {
       <p className="mt-1 text-sm" style={{ color: 'var(--ink-soft)' }}>
         Move machine discoveries into the Review Queue, then pull officer decisions
         and corrections through the private archive and deduplication path.
+      </p>
+      <p className="mt-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
+        This screen only syncs discoveries already stored in the private database. It does not search employers.
+        Run enabled sources from <a className="underline" href="/admin/sources">Automated sources</a>, or wait for the daily source schedule, before syncing new discoveries.
       </p>
       <p className="mt-2 text-xs font-medium" style={{ color: 'var(--restricted)' }}>
         Neither direction publishes automatically. Publication still requires an authenticated officer confirmation.
@@ -52,7 +68,7 @@ export function SheetSync() {
         className="primary-button disabled:opacity-50"
         onClick={() => begin('push')}
       >
-        {pending && mode === 'push' ? 'Updating Sheet…' : 'Push discoveries to Sheet'}
+        {pending && mode === 'push' ? 'Updating Sheet…' : 'Sync existing discoveries to Sheet'}
       </button>
       <button
         type="button"
