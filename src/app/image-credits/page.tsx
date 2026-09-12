@@ -11,6 +11,7 @@ const MICROSCOPY = [
   ['Green fluorescent neurons', 'ManuelSchottdorf', 'https://commons.wikimedia.org/wiki/File:GFP_Neurons.png', 'CC BY-SA 4.0', 'https://creativecommons.org/licenses/by-sa/4.0/'],
   ['Toxoplasma parasites in a fibroblast host cell', 'Morne Arin', 'https://commons.wikimedia.org/wiki/File:Toxoplasma_parasites_(tachyzoites)_in_a_fibroblast_host_cell.png', 'CC BY 4.0', 'https://creativecommons.org/licenses/by/4.0/'],
   ['Living HeLa cells with labeled nuclei, microtubules, and mitochondria', '8x57is', 'https://commons.wikimedia.org/wiki/File:Multicolor_fluorescence_image_of_living_HeLa_cells.jpg', 'CC BY-SA 4.0', 'https://creativecommons.org/licenses/by-sa/4.0/'],
+  ['Cerebellar Purkinje cells expressing tdTomato', 'BrainsRusDC, National Institute on Alcohol Abuse and Alcoholism, National Institutes of Health', 'https://commons.wikimedia.org/wiki/File:All_that_glitters_in_the_brain.jpg', 'CC BY 4.0', 'https://creativecommons.org/licenses/by/4.0/'],
   ['DNA identification laboratory', 'U.S. Air Force photo by Staff Sgt. Nicole Leidholm', 'https://commons.wikimedia.org/wiki/File:Armed_Forces_DNA_Identification_Laboratory_analysts_2018.jpg', 'Public domain', 'https://commons.wikimedia.org/wiki/Commons:Copyright_rules_by_territory/United_States'],
   ['Biotechnology students in a laboratory', 'Sunnykenny', 'https://commons.wikimedia.org/wiki/File:Sinh-vien-nganh-cong-nghe-sinh-hoc-trong-phong-thi-nghiem.jpg', 'CC BY-SA 4.0', 'https://creativecommons.org/licenses/by-sa/4.0/'],
 ] as const;

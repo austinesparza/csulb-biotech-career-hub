@@ -45,14 +45,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div className="footer-banner-media">
               <Image
                 className="footer-banner-image"
-                src="/brand/hero-cells.webp"
-                alt="Human fibroblast cells with stained nuclei and cytoskeleton"
-                width={1600}
-                height={1067}
+                src="/brand/footer-purkinje-cells.webp"
+                alt="Confocal microscopy of cerebellar Purkinje cells"
+                width={1200}
+                height={569}
                 sizes="(max-width: 720px) 100vw, 72vw"
               />
               <div className="footer-banner-copy">
-                <p>See where science can take you.</p>
+                <p>The next question is yours.</p>
                 <Link href="/internships">Explore current opportunities <span aria-hidden="true">→</span></Link>
               </div>
             </div>

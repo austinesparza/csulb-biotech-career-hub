@@ -169,15 +169,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="home-coda" aria-label="Career hub closing statement">
-        <div className="home-coda-image">
-          <Image src="/brand/hero-cells.webp" alt="Fluorescence microscopy of the cytoskeleton in cultured fibroblasts" fill sizes="(max-width: 760px) 100vw, 68vw" />
-        </div>
-        <div className="home-coda-copy">
-          <p>See where science<br />can take you.</p>
-          <Link href="/internships">Explore opportunities <span aria-hidden="true">→</span></Link>
-        </div>
-      </section>
     </div>
   );
 }
