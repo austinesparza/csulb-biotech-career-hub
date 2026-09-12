@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchOpportunity, type ExistingOpportunity } from '../lib/dedupe';
+import { matchCompany, matchOpportunity, type ExistingOpportunity } from '../lib/dedupe';
 
 const existing: ExistingOpportunity = {
   id: 'approved-opportunity',
@@ -35,5 +35,17 @@ describe('matchOpportunity', () => {
     }, [{ ...existing, posting_url: 'also not a valid URL', company_id: 'company-1' }]);
 
     expect(result.kind).toBe('none');
+  });
+});
+
+describe('matchCompany', () => {
+  it('treats an identical display name as exact when persisted normalization is stale', () => {
+    const result = matchCompany('Johnson & Johnson', [{
+      id: 'company-1',
+      name: 'Johnson & Johnson',
+      name_normalized: 'johnson johnson',
+    }]);
+
+    expect(result).toEqual({ kind: 'exact', companyId: 'company-1' });
   });
 });

@@ -46,7 +46,12 @@ export function matchCompany(
   existing: Array<{ id: string; name_normalized: string; name: string }>,
 ): CompanyMatch {
   const norm = normalizeCompanyName(incomingName);
-  const exact = existing.find((c) => c.name_normalized === norm);
+  // Recompute from the display name as well as trusting the persisted value.
+  // Older rows can carry a normalization produced by a previous normalizer
+  // version (for example, an ampersand may have been stripped). An unchanged
+  // company name must not become a fuzzy-match review task because that stored
+  // helper column is stale.
+  const exact = existing.find((c) => c.name_normalized === norm || normalizeCompanyName(c.name) === norm);
   if (exact) return { kind: 'exact', companyId: exact.id };
 
   let best: { c: (typeof existing)[number]; score: number } | null = null;
