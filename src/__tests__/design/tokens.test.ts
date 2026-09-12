@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { colors, dimensions } from '../../lib/design/tokens';
 
-const css = fs.readFileSync('src/app/globals.css', 'utf8').toLowerCase();
+const css = fs.readFileSync('src/app/career-hub.css', 'utf8').toLowerCase();
 
 function luminance(hex: string): number {
   const channels = hex.slice(1).match(/.{2}/g)!.map((value) => {
