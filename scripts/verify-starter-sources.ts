@@ -1,5 +1,6 @@
 import { fetchGreenhouseJobs } from '../src/lib/ingestion/connectors/greenhouse';
 import { GOVERNED_STARTER_SOURCES } from '../src/lib/ingestion/starter-sources';
+import { deriveOpportunityEnrichment } from '../src/lib/ingestion/persistence/opportunity-bridge';
 
 interface StarterVerification {
   source: string;
@@ -12,6 +13,19 @@ interface StarterVerification {
     score: number;
     classification: string;
     url: string;
+    reviewProjection: {
+      audienceBucket: string;
+      graduateStage: string;
+      eligibilityStatus: string;
+      hasEligibilityEvidence: boolean;
+      hasWorkAuthorizationEvidence: boolean;
+      continuedEnrollmentRequired: boolean | null;
+      scientificLaneCount: number;
+      methodCount: number;
+      paidStatus: string;
+      sourceCheckResult: string;
+      lastCheckedAt: string;
+    };
   }>;
   error: string | null;
 }
@@ -42,12 +56,28 @@ async function main(): Promise<void> {
     const reviewCandidates = result.candidates
       .filter((candidate) => candidate.relevanceScore >= 35)
       .sort((left, right) => right.relevanceScore - left.relevanceScore)
-      .map((candidate) => ({
-        title: candidate.titleRaw ?? candidate.titleNormalized ?? 'Untitled opportunity',
-        score: candidate.relevanceScore,
-        classification: candidate.classification,
-        url: candidate.canonicalUrl,
-      }));
+      .map((candidate) => {
+        const review = deriveOpportunityEnrichment(candidate);
+        return {
+          title: candidate.titleRaw ?? candidate.titleNormalized ?? 'Untitled opportunity',
+          score: candidate.relevanceScore,
+          classification: candidate.classification,
+          url: candidate.canonicalUrl,
+          reviewProjection: {
+            audienceBucket: review.audienceBucket,
+            graduateStage: review.graduateStage,
+            eligibilityStatus: review.eligibilityStatus,
+            hasEligibilityEvidence: Boolean(review.eligibilityEvidence),
+            hasWorkAuthorizationEvidence: Boolean(review.workAuthorization),
+            continuedEnrollmentRequired: review.continuedEnrollmentRequired,
+            scientificLaneCount: review.scientificLanes.length,
+            methodCount: review.methods.length,
+            paidStatus: review.paidStatus,
+            sourceCheckResult: review.sourceCheckResult,
+            lastCheckedAt: review.lastCheckedAt,
+          },
+        };
+      });
 
     reports.push({
       source: source.sourceName,

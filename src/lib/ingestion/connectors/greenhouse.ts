@@ -55,7 +55,7 @@ import { scoreIngestionCandidate } from '../score';
 import { SCORE_VERSION } from '../score';
 
 /** Semantic version of this connector's normalization logic. */
-export const CONNECTOR_VERSION = '1.0.0';
+export const CONNECTOR_VERSION = '1.1.0';
 
 /** Default fetch timeout in milliseconds. */
 const DEFAULT_TIMEOUT_MS = 30_000;
