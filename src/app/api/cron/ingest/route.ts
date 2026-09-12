@@ -64,7 +64,7 @@ export async function GET(request: Request) {
       const discoveryReport = await runEmployerDiscoveryBatch({
         db,
         provider,
-        employerLimit: Math.max(1, Math.min(Number(process.env.EMPLOYER_DISCOVERY_BATCH_SIZE ?? 1) || 1, 5)),
+        employerLimit: Math.max(1, Math.min(Number(process.env.EMPLOYER_DISCOVERY_BATCH_SIZE ?? 5) || 5, 5)),
         resultsPerQuery: Math.max(1, Math.min(Number(process.env.EMPLOYER_DISCOVERY_RESULTS_PER_QUERY ?? 5) || 5, 10)),
       });
       discoveryFailed = discoveryReport.errors.length > 0;

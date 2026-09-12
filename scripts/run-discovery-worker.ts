@@ -21,7 +21,7 @@ const provider = createBraveSearchProvider({
 const report = await runEmployerDiscoveryBatch({
   db: createPipelineServiceClient(),
   provider,
-  employerLimit: positiveInteger('EMPLOYER_DISCOVERY_BATCH_SIZE', 1, 5),
+  employerLimit: positiveInteger('EMPLOYER_DISCOVERY_BATCH_SIZE', 5, 5),
   resultsPerQuery: positiveInteger('EMPLOYER_DISCOVERY_RESULTS_PER_QUERY', 5, 10),
 });
 console.log(JSON.stringify(report));

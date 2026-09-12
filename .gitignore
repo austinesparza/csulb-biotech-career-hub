@@ -11,6 +11,11 @@ next-env.d.ts
 .tools/
 graphify-out/
 
+# Private operational evidence and local recall inputs
+data/private/
+data/discovery-recall-*.json
+*.supabase-export.*
+
 # Claude Code tooling (machine-specific)
 .agents/
 .claude/skills/

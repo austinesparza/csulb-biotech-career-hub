@@ -9,6 +9,7 @@ import type { SearchProvider } from './brave-search';
 const ATS_HOSTS = new Set([
   'boards.greenhouse.io', 'job-boards.greenhouse.io', 'jobs.lever.co', 'jobs.ashbyhq.com',
 ]);
+const ATS_HOST_SUFFIXES = ['.myworkdayjobs.com'];
 
 export interface DiscoveryRunReport {
   runId: string;
@@ -39,15 +40,21 @@ function employerControlledUrl(resultUrl: string, careersDomain: string | null):
   }
   const resultHost = host(resultUrl);
   if (!resultHost || resultHost === 'linkedin.com' || resultHost.endsWith('.linkedin.com')) return null;
-  if (ATS_HOSTS.has(resultHost)) return canonicalUrl;
+  if (ATS_HOSTS.has(resultHost) || ATS_HOST_SUFFIXES.some((suffix) => resultHost.endsWith(suffix))) {
+    return canonicalUrl;
+  }
   if (careersDomain && (resultHost === careersDomain || resultHost.endsWith(`.${careersDomain}`))) {
     return canonicalUrl;
   }
   return null;
 }
 
-function dailyOffset(date: Date): number {
-  return Math.floor(date.valueOf() / 86_400_000);
+export function discoveryOffsetForDate(date: Date, employerLimit: number): number {
+  if (Number.isNaN(date.valueOf())) throw new Error('date must be valid');
+  if (!Number.isInteger(employerLimit) || employerLimit < 1 || employerLimit > 5) {
+    throw new Error('employerLimit must be from 1 to 5');
+  }
+  return Math.floor(date.valueOf() / 86_400_000) * employerLimit;
 }
 
 export async function runEmployerDiscoveryBatch(params: {
@@ -63,7 +70,7 @@ export async function runEmployerDiscoveryBatch(params: {
   const now = params.now ?? new Date();
   if (Number.isNaN(now.valueOf())) throw new Error('now must be a valid date');
   const cycleYear = params.cycleYear ?? (now.getUTCMonth() >= 6 ? now.getUTCFullYear() + 1 : now.getUTCFullYear());
-  const employerLimit = params.employerLimit ?? 1;
+  const employerLimit = params.employerLimit ?? 5;
   const resultsPerQuery = params.resultsPerQuery ?? 5;
   if (!Number.isInteger(employerLimit) || employerLimit < 1 || employerLimit > 5) {
     throw new Error('employerLimit must be from 1 to 5');
@@ -71,7 +78,10 @@ export async function runEmployerDiscoveryBatch(params: {
   if (!Number.isInteger(resultsPerQuery) || resultsPerQuery < 1 || resultsPerQuery > 10) {
     throw new Error('resultsPerQuery must be from 1 to 10');
   }
-  const offset = params.offset ?? dailyOffset(now);
+  // Advance by a complete batch every day. The previous one-employer stride
+  // caused an N=5 run to repeat four of yesterday's employers and made full
+  // inventory coverage roughly five times slower than intended.
+  const offset = params.offset ?? discoveryOffsetForDate(now, employerLimit);
   const inventoryPlans = buildEmployerInventoryDiscoveryPlans({ cycleYear, limit: 50, offset: 0 })
     .map((candidate) => ({
       company: candidate.company,

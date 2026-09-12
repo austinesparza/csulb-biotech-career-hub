@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createBraveSearchProvider } from '../../lib/pipeline/brave-search';
-import { runEmployerDiscoveryBatch } from '../../lib/pipeline/discovery-runner';
+import { discoveryOffsetForDate, runEmployerDiscoveryBatch } from '../../lib/pipeline/discovery-runner';
 import { archiveDiscoveryLead, type DiscoveryLeadObservation } from '../../lib/pipeline/lead-store-supabase';
 
 describe('governed search-provider discovery', () => {
@@ -72,6 +72,40 @@ describe('governed search-provider discovery', () => {
     expect(rpcCalls.some((call) => call.p_resolution === 'linkedin_only')).toBe(true);
     expect(rpcCalls.some((call) => call.p_resolution === 'official_source_found')).toBe(true);
     expect(rpcCalls.every((call) => !('p_public_safe' in call) && !('p_review_status' in call))).toBe(true);
+  });
+
+  it('advances by one complete employer cohort per UTC day', () => {
+    const first = discoveryOffsetForDate(new Date('2026-09-11T12:00:00Z'), 5);
+    const next = discoveryOffsetForDate(new Date('2026-09-12T12:00:00Z'), 5);
+    expect(next - first).toBe(5);
+  });
+
+  it('recognizes employer Workday results as official-source candidates', async () => {
+    const rpcCalls: Array<Record<string, unknown>> = [];
+    const db = { rpc: async (_name: string, args: Record<string, unknown>) => {
+      rpcCalls.push(args);
+      return { data: `lead-${rpcCalls.length}`, error: null };
+    } };
+    const provider = {
+      name: 'fixture-search',
+      async search() {
+        return [{
+          url: 'https://gilead.wd1.myworkdayjobs.com/gileadcareers/job/Intern-R-D_R0050000',
+          title: 'Research Intern', snippet: null, rank: 1,
+        }];
+      },
+    };
+    await runEmployerDiscoveryBatch({
+      db: db as never,
+      provider,
+      now: new Date('2026-09-12T12:00:00Z'),
+      employerLimit: 1,
+      resultsPerQuery: 1,
+      offset: 0,
+      runId: 'workday-fixture',
+    });
+    expect(rpcCalls).toHaveLength(5);
+    expect(rpcCalls.every((call) => call.p_resolution === 'official_source_found')).toBe(true);
   });
 
   it('uses a stable observation key when the same run is retried later', async () => {

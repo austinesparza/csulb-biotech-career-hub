@@ -15,6 +15,9 @@ ok("every taxonomy lane gets a plan", plans.length === taxonomy.lanes.length, `$
 ok("every lane searches official ATS pages", plans.every((plan) => plan.queries.some((query) => query.query.includes("boards.greenhouse.io"))));
 ok("every lane gets LinkedIn lead discovery", plans.every((plan) => plan.queries.filter((query) => query.route === "linkedin_lead").length === 2));
 ok("queries carry lane-specific vocabulary", plans.every((plan) => plan.keywords.some((keyword) => plan.queries[0].query.includes(keyword))));
+ok("lane plans retain both internship and co-op recall", plans.every((plan) => (
+  plan.queries[0].query.includes('"internship"') && plan.queries[0].query.includes('"co-op"')
+)));
 
 const employerPlan = buildEmployerSearchPlan({
   employer: "Johnson & Johnson",

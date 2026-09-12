@@ -307,7 +307,7 @@ export async function runEmployerDiscoveryNow(): Promise<void> {
   const report = await runEmployerDiscoveryBatch({
     db: createServiceClient(),
     provider,
-    employerLimit: 1,
+    employerLimit: 5,
     resultsPerQuery: 5,
     runId: `officer:${new Date().toISOString()}`,
   });

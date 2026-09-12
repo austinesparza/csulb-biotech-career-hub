@@ -16,18 +16,37 @@ export interface EmployerSearchPlan {
 }
 
 const OPPORTUNITY_TERMS = [
+  "intern",
+  "internship",
+  "student intern",
   "graduate intern",
   "graduate internship",
   "master's intern",
   "MSc intern",
   "research intern",
   "co-op",
+  "research co-op",
+  "summer scholar",
+];
+
+const LANE_OPPORTUNITY_TERMS = [
+  "intern",
+  "internship",
+  "research intern",
+  "co-op",
+  "research co-op",
+  "graduate intern",
+  "master's intern",
   "summer scholar",
 ];
 
 const ELIGIBILITY_TERMS = [
+  "undergraduate student",
+  "bachelor's student",
   "master's student",
   "graduate student",
+  "doctoral student",
+  "PhD student",
   "currently enrolled",
   "return to school",
   "expected graduation",
@@ -59,8 +78,8 @@ export function buildLaneSearchPlans(taxonomy: Taxonomy, cycleYear: number): Lan
   return taxonomy.lanes.map((lane) => {
     const science = [...lane.core.slice(0, 6), ...(lane.supporting ?? []).slice(0, 4)];
     const compactScience = quotedOr(science.slice(0, 4));
-    const compactOpportunity = quotedOr(OPPORTUNITY_TERMS.slice(0, 5));
-    const eligibility = quotedOr(ELIGIBILITY_TERMS.slice(0, 3));
+    const compactOpportunity = quotedOr(LANE_OPPORTUNITY_TERMS);
+    const eligibility = quotedOr(ELIGIBILITY_TERMS.slice(0, 7));
     return {
       lane: lane.id,
       label: lane.label,
