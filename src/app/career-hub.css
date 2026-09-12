@@ -905,3 +905,125 @@ body {
   .footer-brand-panel p { margin-top: 30px; }
   .site-footer .footer-grid, .footer-links { grid-template-columns: 1fr; }
 }
+
+/* Authoritative responsive layer. Keep this after desktop refinements. */
+.mobile-site-nav,
+.mobile-view-note { display: none; }
+
+@media (max-width: 980px) {
+  .mobile-site-nav {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding-block: 0 8px;
+    scrollbar-width: none;
+    overscroll-behavior-inline: contain;
+  }
+  .mobile-site-nav::-webkit-scrollbar { display: none; }
+  .mobile-site-nav a {
+    flex: none;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 0 13px;
+    color: var(--ink-soft);
+    font-family: var(--serif);
+    font-size: .84rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .mobile-site-nav a:hover,
+  .mobile-site-nav a:focus-visible {
+    border-color: var(--line-strong);
+    background: var(--paper-2);
+    color: var(--teal-deep);
+    outline: none;
+  }
+
+  .trust-ledger-inner { grid-template-columns: 1fr; }
+  .trust-ledger article,
+  .trust-ledger article + article {
+    min-height: auto;
+    padding: 22px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .trust-metrics {
+    grid-column: auto;
+    min-height: auto;
+    padding-left: 0;
+    border-top: 0;
+  }
+  .biotech-pathway-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .biotech-pathway,
+  .biotech-pathway:nth-child(n) { grid-column: span 1; grid-row: span 1; }
+  .company-filters { grid-template-columns: 1fr 1fr; }
+  .prepare-hero,
+  .about-hero { grid-template-columns: 1fr; min-height: auto; }
+  .about-memory,
+  .about-tools-grid,
+  .about-contribute { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 700px) {
+  .mobile-view-note {
+    display: block;
+    border-bottom: 1px solid #dccb9c;
+    background: #fff5d8;
+    color: #60430f;
+  }
+  .mobile-view-note > div {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 6px 10px;
+    padding-block: 10px;
+    font-size: .72rem;
+    line-height: 1.4;
+  }
+  .mobile-view-note strong {
+    color: var(--clarify);
+    font-size: .68rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+
+  .editorial-hero,
+  .mission-story-grid,
+  .prepare-hero,
+  .prepare-choice,
+  .about-hero,
+  .about-memory,
+  .about-tools-grid,
+  .about-contribute,
+  .calendar-pattern-grid,
+  .calendar-learning,
+  .calendar-watch-section { grid-template-columns: 1fr; }
+  .trust-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .biotech-pathway-grid,
+  .company-directory-grid,
+  .company-filters,
+  .resource-grid { grid-template-columns: 1fr; }
+  .prepare-hero,
+  .about-hero { min-height: auto; padding-block: 44px; }
+  .prepare-hero-image,
+  .about-hero figure { min-height: 340px; }
+  .company-filters .company-open-filter { white-space: normal; }
+  .deadline-calendar-scroll {
+    margin-inline: -14px;
+    padding-inline: 14px;
+    scroll-padding-inline: 14px;
+  }
+}
+
+@media (max-width: 440px) {
+  .masthead-inner { gap: 8px; }
+  .brand-name { font-size: .88rem; }
+  .masthead-action { padding-inline: 9px; font-size: .7rem; }
+  .mobile-site-nav a { padding-inline: 11px; font-size: .8rem; }
+  .mobile-view-note > div { grid-template-columns: 1fr; gap: 2px; }
+  .trust-metrics { grid-template-columns: 1fr; }
+  .trust-metrics > div + div { border-left: 0; border-top: 1px solid var(--line); }
+}

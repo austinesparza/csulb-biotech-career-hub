@@ -38,7 +38,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </nav>
             <Link href="/submit" className="masthead-action">Submit a role</Link>
           </div>
+          <nav className="site-wrap mobile-site-nav" aria-label="Mobile primary navigation">
+            <Link href="/internships">Opportunities</Link>
+            <Link href="/calendar">Calendar</Link>
+            <Link href="/eligibility">Prepare</Link>
+            <Link href="/companies">Employers</Link>
+            <Link href="/about">About</Link>
+          </nav>
         </header>
+        <aside className="mobile-view-note" aria-label="Mobile viewing note">
+          <div className="site-wrap">
+            <strong>Mobile view</strong>
+            <span>The hub works here, but the calendar and side-by-side comparisons are best viewed on a desktop or tablet.</span>
+          </div>
+        </aside>
         <main className="site-main">{children}</main>
         <footer className="site-footer">
           <div className="footer-banner">
