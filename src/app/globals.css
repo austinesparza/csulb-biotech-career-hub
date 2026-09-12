@@ -112,12 +112,13 @@ button, input, select { font: inherit; }
 .ledger ol { margin: 0; padding: 0; list-style: none; }
 .ledger-group-title { display: flex; align-items: baseline; gap: 12px; padding: 22px 0 9px; color: var(--ink-soft); font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; }
 .ledger-group-title::after { content: ""; height: 1px; flex: 1; background: var(--line); }
-.opportunity-record { position: relative; display: grid; grid-template-columns: 92px minmax(0,1fr) 180px 180px; gap: 22px; padding: 26px 0; border-bottom: 1px solid var(--line); }
+.opportunity-record { position: relative; display: grid; grid-template-columns: 126px minmax(0,1fr) 180px 180px; gap: 22px; padding: 26px 0; border-bottom: 1px solid var(--line); }
 .opportunity-record:hover { background: linear-gradient(90deg,var(--paper-2),transparent 70%); }
 .record-aside { display: grid; align-content: start; justify-items: start; }
-.company-mark { position: relative; display: grid; width: 54px; height: 54px; place-items: center; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 50%; background: #f0eadc; color: var(--teal-deep); font-family: var(--serif); font-size: .9rem; font-weight: 700; }
-.company-mark img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 8px; background: white; }
-.record-urgency { max-width: 78px; margin-top: 9px; color: var(--ink-faint); font-family: var(--mono); font-size: .65rem; line-height: 1.35; text-transform: uppercase; }
+.company-mark { position: relative; display: grid; width: 62px; height: 54px; place-items: center; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 3px; background: #f0eadc; color: var(--teal-deep); font-family: var(--serif); font-size: .9rem; font-weight: 700; }
+.company-mark-logo { width: 116px; border: 0; background: white; }
+.company-mark img { width: 100%; height: 100%; object-fit: contain; padding: 6px 2px; background: white; }
+.record-urgency { max-width: 108px; margin-top: 9px; color: var(--ink-faint); font-family: var(--mono); font-size: .65rem; line-height: 1.35; text-transform: uppercase; }
 .record-company { color: var(--teal); font-size: .84rem; font-weight: 750; }
 .record-title { margin-top: 4px; font-family: var(--serif); font-size: 1.45rem; line-height: 1.24; max-width: 34ch; }
 .record-meta { display: flex; flex-wrap: wrap; margin-top: 8px; color: var(--ink-faint); font-size: .75rem; }
@@ -261,7 +262,8 @@ button, input, select { font: inherit; }
   .hero-side { grid-template-columns: minmax(250px,.7fr) 1fr; }
   .filters { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .filter-search { grid-column: 1 / -1; }
-  .opportunity-record { grid-template-columns: 78px minmax(0,1fr) 170px; }
+  .opportunity-record { grid-template-columns: 116px minmax(0,1fr); }
+  .opportunity-record > .annotation { grid-column: 2; }
   .footer-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 720px) {
@@ -278,6 +280,7 @@ button, input, select { font: inherit; }
   .section-head { display: block; }
   .section-head p { margin-top: 10px; }
   .opportunity-record { grid-template-columns: 1fr; gap: 12px; }
+  .opportunity-record > .annotation { grid-column: auto; }
   .record-aside { display: flex; align-items: center; gap: 12px; }
   .timeline-row { grid-template-columns: 1fr; gap: 7px; }
   .about-disclaimer { margin-left: 0; }
@@ -390,6 +393,7 @@ body {
 .featured-list a { display: grid; grid-template-columns: 190px minmax(0, 1fr) 130px 24px; gap: 22px; align-items: center; min-height: 80px; padding: 13px 8px; color: var(--ink); text-decoration: none; transition: background-color .18s ease, padding .18s ease; }
 .featured-list a:hover { padding-inline: 14px; background: rgba(225, 218, 198, .28); }
 .featured-company { color: var(--teal); font-weight: 700; }
+.featured-company img { display: block; width: min(132px, 100%); height: 42px; object-fit: contain; object-position: left center; }
 .featured-role { display: grid; }
 .featured-role strong { font-family: var(--serif); font-size: 1.08rem; font-weight: 600; }
 .featured-role small { margin-top: 3px; color: var(--ink-faint); font-size: .76rem; }
@@ -413,22 +417,28 @@ body {
 .biotech-pathways > header { display: flex; align-items: end; justify-content: space-between; gap: 30px; margin-bottom: 30px; }
 .biotech-pathways > header h2 { max-width: 14ch; color: #0c1820; font-size: clamp(2.45rem, 4.5vw, 4.4rem); font-weight: 500; letter-spacing: -.04em; line-height: .98; }
 .biotech-pathways > header a { flex: none; color: var(--teal-deep); font-weight: 750; }
-.biotech-pathway-grid { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 220px; gap: 12px; }
+.biotech-pathway-grid { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 218px; gap: 12px; }
 .biotech-pathway { position: relative; grid-column: span 4; overflow: hidden; color: white; text-decoration: none; }
-.biotech-pathway::after { content: ""; position: absolute; inset: 25% 0 0; background: linear-gradient(180deg, transparent, rgba(3, 25, 22, .9)); transition: opacity .2s ease; }
+.biotech-pathway::after { content: ""; position: absolute; inset: 16% 0 0; background: linear-gradient(180deg, transparent, rgba(3, 18, 18, .93)); transition: opacity .2s ease; }
 .biotech-pathway img { object-fit: cover; transition: transform .35s ease; }
 .biotech-pathway:hover { color: white; }
 .biotech-pathway:hover img { transform: scale(1.035); }
-.biotech-pathway > span { position: absolute; z-index: 2; right: 24px; bottom: 22px; left: 24px; display: grid; }
-.biotech-pathway strong { font-family: var(--serif); font-size: clamp(1.55rem, 2.4vw, 2.3rem); font-weight: 500; line-height: 1; }
-.biotech-pathway small { margin-top: 7px; color: rgba(255,255,255,.84); font-family: var(--serif); font-size: .88rem; }
-.biotech-pathway-research { grid-column: span 5; grid-row: span 2; }
-.biotech-pathway-therapeutics { grid-column: span 7; }
-.biotech-pathway-manufacturing { grid-column: span 3; }
-.biotech-pathway-genomics { grid-column: span 4; }
+.biotech-pathway > span { position: absolute; z-index: 2; right: 22px; bottom: 20px; left: 22px; display: flex; align-items: end; justify-content: space-between; gap: 18px; }
+.biotech-pathway strong { max-width: 17ch; font-family: var(--serif); font-size: clamp(1.35rem, 2.1vw, 2rem); font-weight: 500; line-height: 1.03; }
+.biotech-pathway b { flex: none; font-family: var(--sans); font-size: 1.25rem; font-weight: 400; }
+.biotech-pathway:nth-child(1) { grid-column: span 5; grid-row: span 2; }
+.biotech-pathway:nth-child(2) { grid-column: span 3; }
+.biotech-pathway:nth-child(3) { grid-column: span 4; }
+.biotech-pathway:nth-child(4) { grid-column: span 4; }
+.biotech-pathway:nth-child(5) { grid-column: span 3; }
+.biotech-pathway:nth-child(6) { grid-column: span 5; }
+.biotech-pathway:nth-child(7) { grid-column: span 4; }
+.biotech-pathway:nth-child(8) { grid-column: span 3; }
+.biotech-pathway:nth-child(9) { grid-column: span 4; }
+.biotech-pathway:nth-child(10) { grid-column: span 8; }
 .home-coda { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, .75fr); min-height: 380px; border-top: 1px solid var(--line-strong); }
 .home-coda-image { position: relative; min-height: 380px; overflow: hidden; }
-.home-coda-image img { object-fit: cover; }
+.home-coda-image img { object-fit: cover; object-position: center 43%; filter: saturate(.82) contrast(1.04); }
 .home-coda-copy { display: grid; align-content: center; padding: clamp(38px, 5vw, 72px); background: var(--teal-deep); color: white; }
 .home-coda-copy p { font-family: var(--serif); font-size: clamp(2rem, 3.4vw, 3.6rem); line-height: 1.03; letter-spacing: -.03em; }
 .home-coda-copy > span { margin-top: 30px; color: #d9c58d; text-transform: uppercase; }
@@ -475,11 +485,20 @@ body {
 .resource-image { position: relative; min-height: 170px; overflow: hidden; }
 .resource-image img { object-fit: cover; transition: transform .3s ease; }
 .resource-grid > a:hover .resource-image img { transform: scale(1.035); }
-.resource-copy { min-height: 205px; padding: 22px; }
+.resource-copy { display: grid; align-content: space-between; min-height: 142px; padding: 22px; }
 .resource-grid h3 { max-width: 17ch; color: var(--teal-deep); font-size: 1.4rem; font-weight: 500; }
 .resource-grid p { margin-top: 12px; color: var(--ink-soft); font-family: var(--serif); font-size: .88rem; line-height: 1.4; }
 .resource-grid span { display: flex; justify-content: space-between; gap: 16px; margin-top: 24px; color: var(--ink-faint); font-family: var(--mono); font-size: .67rem; letter-spacing: .07em; text-transform: uppercase; }
 .prepare-privacy { margin-block: 0 64px; }
+
+.credits-page { padding-bottom: 80px; }
+.credits-section { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; padding-block: 32px; border-top: 1px solid var(--line-strong); }
+.credits-section h2 { font-size: 1.6rem; }
+.credits-section > p { margin: 0; color: var(--ink-soft); }
+.credits-section ul { grid-column: 2; margin: 0; padding: 0; list-style: none; }
+.credits-section li { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 18px; padding: 11px 0; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: .82rem; }
+.credits-section li:first-child { border-top: 0; }
+.credits-section li a:last-child { white-space: nowrap; }
 
 @media (max-width: 1080px) {
   .editorial-hero { grid-template-columns: minmax(0, 1fr) minmax(360px, .85fr); min-height: 590px; }
@@ -500,7 +519,7 @@ body {
   .mission-visual { min-height: 420px; }
   .mission-statement { min-height: 460px; }
   .biotech-pathway-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 260px; }
-  .biotech-pathway, .biotech-pathway-research, .biotech-pathway-therapeutics, .biotech-pathway-manufacturing, .biotech-pathway-genomics { grid-column: span 1; grid-row: span 1; }
+  .biotech-pathway, .biotech-pathway:nth-child(n) { grid-column: span 1; grid-row: span 1; }
   .home-coda { grid-template-columns: 1fr; }
   .home-coda-image { min-height: 390px; }
   .prepare-hero { grid-template-columns: 1fr; min-height: auto; padding-top: 58px; }
@@ -509,6 +528,8 @@ body {
   .prepare-choice { grid-template-columns: 1fr; }
   .prepare-choice-image { min-height: 430px; }
   .resource-grid { grid-template-columns: repeat(2, 1fr); }
+  .credits-section { grid-template-columns: 1fr; gap: 20px; }
+  .credits-section ul { grid-column: 1; }
 }
 
 @media (max-width: 640px) {
@@ -532,7 +553,7 @@ body {
   .mission-statement { min-height: auto; padding: 40px 24px 46px; }
   .biotech-pathways > header, .trusted-resources > header { display: grid; align-items: start; }
   .biotech-pathway-grid, .prepare-signal-grid, .prepare-check-grid, .resource-grid { grid-template-columns: 1fr; }
-  .biotech-pathway, .biotech-pathway-research, .biotech-pathway-therapeutics, .biotech-pathway-manufacturing, .biotech-pathway-genomics { min-height: 260px; }
+  .biotech-pathway, .biotech-pathway:nth-child(n) { min-height: 260px; }
   .home-coda-image { min-height: 300px; }
   .home-coda-copy { min-height: 300px; }
   .prepare-hero { padding-block: 44px; }
@@ -543,4 +564,5 @@ body {
   .prepare-choice { padding-block: 44px; }
   .prepare-choice-copy { padding: 34px 24px; }
   .resource-copy { min-height: auto; }
+  .credits-section li { grid-template-columns: 1fr; gap: 3px; }
 }

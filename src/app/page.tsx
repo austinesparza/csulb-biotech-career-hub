@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { companyLogoPath } from '@/lib/companyLogos';
 import { createClient } from '@/lib/supabase/client';
 import type { PublicOpportunity } from '@/lib/types';
 
@@ -17,6 +18,28 @@ function opportunityDetails(opportunity: PublicOpportunity) {
     .filter(Boolean)
     .slice(0, 3)
     .join(' · ');
+}
+
+const DISCIPLINES = [
+  { label: 'Cancer & oncology', focus: 'Cancer and oncology', image: '/brand/discipline-cancer.webp', alt: 'Fluorescence microscopy of DNA in oral cancer cells' },
+  { label: 'Genomics & genetics', focus: 'Genomics and genetics', image: '/brand/discipline-genomics.webp', alt: 'Fluorescence microscopy image from chromosome research' },
+  { label: 'Single-cell & spatial', focus: 'Single-cell and spatial', image: '/brand/discipline-single-cell.webp', alt: 'Fluorescence microscopy of NEAT1 paraspeckles in human cells' },
+  { label: 'Bioinformatics', focus: 'Bioinformatics and computational biology', image: '/brand/discipline-bioinformatics.webp', alt: 'Analyst preparing a sample in a DNA identification laboratory' },
+  { label: 'Biological data science & ML', focus: 'Biological data science and ML', image: '/brand/discipline-data-science.webp', alt: 'Single-cell sequencing maps and data visualizations' },
+  { label: 'Diagnostics & clinical data', focus: 'Diagnostics and clinical data', image: '/brand/discipline-diagnostics.webp', alt: 'Five-color confocal microscopy of plant cell organelles' },
+  { label: 'Bioprocess & manufacturing', focus: 'Bioprocess and manufacturing science', image: '/brand/discipline-bioprocess.webp', alt: 'Cell-culture bioreactors in a laboratory' },
+  { label: 'Protein science & drug discovery', focus: 'Protein science and drug discovery', image: '/brand/discipline-protein.webp', alt: 'Protein crystals viewed through a microscope' },
+  { label: 'Neuroscience', focus: 'Neuroscience and neurodegeneration', image: '/brand/discipline-neuroscience.webp', alt: 'Fluorescence microscopy of green fluorescent neurons' },
+  { label: 'Immunology & infectious disease', focus: 'Immunology and infectious disease', image: '/brand/discipline-immunology.webp', alt: 'Toxoplasma parasites inside a fibroblast host cell' },
+] as const;
+
+function FeaturedCompany({ name }: { name: string }) {
+  const logo = companyLogoPath(name);
+  return (
+    <span className="featured-company">
+      {logo ? <Image src={logo} alt={`${name} logo`} width={132} height={48} /> : name}
+    </span>
+  );
 }
 
 export default async function HomePage() {
@@ -59,8 +82,8 @@ export default async function HomePage() {
           <div className="science-orbit science-orbit-two" aria-hidden="true" />
           <div className="science-image">
             <Image
-              src="/brand/cellular-field.webp"
-              alt="Artistic fluorescence-microscopy-inspired view of interconnected cells"
+              src="/brand/hero-cells.webp"
+              alt="Fluorescence microscopy of the cytoskeleton in cultured fibroblasts"
               fill
               preload
               sizes="(max-width: 760px) 82vw, 42vw"
@@ -93,7 +116,7 @@ export default async function HomePage() {
             {featured.map((opportunity) => (
               <li key={opportunity.id}>
                 <a href={opportunity.posting_url ?? '/internships'}>
-                  <span className="featured-company">{opportunity.company_name}</span>
+                  <FeaturedCompany name={opportunity.company_name} />
                   <span className="featured-role">
                     <strong>{opportunity.title}</strong>
                     <small>{opportunityDetails(opportunity)}</small>
@@ -116,18 +139,18 @@ export default async function HomePage() {
         <div className="site-wrap mission-story-grid">
           <figure className="mission-visual">
             <Image
-              src="/brand/tissue-field.webp"
-              alt="Abstract microscopy-inspired artwork of biological tissue"
+              src="/brand/mission-histology.webp"
+              alt="Histology of basal-like breast cancer tissue"
               fill
               sizes="(max-width: 820px) 100vw, 40vw"
             />
           </figure>
           <div className="mission-statement">
-            <h2 id="mission-title">What we learn about life can change how life is lived.</h2>
+            <h2 id="mission-title">Discovery should have somewhere to go.</h2>
             <p>
-              Across laboratories, data, manufacturing, and medicine, biotechnology
-              carries discovery into the world. This hub helps CSULB students find
-              a place in that work.
+              From the first strange pattern under a microscope to a medicine that
+              changes a life, biotechnology carries what we learn about living systems
+              into the world.
             </p>
             <div className="mission-links">
               <Link href="/about">Our story <span aria-hidden="true">→</span></Link>
@@ -142,31 +165,25 @@ export default async function HomePage() {
           <Link href="/internships">Explore every opportunity <span aria-hidden="true">→</span></Link>
         </header>
         <div className="biotech-pathway-grid">
-          <Link href="/internships?q=research" className="biotech-pathway biotech-pathway-research">
-            <Image src="/brand/cellular-field.webp" alt="Microscopy-inspired network of cells" fill sizes="(max-width: 700px) 100vw, 25vw" />
-            <span><strong>Research</strong><small>Ask what no one knows yet.</small></span>
-          </Link>
-          <Link href="/internships?q=therapeutics" className="biotech-pathway biotech-pathway-therapeutics">
-            <Image src="/brand/tissue-field.webp" alt="Microscopy-inspired biological tissue" fill sizes="(max-width: 700px) 100vw, 25vw" />
-            <span><strong>Therapeutics</strong><small>Move an idea toward a patient.</small></span>
-          </Link>
-          <Link href="/internships?q=manufacturing" className="biotech-pathway biotech-pathway-manufacturing">
-            <Image src="/brand/bioprocess-light.webp" alt="Precision work in a bright bioprocess laboratory" fill sizes="(max-width: 700px) 100vw, 25vw" />
-            <span><strong>Biomanufacturing</strong><small>Make discovery reproducible.</small></span>
-          </Link>
-          <Link href="/internships?q=genomics" className="biotech-pathway biotech-pathway-genomics">
-            <Image src="/brand/genomic-flow.webp" alt="Sequencing flow cell with abstract genomic patterns" fill sizes="(max-width: 700px) 100vw, 25vw" />
-            <span><strong>Genomics &amp; data</strong><small>Find patterns biology hides.</small></span>
-          </Link>
+          {DISCIPLINES.map((discipline) => (
+            <Link
+              key={discipline.focus}
+              href={`/internships?focus=${encodeURIComponent(discipline.focus)}`}
+              className="biotech-pathway"
+            >
+              <Image src={discipline.image} alt={discipline.alt} fill sizes="(max-width: 700px) 100vw, 33vw" />
+              <span><strong>{discipline.label}</strong><b aria-hidden="true">→</b></span>
+            </Link>
+          ))}
         </div>
       </section>
 
       <section className="home-coda" aria-label="Career hub closing statement">
         <div className="home-coda-image">
-          <Image src="/brand/career-workbench.webp" alt="A biotechnology student reviewing application materials in a laboratory" fill sizes="(max-width: 760px) 100vw, 68vw" />
+          <Image src="/brand/footer-lab.webp" alt="Scientists working in a DNA identification laboratory" fill sizes="(max-width: 760px) 100vw, 68vw" />
         </div>
         <div className="home-coda-copy">
-          <p>Start with a question.<br />Leave with a direction.</p>
+          <p>Follow what makes you look closer.</p>
           <span className="mono">Latest review <time>{formatDate(checked)}</time></span>
         </div>
       </section>

@@ -1,8 +1,9 @@
 # CSULB Biotech Career Hub
 
-A student-maintained graduate internship tracker. Officers review spreadsheet
-imports, voluntary submissions, and candidates collected from explicitly approved
-public sources before anything reaches the searchable board.
+A student-maintained career opportunity tracker for undergraduate and graduate
+biotechnology students. Officers review spreadsheet imports, voluntary submissions,
+and candidates collected from explicitly approved public sources before anything
+reaches the searchable board.
 
 ## Publishing to GitHub (like the alumni hub, plus a backend)
 

@@ -8,7 +8,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'CSULB Biotech Career Hub',
-  description: 'Graduate-accessible biotechnology opportunities, source evidence, and career guidance maintained by the CSULB Biotechnology Club.',
+  description: 'Biotechnology opportunities, source evidence, and career guidance maintained by the CSULB Biotechnology Club.',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -50,6 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
             <div className="mono" style={{ textAlign: 'right' }}>
               <Link href="/privacy">Privacy</Link><br />
+              <Link href="/image-credits">Image credits</Link><br />
               <Link href="/submit">Report a change</Link><br />
               <Link href="/admin">Officer portal</Link><br />
               <a href={mailto(CLUB_LINKS.emailSubjectReport)}>Contact the club</a>

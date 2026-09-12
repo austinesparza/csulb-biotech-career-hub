@@ -22,30 +22,23 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
   const paid = params.paid === 'paid' ? 'paid' : undefined;
   const sort = ['deadline', 'newest', 'company'].includes(params.sort ?? '') ? params.sort : undefined;
   const supabase = createPublicServerClient();
-  const [{ data, error }, { data: companyData }] = await Promise.all([
-    supabase.rpc('search_public_opportunities', {
-      p_query: q ?? null,
-      p_focus: focus ?? null,
-      p_location: loc ?? null,
-      p_paid_only: !!paid,
-      p_sort: sort ?? 'recommended',
-      p_limit: 200,
-    }),
-    supabase.from('public_companies').select('name, website'),
-  ]);
+  const { data, error } = await supabase.rpc('search_public_opportunities', {
+    p_query: q ?? null,
+    p_focus: focus ?? null,
+    p_location: loc ?? null,
+    p_paid_only: !!paid,
+    p_sort: sort ?? 'recommended',
+    p_limit: 200,
+  });
   const opportunities = (data ?? []) as PublicOpportunity[];
-  const companyWebsites = Object.fromEntries(
-    (companyData ?? []).flatMap((company) => (
-      company.website ? [[company.name, company.website] as const] : []
-    )),
-  );
 
   return (
     <div className="site-wrap">
       <header className="page-head">
-        <h1>Graduate internships</h1>
+        <h1>Opportunities</h1>
         <p className="lede">
-          Current roles reviewed for MSc eligibility, timing, and source evidence.
+          Biotechnology internships, co-ops, and research roles with the details
+          students need to judge fit.
         </p>
       </header>
 
@@ -92,10 +85,10 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
 
         {error && <div className="notice"><span>!</span><span>Could not load opportunities. Please try again later.</span></div>}
         {!error && opportunities.length === 0 && (
-          <div className="notice"><span>◇</span><span>No matching graduate internships right now. Try another filter or <a href="/submit">submit a role</a>.</span></div>
+          <div className="notice"><span>◇</span><span>No matching opportunities right now. Try another filter or <a href="/submit">submit a role</a>.</span></div>
         )}
         {opportunities.length > 0 && (
-          <Board opportunities={opportunities} sorted={!!sort} companyWebsites={companyWebsites} />
+          <Board opportunities={opportunities} sorted={!!sort} />
         )}
       </section>
     </div>

@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
+import { companyLogoPath } from '@/lib/companyLogos';
 import { allFocusAreas } from '@/lib/focusAreas';
 import type { PublicOpportunity } from '@/lib/types';
 
@@ -49,7 +50,10 @@ const SHORT_TAGS: Record<string, string> = {
 
 function opportunityTags(o: PublicOpportunity): string[] {
   const seen = new Set<string>();
-  return [o.focus_area ?? '', ...(o.scientific_lanes ?? []), ...(o.job_functions ?? []), ...(o.methods ?? []), ...(o.industry_context ?? [])]
+  const discipline = [o.focus_area ?? '', ...(o.scientific_lanes ?? [])];
+  const methods = o.methods ?? [];
+  const fallback = o.job_functions ?? [];
+  return [...discipline.slice(0, 1), ...methods.slice(0, 2), ...fallback]
     .map((tag) => SHORT_TAGS[tag] ?? tag)
     .filter((tag) => {
       const normalized = tag.trim().toLowerCase();
@@ -65,25 +69,14 @@ function companyInitials(name: string): string {
   return name.split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase() ?? '').join('');
 }
 
-function companyLogoUrl(website?: string): string | null {
-  if (!website) return null;
-  try {
-    const normalized = /^https?:\/\//i.test(website) ? website : `https://${website}`;
-    const domain = new URL(normalized).hostname;
-    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
-  } catch {
-    return null;
-  }
-}
-
-function CompanyMark({ name, website }: { name: string; website?: string }) {
-  const [failed, setFailed] = useState(false);
-  const logo = companyLogoUrl(website);
+function CompanyMark({ name }: { name: string }) {
+  const logo = companyLogoPath(name);
   return (
-    <div className="company-mark" aria-hidden="true">
-      <span>{companyInitials(name)}</span>
-      {logo && !failed && (
-        <Image src={logo} alt="" width={48} height={48} onError={() => setFailed(true)} />
+    <div className={`company-mark${logo ? ' company-mark-logo' : ''}`}>
+      {logo ? (
+        <Image src={logo} alt={`${name} logo`} width={112} height={52} />
+      ) : (
+        <span aria-label={name}>{companyInitials(name)}</span>
       )}
     </div>
   );
@@ -115,10 +108,9 @@ function graduateStage(o: PublicOpportunity): string {
   return 'Graduate student, year not specified';
 }
 
-export function Board({ opportunities, sorted, companyWebsites }: {
+export function Board({ opportunities, sorted }: {
   opportunities: PublicOpportunity[];
   sorted: boolean;
-  companyWebsites: Record<string, string>;
 }) {
   const [prefs, setPrefs] = useState<Prefs>(EMPTY_PREFS);
   const [loaded, setLoaded] = useState(false);
@@ -198,7 +190,6 @@ export function Board({ opportunities, sorted, companyWebsites }: {
                 <OpportunityRecord
                   key={opportunity.id}
                   opportunity={opportunity}
-                  companyWebsite={companyWebsites[opportunity.company_name]}
                   bonus={active ? personalBonus(opportunity, prefs) : { pts: 0, why: [] }}
                 />
               ))}
@@ -210,9 +201,8 @@ export function Board({ opportunities, sorted, companyWebsites }: {
   );
 }
 
-function OpportunityRecord({ opportunity: o, companyWebsite, bonus }: {
+function OpportunityRecord({ opportunity: o, bonus }: {
   opportunity: PublicOpportunity;
-  companyWebsite?: string;
   bonus: { pts: number; why: string[] };
 }) {
   const urgent = !!o.deadline && daysUntil(o.deadline) >= 0 && daysUntil(o.deadline) <= 14;
@@ -223,7 +213,7 @@ function OpportunityRecord({ opportunity: o, companyWebsite, bonus }: {
   return (
     <li className="opportunity-record">
       <div className="record-aside">
-        <CompanyMark name={o.company_name} website={companyWebsite} />
+        <CompanyMark name={o.company_name} />
         <div className="record-urgency">{urgent ? 'Closing soon' : (isFresh(o) ? 'New this week' : 'Review details')}</div>
       </div>
       <div>

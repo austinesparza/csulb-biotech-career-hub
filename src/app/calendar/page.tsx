@@ -42,7 +42,7 @@ export default async function CalendarPage() {
       <section className="editorial-strip">
         <div className="margin-note">
           <h2>Roles on the board</h2>
-          <p>{opportunities.length} current graduate-accessible role{opportunities.length === 1 ? '' : 's'}.</p>
+          <p>{opportunities.length} current reviewed role{opportunities.length === 1 ? '' : 's'}.</p>
         </div>
         <div>
           {error && <div className="notice"><span>!</span><span>Could not load the calendar.</span></div>}

@@ -7,21 +7,21 @@ export default function AboutPage() {
       <header className="page-head">
         <h1>About</h1>
         <p className="lede">
-          A student-maintained directory of graduate internships in biotechnology,
-          genomics, cancer research, bioinformatics, and related fields.
+          A student-maintained guide to internships, research, and early-career
+          opportunities across biotechnology.
         </p>
       </header>
 
       <section className="editorial-strip">
-        <div className="margin-note"><h2>Built for graduate students</h2></div>
+        <div className="margin-note"><h2>Built for students</h2></div>
         <div className="about-copy">
           <p>
-            The main board is reserved for roles that explicitly accept graduate students.
-            Other records stay in the internal review system and do not crowd the public results.
+            The Career Hub is growing to serve CSULB undergraduate and graduate students.
+            Every published role includes the degree-stage evidence available from the employer.
           </p>
           <p>
-            The goal is simple: help students find credible opportunities early enough to
-            prepare a strong application.
+            The board began with graduate-accessible roles and will broaden as new sources
+            are reviewed. Fit is shown clearly so students can decide where to spend their time.
           </p>
         </div>
       </section>

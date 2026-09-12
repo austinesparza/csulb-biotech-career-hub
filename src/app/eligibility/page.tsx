@@ -20,31 +20,27 @@ const CHECKS = [
 const RESOURCES = [
   {
     title: 'Find internships',
-    body: 'Build a search that reaches beyond the most visible employers.',
     href: 'https://www.csulb.edu/career-development-center/students/job-internship-search',
-    image: '/brand/genomic-flow.webp',
-    alt: 'Abstract genomic patterns emerging from a sequencing flow cell',
+    image: '/brand/discipline-genomics.webp',
+    alt: 'Fluorescence microscopy image from chromosome research',
   },
   {
     title: 'Shape your materials',
-    body: 'Make your resume and cover letter answer the work in front of you.',
     href: 'https://www.csulb.edu/career-development-center/students/resumes-cover-letters',
-    image: '/brand/career-workbench.webp',
-    alt: 'A student reviewing application materials in a biotechnology laboratory',
+    image: '/brand/discipline-protein.webp',
+    alt: 'Protein crystals viewed through a microscope',
   },
   {
     title: 'Practice the conversation',
-    body: 'Prepare to explain your decisions, not just list your techniques.',
     href: 'https://www.csulb.edu/career-development-center/students/interviewing',
-    image: '/brand/cellular-field.webp',
-    alt: 'Microscopy-inspired network of cells',
+    image: '/brand/discipline-neuroscience.webp',
+    alt: 'Fluorescence microscopy of green fluorescent neurons',
   },
   {
     title: 'Get another perspective',
-    body: 'Bring your questions to a CSULB career counselor.',
     href: 'https://www.csulb.edu/career-development-center/students/career-counseling-appointments',
-    image: '/brand/bioprocess-light.webp',
-    alt: 'Precision work in a bright bioprocess laboratory',
+    image: '/brand/discipline-bioprocess.webp',
+    alt: 'Cell-culture bioreactors in a laboratory',
   },
 ] as const;
 
@@ -61,8 +57,8 @@ export default function PreparationPage() {
         </div>
         <div className="prepare-hero-image">
           <Image
-            src="/brand/career-workbench.webp"
-            alt="A biotechnology student reviewing application materials in a laboratory"
+            src="/brand/discipline-bioinformatics.webp"
+            alt="Analysts working in a DNA identification laboratory"
             fill
             preload
             sizes="(max-width: 820px) 100vw, 48vw"
@@ -84,8 +80,8 @@ export default function PreparationPage() {
       <section className="prepare-choice site-wrap" aria-labelledby="choice-title">
         <div className="prepare-choice-image">
           <Image
-            src="/brand/tissue-field.webp"
-            alt="Microscopy-inspired biological tissue"
+            src="/brand/mission-histology.webp"
+            alt="Histology of basal-like breast cancer tissue"
             fill
             sizes="(max-width: 820px) 100vw, 42vw"
           />
@@ -113,7 +109,6 @@ export default function PreparationPage() {
               </div>
               <div className="resource-copy">
                 <h3>{resource.title}</h3>
-                <p>{resource.body}</p>
                 <span>CSULB resource <b aria-hidden="true">↗</b></span>
               </div>
             </a>
