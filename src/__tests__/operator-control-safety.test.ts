@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const sourceActions = readFileSync('src/app/admin/sources/actions.ts', 'utf8');
 const sourcePage = readFileSync('src/app/admin/sources/page.tsx', 'utf8');
+const sourceRunForm = readFileSync('src/app/admin/sources/source-run-form.tsx', 'utf8');
 const sourceRunner = readFileSync('src/lib/ingestion/source-runner.ts', 'utf8');
 const ingestRoute = readFileSync('src/app/api/cron/ingest/route.ts', 'utf8');
 const healthRoute = readFileSync('src/app/api/cron/health/route.ts', 'utf8');
@@ -14,6 +15,7 @@ const importActions = readFileSync('src/app/admin/import/actions.ts', 'utf8');
 const reviewSheetSync = readFileSync('src/lib/review-sheet-sync.ts', 'utf8');
 const googleSheets = readFileSync('src/lib/google-sheets.ts', 'utf8');
 const reviewCard = readFileSync('src/app/admin/review/review-card.tsx', 'utf8');
+const reviewActions = readFileSync('src/app/admin/review/actions.ts', 'utf8');
 const manageActions = readFileSync('src/app/admin/manage/actions.ts', 'utf8');
 
 describe('operator control safety', () => {
@@ -36,6 +38,11 @@ describe('operator control safety', () => {
     expect(sourcePage).toContain('run one private test');
     expect(sourcePage).toContain('Latest private test:');
     expect(sourcePage).toContain('Open review queue');
+    expect(sourcePage).toContain('SourceRunForm');
+    expect(sourceRunForm).toContain('useActionState');
+    expect(sourceRunForm).toContain("state.status === 'error'");
+    expect(sourceActions).toContain("console.info(\"[source-run] fetch record created\"");
+    expect(sourceActions).toContain("console.error(\"[source-run] action failed\"");
   });
 
   it('marks every cron response private and non-cacheable', () => {
@@ -69,6 +76,8 @@ describe('operator control safety', () => {
     expect(importActions).toContain("console.error('[spreadsheet-sync] action failed'");
     expect(reviewCard).toContain('Confirm Sheet approval and publish');
     expect(reviewCard).toContain('Review or change imported details');
+    expect(reviewCard).toContain('if (!result.ok)');
+    expect(reviewActions).toContain("console.error('[review-action] failed'");
   });
 
   it('pushes governed discoveries to the Sheet without owning officer decisions', () => {

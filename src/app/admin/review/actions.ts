@@ -17,6 +17,41 @@ export interface ReviewFinalFields {
   methods: string[];
 }
 
+export type ReviewActionResult = { ok: true } | { ok: false; error: string };
+
+function safeReviewActionError(error: unknown): string {
+  const message = error instanceof Error ? error.message : '';
+  const allowed = [
+    'Invalid target status',
+    "Only master's-accessible records can be published",
+    "Choose the master's stage supported by the posting",
+    'Confirm the source and public-safe fields before approval',
+    'Add a concise evidence-based audience reason',
+    'Opportunity not found',
+    'Invalid archive audience',
+  ];
+  if (allowed.includes(message)) return message;
+  if (message === 'Not signed in') return 'Your officer session expired. Refresh and sign in again.';
+  if (message === 'Not an active officer') return 'This account is not an active officer.';
+  return 'The review decision failed before completion. No publication change was made.';
+}
+
+async function runReviewAction(
+  operation: 'approve' | 'archive' | 'reject',
+  opportunityId: string,
+  run: () => Promise<void>,
+): Promise<ReviewActionResult> {
+  try {
+    await run();
+    console.info('[review-action] completed', { operation, opportunityId });
+    return { ok: true };
+  } catch (error) {
+    const safeError = safeReviewActionError(error);
+    console.error('[review-action] failed', { operation, opportunityId, error: safeError });
+    return { ok: false, error: safeError };
+  }
+}
+
 function cleanControlledValues(values: string[]): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))]
     .filter((value) => value.length <= 100)
@@ -121,7 +156,7 @@ export async function resolveReviewTask(formData: FormData): Promise<void> {
  * server enforces the hard parts: officer auth, a valid target status, and
  * that public_notes going live were explicitly provided by the officer.
  */
-export async function approveOpportunity(input: {
+async function approveOpportunityUnsafe(input: {
   id: string;
   status: 'open_verified' | 'open_unverified';
   publicNotes: string;
@@ -181,7 +216,13 @@ export async function approveOpportunity(input: {
   revalidatePublic();
 }
 
-export async function archiveForAudience(input: {
+export async function approveOpportunity(
+  input: Parameters<typeof approveOpportunityUnsafe>[0],
+): Promise<ReviewActionResult> {
+  return runReviewAction('approve', input.id, () => approveOpportunityUnsafe(input));
+}
+
+async function archiveForAudienceUnsafe(input: {
   id: string;
   audienceBucket: Extract<AudienceBucket, 'ineligible' | 'adjacent' | 'special'>;
   audienceReason: string;
@@ -228,7 +269,13 @@ export async function archiveForAudience(input: {
   revalidatePublic();
 }
 
-export async function rejectOpportunity(id: string, reason: 'not_relevant' | 'hidden'): Promise<void> {
+export async function archiveForAudience(
+  input: Parameters<typeof archiveForAudienceUnsafe>[0],
+): Promise<ReviewActionResult> {
+  return runReviewAction('archive', input.id, () => archiveForAudienceUnsafe(input));
+}
+
+async function rejectOpportunityUnsafe(id: string, reason: 'not_relevant' | 'hidden'): Promise<void> {
   const { user } = await requireOfficer();
   const db = createServiceClient();
   const { data: opp } = await db
@@ -253,6 +300,13 @@ export async function rejectOpportunity(id: string, reason: 'not_relevant' | 'hi
   });
   if (error) throw new Error(error.message);
   revalidatePublic();
+}
+
+export async function rejectOpportunity(
+  id: string,
+  reason: 'not_relevant' | 'hidden',
+): Promise<ReviewActionResult> {
+  return runReviewAction('reject', id, () => rejectOpportunityUnsafe(id, reason));
 }
 
 export async function markDuplicate(id: string, duplicateOf: string): Promise<void> {

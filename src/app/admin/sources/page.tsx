@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import { GOVERNED_STARTER_SOURCES, GREENHOUSE_POLICY_LINKS } from "@/lib/ingestion/starter-sources";
 import { createServiceClient, requireOfficer } from "@/lib/supabase/server";
-import { createJobSource, createStarterSource, runEmployerDiscoveryNow, runSourceNow, testSourceNow, toggleSourcePause, updateSourceGovernance } from "./actions";
+import { createJobSource, createStarterSource, runEmployerDiscoveryNow, testSourceNow, toggleSourcePause, updateSourceGovernance } from "./actions";
+import { SourceRunForm } from "./source-run-form";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -177,10 +178,7 @@ export default async function SourcesPage() {
               <input type="hidden" name="paused" value={paused ? "off" : "on"} />
               <button className="secondary-button" type="submit">{paused ? "Resume" : "Pause"}</button>
             </form>
-            <form action={runSourceNow}>
-              <input type="hidden" name="id" value={source.id} />
-              <button className="primary-button" type="submit" disabled={!source.enabled || paused}>Run and archive now</button>
-            </form>
+            <SourceRunForm sourceId={source.id} disabled={!source.enabled || paused} />
             <form action={testSourceNow}>
               <input type="hidden" name="id" value={source.id} />
               <button className="secondary-button" type="submit" disabled={!source.terms_reviewed || !source.terms_review_date || !source.robots_reviewed}>
