@@ -847,16 +847,6 @@ body {
 .prepare-hero-copy h1 { max-width: 12.5ch; font-size: clamp(3.7rem, 5.7vw, 5.9rem); line-height: .96; }
 .prepare-hero-image { min-height: 500px; }
 .prepare-hero-image img { object-position: 58% center; filter: saturate(.88) contrast(1.03); }
-.student-tracker { display: grid; grid-template-columns: minmax(340px, .82fr) minmax(0, 1.18fr); min-height: 410px; margin-bottom: 72px; padding: 0; overflow: hidden; background: #123f36; color: white; }
-.student-tracker-copy { display: grid; align-content: center; padding: clamp(38px, 5vw, 70px); }
-.student-tracker h2 { max-width: 10ch; color: white; font-size: clamp(2.5rem, 4vw, 4.2rem); font-weight: 500; letter-spacing: -.04em; line-height: .96; }
-.student-tracker-copy > p { max-width: 37ch; margin-top: 22px; color: #dbe5e1; font-family: var(--serif); font-size: .96rem; line-height: 1.48; }
-.student-tracker-points { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 28px; border-top: 1px solid rgba(255,255,255,.28); }
-.student-tracker-points span { padding: 11px 12px 11px 0; border-bottom: 1px solid rgba(255,255,255,.2); color: #efc86f; font-size: .72rem; font-weight: 750; }
-.tracker-download { display: inline-flex; width: fit-content; margin-top: 30px; background: #efb33f; padding: 13px 18px; color: #123f36; font-size: .78rem; font-weight: 800; text-decoration: none; }
-.tracker-download:hover { background: #f3c55f; color: #123f36; }
-.student-tracker-preview { display: flex; min-width: 0; align-items: center; overflow: hidden; padding: 34px 0 34px 34px; background: #efb33f; }
-.student-tracker-preview img { display: block; width: 112%; max-width: none; height: auto; border: 1px solid rgba(7,25,39,.24); background: white; box-shadow: 0 22px 48px rgba(7,25,39,.2); transform: rotate(-1.2deg); }
 .about-hero { grid-template-columns: minmax(0, 1fr) minmax(430px, .95fr); min-height: 600px; }
 .about-hero h1 { max-width: 11.5ch; font-size: clamp(3.8rem, 5.7vw, 5.9rem); line-height: .95; }
 .about-hero p { max-width: 50ch; font-size: 1.08rem; line-height: 1.55; }
@@ -894,8 +884,6 @@ body {
   .deadline-exporter { grid-template-columns: 1fr; }
   .deadline-export-actions { grid-column: auto; }
   .company-directory-grid { grid-template-columns: 1fr; }
-  .student-tracker { grid-template-columns: 1fr; }
-  .student-tracker-preview { min-height: 330px; }
   .footer-banner { grid-template-columns: minmax(0, 1.7fr) minmax(250px, .8fr); }
   .footer-banner-copy { width: min(52%, 420px); }
 }
@@ -909,11 +897,6 @@ body {
   .company-status-tabs { display: flex; width: 100%; overflow-x: auto; border-radius: 4px; }
   .company-status-tabs button { flex: none; border-radius: 2px; }
   .prepare-hero-copy h1, .about-hero h1 { max-width: 12ch; font-size: clamp(3rem, 14vw, 4.5rem); }
-  .student-tracker { margin-bottom: 48px; }
-  .student-tracker-copy { padding: 38px 26px 44px; }
-  .student-tracker-points { grid-template-columns: 1fr; }
-  .student-tracker-preview { min-height: 250px; padding: 26px 0 26px 22px; }
-  .student-tracker-preview img { width: 125%; }
   .footer-banner { grid-template-columns: 1fr; }
   .footer-banner-media, .footer-banner-image { min-height: 360px; height: 360px; }
   .footer-banner-copy { top: auto; right: 24px; bottom: 28px; left: 24px; width: auto; transform: none; }
