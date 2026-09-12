@@ -11,8 +11,8 @@
 # Stage and gates classify the record for officer review; they do not silently
 # remove an otherwise relevant posting.
 
-version: 4
-updated: 2026-09-11
+version: 5
+updated: 2026-09-12
 
 # =============================================================================
 # SCIENTIFIC LANES — the subject matter
@@ -51,6 +51,12 @@ lanes:
     # co-occurs with a biological context term. Enforced by requires_context.
     requires_context: true
     weak: [data, analytics, insights]
+
+  - id: lab_automation
+    label: Laboratory automation and scientific software
+    core: [laboratory automation, lab automation, autonomous lab, automated laboratory, protocols as code]
+    supporting: [liquid handler, robotic arm, experiment orchestration, experimental data pipeline, device driver, lab-in-the-loop, lab in the loop]
+    weak: [automation, robotics]
 
   - id: diagnostics
     label: Diagnostics and clinical data

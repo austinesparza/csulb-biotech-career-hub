@@ -52,6 +52,25 @@ describe('scoreIngestionCandidate', () => {
     expect(breakdown.total).toBeGreaterThan(50);
   });
 
+  it('queues laboratory-automation software internships with unclear degree access', () => {
+    const breakdown = scoreIngestionCandidate({
+      ...BASE_INPUT,
+      employerName: 'Ginkgo Bioworks',
+      titleRaw: 'Software Intern, Autonomous Lab',
+      titleNormalized: 'software intern autonomous lab',
+      locationNormalized: 'emeryville, california',
+      department: 'automation software',
+      departments: ['Automation Software'],
+      descriptionText: 'Build Python protocols for an autonomous lab, control liquid handlers and robotic arms, and integrate experimental data pipelines. No college degree is required.',
+      closesAt: null,
+      uncertaintyFlags: ['eligibility_ambiguous'],
+    });
+
+    expect(breakdown.total).toBeGreaterThanOrEqual(35);
+    expect(breakdown.taxonomyClassification.lanes.some((lane) => lane.id === 'lab_automation')).toBe(true);
+    expect(breakdown.taxonomyClassification.suggestedBucket).toBe('needs_review');
+  });
+
   it('archives but does not queue a full-time science role that mentions a masters degree', () => {
     const breakdown = scoreIngestionCandidate({
       ...BASE_INPUT,
