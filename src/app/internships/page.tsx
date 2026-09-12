@@ -37,8 +37,8 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
       <header className="page-head">
         <h1>Opportunities</h1>
         <p className="lede">
-          Biotechnology internships, co-ops, and research roles with the details
-          students need to judge fit.
+          Biotechnology internships, co-ops, and research roles. Compare the work,
+          audience, timing, and source evidence before you apply.
         </p>
       </header>
 
@@ -48,7 +48,7 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
             <h2 id="board-title">Opportunity board</h2>
             <p className="mono" style={{ marginTop: 8 }}>{opportunities.length} reviewed result{opportunities.length === 1 ? '' : 's'}</p>
           </div>
-          <p>Each record names its source and evidence date. Unknown values are shown as unknown.</p>
+          <p>Each record names its source. Unknown values stay unknown until the evidence supports them.</p>
         </div>
 
         <form className="filters" method="get">

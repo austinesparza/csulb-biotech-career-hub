@@ -20,7 +20,7 @@ import type {
 
 export const PENDING_OPPORTUNITY_MIN_SCORE = 35;
 
-const ELIGIBILITY_SIGNAL = /\b(master(?:'s|s)|master(?: degree| students?| program| candidates?)|m\.?s\.?c?|graduate students?|graduate degree|bachelor'?s?|undergraduate|ph\.?d\.?|doctoral|degree program|currently enrolled|pursuing an? (?:advanced|graduate) degree)\b/i;
+const ELIGIBILITY_SIGNAL = /\b(master(?:'s|s)|master(?: degree| students?| program| candidates?)|m\.?s\.?c?|graduate students?|graduate degree|bachelor'?s?|undergraduate|post[ -]?baccalaureate|postbac|ph\.?d\.?|doctoral|degree program|currently enrolled|pursuing an? (?:advanced|graduate) degree)\b/i;
 const WORK_AUTHORIZATION_SIGNAL = /\b(work authorization|authorized to work|visa sponsorship|sponsorship|citizenship|required citizen|permanent resident|cpt|opt)\b/i;
 const CONTINUED_ENROLLMENT_SIGNAL = /\b(return(?:ing)? to (?:school|college|university|the program)|remain enrolled|continued? enrollment|continuing (?:their|your) (?:degree|studies|education)|enrolled .* (?:after|following) (?:the )?(?:internship|co-op))\b/i;
 
@@ -62,8 +62,15 @@ function mapAudienceBucket(
   stageId: string,
   evidence: string | null,
 ): AudienceBucket {
+  if (
+    evidence
+    && /\bmaster(?:'s|s)?\b|\bgraduate students?\b/i.test(evidence)
+    && /\bbachelor'?s?\b|\bundergraduate\b|\bpost[ -]?baccalaureate\b|\bpostbac\b/i.test(evidence)
+  ) {
+    return 'mixed';
+  }
   if (suggestedBucket === 'graduate') {
-    return evidence && /\bbachelor'?s?|\bundergraduate\b/i.test(evidence) ? 'mixed' : 'graduate';
+    return evidence && /\bbachelor'?s?|\bundergraduate\b|\bpost[ -]?baccalaureate\b|\bpostbac\b/i.test(evidence) ? 'mixed' : 'graduate';
   }
   if (suggestedBucket === 'special') return 'special';
   if (suggestedBucket === 'adjacent') return 'adjacent';
@@ -112,6 +119,7 @@ export function deriveOpportunityEnrichment(posting: NormalizedSourcePosting) {
     ...classification.methods.stats,
   ])];
 
+  const deadlinePassed = posting.uncertaintyFlags.includes('deadline_past');
   return {
     eligibility: eligibilityEvidence,
     paidStatus: inferPaidStatus(posting.descriptionText),
@@ -129,7 +137,7 @@ export function deriveOpportunityEnrichment(posting: NormalizedSourcePosting) {
     workAuthorization,
     applicationOpenedAt: posting.postedAt,
     lastCheckedAt: posting.fetchedAt,
-    sourceCheckResult: 'open' as const,
+    sourceCheckResult: deadlinePassed ? 'closed' as const : 'open' as const,
     discoveryRoute: 'official_feed' as const,
   };
 }
@@ -153,10 +161,10 @@ function postingToDraft(posting: NormalizedSourcePosting, companyId: string | nu
     ...deriveOpportunityEnrichment(posting),
     focus_area: posting.focusArea,
     deadline: posting.closesAt,
-    deadline_text: posting.closesAt,
+    deadline_text: posting.deadlineEvidence ?? posting.closesAt,
     paid_status: inferPaidStatus(posting.descriptionText),
     application_type: posting.employmentType,
-    source_status_raw: 'open',
+    source_status_raw: posting.uncertaintyFlags.includes('deadline_past') ? 'deadline_passed' : 'open',
     dedupe_key: dedupeKey,
     family_key: familyKey,
     companyId,

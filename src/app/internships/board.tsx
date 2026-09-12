@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { companyLogoPath } from '@/lib/companyLogos';
 import { allFocusAreas } from '@/lib/focusAreas';
+import { opportunityAudienceLabel } from '@/lib/opportunityAudience';
 import type { PublicOpportunity } from '@/lib/types';
 
 const PREFS_KEY = 'career-hub-prefs-v1';
@@ -80,32 +81,6 @@ function CompanyMark({ name }: { name: string }) {
       )}
     </div>
   );
-}
-
-function graduateStage(o: PublicOpportunity): string {
-  const reviewed: Partial<Record<PublicOpportunity['graduate_stage'], string>> = {
-    msc_year_1: 'First-year MSc student',
-    msc_year_2: 'Second-year MSc student',
-    msc_any: 'Current MSc student',
-    mixed_graduate: 'Current MSc or PhD student',
-    graduate_unspecified: 'Graduate student, year not specified',
-  };
-  if (o.graduate_stage && reviewed[o.graduate_stage]) return reviewed[o.graduate_stage]!;
-
-  // Compatibility fallback for rows created before graduate_stage was added.
-  const text = `${o.eligibility ?? ''} ${o.audience_reason ?? ''}`.toLowerCase();
-  if (/first year completed|first program year/.test(text) && /continued enrollment|return/.test(text)) {
-    return 'First-year MSc, returning for year two';
-  }
-  if (/master'?s or phd|master’s or phd/.test(text)) return 'Current MSc or PhD student';
-  if (/post-baccalaureate, or master|explicitly includes master/.test(text)) return 'Current MSc student';
-  if (/bachelor'?s or master|bachelor’s or master/.test(text) && /clarif|contradict|timing/.test(text)) {
-    return 'MSc student, confirm graduation timing';
-  }
-  if (/graduate level is not restricted|graduate level is not excluded/.test(text)) {
-    return 'Graduate student, confirm degree fit';
-  }
-  return 'Graduate student, year not specified';
 }
 
 export function Board({ opportunities, sorted }: {
@@ -206,7 +181,10 @@ function OpportunityRecord({ opportunity: o, bonus }: {
   bonus: { pts: number; why: string[] };
 }) {
   const urgent = !!o.deadline && daysUntil(o.deadline) >= 0 && daysUntil(o.deadline) <= 14;
-  const timing = o.deadline ? `Apply by ${formatDate(o.deadline + 'T00:00:00')}` : (o.deadline_text ?? 'No deadline stated');
+  const deadlinePassed = !!o.deadline && daysUntil(o.deadline) < 0;
+  const timing = o.deadline
+    ? `${deadlinePassed ? 'Deadline passed' : 'Apply by'} ${formatDate(o.deadline + 'T00:00:00')}`
+    : (o.deadline_text ?? 'No deadline stated');
   const eligibility = o.eligibility ?? 'Confirm the degree and enrollment requirements in the live posting.';
   const tags = opportunityTags(o);
 
@@ -214,7 +192,7 @@ function OpportunityRecord({ opportunity: o, bonus }: {
     <li className="opportunity-record">
       <div className="record-aside">
         <CompanyMark name={o.company_name} />
-        <div className="record-urgency">{urgent ? 'Closing soon' : (isFresh(o) ? 'New this week' : 'Review details')}</div>
+        <div className="record-urgency">{deadlinePassed ? 'Deadline passed' : urgent ? 'Closing soon' : (isFresh(o) ? 'New this week' : 'Review details')}</div>
       </div>
       <div>
         <div className="record-company">{o.company_name}</div>
@@ -235,15 +213,15 @@ function OpportunityRecord({ opportunity: o, bonus }: {
             : <span className="record-verified">Ask a club officer for the source.</span>}
           {bonus.pts > 0 && <span className="pill pill-teal" title={bonus.why.join(', ')}>Match for you</span>}
           {isFresh(o) && <span className="pill pill-gold">New</span>}
-          <span className={o.status === 'open_verified' ? 'pill pill-green' : 'pill pill-gold'}>
-            {o.status === 'open_verified' ? 'Reviewed' : 'Check current status'}
+          <span className={!deadlinePassed && o.status === 'open_verified' ? 'pill pill-green' : 'pill pill-gold'}>
+            {deadlinePassed ? 'Past deadline' : o.status === 'open_verified' ? 'Reviewed' : 'Check current status'}
           </span>
         </div>
         {o.public_notes && <p style={{ marginTop: 12, fontSize: '.86rem' }}>{o.public_notes}</p>}
       </div>
       <dl className="annotation">
         <dt>For</dt>
-        <dd className="eligible">{graduateStage(o)}</dd>
+        <dd className="eligible">{opportunityAudienceLabel(o)}</dd>
         <dt style={{ marginTop: 12 }}>Requirements</dt>
         <dd>{eligibility}</dd>
       </dl>
@@ -252,7 +230,7 @@ function OpportunityRecord({ opportunity: o, bonus }: {
         <dd>{timing}</dd>
         <dt style={{ marginTop: 12 }}>Evidence</dt>
         <dd className="record-verified">
-          {o.last_checked_at ? `Checked ${formatDate(o.last_checked_at)}` : (o.source_name ? `Source: ${o.source_name}` : 'Awaiting first check')}
+          {o.source_name ? `Source: ${o.source_name}` : 'Employer posting'}
         </dd>
       </dl>
     </li>

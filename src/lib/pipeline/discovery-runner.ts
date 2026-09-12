@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { canonicalizeUrl } from '../ingestion/normalize';
 import { buildEmployerInventoryDiscoveryPlans, getEmployerInventoryMetadata } from './employer-inventory';
+import { buildHistoricalWatchPlans, getHistoricalWatchMetadata } from './historical-watch';
 import { archiveDiscoveryLead } from './lead-store-supabase';
 import { resolveLead, type DiscoveryRoute } from './search-plan';
 import type { SearchProvider } from './brave-search';
@@ -71,7 +72,31 @@ export async function runEmployerDiscoveryBatch(params: {
     throw new Error('resultsPerQuery must be from 1 to 10');
   }
   const offset = params.offset ?? dailyOffset(now);
-  const plans = buildEmployerInventoryDiscoveryPlans({ cycleYear, limit: employerLimit, offset });
+  const inventoryPlans = buildEmployerInventoryDiscoveryPlans({ cycleYear, limit: 50, offset: 0 })
+    .map((candidate) => ({
+      company: candidate.company,
+      plan: candidate.plan,
+      priority: candidate.localAlumniCount * 3,
+      basis: 'local_employer_inventory' as const,
+      predictionReady: false,
+    }));
+  const historicalPlans = buildHistoricalWatchPlans({ cycleYear, month: now.getUTCMonth() + 1 })
+    .map((candidate) => ({
+      company: candidate.company,
+      plan: candidate.plan,
+      priority: candidate.priority,
+      basis: 'historical_role_watch' as const,
+      predictionReady: candidate.predictionReady,
+    }));
+  const universe = [...historicalPlans, ...inventoryPlans]
+    .toSorted((a, b) => b.priority - a.priority || a.company.localeCompare(b.company))
+    .filter((candidate, index, allCandidates) => (
+      allCandidates.findIndex((other) => other.company.toLowerCase() === candidate.company.toLowerCase()) === index
+    ));
+  const plans = Array.from(
+    { length: Math.min(employerLimit, universe.length) },
+    (_, index) => universe[(offset + index) % universe.length],
+  );
   const runId = params.runId ?? `employer-inventory:${now.toISOString().slice(0, 10)}:${offset}`;
   const errors: string[] = [];
   let queryCount = 0;
@@ -122,7 +147,14 @@ export async function runEmployerDiscoveryBatch(params: {
           rawMetadata: {
             provider: params.provider.name,
             rank: result.rank,
-            inventorySourceCommit: getEmployerInventoryMetadata().sourceCommit,
+            discoveryBasis: candidate.basis,
+            predictionReady: candidate.predictionReady,
+            inventorySourceCommit: candidate.basis === 'local_employer_inventory'
+              ? getEmployerInventoryMetadata().sourceCommit
+              : null,
+            historicalSources: candidate.basis === 'historical_role_watch'
+              ? getHistoricalWatchMetadata().sources
+              : null,
           },
           retrievedAt: now.toISOString(),
         });

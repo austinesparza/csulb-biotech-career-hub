@@ -577,6 +577,42 @@ describe('ingestion persistence bridge', () => {
     });
   });
 
+  it('keeps post-baccalaureate and master\'s audience evidence mixed', async () => {
+    const repo = new FakeRepository();
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({
+        titleRaw: 'Medical Oncology Research Intern',
+        descriptionText: "Current undergraduate, post-baccalaureate, or master's students may apply.",
+      })]),
+    });
+    expect(repo.opportunities[0].audience_bucket).toBe('mixed');
+  });
+
+  it('sends a source-stated past deadline to review as closed evidence', async () => {
+    const repo = new FakeRepository();
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({
+        closesAt: '2026-08-24',
+        deadlineKind: 'hard',
+        deadlineEvidence: 'This job posting is anticipated to close on Aug 24, 2026.',
+        uncertaintyFlags: ['deadline_past'],
+        fetchedAt: '2026-09-12T00:00:00.000Z',
+      })]),
+    });
+    expect(repo.opportunities[0]).toMatchObject({
+      deadline: '2026-08-24',
+      deadline_text: 'This job posting is anticipated to close on Aug 24, 2026.',
+      source_status_raw: 'deadline_passed',
+      source_check_result: 'closed',
+    });
+  });
+
   it('preserves private-test provenance when finalizing a run', async () => {
     const repo = new FakeRepository();
     await persistFetchResult({

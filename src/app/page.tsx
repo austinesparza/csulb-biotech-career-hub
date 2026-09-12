@@ -23,13 +23,9 @@ function opportunityDetails(opportunity: PublicOpportunity) {
 const DISCIPLINES = [
   { label: 'Cancer & oncology', focus: 'Cancer and oncology', image: '/brand/discipline-cancer.webp', alt: 'Fluorescence microscopy of DNA in oral cancer cells' },
   { label: 'Genomics & genetics', focus: 'Genomics and genetics', image: '/brand/discipline-genomics.webp', alt: 'Fluorescence microscopy image from chromosome research' },
-  { label: 'Single-cell & spatial', focus: 'Single-cell and spatial', image: '/brand/discipline-single-cell.webp', alt: 'Fluorescence microscopy of NEAT1 paraspeckles in human cells' },
   { label: 'Bioinformatics', focus: 'Bioinformatics and computational biology', image: '/brand/discipline-bioinformatics.webp', alt: 'Analyst preparing a sample in a DNA identification laboratory' },
-  { label: 'Biological data science & ML', focus: 'Biological data science and ML', image: '/brand/discipline-data-science.webp', alt: 'Single-cell sequencing maps and data visualizations' },
-  { label: 'Diagnostics & clinical data', focus: 'Diagnostics and clinical data', image: '/brand/discipline-diagnostics.webp', alt: 'Five-color confocal microscopy of plant cell organelles' },
   { label: 'Bioprocess & manufacturing', focus: 'Bioprocess and manufacturing science', image: '/brand/discipline-bioprocess.webp', alt: 'Cell-culture bioreactors in a laboratory' },
   { label: 'Protein science & drug discovery', focus: 'Protein science and drug discovery', image: '/brand/discipline-protein.webp', alt: 'Protein crystals viewed through a microscope' },
-  { label: 'Neuroscience', focus: 'Neuroscience and neurodegeneration', image: '/brand/discipline-neuroscience.webp', alt: 'Fluorescence microscopy of green fluorescent neurons' },
   { label: 'Immunology & infectious disease', focus: 'Immunology and infectious disease', image: '/brand/discipline-immunology.webp', alt: 'Toxoplasma parasites inside a fibroblast host cell' },
 ] as const;
 
@@ -50,17 +46,12 @@ export default async function HomePage() {
     .order('first_seen_at', { ascending: false })
     .limit(200);
   const all = (data ?? []) as PublicOpportunity[];
-  const graduate = all.filter((opportunity) => (
-    opportunity.audience_bucket === 'graduate' || opportunity.audience_bucket === 'mixed'
+  const studentRoles = all.filter((opportunity) => (
+    ['undergraduate', 'graduate', 'mixed'].includes(opportunity.audience_bucket)
   ));
-  const companies = new Set(graduate.map((opportunity) => opportunity.company_name)).size;
-  const focusAreas = new Set(graduate.flatMap((opportunity) => opportunity.scientific_lanes ?? [])).size;
-  const checked = graduate
-    .map((opportunity) => opportunity.last_checked_at)
-    .filter((value): value is string => Boolean(value))
-    .sort()
-    .at(-1) ?? null;
-  const featured = graduate.slice(0, 4);
+  const companies = new Set(studentRoles.map((opportunity) => opportunity.company_name)).size;
+  const focusAreas = new Set(studentRoles.flatMap((opportunity) => opportunity.scientific_lanes ?? [])).size;
+  const featured = studentRoles.slice(0, 4);
 
   return (
     <div className="home-editorial">
@@ -68,8 +59,8 @@ export default async function HomePage() {
         <div className="editorial-hero-copy">
           <h1>Opportunities for what comes next.</h1>
           <p className="editorial-intro">
-            A curated hub for CSULB biotechnology students to find internships,
-            research, and career opportunities across the life sciences.
+            Biotechnology begins with the urge to look closer. Find internships,
+            research, and early career work that can turn that curiosity into practice.
           </p>
           <div className="editorial-actions">
             <Link href="/internships" className="primary-button">Browse opportunities <span aria-hidden="true">→</span></Link>
@@ -94,11 +85,11 @@ export default async function HomePage() {
 
       <section className="trust-ledger" aria-label="How the hub helps">
         <div className="site-wrap trust-ledger-inner">
-          <article><div><h2>Curated &amp; relevant</h2><p>Opportunities selected for CSULB students.</p></div></article>
-          <article><div><h2>Trusted sources</h2><p>Employer pages and evidence dates included.</p></div></article>
-          <article><div><h2>Career-ready</h2><p>Requirements translated into useful signals.</p></div></article>
+          <article><h2>Student-ready roles</h2></article>
+          <article><h2>Source evidence retained</h2></article>
+          <article><h2>Unknowns stay unknown</h2></article>
           <div className="trust-metrics" aria-label="Current board counts">
-            <div><strong>{graduate.length}</strong><span>open roles</span></div>
+            <div><strong>{studentRoles.length}</strong><span>open roles</span></div>
             <div><strong>{companies}</strong><span>employers</span></div>
             <div><strong>{focusAreas}</strong><span>focus areas</span></div>
           </div>
@@ -121,7 +112,7 @@ export default async function HomePage() {
                     <strong>{opportunity.title}</strong>
                     <small>{opportunityDetails(opportunity)}</small>
                   </span>
-                  <time>{formatDate(opportunity.first_seen_at, 'Recently added')}</time>
+                  <time>{opportunity.deadline ? `Apply by ${formatDate(opportunity.deadline)}` : 'No fixed deadline stated'}</time>
                   <span className="featured-arrow" aria-hidden="true">→</span>
                 </a>
               </li>
@@ -146,11 +137,11 @@ export default async function HomePage() {
             />
           </figure>
           <div className="mission-statement">
-            <h2 id="mission-title">Discovery should have somewhere to go.</h2>
+            <h2 id="mission-title">What we learn about life can change how life is lived.</h2>
             <p>
-              From the first strange pattern under a microscope to a medicine that
-              changes a life, biotechnology carries what we learn about living systems
-              into the world.
+              Across laboratories, data, manufacturing, and medicine, biotechnology
+              carries discovery into the world. This hub helps CSULB students find
+              a place in that work.
             </p>
             <div className="mission-links">
               <Link href="/about">Our story <span aria-hidden="true">→</span></Link>
@@ -183,8 +174,8 @@ export default async function HomePage() {
           <Image src="/brand/footer-lab.webp" alt="Scientists working in a DNA identification laboratory" fill sizes="(max-width: 760px) 100vw, 68vw" />
         </div>
         <div className="home-coda-copy">
-          <p>Follow what makes you look closer.</p>
-          <span className="mono">Latest review <time>{formatDate(checked)}</time></span>
+          <p>Start with a question.<br />Leave with a direction.</p>
+          <Link href="/internships">Explore opportunities <span aria-hidden="true">→</span></Link>
         </div>
       </section>
     </div>

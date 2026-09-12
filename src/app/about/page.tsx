@@ -1,66 +1,113 @@
-import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
+import Image from 'next/image';
 import Link from 'next/link';
+import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
+
+const SYSTEM_STEPS = [
+  ['Discover', 'Official career feeds, employer pages, past programs, and student leads widen the search.'],
+  ['Extract', 'Structured parsers and evidence-bound extraction recover dates, audience rules, methods, and application details.'],
+  ['Verify', 'Deterministic checks flag conflicts, duplicates, missing evidence, and expired deadlines for officer review.'],
+  ['Publish', 'Only authenticated approval moves a public-safe record onto the board. Source history remains attached.'],
+] as const;
+
+const SYSTEM_MEMORY = [
+  ['Source snapshots', 'The page that supported a claim is archived privately so later changes can be explained.'],
+  ['Version history', 'Material changes create a new review task instead of silently rewriting an approved record.'],
+  ['Recruiting signals', 'Past cycles shape watch windows and search priority. Sparse history is labeled as a clue, never a prediction.'],
+] as const;
 
 export default function AboutPage() {
   return (
-    <div className="site-wrap">
-      <header className="page-head">
-        <h1>About</h1>
-        <p className="lede">
-          A student-maintained guide to internships, research, and early-career
-          opportunities across biotechnology.
-        </p>
+    <div className="about-page">
+      <header className="about-hero site-wrap">
+        <div>
+          <h1>A career board with an evidence trail.</h1>
+          <p>
+            Opportunities move quickly. The Career Hub combines broad discovery,
+            careful source work, and human judgment so students can see not only
+            what was found, but why it belongs here.
+          </p>
+        </div>
+        <figure>
+          <Image
+            src="/brand/discipline-data-science.webp"
+            alt="Single-cell sequencing maps and data visualizations"
+            fill
+            preload
+            sizes="(max-width: 820px) 100vw, 44vw"
+          />
+        </figure>
       </header>
 
-      <section className="editorial-strip">
-        <div className="margin-note"><h2>Built for students</h2></div>
-        <div className="about-copy">
-          <p>
-            The Career Hub is growing to serve CSULB undergraduate and graduate students.
-            Every published role includes the degree-stage evidence available from the employer.
-          </p>
-          <p>
-            The board began with graduate-accessible roles and will broaden as new sources
-            are reviewed. Fit is shown clearly so students can decide where to spend their time.
-          </p>
-        </div>
-      </section>
-
-      <section className="editorial-strip">
-        <div className="margin-note"><h2>How it works</h2></div>
-        <div className="directory-grid">
-          <div className="directory-row"><div><h2>Find</h2><p>Students and officers submit possible roles.</p></div><span>01</span></div>
-          <div className="directory-row"><div><h2>Review</h2><p>An officer checks the source, status, dates, and graduate eligibility.</p></div><span>02</span></div>
-          <div className="directory-row"><div><h2>Publish</h2><p>Only approved, public-safe records appear on the site.</p></div><span>03</span></div>
-          <div className="directory-row"><div><h2>Recheck</h2><p>Changes return to the review queue before the public record is updated.</p></div><span>04</span></div>
-        </div>
-      </section>
-
-      <section className="editorial-strip">
-        <div className="margin-note"><h2>Contribute</h2></div>
-        <div className="about-copy">
-          <p>Found a role, broken link, changed deadline, or eligibility issue? Send it to the club for review.</p>
-          <div className="about-actions">
-            <Link href="/submit" className="primary-button">Submit a role or correction</Link>
-            <a href={mailto(CLUB_LINKS.emailSubjectReport)} className="secondary-button">Email the club</a>
+      <section className="about-system" aria-labelledby="system-title">
+        <div className="site-wrap">
+          <header>
+            <h2 id="system-title">From a possible lead to a trusted listing.</h2>
+            <p>Automation expands the field. Evidence and officer review control publication.</p>
+          </header>
+          <div className="about-system-grid">
+            {SYSTEM_STEPS.map(([title, body]) => (
+              <article key={title}><h3>{title}</h3><p>{body}</p></article>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="editorial-strip">
-        <div className="margin-note"><h2>Contact</h2></div>
-        <div className="directory-grid">
-          <a className="directory-row" href={mailto(CLUB_LINKS.emailSubjectReport)} style={{ textDecoration: 'none' }}><div><h2>Email</h2><p>{CLUB_LINKS.email}</p></div><span>↗</span></a>
-          {CLUB_LINKS.discord && <a className="directory-row" href={CLUB_LINKS.discord} style={{ textDecoration: 'none' }}><div><h2>Discord</h2><p>Join the club server</p></div><span>↗</span></a>}
-          {CLUB_LINKS.instagram && <a className="directory-row" href={CLUB_LINKS.instagram} style={{ textDecoration: 'none' }}><div><h2>Instagram</h2><p>@csulbbiotech</p></div><span>↗</span></a>}
-          {CLUB_LINKS.clubSite && <a className="directory-row" href={CLUB_LINKS.clubSite} style={{ textDecoration: 'none' }}><div><h2>Club website</h2><p>CSULB Biotechnology Club</p></div><span>↗</span></a>}
+      <section className="about-memory site-wrap" aria-labelledby="memory-title">
+        <div className="about-memory-visual">
+          <Image
+            src="/brand/discipline-single-cell.webp"
+            alt="Fluorescence microscopy of NEAT1 paraspeckles in human cells"
+            fill
+            sizes="(max-width: 820px) 100vw, 40vw"
+          />
+        </div>
+        <div className="about-memory-copy">
+          <h2 id="memory-title">The system remembers what a list forgets.</h2>
+          {SYSTEM_MEMORY.map(([title, body]) => (
+            <article key={title}><h3>{title}</h3><p>{body}</p></article>
+          ))}
         </div>
       </section>
 
-      <p className="about-disclaimer">
+      <section className="about-tools">
+        <div className="site-wrap about-tools-grid">
+          <div>
+            <h2>Built in public. Governed in private.</h2>
+            <p>
+              Next.js presents the public board. Supabase keeps normalized records,
+              immutable source observations, review history, and access controls.
+              Official ATS connectors and bounded web search create leads. Every
+              publication decision remains human.
+            </p>
+          </div>
+          <div className="about-tool-list" aria-label="Career Hub capabilities">
+            <span>Official feed connectors</span>
+            <span>Evidence-bound extraction</span>
+            <span>Deadline conflict detection</span>
+            <span>Audience classification</span>
+            <span>Duplicate and repost matching</span>
+            <span>Historical watch windows</span>
+            <span>Officer review gates</span>
+            <span>Reversible corrections</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="about-contribute site-wrap">
+        <div>
+          <h2>Help us see what we missed.</h2>
+          <p>Found a role, changed deadline, broken link, or eligibility issue? Send the evidence to the club.</p>
+        </div>
+        <div className="about-actions">
+          <Link href="/submit" className="primary-button">Submit a role or correction</Link>
+          <a href={mailto(CLUB_LINKS.emailSubjectReport)} className="secondary-button">Email the club</a>
+        </div>
+      </section>
+
+      <p className="about-disclaimer site-wrap">
         Listings are provided for information. Inclusion is not an endorsement by the
         CSULB Biotechnology Club or California State University, Long Beach. Always
-        confirm details in the employer’s current posting.
+        confirm details in the employer&apos;s current posting.
       </p>
     </div>
   );

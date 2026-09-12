@@ -101,6 +101,7 @@ export function buildEmployerSearchPlan(input: {
   employer: string;
   cycleYear: number;
   careersDomain?: string | null;
+  programTerms?: string[];
 }): EmployerSearchPlan {
   const employer = input.employer.trim();
   if (!employer) throw new Error("employer is required");
@@ -111,6 +112,11 @@ export function buildEmployerSearchPlan(input: {
   if (domain && !/^[a-z0-9.-]+$/i.test(domain)) throw new Error("careersDomain must be a hostname");
   const namedEmployer = `"${employer.replaceAll('"', "")}"`;
   const programs = quotedOr(BROAD_PROGRAM_TERMS);
+  const historicalPrograms = (input.programTerms ?? [])
+    .map((term) => term.trim().replaceAll('"', ''))
+    .filter(Boolean)
+    .slice(0, 4);
+  const historicalClause = historicalPrograms.length > 0 ? ` OR ${quotedOr(historicalPrograms)}` : '';
   const eligibility = quotedOr(ELIGIBILITY_TERMS);
   const scoped = domain ? `site:${domain} ` : "";
   return {
@@ -119,11 +125,11 @@ export function buildEmployerSearchPlan(input: {
     queries: [
       {
         route: "employer_page",
-        query: `${scoped}(${programs}) (${input.cycleYear} OR summer OR spring OR fall)`,
+        query: `${scoped}(${programs}${historicalClause}) (${input.cycleYear} OR summer OR spring OR fall)`,
       },
       {
         route: "web_search",
-        query: `${namedEmployer} (${programs})`,
+        query: `${namedEmployer} (${programs}${historicalClause})`,
       },
       {
         route: "web_search",

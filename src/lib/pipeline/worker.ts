@@ -19,6 +19,7 @@ import type { CanonicalPosting } from "./connectors/types";
 import { bindExtraction, scanForInjection, type ExtractedField } from "./evidence";
 import { EXTRACTION_FIELDS, SYSTEM_PROMPT, buildJsonSchema } from "./extraction-schema";
 import { withSentinel, checkEcho, INTEGRITY_FIELD } from "./integrity";
+import { extractDeadlineEvidence } from "../ingestion/normalize";
 
 export const SCHEMA_VERSION = 1;
 export const PROMPT_VERSION = "extract-v1";
@@ -217,6 +218,18 @@ async function processPosting(
     report.errors.push(`transit integrity: ${echo.reason} (${echo.detail}) on "${posting.title}" — disable payload compression for the extraction worker before trusting this run`);
   }
   delete (result.fields as Record<string, unknown>)[INTEGRITY_FIELD]; // never stored or published
+
+  // Deadline language is common, high-impact, and deterministic enough to
+  // extract before model review. This closes the gap where an ATS omits its
+  // structured deadline field but states "anticipated to close on ..." in
+  // the body. The exact source sentence still has to pass evidence binding.
+  const deterministicDeadline = extractDeadlineEvidence(posting.rawText);
+  if (deterministicDeadline.evidenceText && deterministicDeadline.kind !== "unknown") {
+    result.fields.deadline = {
+      value: deterministicDeadline.date ?? "Rolling",
+      quote: deterministicDeadline.evidenceText,
+    };
+  }
 
   // --- 6. Bind evidence in code, never trusting the model --------------------
   const binding = bindExtraction(result.fields as never, posting.rawText);

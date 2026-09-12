@@ -2,6 +2,7 @@ import {
   buildEmployerInventoryDiscoveryPlans,
   getEmployerInventoryMetadata,
 } from "../src/lib/pipeline/employer-inventory";
+import { buildHistoricalWatchPlans, getHistoricalWatchMetadata } from "../src/lib/pipeline/historical-watch";
 
 function positiveInteger(name: string, fallback: number): number {
   const raw = process.env[name]?.trim();
@@ -23,6 +24,7 @@ const limit = positiveInteger("EMPLOYER_DISCOVERY_LIMIT", 25);
 const regions = list("EMPLOYER_DISCOVERY_REGIONS");
 const industries = list("EMPLOYER_DISCOVERY_INDUSTRIES");
 const candidates = buildEmployerInventoryDiscoveryPlans({ cycleYear, limit, regions, industries });
+const historical = buildHistoricalWatchPlans({ cycleYear, month: now.getUTCMonth() + 1 });
 
 console.log(JSON.stringify({
   generatedAt: now.toISOString(),
@@ -31,4 +33,9 @@ console.log(JSON.stringify({
   inventory: getEmployerInventoryMetadata(),
   candidateCount: candidates.length,
   candidates,
+  historicalWatch: {
+    metadata: getHistoricalWatchMetadata(),
+    candidateCount: historical.length,
+    candidates: historical,
+  },
 }, null, 2));

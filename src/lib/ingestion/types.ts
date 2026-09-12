@@ -98,6 +98,8 @@ export type UncertaintyFlag =
   | 'classification_inferred'
   | 'deadline_missing'
   | 'deadline_invalid'
+  | 'deadline_conflict'
+  | 'deadline_past'
   | 'employment_type_missing'
   | 'description_missing'
   | 'employer_name_missing'
@@ -210,6 +212,8 @@ export interface NormalizedSourcePosting {
   /** ISO YYYY-MM-DD or null. */
   closesAt: string | null;
   deadlineKind: DeadlineKind;
+  /** Exact source wording that established the deadline, when available. */
+  deadlineEvidence?: string | null;
 
   // --- Content ---
   /** Plain-text description derived from HTML content, or null. */

@@ -61,7 +61,12 @@ export const greenhouse: Connector = {
         url: str(j.absolute_url),
         location: str(j.location?.name) || offices.join("; "),
         // `content` is HTML-escaped markup; toRawText decodes and flattens it.
-        rawText: toRawText([j.title, departments.join(", "), j.content]),
+        rawText: toRawText([
+          j.title,
+          departments.join(", "),
+          j.application_deadline ? `Application deadline: ${str(j.application_deadline)}` : null,
+          j.content,
+        ]),
         postedAt: iso(j.first_published ?? j.updated_at),
         updatedAt: iso(j.updated_at),
         extra: { departments, offices, requisitionId: j.requisition_id ?? null },
@@ -226,7 +231,9 @@ export const usajobs: Connector = {
         url: str(d.PositionURI),
         location: array(d.PositionLocation).map((l: any) => str(l.LocationName)).join("; "),
         rawText: toRawText([
-          d.PositionTitle, d.QualificationSummary, uds.JobSummary,
+          d.PositionTitle,
+          d.ApplicationCloseDate ? `Application deadline: ${str(d.ApplicationCloseDate)}` : null,
+          d.QualificationSummary, uds.JobSummary,
           uds.MajorDuties ? [].concat(uds.MajorDuties).join("\n") : null,
           uds.Education, uds.Requirements, uds.WhoMayApply?.Name,
           pay ? `Pay: ${pay}` : null,

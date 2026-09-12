@@ -19,28 +19,32 @@ const CHECKS = [
 
 const RESOURCES = [
   {
-    title: 'Find internships',
-    href: 'https://www.csulb.edu/career-development-center/students/job-internship-search',
+    title: 'Search funded STEM programs',
+    href: 'https://www.pathwaystoscience.org/',
     image: '/brand/discipline-genomics.webp',
     alt: 'Fluorescence microscopy image from chromosome research',
+    source: 'Pathways to Science',
   },
   {
-    title: 'Shape your materials',
-    href: 'https://www.csulb.edu/career-development-center/students/resumes-cover-letters',
+    title: 'Find NSF research experiences',
+    href: 'https://etap.nsf.gov/',
     image: '/brand/discipline-protein.webp',
     alt: 'Protein crystals viewed through a microscope',
+    source: 'National Science Foundation',
   },
   {
-    title: 'Practice the conversation',
-    href: 'https://www.csulb.edu/career-development-center/students/interviewing',
+    title: 'Write for a scientific audience',
+    href: 'https://www.training.nih.gov/career-services/',
     image: '/brand/discipline-neuroscience.webp',
     alt: 'Fluorescence microscopy of green fluorescent neurons',
+    source: 'NIH OITE',
   },
   {
-    title: 'Get another perspective',
+    title: 'Talk through your next move',
     href: 'https://www.csulb.edu/career-development-center/students/career-counseling-appointments',
     image: '/brand/discipline-bioprocess.webp',
     alt: 'Cell-culture bioreactors in a laboratory',
+    source: 'CSULB Career Development Center',
   },
 ] as const;
 
@@ -49,10 +53,10 @@ export default function PreparationPage() {
     <div className="prepare-page">
       <header className="prepare-hero site-wrap">
         <div className="prepare-hero-copy">
-          <h1>Choose the work, not just the title.</h1>
+          <h1>Learn what good work looks like.</h1>
           <p>
-            The right internship gives you real problems, strong mentorship,
-            and skills that change what you can do next.
+            An internship is a short window into how science moves: how questions
+            become methods, how teams make decisions, and where your strengths begin to grow.
           </p>
         </div>
         <div className="prepare-hero-image">
@@ -87,7 +91,7 @@ export default function PreparationPage() {
           />
         </div>
         <div className="prepare-choice-copy">
-          <h2 id="choice-title">Know what you are saying yes to.</h2>
+          <h2 id="choice-title">Look beneath the title.</h2>
           <div className="prepare-check-grid">
             {CHECKS.map(([title, body]) => (
               <article key={title}><h3>{title}</h3><p>{body}</p></article>
@@ -98,8 +102,8 @@ export default function PreparationPage() {
 
       <section className="trusted-resources site-wrap" aria-labelledby="resources-title">
         <header>
-          <h2 id="resources-title">Tools for the application in front of you.</h2>
-          <p>Guidance from the CSULB Career Development Center.</p>
+          <h2 id="resources-title">Find the work. Build your way into it.</h2>
+          <p>Trusted search and preparation tools from public institutions and CSULB.</p>
         </header>
         <div className="resource-grid">
           {RESOURCES.map((resource) => (
@@ -109,7 +113,7 @@ export default function PreparationPage() {
               </div>
               <div className="resource-copy">
                 <h3>{resource.title}</h3>
-                <span>CSULB resource <b aria-hidden="true">↗</b></span>
+                <span>{resource.source} <b aria-hidden="true">↗</b></span>
               </div>
             </a>
           ))}

@@ -22,7 +22,7 @@ export default async function CalendarPage() {
   const { data, error } = await supabase
     .from('public_opportunities')
     .select('*')
-    .in('audience_bucket', ['graduate', 'mixed'])
+    .in('audience_bucket', ['undergraduate', 'graduate', 'mixed'])
     .order('deadline', { ascending: true, nullsFirst: false })
     .limit(200);
   const opportunities = (data ?? []) as PublicOpportunity[];
