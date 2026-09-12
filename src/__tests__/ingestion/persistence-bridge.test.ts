@@ -591,6 +591,27 @@ describe('ingestion persistence bridge', () => {
     expect(repo.opportunities[0].audience_bucket).toBe('mixed');
   });
 
+  it('recognizes a source-stated no-degree requirement as broad student access', async () => {
+    const repo = new FakeRepository();
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({
+        titleRaw: 'Automation Scientist Intern',
+        descriptionText: 'No college degree necessary but some skills in coding, biology or computational biology are required.',
+      })]),
+    });
+
+    expect(repo.opportunities[0]).toMatchObject({
+      audience_bucket: 'mixed',
+      graduate_stage: 'msc_any',
+      eligibility_status: 'possible',
+    });
+    expect(repo.opportunities[0].eligibility_evidence).toContain('No college degree necessary');
+    expect(repo.opportunities[0].audience_reason).toContain('Undergraduate and graduate students');
+  });
+
   it('sends a source-stated past deadline to review as closed evidence', async () => {
     const repo = new FakeRepository();
     await persistFetchResult({
@@ -913,7 +934,7 @@ describe('ingestion persistence bridge', () => {
     expect(repo.payloads).toHaveLength(1);
   });
 
-  it('keeps family matches review-only and does not overwrite fields', async () => {
+  it('keeps family matches as separate drafts until an officer compares them', async () => {
     const repo = new FakeRepository();
     repo.opportunities.push({
       id: 'opp-family',
@@ -944,7 +965,18 @@ describe('ingestion persistence bridge', () => {
     });
 
     expect(repo.opportunities[0].title).toBe('Research Intern Summer 2025');
-    expect(repo.tasks.some((t) => t.task_type === 'possible_repost')).toBe(true);
+    expect(repo.opportunities).toHaveLength(2);
+    expect(repo.opportunities[1]).toMatchObject({
+      title: 'Research Intern Summer 2026',
+      review_status: 'pending',
+      public_safe: false,
+    });
+    expect(repo.links).toHaveLength(1);
+    expect(repo.links[0].opportunity_id).toBe(repo.opportunities[1].id);
+    expect(repo.tasks.some((task) => (
+      task.task_type === 'possible_repost'
+      && task.entity_id === repo.opportunities[1].id
+    ))).toBe(true);
   });
 
   it('creates non-primary exact link when opportunity already has a primary source', async () => {

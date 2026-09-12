@@ -3,16 +3,16 @@ import Link from 'next/link';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
 
 const SYSTEM_STEPS = [
-  ['Discover', 'Official career feeds, employer pages, past programs, and student leads widen the search.'],
-  ['Extract', 'Structured parsers and evidence-bound extraction recover dates, audience rules, methods, and application details.'],
-  ['Verify', 'Deterministic checks flag conflicts, duplicates, missing evidence, and expired deadlines for officer review.'],
-  ['Publish', 'Only authenticated approval moves a public-safe record onto the board. Source history remains attached.'],
+  ['Official listings first', 'We watch employer career feeds and program pages. Student leads can widen the search, but the employer page is where verification begins.'],
+  ['Important fields, with evidence', 'The system pulls the requisition, dates, degree language, pay, methods, and location. It keeps the source text behind those fields.'],
+  ['Same role or a look-alike?', 'Exact job IDs and links can match automatically. Similar titles stay separate until an officer decides whether they are duplicates, reposts, or different jobs.'],
+  ['An officer publishes', 'A club officer checks the current page and the extracted evidence. A role reaches the public board only after that review.'],
 ] as const;
 
 const SYSTEM_MEMORY = [
-  ['Source snapshots', 'The page that supported a claim is archived privately so later changes can be explained.'],
-  ['Version history', 'Material changes create a new review task instead of silently rewriting an approved record.'],
-  ['Recruiting signals', 'Past cycles shape watch windows and search priority. Sparse history is labeled as a clue, never a prediction.'],
+  ['Dates have a basis', 'We separate a deadline stated by the employer from a window inferred from an older recruiting cycle.'],
+  ['Changes create review work', 'A changed requirement, new deadline, or missing page comes back to the queue instead of silently rewriting the public record.'],
+  ['Corrections keep their history', 'Approved edits and removals are logged and reversible. Old cycles remain available for research without appearing as current openings.'],
 ] as const;
 
 export default function AboutPage() {
@@ -20,17 +20,18 @@ export default function AboutPage() {
     <div className="about-page">
       <header className="about-hero site-wrap">
         <div>
-          <h1>A career board with an evidence trail.</h1>
+          <h1>Good opportunities should not depend on good luck.</h1>
           <p>
-            Opportunities move quickly. The Career Hub combines broad discovery,
-            careful source work, and human judgment so students can see not only
-            what was found, but why it belongs here.
+            Biotech recruiting favors students who already know where to look, when to
+            look, and how to read a posting. That knowledge is not shared evenly. The
+            Career Hub gathers the evidence, checks the details, and makes the search
+            easier to enter.
           </p>
         </div>
         <figure>
           <Image
             src="/brand/discipline-data-science.webp"
-            alt="Single-cell sequencing maps and data visualizations"
+            alt="Published single-cell sequencing maps and data visualizations"
             fill
             preload
             sizes="(max-width: 820px) 100vw, 44vw"
@@ -41,8 +42,8 @@ export default function AboutPage() {
       <section className="about-system" aria-labelledby="system-title">
         <div className="site-wrap">
           <header>
-            <h2 id="system-title">From a possible lead to a trusted listing.</h2>
-            <p>Automation expands the field. Evidence and officer review control publication.</p>
+            <h2 id="system-title">What happens before a role reaches the board.</h2>
+            <p>The system can search widely. Publication stays narrow, documented, and human.</p>
           </header>
           <div className="about-system-grid">
             {SYSTEM_STEPS.map(([title, body]) => (
@@ -62,7 +63,7 @@ export default function AboutPage() {
           />
         </div>
         <div className="about-memory-copy">
-          <h2 id="memory-title">The system remembers what a list forgets.</h2>
+          <h2 id="memory-title">A posting changes. Its evidence should not disappear.</h2>
           {SYSTEM_MEMORY.map(([title, body]) => (
             <article key={title}><h3>{title}</h3><p>{body}</p></article>
           ))}
@@ -72,23 +73,24 @@ export default function AboutPage() {
       <section className="about-tools">
         <div className="site-wrap about-tools-grid">
           <div>
-            <h2>Built in public. Governed in private.</h2>
+            <h2>The work behind the board.</h2>
             <p>
-              Next.js presents the public board. Supabase keeps normalized records,
-              immutable source observations, review history, and access controls.
-              Official ATS connectors and bounded web search create leads. Every
-              publication decision remains human.
+              The board is backed by official feed connectors, immutable source
+              observations, field-level evidence, deadline checks, record matching,
+              and a private officer queue. We built that machinery for a practical
+              reason. A student with less free time or a smaller professional network
+              should not receive worse information.
             </p>
           </div>
           <div className="about-tool-list" aria-label="Career Hub capabilities">
-            <span>Official feed connectors</span>
-            <span>Evidence-bound extraction</span>
+            <span>Official ATS and employer feeds</span>
+            <span>Immutable source observations</span>
+            <span>Field-level evidence</span>
+            <span>Degree and enrollment checks</span>
             <span>Deadline conflict detection</span>
-            <span>Audience classification</span>
             <span>Duplicate and repost matching</span>
-            <span>Historical watch windows</span>
-            <span>Officer review gates</span>
-            <span>Reversible corrections</span>
+            <span>Human publication gates</span>
+            <span>Audited, reversible corrections</span>
           </div>
         </div>
       </section>

@@ -1,6 +1,7 @@
 import { makeFamilyKey, makeStrictKey } from './csvImport';
 import { cleanText, normalizeUrl } from './normalize';
 import type { AudienceBucket, GraduateStage, PaidStatus } from './types';
+import { isPublishableAudienceStage } from './opportunityAudience';
 
 export interface OpportunityCorrectionDraft {
   title: string;
@@ -22,10 +23,6 @@ export interface OpportunityCorrectionDraft {
   workAuthorization: string;
 }
 
-const PUBLISHABLE_AUDIENCES = new Set<AudienceBucket>(['graduate', 'mixed']);
-const PUBLISHABLE_STAGES = new Set<GraduateStage>([
-  'msc_year_1', 'msc_year_2', 'msc_any', 'mixed_graduate', 'graduate_unspecified',
-]);
 const PAID_STATUSES = new Set<PaidStatus>(['paid', 'unpaid', 'stipend', 'unknown']);
 
 function isIsoDate(value: string): boolean {
@@ -63,11 +60,8 @@ export function buildPublishedCorrection(
   if (deadline && !isIsoDate(deadline)) {
     throw new Error('Deadline must be a valid date in YYYY-MM-DD format');
   }
-  if (!PUBLISHABLE_AUDIENCES.has(draft.audienceBucket)) {
-    throw new Error("A public record must be accessible to master's students");
-  }
-  if (!PUBLISHABLE_STAGES.has(draft.graduateStage)) {
-    throw new Error("Choose the master's stage supported by the posting");
+  if (!isPublishableAudienceStage(draft.audienceBucket, draft.graduateStage)) {
+    throw new Error('Choose the student audience and stage supported by the posting');
   }
   if (!PAID_STATUSES.has(draft.paidStatus)) throw new Error('Invalid paid status');
   if (!['open_verified', 'open_unverified'].includes(draft.status)) throw new Error('Invalid public status');

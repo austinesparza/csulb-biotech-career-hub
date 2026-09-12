@@ -6,16 +6,9 @@ import {
   RECRUITING_WINDOWS,
   WATCHED_EMPLOYERS,
 } from '@/lib/recruitingCalendar';
+import { DeadlinePlanner } from './deadline-planner';
 
 export const dynamic = 'force-dynamic';
-
-function formatDate(value: string) {
-  return new Date(value + 'T00:00:00').toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
 
 export default async function CalendarPage() {
   const supabase = createClient();
@@ -28,6 +21,11 @@ export default async function CalendarPage() {
   const opportunities = (data ?? []) as PublicOpportunity[];
   const dated = opportunities.filter((o) => o.deadline);
   const undated = opportunities.filter((o) => !o.deadline);
+  const activity = RECRUITING_MONTHS.map((month, monthIndex) => ({
+    month,
+    count: RECRUITING_WINDOWS.filter((window) => monthIndex >= window.start && monthIndex <= window.end).length,
+  }));
+  const maxActivity = Math.max(...activity.map((month) => month.count), 1);
 
   return (
     <div className="site-wrap">
@@ -41,23 +39,21 @@ export default async function CalendarPage() {
 
       <section className="editorial-strip">
         <div className="margin-note">
-          <h2>Roles on the board</h2>
-          <p>{opportunities.length} current reviewed role{opportunities.length === 1 ? '' : 's'}.</p>
+          <h2>Deadlines you can keep</h2>
+          <p>Select the roles you care about and download reminders for your calendar.</p>
         </div>
         <div>
           {error && <div className="notice"><span>!</span><span>Could not load the calendar.</span></div>}
           {!error && opportunities.length === 0 && <p>No current roles are available.</p>}
-          <ol className="timeline-list">
-            {dated.map((o) => (
-              <li className="timeline-row" key={o.id}>
-                <time className="timeline-date">{formatDate(o.deadline!)}</time>
-                <div className="timeline-line">
-                  <h2>{o.title}</h2>
-                  <p><strong>{o.company_name}</strong>{o.location ? ` · ${o.location}` : ''}</p>
-                  {o.posting_url && <p><a href={o.posting_url} target="_blank" rel="noopener noreferrer nofollow">Official posting ↗</a></p>}
-                </div>
-              </li>
-            ))}
+          {dated.length > 0 && <DeadlinePlanner deadlines={dated.map((o) => ({
+            id: o.id,
+            title: o.title,
+            company: o.company_name,
+            deadline: o.deadline!,
+            location: o.location,
+            url: o.posting_url,
+          }))} />}
+          {undated.length > 0 && <ol className="timeline-list timeline-undated">
             {undated.map((o) => (
               <li className="timeline-row" key={o.id}>
                 <span className="timeline-date">Open, no fixed date</span>
@@ -69,6 +65,30 @@ export default async function CalendarPage() {
                 </div>
               </li>
             ))}
+          </ol>}
+        </div>
+      </section>
+
+      <section className="calendar-pattern" aria-labelledby="pattern-title">
+        <div className="site-wrap calendar-pattern-grid">
+          <div>
+            <h2 id="pattern-title">Start looking before the listings arrive.</h2>
+            <p>
+              This chart counts employers in our past-cycle evidence by the months
+              when their recruiting windows have been active. It is a search cue,
+              not a forecast.
+            </p>
+          </div>
+          <ol className="calendar-bars" aria-label="Historical recruiting activity by month">
+            {activity.map((item) => (
+              <li key={item.month}>
+                <span className="calendar-bar-count">{item.count}</span>
+                <span className="calendar-bar-track">
+                  <span style={{ height: `${Math.max(10, item.count / maxActivity * 100)}%` }} />
+                </span>
+                <span>{item.month}</span>
+              </li>
+            ))}
           </ol>
         </div>
       </section>
@@ -76,7 +96,7 @@ export default async function CalendarPage() {
       <section className="editorial-strip">
         <div className="margin-note">
           <h2>Past recruiting windows</h2>
-          <p>Use these ranges to decide when to start checking. They do not indicate a current opening.</p>
+          <p>Past-cycle reference only. These ranges do not indicate a current opening.</p>
         </div>
         <div className="window-scroll" role="region" aria-label="Historical recruiting windows" tabIndex={0}>
           <div className="window-table">
@@ -90,7 +110,7 @@ export default async function CalendarPage() {
               <div className="window-row" key={item.employer}>
                 <div className="window-employer">
                   <strong>{item.employer}</strong>
-                  <span>{item.category}</span>
+                  <span>{item.category} · past-cycle pattern</span>
                 </div>
                 <div className="window-track">
                   <span

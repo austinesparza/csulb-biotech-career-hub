@@ -2,10 +2,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const SIGNALS = [
-  ['Real work', 'A problem the team genuinely needs solved.'],
-  ['Guidance', 'People who explain standards, context, and tradeoffs.'],
-  ['Growth', 'Methods and judgment you can use again.'],
-  ['Momentum', 'A clearer next move, even if your direction changes.'],
+  ['A real problem', 'Work the team genuinely needs done.'],
+  ['Someone who teaches', 'A manager or mentor who explains how good work is judged.'],
+  ['Skills you can carry', 'Methods, tools, and decisions you will understand well enough to use again.'],
+  ['A workable offer', 'Pay, timing, location, and support that make participation possible.'],
 ] as const;
 
 const CHECKS = [
@@ -19,11 +19,13 @@ const CHECKS = [
 
 const RESOURCES = [
   {
-    title: 'Search funded STEM programs',
+    title: 'Search funded research programs',
     href: 'https://www.pathwaystoscience.org/',
     image: '/brand/discipline-genomics.webp',
     alt: 'Fluorescence microscopy image from chromosome research',
     source: 'Pathways to Science',
+    status: 'Live directory',
+    note: 'Search current undergraduate and graduate programs. Confirm the year on each host page.',
   },
   {
     title: 'Find NSF research experiences',
@@ -31,13 +33,17 @@ const RESOURCES = [
     image: '/brand/discipline-protein.webp',
     alt: 'Protein crystals viewed through a microscope',
     source: 'National Science Foundation',
+    status: 'Live federal directory',
+    note: 'Browse NSF research experiences. The individual program page controls current dates and eligibility.',
   },
   {
-    title: 'Write for a scientific audience',
-    href: 'https://www.training.nih.gov/career-services/',
+    title: 'Prepare an application for science',
+    href: 'https://www.training.nih.gov/pdf/online-career-resources-guides/',
     image: '/brand/discipline-neuroscience.webp',
     alt: 'Fluorescence microscopy of green fluorescent neurons',
     source: 'NIH OITE',
+    status: 'Current guidance',
+    note: 'Practical guides for resumes, CVs, cover letters, interviews, and informational conversations.',
   },
   {
     title: 'Talk through your next move',
@@ -45,6 +51,17 @@ const RESOURCES = [
     image: '/brand/discipline-bioprocess.webp',
     alt: 'Cell-culture bioreactors in a laboratory',
     source: 'CSULB Career Development Center',
+    status: 'Current campus service',
+    note: 'Book a conversation about a search, application, interview, offer, or change in direction.',
+  },
+  {
+    title: 'Study a past internship cycle',
+    href: 'https://www.csulbbiotech.com/post/2024-2025-internship-repository',
+    image: '/brand/discipline-single-cell.webp',
+    alt: 'Fluorescence microscopy of NEAT1 paraspeckles in human cells',
+    source: 'CSULB Biotechnology Club',
+    status: 'Past-cycle reference',
+    note: 'Use these older roles to learn which employers and program types recur. Do not assume a listing is open now.',
   },
 ] as const;
 
@@ -53,16 +70,17 @@ export default function PreparationPage() {
     <div className="prepare-page">
       <header className="prepare-hero site-wrap">
         <div className="prepare-hero-copy">
-          <h1>Learn what good work looks like.</h1>
+          <h1>Choose work that teaches you something.</h1>
           <p>
-            An internship is a short window into how science moves: how questions
-            become methods, how teams make decisions, and where your strengths begin to grow.
+            The best internship is not always the biggest name. Look for real
+            responsibility, close guidance, skills you can carry forward, and a path
+            you can actually afford to take.
           </p>
         </div>
         <div className="prepare-hero-image">
           <Image
-            src="/brand/discipline-bioinformatics.webp"
-            alt="Analysts working in a DNA identification laboratory"
+            src="/brand/discipline-diagnostics.webp"
+            alt="Fluorescence microscopy panels used in molecular diagnostics research"
             fill
             preload
             sizes="(max-width: 820px) 100vw, 48vw"
@@ -72,7 +90,7 @@ export default function PreparationPage() {
 
       <section className="prepare-signals" aria-labelledby="signals-title">
         <div className="site-wrap">
-          <h2 id="signals-title">What makes an internship worth your time?</h2>
+          <h2 id="signals-title">Before you apply, ask what you will leave with.</h2>
           <div className="prepare-signal-grid">
             {SIGNALS.map(([title, body]) => (
               <article key={title}><h3>{title}</h3><p>{body}</p></article>
@@ -102,8 +120,8 @@ export default function PreparationPage() {
 
       <section className="trusted-resources site-wrap" aria-labelledby="resources-title">
         <header>
-          <h2 id="resources-title">Find the work. Build your way into it.</h2>
-          <p>Trusted search and preparation tools from public institutions and CSULB.</p>
+          <h2 id="resources-title">Good places to start.</h2>
+          <p>Current directories, practical guidance, and one clearly labeled record of an older search cycle.</p>
         </header>
         <div className="resource-grid">
           {RESOURCES.map((resource) => (
@@ -112,7 +130,9 @@ export default function PreparationPage() {
                 <Image src={resource.image} alt={resource.alt} fill sizes="(max-width: 640px) 100vw, 25vw" />
               </div>
               <div className="resource-copy">
+                <span className="resource-status">{resource.status}</span>
                 <h3>{resource.title}</h3>
+                <p>{resource.note}</p>
                 <span>{resource.source} <b aria-hidden="true">↗</b></span>
               </div>
             </a>

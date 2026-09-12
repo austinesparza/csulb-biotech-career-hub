@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { opportunityAudienceLabel } from '../lib/opportunityAudience';
+import { readFileSync } from 'node:fs';
+import {
+  normalizeOpportunityAudienceFilter,
+  isPublishableAudienceStage,
+  opportunityAudienceLabel,
+  opportunityMatchesAudience,
+} from '../lib/opportunityAudience';
 import type { PublicOpportunity } from '../lib/types';
+
+const audienceMigration = readFileSync(
+  'supabase/migrations/20260912232000_expand_student_audiences.sql',
+  'utf8',
+);
 
 function opportunity(overrides: Partial<PublicOpportunity>): PublicOpportunity {
   return {
@@ -47,5 +58,35 @@ describe('public opportunity audience labels', () => {
       .toBe('Undergraduate students');
     expect(opportunityAudienceLabel(opportunity({ audience_bucket: 'mixed' })))
       .toBe('Undergraduate and graduate students');
+  });
+});
+
+describe('opportunity audience filters', () => {
+  it('accepts only supported audience query values', () => {
+    expect(normalizeOpportunityAudienceFilter('undergraduate')).toBe('undergraduate');
+    expect(normalizeOpportunityAudienceFilter('graduate')).toBe('graduate');
+    expect(normalizeOpportunityAudienceFilter('everyone')).toBeUndefined();
+  });
+
+  it('includes mixed opportunities in both student views', () => {
+    expect(opportunityMatchesAudience({ audience_bucket: 'mixed' }, 'undergraduate')).toBe(true);
+    expect(opportunityMatchesAudience({ audience_bucket: 'mixed' }, 'graduate')).toBe(true);
+    expect(opportunityMatchesAudience({ audience_bucket: 'undergraduate' }, 'graduate')).toBe(false);
+    expect(opportunityMatchesAudience({ audience_bucket: 'graduate' }, 'undergraduate')).toBe(false);
+  });
+
+  it('pairs undergraduate and graduate audiences with supported stages', () => {
+    expect(isPublishableAudienceStage('undergraduate', 'not_msc')).toBe(true);
+    expect(isPublishableAudienceStage('undergraduate', 'msc_any')).toBe(false);
+    expect(isPublishableAudienceStage('graduate', 'msc_any')).toBe(true);
+    expect(isPublishableAudienceStage('mixed', 'graduate_unspecified')).toBe(true);
+    expect(isPublishableAudienceStage('special', 'not_msc')).toBe(false);
+  });
+
+  it('keeps database publication and corrections aligned with the UI boundary', () => {
+    expect(audienceMigration).toContain("p_audience_bucket = 'undergraduate'");
+    expect(audienceMigration).toContain("o.audience_bucket = 'undergraduate'");
+    expect(audienceMigration).toContain("v_opportunity.audience_bucket = 'undergraduate'");
+    expect(audienceMigration).toContain('uq_opportunity_source_links_source_posting');
   });
 });

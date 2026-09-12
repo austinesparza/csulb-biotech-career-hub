@@ -23,9 +23,9 @@ function opportunityDetails(opportunity: PublicOpportunity) {
 const DISCIPLINES = [
   { label: 'Cancer & oncology', focus: 'Cancer and oncology', image: '/brand/discipline-cancer.webp', alt: 'Fluorescence microscopy of DNA in oral cancer cells' },
   { label: 'Genomics & genetics', focus: 'Genomics and genetics', image: '/brand/discipline-genomics.webp', alt: 'Fluorescence microscopy image from chromosome research' },
-  { label: 'Bioinformatics', focus: 'Bioinformatics and computational biology', image: '/brand/discipline-bioinformatics.webp', alt: 'Analyst preparing a sample in a DNA identification laboratory' },
+  { label: 'Bioinformatics', focus: 'Bioinformatics and computational biology', image: '/brand/discipline-data-science.webp', alt: 'Published single-cell sequencing maps and data visualizations', imageClass: 'pathway-data' },
   { label: 'Bioprocess & manufacturing', focus: 'Bioprocess and manufacturing science', image: '/brand/discipline-bioprocess.webp', alt: 'Cell-culture bioreactors in a laboratory' },
-  { label: 'Protein science & drug discovery', focus: 'Protein science and drug discovery', image: '/brand/discipline-protein.webp', alt: 'Protein crystals viewed through a microscope' },
+  { label: 'Protein science & drug discovery', focus: 'Protein science and drug discovery', image: '/brand/discipline-protein.webp', alt: 'Protein crystals viewed through a microscope', imageClass: 'pathway-protein' },
   { label: 'Immunology & infectious disease', focus: 'Immunology and infectious disease', image: '/brand/discipline-immunology.webp', alt: 'Toxoplasma parasites inside a fibroblast host cell' },
 ] as const;
 
@@ -85,9 +85,9 @@ export default async function HomePage() {
 
       <section className="trust-ledger" aria-label="How the hub helps">
         <div className="site-wrap trust-ledger-inner">
-          <article><h2>Student-ready roles</h2></article>
-          <article><h2>Source evidence retained</h2></article>
-          <article><h2>Unknowns stay unknown</h2></article>
+          <article><h2>Current employer page linked</h2></article>
+          <article><h2>Degree rules in plain language</h2></article>
+          <article><h2>Missing details shown as unknown</h2></article>
           <div className="trust-metrics" aria-label="Current board counts">
             <div><strong>{studentRoles.length}</strong><span>open roles</span></div>
             <div><strong>{companies}</strong><span>employers</span></div>
@@ -162,7 +162,7 @@ export default async function HomePage() {
               href={`/internships?focus=${encodeURIComponent(discipline.focus)}`}
               className="biotech-pathway"
             >
-              <Image src={discipline.image} alt={discipline.alt} fill sizes="(max-width: 700px) 100vw, 33vw" />
+              <Image className={'imageClass' in discipline ? discipline.imageClass : undefined} src={discipline.image} alt={discipline.alt} fill sizes="(max-width: 700px) 100vw, 33vw" />
               <span><strong>{discipline.label}</strong><b aria-hidden="true">→</b></span>
             </Link>
           ))}
@@ -171,10 +171,10 @@ export default async function HomePage() {
 
       <section className="home-coda" aria-label="Career hub closing statement">
         <div className="home-coda-image">
-          <Image src="/brand/footer-lab.webp" alt="Scientists working in a DNA identification laboratory" fill sizes="(max-width: 760px) 100vw, 68vw" />
+          <Image src="/brand/hero-cells.webp" alt="Fluorescence microscopy of the cytoskeleton in cultured fibroblasts" fill sizes="(max-width: 760px) 100vw, 68vw" />
         </div>
         <div className="home-coda-copy">
-          <p>Start with a question.<br />Leave with a direction.</p>
+          <p>See where science<br />can take you.</p>
           <Link href="/internships">Explore opportunities <span aria-hidden="true">→</span></Link>
         </div>
       </section>

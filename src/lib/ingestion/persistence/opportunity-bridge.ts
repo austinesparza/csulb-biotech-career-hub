@@ -20,7 +20,7 @@ import type {
 
 export const PENDING_OPPORTUNITY_MIN_SCORE = 35;
 
-const ELIGIBILITY_SIGNAL = /\b(master(?:'s|s)|master(?: degree| students?| program| candidates?)|m\.?s\.?c?|graduate students?|graduate degree|bachelor'?s?|undergraduate|post[ -]?baccalaureate|postbac|ph\.?d\.?|doctoral|degree program|currently enrolled|pursuing an? (?:advanced|graduate) degree)\b/i;
+const ELIGIBILITY_SIGNAL = /\b(master(?:'s|s)|master(?: degree| students?| program| candidates?)|m\.?s\.?c?|graduate students?|graduate degree|bachelor'?s?|undergraduate|post[ -]?baccalaureate|postbac|ph\.?d\.?|doctoral|degree program|currently enrolled|pursuing an? (?:advanced|graduate) degree|no college degree(?: is)? (?:necessary|required))\b/i;
 const WORK_AUTHORIZATION_SIGNAL = /\b(work authorization|authorized to work|visa sponsorship|sponsorship|citizenship|required citizen|permanent resident|cpt|opt)\b/i;
 const CONTINUED_ENROLLMENT_SIGNAL = /\b(return(?:ing)? to (?:school|college|university|the program)|remain enrolled|continued? enrollment|continuing (?:their|your) (?:degree|studies|education)|enrolled .* (?:after|following) (?:the )?(?:internship|co-op))\b/i;
 
@@ -62,6 +62,9 @@ function mapAudienceBucket(
   stageId: string,
   evidence: string | null,
 ): AudienceBucket {
+  if (evidence && /\bno college degree(?: is)? (?:necessary|required)\b/i.test(evidence)) {
+    return 'mixed';
+  }
   if (
     evidence
     && /\bmaster(?:'s|s)?\b|\bgraduate students?\b/i.test(evidence)
@@ -104,7 +107,13 @@ export function deriveOpportunityEnrichment(posting: NormalizedSourcePosting) {
   const eligibilityEvidence = sourceSnippets(posting.descriptionText, ELIGIBILITY_SIGNAL).join(' | ') || null;
   const workAuthorization = sourceSnippets(posting.descriptionText, WORK_AUTHORIZATION_SIGNAL, 2).join(' | ') || null;
   const continuedEnrollmentEvidence = sourceSnippets(posting.descriptionText, CONTINUED_ENROLLMENT_SIGNAL, 1);
-  const graduateStage = mapGraduateStage(classification.stage.id);
+  const broadNoDegreeRequirement = Boolean(
+    eligibilityEvidence
+    && /\bno college degree(?: is)? (?:necessary|required)\b/i.test(eligibilityEvidence),
+  );
+  const graduateStage = broadNoDegreeRequirement
+    ? 'msc_any' as const
+    : mapGraduateStage(classification.stage.id);
   const audienceBucket = classification.keep
     ? mapAudienceBucket(classification.suggestedBucket, classification.stage.id, eligibilityEvidence)
     : 'unknown';
@@ -125,7 +134,9 @@ export function deriveOpportunityEnrichment(posting: NormalizedSourcePosting) {
     paidStatus: inferPaidStatus(posting.descriptionText),
     audienceBucket,
     audienceReason: eligibilityEvidence
-      ? `${classification.stage.label}: ${eligibilityEvidence}`
+      ? broadNoDegreeRequirement
+        ? `The official posting does not require a college degree. Undergraduate and graduate students may qualify if they have the stated skills: ${eligibilityEvidence}`
+        : `${classification.stage.label}: ${eligibilityEvidence}`
       : 'Graduate access is not stated clearly in the authoritative source; officer verification is required.',
     scientificLanes: classification.lanes.map((lane) => lane.label),
     jobFunctions: classification.functions.map((jobFunction) => jobFunction.label),
@@ -169,13 +180,6 @@ function postingToDraft(posting: NormalizedSourcePosting, companyId: string | nu
     family_key: familyKey,
     companyId,
   };
-}
-
-function mapMatchTypeToLinkType(kind: ReturnType<typeof matchOpportunity>['kind']): PersistedLinkMatchType {
-  if (kind === 'same_url' || kind === 'strict_key') return 'exact';
-  if (kind === 'family') return 'annual_family';
-  if (kind === 'fuzzy') return 'probable';
-  return 'alternate_source';
 }
 
 function toExistingOpportunity(row: OpportunityRow): ExistingOpportunity {
@@ -250,122 +254,106 @@ export async function bridgeOpportunityForSourcePosting(params: {
   let matchType: PersistedLinkMatchType | null = null;
   let protectedApproved = false;
   let createdPendingOpportunityId: string | null = null;
+  let possibleMatch: { opportunityId: string; kind: 'family' | 'fuzzy' } | null = null;
 
-  if (match.kind === 'same_url' || match.kind === 'strict_key' || match.kind === 'family' || match.kind === 'fuzzy') {
+  if (match.kind === 'family' || match.kind === 'fuzzy') {
+    // Similarity is a review signal, not proof of identity. Keep the new source
+    // posting attached to its own draft so an officer can compare both records
+    // without losing a distinct role or annual cycle.
+    possibleMatch = { opportunityId: match.opportunityId, kind: match.kind };
+  } else if (match.kind === 'same_url' || match.kind === 'strict_key') {
     linkedOpportunity = await repository.findOpportunityById(match.opportunityId);
     if (linkedOpportunity) {
-      if (match.kind === 'family' || match.kind === 'fuzzy') {
+      const policy = decideUpdatePolicy(linkedOpportunity);
+      const mayMutate = canAutoMutateDraft(linkedOpportunity) && policy.mode === 'update_fields';
+
+      if (!mayMutate) {
+        protectedApproved = policy.mode === 'touch_and_flag' || linkedOpportunity.review_status === 'approved';
         await repository.updateOpportunityObservation(linkedOpportunity.id, posting.fetchedAt);
-        await ensureOpenSourceReviewTask({
-          repository,
-          taskType: match.kind === 'family' ? 'possible_repost' : 'possible_duplicate',
-          entityTable: 'opportunities',
-          entityId: linkedOpportunity.id,
-          materialHash: sourcePosting.last_material_hash,
-          noteTag: match.kind,
-          noteBody: `${match.kind === 'family' ? 'Family-key' : 'Fuzzy'} match requires officer review before treating records as same opportunity.`,
-        });
 
-        matchType = mapMatchTypeToLinkType(match.kind);
-        await ensureLink({
-          repository,
-          opportunityId: linkedOpportunity.id,
-          sourcePostingId: sourcePosting.id,
-          matchType,
-          requestPrimary: false,
-        });
-      } else {
-        const policy = decideUpdatePolicy(linkedOpportunity);
-        const mayMutate = canAutoMutateDraft(linkedOpportunity) && policy.mode === 'update_fields';
-
-        if (!mayMutate) {
-          protectedApproved = policy.mode === 'touch_and_flag' || linkedOpportunity.review_status === 'approved';
-          await repository.updateOpportunityObservation(linkedOpportunity.id, posting.fetchedAt);
-
-          const changed = changedFlaggedFields(
-            {
-              title: draft.title,
-              posting_url: draft.posting_url,
-              location: draft.location,
-              eligibility: draft.eligibility,
-              focus_area: draft.focus_area,
-              deadline: draft.deadline,
-              deadline_text: draft.deadline_text,
-              paid_status: draft.paid_status,
-              application_type: draft.application_type,
-              source_status_raw: draft.source_status_raw,
-            },
-            linkedOpportunity as unknown as Record<string, unknown>,
-          );
-
-          if (materialChanged || changed.length > 0) {
-            await ensureOpenSourceReviewTask({
-              repository,
-              taskType: 'source_changed',
-              entityTable: 'opportunities',
-              entityId: linkedOpportunity.id,
-              materialHash: sourcePosting.last_material_hash,
-              noteTag: 'source_changed',
-              noteBody: `Linked source posting changed; opportunity fields preserved. Changed fields: ${changed.join(', ') || 'material_hash_only'}.`,
-            });
-          }
-        } else {
-          const casResult = await repository.updateOpportunityDraftFromPosting(linkedOpportunity.id, {
+        const changed = changedFlaggedFields(
+          {
             title: draft.title,
-            postingUrl: draft.posting_url,
+            posting_url: draft.posting_url,
             location: draft.location,
-            focusArea: draft.focus_area,
-            deadline: draft.deadline,
-            deadlineText: draft.deadline_text,
-            applicationType: draft.application_type,
-            sourceStatusRaw: draft.source_status_raw,
             eligibility: draft.eligibility,
-            paidStatus: draft.paidStatus,
-            audienceBucket: draft.audienceBucket,
-            audienceReason: draft.audienceReason,
-            scientificLanes: draft.scientificLanes,
-            jobFunctions: draft.jobFunctions,
-            methods: draft.methods,
-            graduateStage: draft.graduateStage,
-            eligibilityStatus: draft.eligibilityStatus,
-            eligibilityEvidence: draft.eligibilityEvidence,
-            continuedEnrollmentRequired: draft.continuedEnrollmentRequired,
-            workAuthorization: draft.workAuthorization,
-            applicationOpenedAt: draft.applicationOpenedAt,
-            lastCheckedAt: draft.lastCheckedAt,
-            sourceCheckResult: draft.sourceCheckResult,
-            discoveryRoute: draft.discoveryRoute,
-            relevanceScore: posting.relevanceScore,
-            relevanceReasons: [`score:${posting.relevanceScore}`],
-            observedAtIso: posting.fetchedAt,
+            focus_area: draft.focus_area,
+            deadline: draft.deadline,
+            deadline_text: draft.deadline_text,
+            paid_status: draft.paid_status,
+            application_type: draft.application_type,
+            source_status_raw: draft.source_status_raw,
+          },
+          linkedOpportunity as unknown as Record<string, unknown>,
+        );
+
+        if (materialChanged || changed.length > 0) {
+          await ensureOpenSourceReviewTask({
+            repository,
+            taskType: 'source_changed',
+            entityTable: 'opportunities',
+            entityId: linkedOpportunity.id,
+            materialHash: sourcePosting.last_material_hash,
+            noteTag: 'source_changed',
+            noteBody: `Linked source posting changed; opportunity fields preserved. Changed fields: ${changed.join(', ') || 'material_hash_only'}.`,
           });
-
-          if (!casResult.updated) {
-            // The opportunity was concurrently approved, rejected, or moved to a
-            // protected lifecycle state.  Preserve all fields; only touch
-            // observation metadata and open a source_changed task.
-            await repository.updateOpportunityObservation(linkedOpportunity.id, posting.fetchedAt);
-            await ensureOpenSourceReviewTask({
-              repository,
-              taskType: 'source_changed',
-              entityTable: 'opportunities',
-              entityId: linkedOpportunity.id,
-              materialHash: sourcePosting.last_material_hash,
-              noteTag: 'source_changed',
-              noteBody: `Linked source posting changed; opportunity protected during race. Material change detected.`,
-            });
-          }
         }
-
-        matchType = 'exact';
-        await ensureLink({
-          repository,
-          opportunityId: linkedOpportunity.id,
-          sourcePostingId: sourcePosting.id,
-          matchType,
-          requestPrimary: true,
+      } else {
+        const casResult = await repository.updateOpportunityDraftFromPosting(linkedOpportunity.id, {
+          title: draft.title,
+          postingUrl: draft.posting_url,
+          location: draft.location,
+          focusArea: draft.focus_area,
+          deadline: draft.deadline,
+          deadlineText: draft.deadline_text,
+          applicationType: draft.application_type,
+          sourceStatusRaw: draft.source_status_raw,
+          eligibility: draft.eligibility,
+          paidStatus: draft.paidStatus,
+          audienceBucket: draft.audienceBucket,
+          audienceReason: draft.audienceReason,
+          scientificLanes: draft.scientificLanes,
+          jobFunctions: draft.jobFunctions,
+          methods: draft.methods,
+          graduateStage: draft.graduateStage,
+          eligibilityStatus: draft.eligibilityStatus,
+          eligibilityEvidence: draft.eligibilityEvidence,
+          continuedEnrollmentRequired: draft.continuedEnrollmentRequired,
+          workAuthorization: draft.workAuthorization,
+          applicationOpenedAt: draft.applicationOpenedAt,
+          lastCheckedAt: draft.lastCheckedAt,
+          sourceCheckResult: draft.sourceCheckResult,
+          discoveryRoute: draft.discoveryRoute,
+          relevanceScore: posting.relevanceScore,
+          relevanceReasons: [`score:${posting.relevanceScore}`],
+          observedAtIso: posting.fetchedAt,
         });
+
+        if (!casResult.updated) {
+          // The opportunity was concurrently approved, rejected, or moved to a
+          // protected lifecycle state. Preserve all fields; only touch
+          // observation metadata and open a source_changed task.
+          await repository.updateOpportunityObservation(linkedOpportunity.id, posting.fetchedAt);
+          await ensureOpenSourceReviewTask({
+            repository,
+            taskType: 'source_changed',
+            entityTable: 'opportunities',
+            entityId: linkedOpportunity.id,
+            materialHash: sourcePosting.last_material_hash,
+            noteTag: 'source_changed',
+            noteBody: 'Linked source posting changed; opportunity protected during race. Material change detected.',
+          });
+        }
       }
+
+      matchType = 'exact';
+      await ensureLink({
+        repository,
+        opportunityId: linkedOpportunity.id,
+        sourcePostingId: sourcePosting.id,
+        matchType,
+        requestPrimary: true,
+      });
     }
   }
 
@@ -431,6 +419,18 @@ export async function bridgeOpportunityForSourcePosting(params: {
       relevanceReasons: [`score:${posting.relevanceScore}`],
       observedAtIso: posting.fetchedAt,
     });
+
+    if (possibleMatch) {
+      await ensureOpenSourceReviewTask({
+        repository,
+        taskType: possibleMatch.kind === 'family' ? 'possible_repost' : 'possible_duplicate',
+        entityTable: 'opportunities',
+        entityId: pending.id,
+        materialHash: sourcePosting.last_material_hash,
+        noteTag: possibleMatch.kind,
+        noteBody: `${possibleMatch.kind === 'family' ? 'Family-key' : 'Fuzzy'} similarity to opportunity ${possibleMatch.opportunityId}. Compare both records before merging them. The new source remains linked to its own draft.`,
+      });
+    }
 
     if (companyResolution.matchedFuzzy) {
       await ensureOpenSourceReviewTask({

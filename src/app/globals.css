@@ -677,3 +677,55 @@ body {
   .about-memory-copy { padding: 38px 24px; }
   .about-tool-list { grid-template-columns: 1fr; }
 }
+
+/* Audience and calendar tools */
+.audience-switch { display: inline-flex; padding: 3px; border: 1px solid var(--line-dark); border-radius: 999px; background: white; }
+.audience-switch a { min-height: 38px; display: inline-flex; align-items: center; border-radius: 999px; padding: 0 15px; color: var(--ink-soft); font-size: .76rem; font-weight: 750; text-decoration: none; white-space: nowrap; }
+.audience-switch a[aria-current="page"] { background: var(--teal-deep); color: white; }
+.audience-switch a:hover { color: var(--teal-deep); }
+.audience-switch a[aria-current="page"]:hover { color: white; }
+
+.deadline-planner-actions { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
+.deadline-planner-actions p { color: var(--ink-faint); font-family: var(--mono); font-size: .72rem; }
+.deadline-planner-actions > div { display: flex; align-items: center; gap: 12px; }
+.deadline-planner-actions button:not(.primary-button) { min-height: 40px; border: 0; background: transparent; color: var(--teal); font-size: .78rem; font-weight: 750; text-decoration: underline; text-underline-offset: .2em; }
+.deadline-planner-actions button:disabled { cursor: not-allowed; opacity: .45; }
+.timeline-select { display: flex; align-items: start; gap: 12px; cursor: pointer; }
+.timeline-select input { width: 17px; height: 17px; margin-top: 1px; accent-color: var(--teal); }
+.deadline-planner-note { margin-top: 14px; color: var(--ink-faint); font-size: .76rem; }
+.timeline-undated { margin-top: 38px; }
+.calendar-pattern { margin-block: 12px 36px; background: #123f36; color: white; }
+.calendar-pattern-grid { display: grid; grid-template-columns: minmax(260px, .75fr) minmax(0, 1.25fr); gap: clamp(42px, 8vw, 110px); align-items: end; min-height: 390px; padding-block: 58px; }
+.calendar-pattern h2 { max-width: 12ch; color: white; font-size: clamp(2.4rem, 4.4vw, 4.4rem); font-weight: 500; line-height: .96; }
+.calendar-pattern p { max-width: 46ch; margin-top: 20px; color: #dbe5e1; font-family: var(--serif); }
+.calendar-bars { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; height: 250px; margin: 0; padding: 0; list-style: none; }
+.calendar-bars li { display: grid; grid-template-rows: 20px 1fr 26px; gap: 6px; min-width: 0; color: #dbe5e1; text-align: center; font-family: var(--mono); font-size: .7rem; }
+.calendar-bar-count { color: #efc86f; }
+.calendar-bar-track { position: relative; display: flex; align-items: end; border-bottom: 1px solid rgba(255,255,255,.5); background: repeating-linear-gradient(to top, rgba(255,255,255,.08) 0 1px, transparent 1px 25%); }
+.calendar-bar-track > span { width: 100%; background: linear-gradient(to top, #00a98f, #efc86f); }
+
+/* Sharper science imagery and resource labeling */
+.biotech-pathway .pathway-data { object-fit: contain; padding: 24px 18px 66px; background: #f7f5ee; }
+.biotech-pathway .pathway-protein { object-position: center 46%; filter: saturate(1.2) contrast(1.04); }
+.biotech-pathway:has(.pathway-data)::after { inset: 58% 0 0; }
+.home-coda-image img { object-position: center 46%; filter: saturate(1.05) contrast(1.05); }
+.resource-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.resource-copy { min-height: 245px; }
+.resource-copy .resource-status { display: block; margin: 0 0 12px; color: var(--gold-mark); }
+.resource-copy p { margin-top: 14px; }
+
+@media (max-width: 980px) {
+  .resource-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .calendar-pattern-grid { grid-template-columns: 1fr; align-items: start; }
+}
+
+@media (max-width: 700px) {
+  .section-head { display: grid; align-items: start; }
+  .audience-switch { width: 100%; overflow-x: auto; border-radius: 4px; }
+  .audience-switch a { flex: 1; justify-content: center; border-radius: 2px; }
+  .deadline-planner-actions { display: grid; }
+  .deadline-planner-actions > div { flex-wrap: wrap; }
+  .calendar-bars { height: 205px; gap: 4px; }
+  .resource-grid { grid-template-columns: 1fr; }
+  .resource-copy { min-height: auto; }
+}

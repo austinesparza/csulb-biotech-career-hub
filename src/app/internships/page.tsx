@@ -1,5 +1,10 @@
 import { FOCUS_AREAS } from '@/lib/focusAreas';
 import { sanitizeSearchTerm } from '@/lib/normalize';
+import {
+  normalizeOpportunityAudienceFilter,
+  opportunityMatchesAudience,
+  type OpportunityAudienceFilter,
+} from '@/lib/opportunityAudience';
 import { createPublicServerClient } from '@/lib/supabase/public-server';
 import type { PublicOpportunity } from '@/lib/types';
 import { Board } from './board';
@@ -12,6 +17,7 @@ interface Search {
   loc?: string;
   paid?: string;
   sort?: string;
+  audience?: string;
 }
 
 export default async function InternshipsPage({ searchParams }: { searchParams: Promise<Search> }) {
@@ -21,6 +27,7 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
   const loc = sanitizeSearchTerm(params.loc);
   const paid = params.paid === 'paid' ? 'paid' : undefined;
   const sort = ['deadline', 'newest', 'company'].includes(params.sort ?? '') ? params.sort : undefined;
+  const audience = normalizeOpportunityAudienceFilter(params.audience);
   const supabase = createPublicServerClient();
   const { data, error } = await supabase.rpc('search_public_opportunities', {
     p_query: q ?? null,
@@ -30,7 +37,20 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
     p_sort: sort ?? 'recommended',
     p_limit: 200,
   });
-  const opportunities = (data ?? []) as PublicOpportunity[];
+  const opportunities = ((data ?? []) as PublicOpportunity[])
+    .filter((opportunity) => opportunityMatchesAudience(opportunity, audience));
+
+  const audienceHref = (next: OpportunityAudienceFilter | undefined) => {
+    const query = new URLSearchParams();
+    if (q) query.set('q', q);
+    if (focus) query.set('focus', focus);
+    if (loc) query.set('loc', loc);
+    if (paid) query.set('paid', paid);
+    if (sort) query.set('sort', sort);
+    if (next) query.set('audience', next);
+    const suffix = query.toString();
+    return suffix ? `/internships?${suffix}` : '/internships';
+  };
 
   return (
     <div className="site-wrap">
@@ -48,10 +68,15 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
             <h2 id="board-title">Opportunity board</h2>
             <p className="mono" style={{ marginTop: 8 }}>{opportunities.length} reviewed result{opportunities.length === 1 ? '' : 's'}</p>
           </div>
-          <p>Each record names its source. Unknown values stay unknown until the evidence supports them.</p>
+          <nav className="audience-switch" aria-label="Filter by student level">
+            <a href={audienceHref(undefined)} aria-current={!audience ? 'page' : undefined}>All students</a>
+            <a href={audienceHref('undergraduate')} aria-current={audience === 'undergraduate' ? 'page' : undefined}>Undergraduate</a>
+            <a href={audienceHref('graduate')} aria-current={audience === 'graduate' ? 'page' : undefined}>Graduate</a>
+          </nav>
         </div>
 
         <form className="filters" method="get">
+          {audience && <input type="hidden" name="audience" value={audience} />}
           <label className="filter-field filter-search">
             <span>Search</span>
             <input name="q" defaultValue={q ?? ''} placeholder="Employer, role, method, or location" maxLength={80} />
