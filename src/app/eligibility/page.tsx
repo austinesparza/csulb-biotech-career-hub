@@ -142,6 +142,38 @@ export default function PreparationPage() {
         </div>
       </section>
 
+      <section className="student-tracker site-wrap" aria-labelledby="student-tracker-title">
+        <div className="student-tracker-copy">
+          <h2 id="student-tracker-title">Keep your own search record.</h2>
+          <p>
+            The club&apos;s first internship archive began in a spreadsheet. This private
+            copy keeps the useful parts for your own search.
+          </p>
+          <div className="student-tracker-points" aria-label="Tracker contents">
+            <span>Deadlines and rolling dates</span>
+            <span>Next actions and follow-ups</span>
+            <span>Application status</span>
+            <span>Source verification</span>
+          </div>
+          <a
+            className="tracker-download"
+            href="/downloads/CSULB-Biotech-Career-Hub-Opportunity-Tracker.xlsx"
+            download
+          >
+            Download the Excel tracker
+          </a>
+        </div>
+        <div className="student-tracker-preview" aria-hidden="true">
+          <Image
+            src="/brand/student-tracker-preview.webp"
+            alt=""
+            width={1400}
+            height={342}
+            sizes="(max-width: 820px) 100vw, 52vw"
+          />
+        </div>
+      </section>
+
       <div className="notice prepare-privacy site-wrap">
         <span aria-hidden="true">i</span>
         <span>Do not enter GPA, citizenship, work authorization, transcript information, or application history into a shared browser profile. <Link href="/privacy">Read the privacy policy.</Link></span>
