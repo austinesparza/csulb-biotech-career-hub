@@ -112,7 +112,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section className="mission-story">
+      <section className="mission-story" aria-labelledby="mission-title">
         <div className="site-wrap mission-story-grid">
           <figure className="mission-visual">
             <Image
@@ -121,45 +121,55 @@ export default async function HomePage() {
               fill
               sizes="(max-width: 820px) 100vw, 40vw"
             />
-            <figcaption>Research · data · manufacturing · public health</figcaption>
           </figure>
           <div className="mission-statement">
-            <p className="editorial-overline">Why this exists</p>
-            <h2>Opportunity should not depend on already knowing where to look.</h2>
+            <h2 id="mission-title">What we learn about life can change how life is lived.</h2>
             <p>
-              Biotechnology internships are scattered across employers, disciplines,
-              and recruiting systems. This student-built hub brings credible openings,
-              practical context, and preparation resources into one place.
+              Across laboratories, data, manufacturing, and medicine, biotechnology
+              carries discovery into the world. This hub helps CSULB students find
+              a place in that work.
             </p>
-            <div className="mission-sequence" aria-label="Find, understand, prepare, and apply">
-              <span>Find</span><i aria-hidden="true" />
-              <span>Understand</span><i aria-hidden="true" />
-              <span>Prepare</span><i aria-hidden="true" />
-              <span>Apply</span>
-            </div>
             <div className="mission-links">
-              <Link href="/eligibility">Prepare for an internship <span aria-hidden="true">→</span></Link>
-              <Link href="/about">How the hub works</Link>
+              <Link href="/about">Our story <span aria-hidden="true">→</span></Link>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="pathways site-wrap" aria-labelledby="pathways-title">
-        <header className="editorial-section-label">
-          <h2 id="pathways-title">Find your next step</h2>
-          <span>Different questions. One place to start.</span>
+      <section className="biotech-pathways site-wrap" aria-labelledby="pathways-title">
+        <header>
+          <h2 id="pathways-title">See where the science can take you.</h2>
+          <Link href="/internships">Explore every opportunity <span aria-hidden="true">→</span></Link>
         </header>
-        <div className="pathway-grid">
-          <Link href="/internships"><span>01</span><h3>Opportunities</h3><p>Search current, reviewed roles by science, location, and timing.</p><b aria-hidden="true">→</b></Link>
-          <Link href="/eligibility"><span>02</span><h3>Prepare</h3><p>Know what to look for, build your materials, and apply with intention.</p><b aria-hidden="true">→</b></Link>
-          <Link href="/calendar"><span>03</span><h3>Recruiting windows</h3><p>See deadlines now and patterns worth preparing for next.</p><b aria-hidden="true">→</b></Link>
+        <div className="biotech-pathway-grid">
+          <Link href="/internships?q=research" className="biotech-pathway biotech-pathway-research">
+            <Image src="/brand/cellular-field.webp" alt="Microscopy-inspired network of cells" fill sizes="(max-width: 700px) 100vw, 25vw" />
+            <span><strong>Research</strong><small>Ask what no one knows yet.</small></span>
+          </Link>
+          <Link href="/internships?q=therapeutics" className="biotech-pathway biotech-pathway-therapeutics">
+            <Image src="/brand/tissue-field.webp" alt="Microscopy-inspired biological tissue" fill sizes="(max-width: 700px) 100vw, 25vw" />
+            <span><strong>Therapeutics</strong><small>Move an idea toward a patient.</small></span>
+          </Link>
+          <Link href="/internships?q=manufacturing" className="biotech-pathway biotech-pathway-manufacturing">
+            <Image src="/brand/bioprocess-light.webp" alt="Precision work in a bright bioprocess laboratory" fill sizes="(max-width: 700px) 100vw, 25vw" />
+            <span><strong>Biomanufacturing</strong><small>Make discovery reproducible.</small></span>
+          </Link>
+          <Link href="/internships?q=genomics" className="biotech-pathway biotech-pathway-genomics">
+            <Image src="/brand/genomic-flow.webp" alt="Sequencing flow cell with abstract genomic patterns" fill sizes="(max-width: 700px) 100vw, 25vw" />
+            <span><strong>Genomics &amp; data</strong><small>Find patterns biology hides.</small></span>
+          </Link>
         </div>
       </section>
 
-      <div className="home-freshness site-wrap mono">
-        Latest officer evidence check: <time>{formatDate(checked)}</time>
-      </div>
+      <section className="home-coda" aria-label="Career hub closing statement">
+        <div className="home-coda-image">
+          <Image src="/brand/career-workbench.webp" alt="A biotechnology student reviewing application materials in a laboratory" fill sizes="(max-width: 760px) 100vw, 68vw" />
+        </div>
+        <div className="home-coda-copy">
+          <p>Start with a question.<br />Leave with a direction.</p>
+          <span className="mono">Latest review <time>{formatDate(checked)}</time></span>
+        </div>
+      </section>
     </div>
   );
 }

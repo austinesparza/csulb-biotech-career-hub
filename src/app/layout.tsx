@@ -45,7 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <BrandMark className="brand-mark" />
               <div>
                 <div className="footer-title"><span>CSULB</span> Biotech Career Hub</div>
-                <p>Built by the CSULB Biotechnology Club for students navigating science careers. Always verify the live employer posting before applying.</p>
+                <p>Built by the CSULB Biotechnology Club for students finding their place in science.</p>
               </div>
             </div>
             <div className="mono" style={{ textAlign: 'right' }}>

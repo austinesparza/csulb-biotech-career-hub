@@ -22,15 +22,23 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
   const paid = params.paid === 'paid' ? 'paid' : undefined;
   const sort = ['deadline', 'newest', 'company'].includes(params.sort ?? '') ? params.sort : undefined;
   const supabase = createPublicServerClient();
-  const { data, error } = await supabase.rpc('search_public_opportunities', {
-    p_query: q ?? null,
-    p_focus: focus ?? null,
-    p_location: loc ?? null,
-    p_paid_only: !!paid,
-    p_sort: sort ?? 'recommended',
-    p_limit: 200,
-  });
+  const [{ data, error }, { data: companyData }] = await Promise.all([
+    supabase.rpc('search_public_opportunities', {
+      p_query: q ?? null,
+      p_focus: focus ?? null,
+      p_location: loc ?? null,
+      p_paid_only: !!paid,
+      p_sort: sort ?? 'recommended',
+      p_limit: 200,
+    }),
+    supabase.from('public_companies').select('name, website'),
+  ]);
   const opportunities = (data ?? []) as PublicOpportunity[];
+  const companyWebsites = Object.fromEntries(
+    (companyData ?? []).flatMap((company) => (
+      company.website ? [[company.name, company.website] as const] : []
+    )),
+  );
 
   return (
     <div className="site-wrap">
@@ -56,9 +64,9 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
             <input name="q" defaultValue={q ?? ''} placeholder="Employer, role, method, or location" maxLength={80} />
           </label>
           <label className="filter-field">
-            <span>Scientific lane</span>
+            <span>Discipline</span>
             <select name="focus" defaultValue={focus ?? ''}>
-              <option value="">All lanes</option>
+              <option value="">All disciplines</option>
               {FOCUS_AREAS.map((f) => <option key={f} value={f}>{f}</option>)}
             </select>
           </label>
@@ -86,7 +94,9 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
         {!error && opportunities.length === 0 && (
           <div className="notice"><span>◇</span><span>No matching graduate internships right now. Try another filter or <a href="/submit">submit a role</a>.</span></div>
         )}
-        {opportunities.length > 0 && <Board opportunities={opportunities} sorted={!!sort} />}
+        {opportunities.length > 0 && (
+          <Board opportunities={opportunities} sorted={!!sort} companyWebsites={companyWebsites} />
+        )}
       </section>
     </div>
   );

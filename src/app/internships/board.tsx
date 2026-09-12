@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { allFocusAreas } from '@/lib/focusAreas';
 import type { PublicOpportunity } from '@/lib/types';
@@ -33,6 +34,61 @@ function formatDate(value: string) {
   return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+const SHORT_TAGS: Record<string, string> = {
+  'Cancer and oncology': 'Oncology',
+  'Genomics and genetics': 'Genomics',
+  'Single-cell and spatial': 'Single-cell & spatial',
+  'Bioinformatics and computational biology': 'Bioinformatics',
+  'Biological data science and ML': 'Data science & ML',
+  'Diagnostics and clinical data': 'Diagnostics',
+  'Bioprocess and manufacturing science': 'Bioprocess',
+  'Protein science and drug discovery': 'Drug discovery',
+  'Neuroscience and neurodegeneration': 'Neuroscience',
+  'Immunology and infectious disease': 'Immunology',
+};
+
+function opportunityTags(o: PublicOpportunity): string[] {
+  const seen = new Set<string>();
+  return [o.focus_area ?? '', ...(o.scientific_lanes ?? []), ...(o.job_functions ?? []), ...(o.methods ?? []), ...(o.industry_context ?? [])]
+    .map((tag) => SHORT_TAGS[tag] ?? tag)
+    .filter((tag) => {
+      const normalized = tag.trim().toLowerCase();
+      if (!normalized || /^(?:(?:bio)?tech(?:nology)?|pharma(?:ceuticals?)?|life sciences?)$/.test(normalized)) return false;
+      if (seen.has(normalized)) return false;
+      seen.add(normalized);
+      return true;
+    })
+    .slice(0, 3);
+}
+
+function companyInitials(name: string): string {
+  return name.split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase() ?? '').join('');
+}
+
+function companyLogoUrl(website?: string): string | null {
+  if (!website) return null;
+  try {
+    const normalized = /^https?:\/\//i.test(website) ? website : `https://${website}`;
+    const domain = new URL(normalized).hostname;
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+  } catch {
+    return null;
+  }
+}
+
+function CompanyMark({ name, website }: { name: string; website?: string }) {
+  const [failed, setFailed] = useState(false);
+  const logo = companyLogoUrl(website);
+  return (
+    <div className="company-mark" aria-hidden="true">
+      <span>{companyInitials(name)}</span>
+      {logo && !failed && (
+        <Image src={logo} alt="" width={48} height={48} onError={() => setFailed(true)} />
+      )}
+    </div>
+  );
+}
+
 function graduateStage(o: PublicOpportunity): string {
   const reviewed: Partial<Record<PublicOpportunity['graduate_stage'], string>> = {
     msc_year_1: 'First-year MSc student',
@@ -59,7 +115,11 @@ function graduateStage(o: PublicOpportunity): string {
   return 'Graduate student, year not specified';
 }
 
-export function Board({ opportunities, sorted }: { opportunities: PublicOpportunity[]; sorted: boolean }) {
+export function Board({ opportunities, sorted, companyWebsites }: {
+  opportunities: PublicOpportunity[];
+  sorted: boolean;
+  companyWebsites: Record<string, string>;
+}) {
   const [prefs, setPrefs] = useState<Prefs>(EMPTY_PREFS);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
@@ -134,11 +194,11 @@ export function Board({ opportunities, sorted }: { opportunities: PublicOpportun
           <section key={group.label ?? groupIndex}>
             {group.label && <h2 className="ledger-group-title">{group.label}</h2>}
             <ol>
-              {group.items.map((opportunity, index) => (
+              {group.items.map((opportunity) => (
                 <OpportunityRecord
                   key={opportunity.id}
                   opportunity={opportunity}
-                  index={index + 1}
+                  companyWebsite={companyWebsites[opportunity.company_name]}
                   bonus={active ? personalBonus(opportunity, prefs) : { pts: 0, why: [] }}
                 />
               ))}
@@ -150,26 +210,30 @@ export function Board({ opportunities, sorted }: { opportunities: PublicOpportun
   );
 }
 
-function OpportunityRecord({ opportunity: o, index, bonus }: {
+function OpportunityRecord({ opportunity: o, companyWebsite, bonus }: {
   opportunity: PublicOpportunity;
-  index: number;
+  companyWebsite?: string;
   bonus: { pts: number; why: string[] };
 }) {
   const urgent = !!o.deadline && daysUntil(o.deadline) >= 0 && daysUntil(o.deadline) <= 14;
   const timing = o.deadline ? `Apply by ${formatDate(o.deadline + 'T00:00:00')}` : (o.deadline_text ?? 'No deadline stated');
   const eligibility = o.eligibility ?? 'Confirm the degree and enrollment requirements in the live posting.';
+  const tags = opportunityTags(o);
 
   return (
     <li className="opportunity-record">
       <div className="record-aside">
-        <span className="record-index">{String(index).padStart(2, '0')}</span>
-        <div className="record-status">{o.status === 'open_verified' ? 'Open' : 'Open, verify'}</div>
+        <CompanyMark name={o.company_name} website={companyWebsite} />
         <div className="record-urgency">{urgent ? 'Closing soon' : (isFresh(o) ? 'New this week' : 'Review details')}</div>
       </div>
       <div>
         <div className="record-company">{o.company_name}</div>
         <h3 className="record-title">{o.title}</h3>
-        <p className="record-focus">{o.focus_area ?? 'Scientific focus not stated'}</p>
+        {tags.length > 0 && (
+          <div className="record-tags" aria-label="Disciplines and methods">
+            {tags.map((tag) => <span key={tag}>{tag}</span>)}
+          </div>
+        )}
         <div className="record-meta">
           {o.location && <span>{o.location}</span>}
           {o.start_date_text && <span>{o.start_date_text}</span>}
@@ -182,7 +246,7 @@ function OpportunityRecord({ opportunity: o, index, bonus }: {
           {bonus.pts > 0 && <span className="pill pill-teal" title={bonus.why.join(', ')}>Match for you</span>}
           {isFresh(o) && <span className="pill pill-gold">New</span>}
           <span className={o.status === 'open_verified' ? 'pill pill-green' : 'pill pill-gold'}>
-            {o.status === 'open_verified' ? 'Officer verified' : 'Confirm live posting'}
+            {o.status === 'open_verified' ? 'Reviewed' : 'Check current status'}
           </span>
         </div>
         {o.public_notes && <p style={{ marginTop: 12, fontSize: '.86rem' }}>{o.public_notes}</p>}
