@@ -7,7 +7,7 @@
 //     listings an officer already reviewed.
 //   - Nothing is ever auto-deleted or auto-merged.
 
-import { normalizeCompanyName } from './normalize';
+import { normalizeCompanyName, normalizeUrl } from './normalize';
 
 /** Dice coefficient on character bigrams: 0..1. Cheap and dependency-free. */
 export function similarity(a: string, b: string): number {
@@ -85,7 +85,12 @@ export function matchOpportunity(
   existing: ExistingOpportunity[],
 ): OpportunityMatch {
   if (draft.posting_url) {
-    const byUrl = existing.find((o) => o.posting_url === draft.posting_url);
+    const normalizedDraftUrl = normalizeUrl(draft.posting_url);
+    const byUrl = existing.find((o) => {
+      if (!o.posting_url) return false;
+      const normalizedExistingUrl = normalizeUrl(o.posting_url);
+      return normalizedDraftUrl !== null && normalizedExistingUrl === normalizedDraftUrl;
+    });
     if (byUrl) return { kind: 'same_url', opportunityId: byUrl.id };
   }
 
