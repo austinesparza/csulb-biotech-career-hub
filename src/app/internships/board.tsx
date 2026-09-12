@@ -4,7 +4,11 @@ import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { companyLogoPath } from '@/lib/companyLogos';
 import { allFocusAreas } from '@/lib/focusAreas';
-import { opportunityAudienceLabel } from '@/lib/opportunityAudience';
+import {
+  opportunityAudienceLabel,
+  opportunityMatchesAudience,
+  type OpportunityAudienceFilter,
+} from '@/lib/opportunityAudience';
 import type { PublicOpportunity } from '@/lib/types';
 
 const PREFS_KEY = 'career-hub-prefs-v1';
@@ -83,10 +87,12 @@ function CompanyMark({ name }: { name: string }) {
   );
 }
 
-export function Board({ opportunities, sorted }: {
+export function Board({ opportunities, sorted, initialAudience }: {
   opportunities: PublicOpportunity[];
   sorted: boolean;
+  initialAudience?: OpportunityAudienceFilter;
 }) {
+  const [audience, setAudience] = useState<OpportunityAudienceFilter | undefined>(initialAudience);
   const [prefs, setPrefs] = useState<Prefs>(EMPTY_PREFS);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
@@ -103,20 +109,29 @@ export function Board({ opportunities, sorted }: {
     setPrefs(next);
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(next)); } catch { /* Device-only preference is optional. */ }
   };
-  const focuses = useMemo(() => allFocusAreas(opportunities.map((o) => o.focus_area)), [opportunities]);
+  const visibleOpportunities = useMemo(
+    () => opportunities.filter((opportunity) => opportunityMatchesAudience(opportunity, audience)),
+    [audience, opportunities],
+  );
+  const audienceCounts = useMemo(() => ({
+    all: opportunities.length,
+    undergraduate: opportunities.filter((opportunity) => opportunityMatchesAudience(opportunity, 'undergraduate')).length,
+    graduate: opportunities.filter((opportunity) => opportunityMatchesAudience(opportunity, 'graduate')).length,
+  }), [opportunities]);
+  const focuses = useMemo(() => allFocusAreas(visibleOpportunities.map((o) => o.focus_area)), [visibleOpportunities]);
   const active = loaded && prefsActive(prefs);
   const total = (o: PublicOpportunity) => (o.relevance_score ?? 0) + (active ? personalBonus(o, prefs).pts : 0);
 
   let groups: Array<{ label: string | null; items: PublicOpportunity[] }>;
   if (sorted) {
-    groups = [{ label: null, items: opportunities }];
+    groups = [{ label: null, items: visibleOpportunities }];
   } else {
     const byScore = (a: PublicOpportunity, b: PublicOpportunity) => total(b) - total(a);
-    const closing = opportunities
+    const closing = visibleOpportunities
       .filter((o) => o.deadline && daysUntil(o.deadline) >= 0 && daysUntil(o.deadline) <= 14)
       .sort((a, b) => daysUntil(a.deadline!) - daysUntil(b.deadline!));
-    const fresh = opportunities.filter((o) => !closing.includes(o) && isFresh(o)).sort(byScore);
-    const rest = opportunities.filter((o) => !closing.includes(o) && !fresh.includes(o)).sort(byScore);
+    const fresh = visibleOpportunities.filter((o) => !closing.includes(o) && isFresh(o)).sort(byScore);
+    const rest = visibleOpportunities.filter((o) => !closing.includes(o) && !fresh.includes(o)).sort(byScore);
     groups = [
       { label: 'Closing soon', items: closing },
       { label: 'New this week', items: fresh },
@@ -126,6 +141,35 @@ export function Board({ opportunities, sorted }: {
 
   return (
     <>
+      <div className="board-audience-row">
+        <nav className="audience-switch" aria-label="Filter by student level">
+          {([
+            [undefined, 'All students', audienceCounts.all],
+            ['undergraduate', 'Undergraduate', audienceCounts.undergraduate],
+            ['graduate', 'Graduate', audienceCounts.graduate],
+          ] as const).map(([value, label, count]) => (
+            <button
+              type="button"
+              key={label}
+              aria-pressed={audience === value}
+              onClick={() => {
+                setAudience(value);
+                const url = new URL(window.location.href);
+                if (value) url.searchParams.set('audience', value);
+                else url.searchParams.delete('audience');
+                window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+              }}
+            >
+              {label} <span>{count}</span>
+            </button>
+          ))}
+        </nav>
+        <p className="board-result-count" aria-live="polite">
+          Showing {visibleOpportunities.length} of {opportunities.length} reviewed role{opportunities.length === 1 ? '' : 's'}
+        </p>
+        {audience && <input type="hidden" form="opportunity-filters" name="audience" value={audience} />}
+      </div>
+
       <details className="preference-panel">
         <summary>Tune the board for you <span>optional, saved on this device only</span></summary>
         <div className="preference-content">
@@ -156,7 +200,9 @@ export function Board({ opportunities, sorted }: {
         </div>
       </details>
 
-      <div className="ledger">
+      {visibleOpportunities.length === 0 ? (
+        <div className="notice"><span>◇</span><span>No roles match this student level. Try All students or another search.</span></div>
+      ) : <div className="ledger">
         {groups.map((group, groupIndex) => (
           <section key={group.label ?? groupIndex}>
             {group.label && <h2 className="ledger-group-title">{group.label}</h2>}
@@ -171,7 +217,7 @@ export function Board({ opportunities, sorted }: {
             </ol>
           </section>
         ))}
-      </div>
+      </div>}
     </>
   );
 }

@@ -2,11 +2,13 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import type { PublicOpportunity } from '@/lib/types';
 import {
+  HISTORICAL_ARCHIVE_SUMMARY,
+  HISTORICAL_ROLE_ACTIVITY,
   RECRUITING_MONTHS,
-  RECRUITING_WINDOWS,
   WATCHED_EMPLOYERS,
 } from '@/lib/recruitingCalendar';
 import { DeadlinePlanner } from './deadline-planner';
+import { CalendarWatchlist } from './watchlist';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +25,7 @@ export default async function CalendarPage() {
   const undated = opportunities.filter((o) => !o.deadline);
   const activity = RECRUITING_MONTHS.map((month, monthIndex) => ({
     month,
-    count: RECRUITING_WINDOWS.filter((window) => monthIndex >= window.start && monthIndex <= window.end).length,
+    count: HISTORICAL_ROLE_ACTIVITY[monthIndex],
   }));
   const maxActivity = Math.max(...activity.map((month) => month.count), 1);
 
@@ -72,12 +74,17 @@ export default async function CalendarPage() {
       <section className="calendar-pattern" aria-labelledby="pattern-title">
         <div className="site-wrap calendar-pattern-grid">
           <div>
-            <h2 id="pattern-title">Start looking before the listings arrive.</h2>
+            <h2 id="pattern-title">Learning from our past searches.</h2>
             <p>
-              This chart counts employers in our past-cycle evidence by the months
-              when their recruiting windows have been active. It is a search cue,
-              not a forecast.
+              Every dated role from the club&apos;s two supplied tracking cycles contributes
+              to this chart. It shows when we found listings, not when an employer has
+              promised to recruit again.
             </p>
+            <dl className="calendar-history-metrics">
+              <div><dt>Roles studied</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.roles}</dd></div>
+              <div><dt>Cycles</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.cycles}</dd></div>
+              <div><dt>Named employer records</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.namedEmployerRecords}</dd></div>
+            </dl>
           </div>
           <ol className="calendar-bars" aria-label="Historical recruiting activity by month">
             {activity.map((item) => (
@@ -93,55 +100,34 @@ export default async function CalendarPage() {
         </div>
       </section>
 
-      <section className="editorial-strip">
-        <div className="margin-note">
-          <h2>Past recruiting windows</h2>
-          <p>Past-cycle reference only. These ranges do not indicate a current opening.</p>
+      <section className="calendar-learning site-wrap" aria-labelledby="calendar-learning-title">
+        <div>
+          <span className="mono">A growing training record</span>
+          <h2 id="calendar-learning-title">Past listings teach the search where to look next.</h2>
         </div>
-        <div className="window-scroll" role="region" aria-label="Historical recruiting windows" tabIndex={0}>
-          <div className="window-table">
-            <div className="window-month-row" aria-hidden="true">
-              <span />
-              <div className="window-months">
-                {RECRUITING_MONTHS.map((month) => <span key={month}>{month}</span>)}
-              </div>
-            </div>
-            {RECRUITING_WINDOWS.map((item) => (
-              <div className="window-row" key={item.employer}>
-                <div className="window-employer">
-                  <strong>{item.employer}</strong>
-                  <span>{item.category} · past-cycle pattern</span>
-                </div>
-                <div className="window-track">
-                  <span
-                    className="window-bar"
-                    style={{ gridColumn: `${item.start + 1} / ${item.end + 2}` }}
-                    title={`${item.timing}. ${item.note}`}
-                  />
-                </div>
-                <div className="window-detail">
-                  <strong>{item.timing}</strong>
-                  <span>{item.note} <a href={item.source} target="_blank" rel="noopener noreferrer nofollow">Source ↗</a></span>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div>
+          <p>
+            We preserve employer, role family, month first seen, audience, deadline language,
+            location, source, and review outcome. Those labels can improve search ordering,
+            surface recurring programs, and flag unusual changes across cycles.
+          </p>
+          <p>
+            Two cycles are enough to guide attention, not enough for a confident forecast.
+            As reviewed seasons accumulate, we can evaluate models against what actually
+            appeared. Employer evidence still decides what reaches the public board.
+          </p>
         </div>
       </section>
 
-      <section className="editorial-strip">
+      <section className="calendar-watch-section site-wrap">
         <div className="margin-note">
-          <h2>Watching</h2>
-          <p>No reliable recruiting window yet.</p>
+          <h2>Search watchlist</h2>
+          <p>
+            Employers found in the club archive sit beside a wider biotechnology watch.
+            An older appearance is a lead for discovery, never proof of a current opening.
+          </p>
         </div>
-        <div className="directory-grid">
-          {WATCHED_EMPLOYERS.map((item) => (
-            <a className="directory-row" href={item.source} target="_blank" rel="noopener noreferrer nofollow" key={item.employer} style={{ textDecoration: 'none' }}>
-              <div><h2>{item.employer}</h2><p>{item.category}</p><p className="mono">{item.cadence}</p></div>
-              <span>↗</span>
-            </a>
-          ))}
-        </div>
+        <CalendarWatchlist employers={WATCHED_EMPLOYERS} />
       </section>
       <p style={{ paddingBottom: 64 }}><Link href="/internships">Return to the opportunity board</Link></p>
     </div>

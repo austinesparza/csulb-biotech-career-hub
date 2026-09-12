@@ -3,16 +3,16 @@ import Link from 'next/link';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
 
 const SYSTEM_STEPS = [
-  ['Official listings first', 'We watch employer career feeds and program pages. Student leads can widen the search, but the employer page is where verification begins.'],
-  ['Important fields, with evidence', 'The system pulls the requisition, dates, degree language, pay, methods, and location. It keeps the source text behind those fields.'],
-  ['Same role or a look-alike?', 'Exact job IDs and links can match automatically. Similar titles stay separate until an officer decides whether they are duplicates, reposts, or different jobs.'],
-  ['An officer publishes', 'A club officer checks the current page and the extracted evidence. A role reaches the public board only after that review.'],
+  ['Search beyond one network', 'Employer feeds, program pages, the club archive, and student leads widen the places we can look.'],
+  ['Keep the source close', 'Dates, degree language, pay, methods, and location remain connected to the text that supports them.'],
+  ['Treat uncertainty as information', 'A similar title, missing date, or changed requirement creates review work instead of a confident guess.'],
+  ['Publish what we can defend', 'A role reaches the public board only after its current employer page and important claims have been checked.'],
 ] as const;
 
 const SYSTEM_MEMORY = [
-  ['Dates have a basis', 'We separate a deadline stated by the employer from a window inferred from an older recruiting cycle.'],
-  ['Changes create review work', 'A changed requirement, new deadline, or missing page comes back to the queue instead of silently rewriting the public record.'],
-  ['Corrections keep their history', 'Approved edits and removals are logged and reversible. Old cycles remain available for research without appearing as current openings.'],
+  ['Turn listings into labels', 'Employer, role family, month first seen, audience, deadline language, and review outcome become a structured learning record.'],
+  ['Test the pattern', 'Past cycles can rank where we search and flag an unusual change. New cycles let us measure whether those signals were useful.'],
+  ['Keep evidence in charge', 'A model may suggest where to look. Only a current source can establish that a role is open or that a student is eligible.'],
 ] as const;
 
 export default function AboutPage() {
@@ -22,16 +22,15 @@ export default function AboutPage() {
         <div>
           <h1>Good opportunities should not depend on good luck.</h1>
           <p>
-            Biotech recruiting favors students who already know where to look, when to
-            look, and how to read a posting. That knowledge is not shared evenly. The
-            Career Hub gathers the evidence, checks the details, and makes the search
-            easier to enter.
+            Biotech recruiting rewards time, networks, and knowledge that students do
+            not receive equally. The Career Hub watches more places, makes the evidence
+            easier to read, and carries what we learn from one class into the next.
           </p>
         </div>
         <figure>
           <Image
-            src="/brand/discipline-data-science.webp"
-            alt="Published single-cell sequencing maps and data visualizations"
+            src="/brand/about-hela.webp"
+            alt="Living HeLa cells with nuclei, microtubules, and mitochondria shown in blue, green, and red"
             fill
             preload
             sizes="(max-width: 820px) 100vw, 44vw"
@@ -43,7 +42,6 @@ export default function AboutPage() {
         <div className="site-wrap">
           <header>
             <h2 id="system-title">What happens before a role reaches the board.</h2>
-            <p>The system can search widely. Publication stays narrow, documented, and human.</p>
           </header>
           <div className="about-system-grid">
             {SYSTEM_STEPS.map(([title, body]) => (
@@ -56,14 +54,14 @@ export default function AboutPage() {
       <section className="about-memory site-wrap" aria-labelledby="memory-title">
         <div className="about-memory-visual">
           <Image
-            src="/brand/discipline-single-cell.webp"
-            alt="Fluorescence microscopy of NEAT1 paraspeckles in human cells"
+            src="/brand/discipline-data-science.webp"
+            alt="Published single-cell sequencing maps used to compare biological populations"
             fill
             sizes="(max-width: 820px) 100vw, 40vw"
           />
         </div>
         <div className="about-memory-copy">
-          <h2 id="memory-title">A posting changes. Its evidence should not disappear.</h2>
+          <h2 id="memory-title">Learning from our past.</h2>
           {SYSTEM_MEMORY.map(([title, body]) => (
             <article key={title}><h3>{title}</h3><p>{body}</p></article>
           ))}
@@ -73,13 +71,11 @@ export default function AboutPage() {
       <section className="about-tools">
         <div className="site-wrap about-tools-grid">
           <div>
-            <h2>The work behind the board.</h2>
+            <h2>A wider search. A fairer starting point.</h2>
             <p>
-              The board is backed by official feed connectors, immutable source
-              observations, field-level evidence, deadline checks, record matching,
-              and a private officer queue. We built that machinery for a practical
-              reason. A student with less free time or a smaller professional network
-              should not receive worse information.
+              Automation gives a student search more reach. Evidence and review keep
+              that reach accountable. Together, they reduce the advantage of having
+              extra time, an inside contact, or prior knowledge of the recruiting cycle.
             </p>
           </div>
           <div className="about-tool-list" aria-label="Career Hub capabilities">
@@ -96,13 +92,21 @@ export default function AboutPage() {
       </section>
 
       <section className="about-contribute site-wrap">
-        <div>
-          <h2>Help us see what we missed.</h2>
-          <p>Found a role, changed deadline, broken link, or eligibility issue? Send the evidence to the club.</p>
+        <div className="about-contribute-image">
+          <Image
+            src="/brand/discipline-immunology.webp"
+            alt="Fluorescence microscopy of parasites inside human fibroblast cells"
+            fill
+            sizes="(max-width: 820px) 100vw, 52vw"
+          />
         </div>
-        <div className="about-actions">
-          <Link href="/submit" className="primary-button">Submit a role or correction</Link>
-          <a href={mailto(CLUB_LINKS.emailSubjectReport)} className="secondary-button">Email the club</a>
+        <div className="about-contribute-copy">
+          <h2>What one student notices can open a door for many.</h2>
+          <p>Send a new role, a changed deadline, a broken link, or evidence that our record needs correction.</p>
+          <div className="about-actions">
+            <Link href="/submit" className="primary-button">Submit a role or correction</Link>
+            <a href={mailto(CLUB_LINKS.emailSubjectReport)} className="secondary-button">Email the club</a>
+          </div>
         </div>
       </section>
 

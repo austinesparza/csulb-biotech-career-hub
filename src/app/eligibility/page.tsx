@@ -21,8 +21,8 @@ const RESOURCES = [
   {
     title: 'Search funded research programs',
     href: 'https://www.pathwaystoscience.org/',
-    image: '/brand/discipline-genomics.webp',
-    alt: 'Fluorescence microscopy image from chromosome research',
+    image: '/brand/discipline-neuroscience.webp',
+    alt: 'Green fluorescent neurons branching across a dark field',
     source: 'Pathways to Science',
     status: 'Live directory',
     note: 'Search current undergraduate and graduate programs. Confirm the year on each host page.',
@@ -30,8 +30,8 @@ const RESOURCES = [
   {
     title: 'Find NSF research experiences',
     href: 'https://etap.nsf.gov/',
-    image: '/brand/discipline-protein.webp',
-    alt: 'Protein crystals viewed through a microscope',
+    image: '/brand/mission-histology.webp',
+    alt: 'A breast cancer tissue section used in biomedical research',
     source: 'National Science Foundation',
     status: 'Live federal directory',
     note: 'Browse NSF research experiences. The individual program page controls current dates and eligibility.',
@@ -39,8 +39,8 @@ const RESOURCES = [
   {
     title: 'Prepare an application for science',
     href: 'https://www.training.nih.gov/pdf/online-career-resources-guides/',
-    image: '/brand/discipline-neuroscience.webp',
-    alt: 'Fluorescence microscopy of green fluorescent neurons',
+    image: '/brand/footer-lab.webp',
+    alt: 'Scientists working together at a laboratory bench',
     source: 'NIH OITE',
     status: 'Current guidance',
     note: 'Practical guides for resumes, CVs, cover letters, interviews, and informational conversations.',
@@ -57,8 +57,8 @@ const RESOURCES = [
   {
     title: 'Study a past internship cycle',
     href: 'https://www.csulbbiotech.com/post/2024-2025-internship-repository',
-    image: '/brand/discipline-single-cell.webp',
-    alt: 'Fluorescence microscopy of NEAT1 paraspeckles in human cells',
+    image: '/brand/discipline-data-science.webp',
+    alt: 'Single-cell sequencing maps used to compare biological populations',
     source: 'CSULB Biotechnology Club',
     status: 'Past-cycle reference',
     note: 'Use these older roles to learn which employers and program types recur. Do not assume a listing is open now.',

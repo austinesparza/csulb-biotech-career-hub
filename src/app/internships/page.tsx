@@ -2,8 +2,6 @@ import { FOCUS_AREAS } from '@/lib/focusAreas';
 import { sanitizeSearchTerm } from '@/lib/normalize';
 import {
   normalizeOpportunityAudienceFilter,
-  opportunityMatchesAudience,
-  type OpportunityAudienceFilter,
 } from '@/lib/opportunityAudience';
 import { createPublicServerClient } from '@/lib/supabase/public-server';
 import type { PublicOpportunity } from '@/lib/types';
@@ -37,20 +35,7 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
     p_sort: sort ?? 'recommended',
     p_limit: 200,
   });
-  const opportunities = ((data ?? []) as PublicOpportunity[])
-    .filter((opportunity) => opportunityMatchesAudience(opportunity, audience));
-
-  const audienceHref = (next: OpportunityAudienceFilter | undefined) => {
-    const query = new URLSearchParams();
-    if (q) query.set('q', q);
-    if (focus) query.set('focus', focus);
-    if (loc) query.set('loc', loc);
-    if (paid) query.set('paid', paid);
-    if (sort) query.set('sort', sort);
-    if (next) query.set('audience', next);
-    const suffix = query.toString();
-    return suffix ? `/internships?${suffix}` : '/internships';
-  };
+  const opportunities = (data ?? []) as PublicOpportunity[];
 
   return (
     <div className="site-wrap">
@@ -64,19 +49,10 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
 
       <section className="board-shell" aria-labelledby="board-title">
         <div className="section-head">
-          <div>
-            <h2 id="board-title">Opportunity board</h2>
-            <p className="mono" style={{ marginTop: 8 }}>{opportunities.length} reviewed result{opportunities.length === 1 ? '' : 's'}</p>
-          </div>
-          <nav className="audience-switch" aria-label="Filter by student level">
-            <a href={audienceHref(undefined)} aria-current={!audience ? 'page' : undefined}>All students</a>
-            <a href={audienceHref('undergraduate')} aria-current={audience === 'undergraduate' ? 'page' : undefined}>Undergraduate</a>
-            <a href={audienceHref('graduate')} aria-current={audience === 'graduate' ? 'page' : undefined}>Graduate</a>
-          </nav>
+          <h2 id="board-title">Opportunity board</h2>
         </div>
 
-        <form className="filters" method="get">
-          {audience && <input type="hidden" name="audience" value={audience} />}
+        <form className="filters" id="opportunity-filters" method="get">
           <label className="filter-field filter-search">
             <span>Search</span>
             <input name="q" defaultValue={q ?? ''} placeholder="Employer, role, method, or location" maxLength={80} />
@@ -113,7 +89,7 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
           <div className="notice"><span>◇</span><span>No matching opportunities right now. Try another filter or <a href="/submit">submit a role</a>.</span></div>
         )}
         {opportunities.length > 0 && (
-          <Board opportunities={opportunities} sorted={!!sort} />
+          <Board opportunities={opportunities} sorted={!!sort} initialAudience={audience} />
         )}
       </section>
     </div>
