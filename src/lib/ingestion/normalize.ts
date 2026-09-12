@@ -438,8 +438,10 @@ export function classifyOpportunity(
  * - MM/DD/YYYY or M/D/YYYY
  * - YYYY/MM/DD
  *
- * Unsupported formats (month names, locale-dependent strings) return null.
- * This avoids implementation-dependent behavior in Date.parse() for non-ISO strings.
+ * - English month-name dates: Aug 24, 2026; August 24 2026; 24 August 2026
+ *
+ * Other locale-dependent strings return null. Parsing is implemented explicitly
+ * rather than delegated to Date.parse().
  *
  * Returns null for invalid, empty, unsupported, or non-date input.
  * Uses UTC arithmetic to avoid timezone-dependent day shifts.
@@ -503,9 +505,71 @@ export function parseIsoDate(value: string | null | undefined): string | null {
     return toIsoDateSafe(Number(ymdSlash[1]), Number(ymdSlash[2]), Number(ymdSlash[3]));
   }
 
-  // All other formats (month names, natural language, etc.) are unsupported.
+  const monthNumbers: Record<string, number> = {
+    jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3,
+    apr: 4, april: 4, may: 5, jun: 6, june: 6, jul: 7, july: 7,
+    aug: 8, august: 8, sep: 9, sept: 9, september: 9, oct: 10,
+    october: 10, nov: 11, november: 11, dec: 12, december: 12,
+  };
+  const monthFirst = s.match(/^([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?[,]?\s+(\d{4})$/i);
+  if (monthFirst) {
+    const month = monthNumbers[monthFirst[1].toLowerCase()];
+    return month ? toIsoDateSafe(Number(monthFirst[3]), month, Number(monthFirst[2])) : null;
+  }
+  const dayFirst = s.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)[,]?\s+(\d{4})$/i);
+  if (dayFirst) {
+    const month = monthNumbers[dayFirst[2].toLowerCase()];
+    return month ? toIsoDateSafe(Number(dayFirst[3]), month, Number(dayFirst[1])) : null;
+  }
+
+  // All other natural-language formats are unsupported.
   // Do not use Date.parse() for non-ISO strings — implementation-dependent.
   return null;
+}
+
+export interface DeadlineEvidence {
+  date: string | null;
+  kind: DeadlineKind;
+  evidenceText: string | null;
+}
+
+const MONTH_NAME = '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)';
+const EXPLICIT_DATE = `(?:${MONTH_NAME}\\s+\\d{1,2}(?:st|nd|rd|th)?[,]?\\s+\\d{4}|\\d{1,2}(?:st|nd|rd|th)?\\s+${MONTH_NAME}[,]?\\s+\\d{4}|\\d{1,2}\\/\\d{1,2}\\/\\d{4}|\\d{4}-\\d{2}-\\d{2})`;
+const DEADLINE_PREFIX = '(?:application\\s+deadline(?:\\s+is)?|applications?\\s+(?:are\\s+)?due(?:\\s+by)?|apply\\s+by|(?:job\\s+)?posting\\s+is\\s+(?:anticipated|expected|scheduled)\\s+to\\s+close(?:\\s+on)?|applications?\\s+(?:will\\s+)?close(?:\\s+on)?)';
+
+/**
+ * Extract only explicitly labelled application timing from posting text.
+ * Unlabelled dates, including internship start and end dates, are ignored.
+ */
+export function extractDeadlineEvidence(value: string | null | undefined): DeadlineEvidence {
+  const text = value ? normalizeWhitespace(value) : '';
+  if (!text) return { date: null, kind: 'unknown', evidenceText: null };
+
+  const hard = text.match(new RegExp(`${DEADLINE_PREFIX}[\\s:,-]{0,18}(${EXPLICIT_DATE})`, 'i'));
+  if (hard) {
+    const date = parseIsoDate(hard[1]);
+    const sentenceStart = Math.max(0, text.lastIndexOf('.', hard.index ?? 0) + 1);
+    const nextStop = text.indexOf('.', (hard.index ?? 0) + hard[0].length);
+    const sentenceEnd = nextStop === -1 ? Math.min(text.length, sentenceStart + 260) : nextStop + 1;
+    return {
+      date,
+      kind: date ? 'hard' : 'unknown',
+      evidenceText: text.slice(sentenceStart, sentenceEnd).trim().slice(0, 300) || hard[0],
+    };
+  }
+
+  const rolling = text.match(/(?:application\s+deadline|applications?|posting)[^.•]{0,80}\b(?:rolling|on a rolling basis|until filled|open until filled|no (?:fixed )?deadline)\b/i);
+  if (rolling) {
+    return { date: null, kind: 'rolling', evidenceText: rolling[0].trim().slice(0, 300) };
+  }
+
+  return { date: null, kind: 'unknown', evidenceText: null };
+}
+
+export function isPastIsoDate(date: string | null, observedAt: string): boolean {
+  if (!date) return false;
+  const observedDate = parseIsoDate(observedAt);
+  return Boolean(observedDate && date < observedDate);
 }
 
 /** Strict calendar validation: rejects impossible dates like 2026-02-31. */

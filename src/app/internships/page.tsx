@@ -1,5 +1,8 @@
 import { FOCUS_AREAS } from '@/lib/focusAreas';
 import { sanitizeSearchTerm } from '@/lib/normalize';
+import {
+  normalizeOpportunityAudienceFilter,
+} from '@/lib/opportunityAudience';
 import { createPublicServerClient } from '@/lib/supabase/public-server';
 import type { PublicOpportunity } from '@/lib/types';
 import { Board } from './board';
@@ -12,6 +15,7 @@ interface Search {
   loc?: string;
   paid?: string;
   sort?: string;
+  audience?: string;
 }
 
 export default async function InternshipsPage({ searchParams }: { searchParams: Promise<Search> }) {
@@ -21,6 +25,7 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
   const loc = sanitizeSearchTerm(params.loc);
   const paid = params.paid === 'paid' ? 'paid' : undefined;
   const sort = ['deadline', 'newest', 'company'].includes(params.sort ?? '') ? params.sort : undefined;
+  const audience = normalizeOpportunityAudienceFilter(params.audience);
   const supabase = createPublicServerClient();
   const { data, error } = await supabase.rpc('search_public_opportunities', {
     p_query: q ?? null,
@@ -35,30 +40,27 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
   return (
     <div className="site-wrap">
       <header className="page-head">
-        <h1>Graduate internships</h1>
+        <h1>Opportunities</h1>
         <p className="lede">
-          Current roles reviewed for MSc eligibility, timing, and source evidence.
+          Biotechnology internships, co-ops, and research roles. Compare the work,
+          audience, timing, and source evidence before you apply.
         </p>
       </header>
 
       <section className="board-shell" aria-labelledby="board-title">
         <div className="section-head">
-          <div>
-            <h2 id="board-title">Opportunity board</h2>
-            <p className="mono" style={{ marginTop: 8 }}>{opportunities.length} reviewed result{opportunities.length === 1 ? '' : 's'}</p>
-          </div>
-          <p>Each record names its source and evidence date. Unknown values are shown as unknown.</p>
+          <h2 id="board-title">Opportunity board</h2>
         </div>
 
-        <form className="filters" method="get">
+        <form className="filters" id="opportunity-filters" method="get">
           <label className="filter-field filter-search">
             <span>Search</span>
             <input name="q" defaultValue={q ?? ''} placeholder="Employer, role, method, or location" maxLength={80} />
           </label>
           <label className="filter-field">
-            <span>Scientific lane</span>
+            <span>Discipline</span>
             <select name="focus" defaultValue={focus ?? ''}>
-              <option value="">All lanes</option>
+              <option value="">All disciplines</option>
               {FOCUS_AREAS.map((f) => <option key={f} value={f}>{f}</option>)}
             </select>
           </label>
@@ -84,9 +86,11 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
 
         {error && <div className="notice"><span>!</span><span>Could not load opportunities. Please try again later.</span></div>}
         {!error && opportunities.length === 0 && (
-          <div className="notice"><span>◇</span><span>No matching graduate internships right now. Try another filter or <a href="/submit">submit a role</a>.</span></div>
+          <div className="notice"><span>◇</span><span>No matching opportunities right now. Try another filter or <a href="/submit">submit a role</a>.</span></div>
         )}
-        {opportunities.length > 0 && <Board opportunities={opportunities} sorted={!!sort} />}
+        {opportunities.length > 0 && (
+          <Board opportunities={opportunities} sorted={!!sort} initialAudience={audience} />
+        )}
       </section>
     </div>
   );

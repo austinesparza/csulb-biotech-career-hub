@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
 
 export const metadata: Metadata = {
-  title: 'Privacy | CSULB Graduate Internship Hub',
-  description: 'How the CSULB Graduate Internship Hub handles information.',
+  title: 'Privacy | CSULB Biotech Career Hub',
+  description: 'How the CSULB Biotech Career Hub handles information.',
 };
 
 export default function PrivacyPage() {

@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "description": "Company-level watch signals derived from the club's 2024-2025 repository and 2025-2026 tracking workbook. These observations prioritize discovery only and never establish that a role is open.",
+    "sources": [
+      "CSULB_BiotechClub_InternshipDatabase_Template_2025sep23_GroupWorksheet.xlsx",
+      "https://www.csulbbiotech.com/post/2024-2025-internship-repository"
+    ],
+    "minimumCyclesForPrediction": 3
+  },
+  "employers": [
+    { "company": "3M", "careersDomain": "3m.wd1.myworkdayjobs.com", "observedMonths": [9], "cycles": ["2026"], "programTerms": ["Research Development Intern", "R&D Intern"] },
+    { "company": "AbbVie", "careersDomain": "careers.abbvie.com", "observedMonths": [10], "cycles": ["2026"], "programTerms": ["Operations Intern"] },
+    { "company": "Amgen", "careersDomain": "careers.amgen.com", "observedMonths": [9, 10], "cycles": ["2026"], "programTerms": ["Operations Process Development Intern", "Amgen Scholars"] },
+    { "company": "Arcus Biosciences", "careersDomain": "jobs.jobvite.com", "observedMonths": [1], "cycles": ["2026"], "programTerms": ["In Vivo Pharmacology Intern"] },
+    { "company": "AstraZeneca", "careersDomain": "careers.astrazeneca.com", "observedMonths": [1], "cycles": ["2026"], "programTerms": ["Cell Therapy R&D Summer Intern"] },
+    { "company": "BioMarin", "careersDomain": "careers.biomarin.com", "observedMonths": [], "cycles": ["2025"], "programTerms": ["Summer Intern"] },
+    { "company": "Bristol Myers Squibb", "careersDomain": "bristolmyerssquibb.wd5.myworkdayjobs.com", "observedMonths": [10], "cycles": ["2026"], "programTerms": ["Discovery and Optimization Internship", "Precision Medicine Internship"] },
+    { "company": "Cedars-Sinai", "careersDomain": "careers.cshs.org", "observedMonths": [10], "cycles": ["2026"], "programTerms": ["Research Intern"] },
+    { "company": "Cytokinetics", "careersDomain": "cytokinetics.wd1.myworkdayjobs.com", "observedMonths": [1], "cycles": ["2026"], "programTerms": ["Pharmacology Intern"] },
+    { "company": "DeciBio", "careersDomain": "www.decibio.com", "observedMonths": [10], "cycles": ["2026"], "programTerms": ["Life Science Summer Analyst"] },
+    { "company": "Enthalpy Analytical", "careersDomain": "montrose.wd1.myworkdayjobs.com", "observedMonths": [10], "cycles": ["2026"], "programTerms": ["Environmental Lab Intern"] },
+    { "company": "Fujifilm", "careersDomain": "careers.fujifilm.com", "observedMonths": [], "cycles": ["2025"], "programTerms": ["Bioprocess Intern", "Manufacturing Intern"] },
+    { "company": "GE HealthCare", "careersDomain": "careers.gehealthcare.com", "observedMonths": [10], "cycles": ["2026"], "programTerms": ["Molecular Imaging Co-op"] },
+    { "company": "Genentech", "careersDomain": "careers.gene.com", "observedMonths": [], "cycles": ["2025"], "programTerms": ["Summer Intern", "Research Intern"] },
+    { "company": "Henkel", "careersDomain": "www.henkel.com", "observedMonths": [10], "cycles": ["2026"], "programTerms": ["Product Development Chemist Intern"] },
+    { "company": "Johnson & Johnson", "careersDomain": "www.careers.jnj.com", "observedMonths": [9], "cycles": ["2026"], "programTerms": ["R&D Internship", "Quality Compliance Internship", "Discovery Scientist Intern"] },
+    { "company": "Labcorp", "careersDomain": "careers.labcorp.com", "observedMonths": [10], "cycles": ["2026"], "programTerms": ["Research Development Intern", "Diagnostics Intern"] },
+    { "company": "Merck", "careersDomain": "jobs.merck.com", "observedMonths": [], "cycles": ["2025"], "programTerms": ["Future Talent Program", "Summer Intern"] },
+    { "company": "Salk Institute", "careersDomain": "recruiting2.ultipro.com", "observedMonths": [10], "cycles": ["2026"], "programTerms": ["Summer Undergraduate Research Fellowship", "SURF"] },
+    { "company": "Sanofi", "careersDomain": "sanofi.wd3.myworkdayjobs.com", "observedMonths": [9], "cycles": ["2026"], "programTerms": ["Biomarker Data Analysis Intern", "Summer Intern"] },
+    { "company": "SCAN Health Plan", "careersDomain": "www.scanhealthplan.com", "observedMonths": [], "cycles": ["2025"], "programTerms": ["Summer Internship"] },
+    { "company": "Septerna", "careersDomain": null, "observedMonths": [1], "cycles": ["2026"], "programTerms": ["DMPK Research Intern"] },
+    { "company": "Simtra BioPharma Solutions", "careersDomain": "simtra.com", "observedMonths": [1], "cycles": ["2026"], "programTerms": ["Research Development Summer Internship"] },
+    { "company": "Terasaki Institute", "careersDomain": "terasakiinstitute.bamboohr.com", "observedMonths": [9], "cycles": ["2026"], "programTerms": ["Biomedical Intern"] },
+    { "company": "Thermo Fisher Scientific", "careersDomain": "jobs.thermofisher.com", "observedMonths": [10], "cycles": ["2026"], "programTerms": ["Bioinformatics Intern"] },
+    { "company": "Varda Space Industries", "careersDomain": "job-boards.greenhouse.io", "observedMonths": [9], "cycles": ["2026"], "programTerms": ["Pharmaceutical Portfolio Internship"] },
+    { "company": "Zymo Research", "careersDomain": "www.zymoresearch.com", "observedMonths": [9, 10], "cycles": ["2025", "2026"], "programTerms": ["Computational Sciences Internship", "Microbiome Research Intern", "Protein Research Intern"] }
+  ]
+}

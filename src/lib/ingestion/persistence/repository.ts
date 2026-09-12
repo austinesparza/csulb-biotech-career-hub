@@ -312,7 +312,7 @@ export interface IngestionRepository {
     workAuthorization: string | null;
     applicationOpenedAt: string | null;
     lastCheckedAt: string;
-    sourceCheckResult: 'open';
+    sourceCheckResult: 'open' | 'closed';
     discoveryRoute: 'official_feed';
     relevanceScore: number;
     relevanceReasons: string[];

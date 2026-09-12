@@ -70,7 +70,7 @@ export function deriveSheetAudienceDefaults(input: {
 
   const hasMasters = /\bmaster(?:'s|s)?\b|\bmsc\b|\bmba\b|\bpharmd\b/.test(combined);
   const hasDoctoral = /\bph\.?d\.?\b|\bdoctoral\b|\bdoctorate\b/.test(combined);
-  const hasUndergraduate = /\bundergraduate\b|\bbachelor(?:'s|s)?\b/.test(combined);
+  const hasUndergraduate = /\bundergraduate\b|\bbachelor(?:'s|s)?\b|\bpost[ -]?baccalaureate\b|\bpostbac\b/.test(combined);
 
   let audienceBucket: AudienceBucket = 'unknown';
   if (hasMasters) audienceBucket = hasUndergraduate ? 'mixed' : 'graduate';

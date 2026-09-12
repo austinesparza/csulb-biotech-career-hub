@@ -110,6 +110,7 @@ export function makeGreenhouseIdentityKey(boardToken: string, jobPostId: string)
  *   - offices            Sorted array of office names
  *   - closesAt           Parsed application deadline (ISO date or null)
  *   - deadlineKind       Interpretation of the deadline (hard / rolling / unknown)
+ *   - deadlineEvidence   Exact source wording that established the deadline
  *   - descriptionNormalized  Whitespace/HTML-normalized plain text description.
  *                            HTML-only formatting changes (bold, italic, etc.) do not
  *                            alter this value; meaningful text changes do.
@@ -143,6 +144,7 @@ export interface GreenhouseMaterialFields {
   offices: string[];     // sorted
   closesAt: string | null;
   deadlineKind: string;
+  deadlineEvidence?: string | null;
   /** Whitespace/HTML-normalized description text. Use htmlToText() output. */
   descriptionNormalized: string | null;
   /** Normalized employment type (e.g. 'full_time', 'internship') or null. */
@@ -168,6 +170,7 @@ export function makeGreenhouseMaterialHash(fields: GreenhouseMaterialFields): st
     offices: [...fields.offices].sort(),
     closesAt: fields.closesAt,
     deadlineKind: fields.deadlineKind,
+    deadlineEvidence: fields.deadlineEvidence ?? null,
     descriptionNormalized: fields.descriptionNormalized,
     employmentType: fields.employmentType,
     classification: fields.classification,

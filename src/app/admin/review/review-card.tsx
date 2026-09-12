@@ -6,6 +6,7 @@ import { PRIORITY_FIELDS } from '@/lib/pipeline/extraction-schema';
 import { segment, type Span } from '@/lib/pipeline/highlight';
 import type { AudienceBucket, GraduateStage, PaidStatus } from '@/lib/types';
 import type { SheetReviewIntent } from '@/lib/sheet-review';
+import { isPublishableAudienceStage } from '@/lib/opportunityAudience';
 import { approveOpportunity, archiveForAudience, rejectOpportunity } from './actions';
 
 interface ExtractedField {
@@ -62,6 +63,7 @@ export interface ReviewRow {
 
 const AUDIENCE_OPTIONS: Array<{ value: AudienceBucket; label: string }> = [
   { value: 'unknown', label: 'Not decided' },
+  { value: 'undergraduate', label: 'Undergraduate' },
   { value: 'graduate', label: "Master's accessible" },
   { value: 'mixed', label: "Master's and undergraduate" },
   { value: 'special', label: 'Special affiliation required' },
@@ -77,12 +79,8 @@ const STAGE_OPTIONS: Array<{ value: GraduateStage; label: string }> = [
   { value: 'mixed_graduate', label: "Master's and doctoral" },
   { value: 'graduate_unspecified', label: 'Graduate, year not stated' },
   { value: 'doctoral_only', label: 'Doctoral only' },
-  { value: 'not_msc', label: "Not master's accessible" },
+  { value: 'not_msc', label: 'Undergraduate only' },
 ];
-
-const PUBLISHABLE_STAGES = new Set<GraduateStage>([
-  'msc_year_1', 'msc_year_2', 'msc_any', 'mixed_graduate', 'graduate_unspecified',
-]);
 
 const FIELD_LABELS: Record<string, string> = {
   masters_eligibility: "Master's eligibility",
@@ -222,13 +220,11 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
 
   const audienceReady = audienceBucket !== 'unknown' && audienceReason.trim().length >= 8;
   const canApprove = sourceConfirmed && publicSafeConfirmed && audienceReady
-    && ['graduate', 'mixed'].includes(audienceBucket)
-    && PUBLISHABLE_STAGES.has(graduateStage) && !pending;
+    && isPublishableAudienceStage(audienceBucket, graduateStage) && !pending;
   const canArchive = sourceConfirmed && publicSafeConfirmed && audienceReady
     && ['ineligible', 'adjacent', 'special'].includes(audienceBucket) && !pending;
   const sheetApprovalReady = sheetApproval
-    && ['graduate', 'mixed'].includes(initialAudience)
-    && PUBLISHABLE_STAGES.has(initialStage)
+    && isPublishableAudienceStage(initialAudience, initialStage)
     && initialReason.trim().length >= 8;
 
   if (done) {

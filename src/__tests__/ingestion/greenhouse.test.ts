@@ -233,6 +233,38 @@ describe('normalizeGreenhouseJob', () => {
     expect(posting.uncertaintyFlags).toContain('deadline_invalid');
   });
 
+  it('recovers a fixed deadline stated only in the posting body', () => {
+    const posting = normalizeGreenhouseJob({
+      ...INTERNSHIP_JOB,
+      application_deadline: null,
+      content: '<p>This job posting is anticipated to close on Aug 24, 2026.</p><p>The internship begins May 2027.</p>',
+    }, BOARD_TOKEN, '2026-07-11T00:00:00.000Z');
+    expect(posting.closesAt).toBe('2026-08-24');
+    expect(posting.deadlineKind).toBe('hard');
+    expect(posting.deadlineEvidence).toContain('anticipated to close');
+    expect(posting.uncertaintyFlags).not.toContain('deadline_missing');
+  });
+
+  it('flags a structured deadline that conflicts with posting prose', () => {
+    const posting = normalizeGreenhouseJob({
+      ...INTERNSHIP_JOB,
+      application_deadline: '2026-08-25',
+      content: '<p>Applications close on Aug 24, 2026.</p>',
+    }, BOARD_TOKEN, FETCHED_AT);
+    expect(posting.closesAt).toBe('2026-08-25');
+    expect(posting.uncertaintyFlags).toContain('deadline_conflict');
+  });
+
+  it('flags a deadline that was already past when fetched', () => {
+    const posting = normalizeGreenhouseJob({
+      ...INTERNSHIP_JOB,
+      application_deadline: null,
+      content: '<p>Apply by Aug 24, 2026.</p>',
+    }, BOARD_TOKEN, '2026-09-12T00:00:00.000Z');
+    expect(posting.closesAt).toBe('2026-08-24');
+    expect(posting.uncertaintyFlags).toContain('deadline_past');
+  });
+
   it('handles missing optional arrays (departments, offices)', () => {
     const missingArraysJob = NORMAL_FIXTURE_DATA.jobs[6]; // departments: null, offices: null
     const posting = normalizeGreenhouseJob(missingArraysJob, BOARD_TOKEN, FETCHED_AT);

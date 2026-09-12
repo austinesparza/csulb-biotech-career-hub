@@ -38,6 +38,15 @@ describe('officer spreadsheet review handoff', () => {
     });
   });
 
+  it('classifies undergraduate, post-baccalaureate, and master\'s access as mixed', () => {
+    expect(deriveSheetAudienceDefaults({
+      eligibility: "Current undergraduate, post-baccalaureate, or master's student",
+    })).toMatchObject({
+      audienceBucket: 'mixed',
+      graduateStage: 'graduate_unspecified',
+    });
+  });
+
   it('drops unused checkbox template rows but retains partial candidates', () => {
     const rows = [
       ['Candidate ID', 'Employer', 'Role Title', 'Source URL', 'Public Safe?'],

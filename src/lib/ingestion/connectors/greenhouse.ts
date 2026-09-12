@@ -35,6 +35,7 @@ import type {
 import {
   canonicalizeUrl,
   classifyDeadlineKind,
+  extractDeadlineEvidence,
   classifyOpportunity,
   classifyRemoteType,
   htmlToText,
@@ -44,6 +45,7 @@ import {
   normalizeJobTitle,
   normalizeLocation,
   parseIsoDate,
+  isPastIsoDate,
 } from '../normalize';
 import {
   makeGreenhouseIdentityKey,
@@ -321,10 +323,19 @@ export function normalizeGreenhouseJob(
   // --- Dates ---
   const postedAt = parseIsoDate(job.first_published);
   const rawDeadline = job.application_deadline ?? null;
-  const closesAt = parseIsoDate(rawDeadline);
-  if (rawDeadline && !closesAt) flags.push('deadline_invalid');
-  if (!rawDeadline) flags.push('deadline_missing');
-  const deadlineKind = classifyDeadlineKind(rawDeadline, closesAt);
+  const structuredDeadline = parseIsoDate(rawDeadline);
+  const bodyDeadline = extractDeadlineEvidence(descriptionText);
+  const closesAt = structuredDeadline ?? bodyDeadline.date;
+  if (rawDeadline && !structuredDeadline) flags.push('deadline_invalid');
+  if (structuredDeadline && bodyDeadline.date && structuredDeadline !== bodyDeadline.date) {
+    flags.push('deadline_conflict');
+  }
+  if (!closesAt && bodyDeadline.kind === 'unknown') flags.push('deadline_missing');
+  if (isPastIsoDate(closesAt, fetchedAt)) flags.push('deadline_past');
+  const deadlineKind = structuredDeadline
+    ? classifyDeadlineKind(rawDeadline, structuredDeadline)
+    : bodyDeadline.kind;
+  const deadlineEvidence = rawDeadline ?? bodyDeadline.evidenceText;
 
   // --- Language ---
   const language = job.language ?? null;
@@ -385,6 +396,7 @@ export function normalizeGreenhouseJob(
     offices,
     closesAt,
     deadlineKind,
+    deadlineEvidence,
     descriptionNormalized: descriptionText,
     employmentType,
     classification,
@@ -416,6 +428,7 @@ export function normalizeGreenhouseJob(
     postedAt,
     closesAt,
     deadlineKind,
+    deadlineEvidence,
     descriptionText,
     language,
     sourceUpdatedAt,
