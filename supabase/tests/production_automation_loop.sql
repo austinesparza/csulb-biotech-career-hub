@@ -29,7 +29,7 @@ begin
     true, true, current_date, true, 24, 1
   ) returning id into v_source_id;
 
-  select id into v_first_run_id
+  select * into v_first_run_id
   from public.schedule_due_source_fetch_runs(1);
 
   insert into _automation_results values (
@@ -44,7 +44,7 @@ begin
       )
   );
 
-  select id into v_duplicate_run_id
+  select * into v_duplicate_run_id
   from public.schedule_due_source_fetch_runs(1);
 
   insert into _automation_results values (
@@ -60,7 +60,7 @@ begin
   set last_attempted_at = now(), last_successful_at = now()
   where id = v_source_id;
 
-  select id into v_after_success_id
+  select * into v_after_success_id
   from public.schedule_due_source_fetch_runs(1);
 
   insert into _automation_results values (
