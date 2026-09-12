@@ -16,6 +16,8 @@ import {
   classifyOpportunity,
   parseIsoDate,
   classifyDeadlineKind,
+  extractDeadlineEvidence,
+  isPastIsoDate,
   inferFocusArea,
 } from '../../lib/ingestion/normalize';
 
@@ -474,20 +476,20 @@ describe('classifyRemoteType hybrid', () => {
 });
 
 // ============================================================
-// MONTH-NAME DATE PARSING — should return null
+// MONTH-NAME DATE PARSING
 // ============================================================
 
 describe('parseIsoDate month-name dates', () => {
-  it('returns null for US-style month-name dates', () => {
-    expect(parseIsoDate('March 15, 2026')).toBeNull();
+  it('parses US-style month-name dates deterministically', () => {
+    expect(parseIsoDate('March 15, 2026')).toBe('2026-03-15');
   });
 
-  it('returns null for "15 March 2026" format', () => {
-    expect(parseIsoDate('15 March 2026')).toBeNull();
+  it('parses day-first month-name dates', () => {
+    expect(parseIsoDate('15 March 2026')).toBe('2026-03-15');
   });
 
-  it('returns null for abbreviated month names', () => {
-    expect(parseIsoDate('Mar 15, 2026')).toBeNull();
+  it('parses abbreviated month names', () => {
+    expect(parseIsoDate('Mar 15, 2026')).toBe('2026-03-15');
   });
 
   it('returns valid result for ISO 8601', () => {
@@ -497,6 +499,33 @@ describe('parseIsoDate month-name dates', () => {
   it('returns valid result for slash format', () => {
     const result = parseIsoDate('03/15/2026');
     expect(result).not.toBeNull(); // should parse MM/DD/YYYY
+  });
+});
+
+describe('extractDeadlineEvidence', () => {
+  it('captures an explicit close date from posting prose', () => {
+    const result = extractDeadlineEvidence(
+      'The internship begins May 18, 2027. This job posting is anticipated to close on Aug 24, 2026. Applications may close sooner.',
+    );
+    expect(result).toMatchObject({ date: '2026-08-24', kind: 'hard' });
+    expect(result.evidenceText).toContain('anticipated to close');
+  });
+
+  it('does not mistake program dates for an application deadline', () => {
+    expect(extractDeadlineEvidence('The internship runs from May 18, 2027 through August 7, 2027.'))
+      .toEqual({ date: null, kind: 'unknown', evidenceText: null });
+  });
+
+  it('uses rolling only when application timing says so explicitly', () => {
+    expect(extractDeadlineEvidence('Applications are reviewed on a rolling basis until filled.'))
+      .toMatchObject({ date: null, kind: 'rolling' });
+    expect(extractDeadlineEvidence('The team uses rolling forecasts.'))
+      .toEqual({ date: null, kind: 'unknown', evidenceText: null });
+  });
+
+  it('flags dates before the source observation date', () => {
+    expect(isPastIsoDate('2026-08-24', '2026-09-12T08:00:00.000Z')).toBe(true);
+    expect(isPastIsoDate('2026-09-13', '2026-09-12T08:00:00.000Z')).toBe(false);
   });
 });
 

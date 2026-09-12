@@ -1,12 +1,41 @@
+import Image from 'next/image';
 import Link from 'next/link';
+import { companyLogoPath } from '@/lib/companyLogos';
 import { createClient } from '@/lib/supabase/client';
 import type { PublicOpportunity } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-function formatDate(value: string | null) {
-  if (!value) return 'Awaiting first review';
-  return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+function formatDate(value: string | null, fallback = 'Awaiting first review') {
+  if (!value) return fallback;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.valueOf())) return fallback;
+  return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function opportunityDetails(opportunity: PublicOpportunity) {
+  return [opportunity.location, opportunity.focus_area, opportunity.application_type]
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(' · ');
+}
+
+const DISCIPLINES = [
+  { label: 'Cancer & oncology', focus: 'Cancer and oncology', image: '/brand/discipline-cancer.webp', alt: 'Fluorescence microscopy of DNA in oral cancer cells' },
+  { label: 'Genomics & genetics', focus: 'Genomics and genetics', image: '/brand/discipline-genomics.webp', alt: 'Fluorescence microscopy image from chromosome research' },
+  { label: 'Bioinformatics', focus: 'Bioinformatics and computational biology', image: '/brand/discipline-data-science.webp', alt: 'Published single-cell sequencing maps and data visualizations', imageClass: 'pathway-data' },
+  { label: 'Bioprocess & manufacturing', focus: 'Bioprocess and manufacturing science', image: '/brand/discipline-bioprocess.webp', alt: 'Cell-culture bioreactors in a laboratory' },
+  { label: 'Protein science & drug discovery', focus: 'Protein science and drug discovery', image: '/brand/discipline-protein.webp', alt: 'Protein crystals viewed through a microscope', imageClass: 'pathway-protein' },
+  { label: 'Immunology & infectious disease', focus: 'Immunology and infectious disease', image: '/brand/discipline-immunology.webp', alt: 'Toxoplasma parasites inside a fibroblast host cell' },
+] as const;
+
+function FeaturedCompany({ name }: { name: string }) {
+  const logo = companyLogoPath(name);
+  return (
+    <span className="featured-company">
+      {logo ? <Image src={logo} alt={`${name} logo`} width={132} height={48} /> : name}
+    </span>
+  );
 }
 
 export default async function HomePage() {
@@ -17,95 +46,138 @@ export default async function HomePage() {
     .order('first_seen_at', { ascending: false })
     .limit(200);
   const all = (data ?? []) as PublicOpportunity[];
-  const graduate = all.filter((o) => o.audience_bucket === 'graduate' || o.audience_bucket === 'mixed');
-  const companies = new Set(graduate.map((o) => o.company_name)).size;
-  const deadlineCount = graduate.filter((o) => o.deadline).length;
-  const checked = graduate
-    .map((o) => o.last_checked_at)
-    .filter((value): value is string => Boolean(value))
-    .sort()
-    .at(-1) ?? null;
-  // This force-dynamic server page computes freshness once per request.
-  // eslint-disable-next-line react-hooks/purity
-  const weekAgo = Date.now() - 7 * 86_400_000;
-  const recent = graduate.filter((o) => Date.parse(o.first_seen_at) >= weekAgo).slice(0, 4);
+  const studentRoles = all.filter((opportunity) => (
+    ['undergraduate', 'graduate', 'mixed'].includes(opportunity.audience_bucket)
+  ));
+  const companies = new Set(studentRoles.map((opportunity) => opportunity.company_name)).size;
+  const focusAreas = new Set(studentRoles.flatMap((opportunity) => opportunity.scientific_lanes ?? [])).size;
+  const featured = studentRoles.slice(0, 4);
 
   return (
-    <>
-      <div className="site-wrap">
-        <section className="hero">
-          <div className="hero-copy">
-            <p className="eyebrow">For graduate students</p>
-            <h1 className="display">Find a graduate internship.</h1>
-            <p className="lede">
-              Browse internships in biotechnology, genomics, cancer research, bioinformatics, and
-              diagnostics. We include the original posting, eligibility details, and the date each role was checked.
+    <div className="home-editorial">
+      <section className="editorial-hero site-wrap">
+        <div className="editorial-hero-copy">
+          <h1>Opportunities for what comes next.</h1>
+          <p className="editorial-intro">
+            Biotechnology begins with the urge to look closer. Find internships,
+            research, and early career work that can turn that curiosity into practice.
+          </p>
+          <div className="editorial-actions">
+            <Link href="/internships" className="primary-button">Browse opportunities <span aria-hidden="true">→</span></Link>
+            <Link href="/about" className="secondary-button">Learn how it works</Link>
+          </div>
+        </div>
+
+        <div className="science-collage" aria-label="An original microscopy-inspired visualization representing discovery in biotechnology">
+          <div className="science-orbit science-orbit-one" aria-hidden="true" />
+          <div className="science-orbit science-orbit-two" aria-hidden="true" />
+          <div className="science-image">
+            <Image
+              src="/brand/hero-cells.webp"
+              alt="Fluorescence microscopy of the cytoskeleton in cultured fibroblasts"
+              fill
+              preload
+              sizes="(max-width: 760px) 82vw, 42vw"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="trust-ledger" aria-label="How the hub helps">
+        <div className="site-wrap trust-ledger-inner">
+          <article><h2>Current employer page linked</h2></article>
+          <article><h2>Degree rules in plain language</h2></article>
+          <article><h2>Missing details shown as unknown</h2></article>
+          <div className="trust-metrics" aria-label="Current board counts">
+            <div><strong>{studentRoles.length}</strong><span>open roles</span></div>
+            <div><strong>{companies}</strong><span>employers</span></div>
+            <div><strong>{focusAreas}</strong><span>focus areas</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="featured-ledger site-wrap" aria-labelledby="featured-title">
+        <header className="editorial-section-label">
+          <h2 id="featured-title">Featured opportunities</h2>
+          <Link href="/internships">View all opportunities <span aria-hidden="true">→</span></Link>
+        </header>
+
+        {featured.length > 0 ? (
+          <ol className="featured-list">
+            {featured.map((opportunity) => (
+              <li key={opportunity.id}>
+                <a href={opportunity.posting_url ?? '/internships'}>
+                  <FeaturedCompany name={opportunity.company_name} />
+                  <span className="featured-role">
+                    <strong>{opportunity.title}</strong>
+                    <small>{opportunityDetails(opportunity)}</small>
+                  </span>
+                  <time>{opportunity.deadline ? `Apply by ${formatDate(opportunity.deadline)}` : 'No fixed deadline stated'}</time>
+                  <span className="featured-arrow" aria-hidden="true">→</span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <div className="featured-empty">
+            <p>The next reviewed opportunities will appear here.</p>
+            <Link href="/internships">Explore the opportunity board</Link>
+          </div>
+        )}
+      </section>
+
+      <section className="mission-story" aria-labelledby="mission-title">
+        <div className="site-wrap mission-story-grid">
+          <figure className="mission-visual">
+            <Image
+              src="/brand/mission-histology.webp"
+              alt="Histology of basal-like breast cancer tissue"
+              fill
+              sizes="(max-width: 820px) 100vw, 40vw"
+            />
+          </figure>
+          <div className="mission-statement">
+            <h2 id="mission-title">What we learn about life can change how life is lived.</h2>
+            <p>
+              Across laboratories, data, manufacturing, and medicine, biotechnology
+              carries discovery into the world. This hub helps CSULB students find
+              a place in that work.
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 28 }}>
-              <Link href="/internships" className="primary-button">View internships</Link>
-              <Link href="/eligibility" className="secondary-button">Check eligibility</Link>
+            <div className="mission-links">
+              <Link href="/about">Our story <span aria-hidden="true">→</span></Link>
             </div>
           </div>
-          <aside className="hero-side" aria-label="Current board status">
-            <div className="evidence-stamp mono">
-              <span className="evidence-dot" />
-              <span className="evidence-label">Latest officer evidence check</span>
-              <time className="evidence-date">{formatDate(checked)}</time>
-            </div>
-            <div className="figures">
-              <div className="figure"><strong>{graduate.length}</strong><span>open internships</span></div>
-              <div className="figure"><strong>{companies}</strong><span>employers</span></div>
-              <div className="figure"><strong>{deadlineCount}</strong><span>stated deadlines</span></div>
-            </div>
-          </aside>
-        </section>
+        </div>
+      </section>
 
-        <section className="editorial-strip" aria-labelledby="week-title">
-          <div className="margin-note">
-            <h2 id="week-title">This week</h2>
-            <p>New internships reviewed by club officers.</p>
-          </div>
-          <div>
-            {recent.length ? (
-              <ol className="week-log">
-                {recent.map((o) => (
-                  <li className="week-item" key={o.id}>
-                    <span className="week-tag">New role</span>
-                    <span className="week-main"><strong>{o.company_name}</strong>: {o.title}</span>
-                    <time className="week-when">{formatDate(o.first_seen_at)}</time>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <div className="notice" style={{ marginTop: 0 }}>
-                <span aria-hidden="true">◇</span>
-                <span>No new internships were added in the last seven days.</span>
-              </div>
-            )}
-          </div>
-        </section>
+      <section className="biotech-pathways site-wrap" aria-labelledby="pathways-title">
+        <header>
+          <h2 id="pathways-title">See where the science can take you.</h2>
+          <Link href="/internships">Explore every opportunity <span aria-hidden="true">→</span></Link>
+        </header>
+        <div className="biotech-pathway-grid">
+          {DISCIPLINES.map((discipline) => (
+            <Link
+              key={discipline.focus}
+              href={`/internships?focus=${encodeURIComponent(discipline.focus)}`}
+              className="biotech-pathway"
+            >
+              <Image className={'imageClass' in discipline ? discipline.imageClass : undefined} src={discipline.image} alt={discipline.alt} fill sizes="(max-width: 700px) 100vw, 33vw" />
+              <span><strong>{discipline.label}</strong><b aria-hidden="true">→</b></span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
-        <section className="editorial-strip">
-          <div className="margin-note">
-            <h2>Before you apply</h2>
-            <p>Check the role, the requirements, and the timing separately.</p>
-          </div>
-          <div className="directory-grid">
-            <Link href="/internships" className="directory-row" style={{ textDecoration: 'none' }}>
-              <div><h2>Is it open?</h2><p>Officer-reviewed status and evidence date.</p></div><span>01</span>
-            </Link>
-            <Link href="/internships" className="directory-row" style={{ textDecoration: 'none' }}>
-              <div><h2>Is the science relevant?</h2><p>Methods, focus area, and role context.</p></div><span>02</span>
-            </Link>
-            <Link href="/eligibility" className="directory-row" style={{ textDecoration: 'none' }}>
-              <div><h2>Can I apply?</h2><p>Degree stage, enrollment, graduation date, and work authorization.</p></div><span>03</span>
-            </Link>
-            <Link href="/calendar" className="directory-row" style={{ textDecoration: 'none' }}>
-              <div><h2>When should I act?</h2><p>Current dates and past recruiting windows.</p></div><span>04</span>
-            </Link>
-          </div>
-        </section>
-      </div>
-    </>
+      <section className="home-coda" aria-label="Career hub closing statement">
+        <div className="home-coda-image">
+          <Image src="/brand/hero-cells.webp" alt="Fluorescence microscopy of the cytoskeleton in cultured fibroblasts" fill sizes="(max-width: 760px) 100vw, 68vw" />
+        </div>
+        <div className="home-coda-copy">
+          <p>See where science<br />can take you.</p>
+          <Link href="/internships">Explore opportunities <span aria-hidden="true">→</span></Link>
+        </div>
+      </section>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-const suites = ["classify", "connectors", "worker", "eval", "publish", "recall", "integrity", "retrieval", "highlight", "fetch-chain", "safe-fetch", "operational-adapters", "source-runner", "search-plan", "employer-inventory"];
+const suites = ["classify", "connectors", "worker", "eval", "publish", "recall", "integrity", "retrieval", "highlight", "fetch-chain", "safe-fetch", "operational-adapters", "source-runner", "search-plan", "employer-inventory", "historical-watch"];
 let failed = 0;
 for (const suite of suites) {
   try {

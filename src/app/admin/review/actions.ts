@@ -5,11 +5,9 @@ import { revalidatePath } from 'next/cache';
 import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
 import type { AudienceBucket, GraduateStage } from '@/lib/types';
 import { quickAddOpportunity } from '@/app/admin/add/actions';
+import { isPublishableAudienceStage } from '@/lib/opportunityAudience';
 
-const PUBLISHABLE_AUDIENCES: AudienceBucket[] = ['graduate', 'mixed'];
-const PUBLISHABLE_STAGES: GraduateStage[] = [
-  'msc_year_1', 'msc_year_2', 'msc_any', 'mixed_graduate', 'graduate_unspecified',
-];
+const PUBLISHABLE_AUDIENCES: AudienceBucket[] = ['undergraduate', 'graduate', 'mixed'];
 
 export interface ReviewFinalFields {
   scientificLanes: string[];
@@ -23,8 +21,8 @@ function safeReviewActionError(error: unknown): string {
   const message = error instanceof Error ? error.message : '';
   const allowed = [
     'Invalid target status',
-    "Only master's-accessible records can be published",
-    "Choose the master's stage supported by the posting",
+    'Only student-accessible records can be published',
+    'Choose the student stage supported by the posting',
     'Confirm the source and public-safe fields before approval',
     'Add a concise evidence-based audience reason',
     'Opportunity not found',
@@ -173,10 +171,10 @@ async function approveOpportunityUnsafe(input: {
     throw new Error('Invalid target status');
   }
   if (!PUBLISHABLE_AUDIENCES.includes(input.audienceBucket)) {
-    throw new Error("Only master's-accessible records can be published");
+    throw new Error('Only student-accessible records can be published');
   }
-  if (!PUBLISHABLE_STAGES.includes(input.graduateStage)) {
-    throw new Error("Choose the master's stage supported by the posting");
+  if (!isPublishableAudienceStage(input.audienceBucket, input.graduateStage)) {
+    throw new Error('Choose the student stage supported by the posting');
   }
   if (!input.sourceConfirmed || !input.publicSafeConfirmed) {
     throw new Error('Confirm the source and public-safe fields before approval');

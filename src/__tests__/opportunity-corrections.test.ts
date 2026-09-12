@@ -42,7 +42,17 @@ describe('published opportunity corrections', () => {
 
   it('rejects corrections that would cross the public audience boundary', () => {
     expect(() => buildPublishedCorrection({ ...validDraft, audienceBucket: 'ineligible' }, 'Example Biotech'))
-      .toThrow("accessible to master's students");
+      .toThrow('Choose the student audience and stage supported by the posting');
+  });
+
+  it('accepts an undergraduate-only record when its stage matches', () => {
+    const result = buildPublishedCorrection({
+      ...validDraft,
+      audienceBucket: 'undergraduate',
+      graduateStage: 'not_msc',
+    }, 'Example Biotech');
+    expect(result.audience_bucket).toBe('undergraduate');
+    expect(result.graduate_stage).toBe('not_msc');
   });
 
   it('requires an explanatory audit reason', () => {
