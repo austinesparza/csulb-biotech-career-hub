@@ -135,13 +135,13 @@ provider's free tier used normally. The gateway is for failover, not for quota.
 |---|---|---|
 | Taxonomy | `taxonomy/lanes.yaml` | — |
 | Classifier | `lib/classify.ts` | 32 |
-| Connectors (Greenhouse, Ashby, Lever, USAJOBS, page) | `lib/connectors/` | 59 |
+| Connectors (Greenhouse, Ashby, Lever, USAJOBS, page) | `lib/connectors/` | 61 |
 | Orchestration worker | `lib/worker.ts` | 37 |
 | Eval harness + golden set | `lib/eval/score.ts`, `eval/golden-set.json` | 40 |
 | Evidence binding | `lib/evidence.ts` | (in security kit) |
 | Database schema | `supabase/migrations/` | — |
 
-`npm run test:pipeline` runs 439 checks across eleven offline suites. No network,
+`npm run test:pipeline` runs 497 checks across fifteen offline suites. No network,
 no API keys, and no database are required.
 
 ## Ports, so nothing is locked in
@@ -182,9 +182,9 @@ precision), and lazy all-Unknown (caught by recall).
 1. Recheck each connector against current vendor docs during source onboarding.
    The contracts were last checked on 2026-09-10; a fixture is not proof that a
    specific employer board identifier is valid.
-2. Get a USAJOBS API key and registration email, keep both in server-only
-   secrets, and inject `createUsaJobsFetcher(...)` for USAJOBS sources. The
-   general `safeFetch` path intentionally never accepts credentials.
+2. Get a USAJOBS API key and registration email and keep both in server-only
+   secrets. The canonical runner injects them only into `createUsaJobsFetcher(...)`.
+   The general `safeFetch` path intentionally never accepts credentials.
 3. The extraction contract now has 33 hand-labelled synthetic cases across all
    ten lanes and every extraction field. Build a separate corpus of at least 30
    real, officer-labelled postings before using its scores to gate a model in
@@ -205,8 +205,8 @@ precision), and lazy all-Unknown (caught by recall).
 | Weekly digest experiment | `lib/digest.ts` | covered by the 57-check publish suite |
 | Publish bridge | `lib/publish-bridge.ts` | covered by the 57-check publish suite |
 
-Current local matrix: `npm test` runs 410 application tests across 10 files;
-`npm run test:pipeline` runs 439 pipeline checks across 11 suites.
+Current local matrix: `npm test` runs 497 application tests across 24 files;
+`npm run test:pipeline` runs 497 pipeline checks across 15 suites.
 
 ## End-to-end verification performed
 

@@ -13,11 +13,19 @@ import type { Connector, CanonicalPosting, ConnectorResult } from "./types";
 import { toRawText } from "./types";
 
 const str = (v: unknown): string => (v === null || v === undefined ? "" : String(v));
+const array = (v: unknown): any[] => Array.isArray(v) ? v : [];
 const uniqueStrings = (values: unknown[]): string[] =>
   [...new Set(values.map(str).map((value) => value.trim()).filter(Boolean))];
 const iso = (v: unknown): string | null => {
   if (!v) return null;
   const d = new Date(String(v));
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+};
+const epochIso = (v: unknown): string | null => {
+  if (v === null || v === undefined || v === "") return null;
+  const timestamp = Number(v);
+  if (!Number.isFinite(timestamp)) return null;
+  const d = new Date(timestamp);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 };
 
@@ -43,8 +51,8 @@ export const greenhouse: Connector = {
     if (!Array.isArray(jobs)) return { postings: [], warnings: [...warnings, "greenhouse: no `jobs` array"] };
     const postings = jobs.map((job): CanonicalPosting => {
       const j = job as Record<string, any>;
-      const departments = (j.departments ?? []).map((d: any) => str(d?.name)).filter(Boolean);
-      const offices = (j.offices ?? []).map((o: any) => str(o?.name)).filter(Boolean);
+      const departments = array(j.departments).map((d: any) => str(d?.name)).filter(Boolean);
+      const offices = array(j.offices).map((o: any) => str(o?.name)).filter(Boolean);
       return {
         sourceKind: "greenhouse",
         employer: ctx.employer,
@@ -136,7 +144,7 @@ export const lever: Connector = {
     const { data, warnings } = parseJson(body, "lever");
     if (!Array.isArray(data)) return { postings: [], warnings: [...warnings, "lever: expected a top-level array"] };
     const postings = (data as Record<string, any>[]).map((j): CanonicalPosting => {
-      const lists = (j.lists ?? []).map((l: any) => `${str(l?.text)}\n${str(l?.content)}`);
+      const lists = array(j.lists).map((l: any) => `${str(l?.text)}\n${str(l?.content)}`);
       const locations = uniqueStrings([
         j.categories?.location,
         ...(Array.isArray(j.categories?.allLocations) ? j.categories.allLocations : []),
@@ -164,8 +172,8 @@ export const lever: Connector = {
           j.additionalPlain ?? j.additional,
           salary ? `Compensation: ${salary}` : null,
         ]),
-        postedAt: j.createdAt ? new Date(Number(j.createdAt)).toISOString() : null,
-        updatedAt: j.updatedAt ? new Date(Number(j.updatedAt)).toISOString() : null,
+        postedAt: epochIso(j.createdAt),
+        updatedAt: epochIso(j.updatedAt),
         extra: {
           team: j.categories?.team ?? null,
           commitment: j.categories?.commitment ?? null,
@@ -207,7 +215,7 @@ export const usajobs: Connector = {
     const postings = items.map((item: any): CanonicalPosting => {
       const d = item?.MatchedObjectDescriptor ?? {};
       const uds = d.UserArea?.Details ?? {};
-      const pay = (d.PositionRemuneration ?? [])
+      const pay = array(d.PositionRemuneration)
         .map((p: any) => `${str(p.MinimumRange)}-${str(p.MaximumRange)} ${str(p.RateIntervalCode)}`)
         .join("; ");
       return {
@@ -216,7 +224,7 @@ export const usajobs: Connector = {
         externalId: str(item?.MatchedObjectId ?? d.PositionID),
         title: str(d.PositionTitle),
         url: str(d.PositionURI),
-        location: (d.PositionLocation ?? []).map((l: any) => str(l.LocationName)).join("; "),
+        location: array(d.PositionLocation).map((l: any) => str(l.LocationName)).join("; "),
         rawText: toRawText([
           d.PositionTitle, d.QualificationSummary, uds.JobSummary,
           uds.MajorDuties ? [].concat(uds.MajorDuties).join("\n") : null,

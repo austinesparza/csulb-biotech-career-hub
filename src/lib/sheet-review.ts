@@ -26,6 +26,38 @@ export interface SheetReviewIntent extends SheetAudienceDefaults {
   reviewer: string | null;
 }
 
+export interface MeaningfulSheetRows {
+  rows: string[][];
+  candidateRows: number;
+  skippedTemplateRows: number;
+}
+
+/**
+ * Ignore unused preformatted rows whose only values are defaults such as an
+ * unchecked Public Safe checkbox. Partially completed candidates remain so the
+ * importer can report a precise validation error.
+ */
+export function filterMeaningfulReviewRows(rows: string[][]): MeaningfulSheetRows {
+  const headers = rows[0] ?? [];
+  if (headers.length === 0) return { rows: [], candidateRows: 0, skippedTemplateRows: 0 };
+  const candidateHeaders = new Set([
+    'candidate id', 'employer', 'company', 'company name', 'role title', 'title',
+    'position', 'source url', 'posting url', 'application link',
+  ]);
+  const indexes = headers
+    .map((header, index) => candidateHeaders.has(normalizeHeader(header)) ? index : -1)
+    .filter((index) => index >= 0);
+  if (indexes.length === 0) throw new Error('Review Queue is missing candidate identity columns');
+
+  const dataRows = rows.slice(1);
+  const meaningful = dataRows.filter((row) => indexes.some((index) => String(row[index] ?? '').trim()));
+  return {
+    rows: [headers, ...meaningful],
+    candidateRows: meaningful.length,
+    skippedTemplateRows: dataRows.length - meaningful.length,
+  };
+}
+
 export function deriveSheetAudienceDefaults(input: {
   graduateAccess?: string | null;
   eligibility?: string | null;

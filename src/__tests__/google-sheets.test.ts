@@ -1,6 +1,8 @@
 import { generateKeyPairSync } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  deleteGoogleSheetRows,
+  ensureGoogleSheetTab,
   fetchGoogleSheet,
   googleSheetsConfigured,
   readGoogleSheetsConfig,
@@ -15,6 +17,7 @@ function config(): GoogleSheetsConfig {
   return {
     spreadsheetId: 'abcdefghijklmnopqrstuvwxyz1234567890',
     range: 'Opportunities!A1:N5000',
+    archiveRange: "'Archive'!A1:Z5000",
     sourceRecordId: '00000000-0000-4000-8000-000000000001',
     serviceAccountEmail: 'career-hub@test-project.iam.gserviceaccount.com',
     privateKey: pem,
@@ -129,6 +132,48 @@ describe('governed Google Sheet client', () => {
     await expect(writeGoogleSheet(config(), { appendRows: rows }, { fetchImpl }))
       .rejects.toThrow('100-row safety limit');
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('creates a missing Archive tab with a bounded grid', async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchImpl = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(input), init });
+      if (calls.length === 1 || calls.length === 3) {
+        return new Response(JSON.stringify({ access_token: 'short-lived-token' }), { status: 200 });
+      }
+      if (calls.length === 2) return new Response(JSON.stringify({ sheets: [] }), { status: 200 });
+      return new Response(JSON.stringify({
+        replies: [{ addSheet: { properties: { sheetId: 42, title: 'Archive' } } }],
+      }), { status: 200 });
+    }) as typeof fetch;
+
+    await expect(ensureGoogleSheetTab(config(), config().archiveRange, { fetchImpl, now: 1_789_000_000 }))
+      .resolves.toEqual({ created: true, sheetId: 42 });
+    const request = JSON.parse(String(calls[3].init?.body));
+    expect(request.requests[0].addSheet.properties).toEqual({
+      title: 'Archive', gridProperties: { rowCount: 5_000, columnCount: 26 },
+    });
+  });
+
+  it('deletes resolved rows bottom-up and restores the bounded grid size', async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchImpl = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(input), init });
+      if (calls.length === 1 || calls.length === 3) {
+        return new Response(JSON.stringify({ access_token: 'short-lived-token' }), { status: 200 });
+      }
+      if (calls.length === 2) {
+        return new Response(JSON.stringify({ sheets: [{ properties: { sheetId: 7, title: 'Opportunities' } }] }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ replies: [] }), { status: 200 });
+    }) as typeof fetch;
+
+    await expect(deleteGoogleSheetRows(config(), config().range, [2, 5, 2], { fetchImpl, now: 1_789_000_000 }))
+      .resolves.toEqual({ deletedRows: 2 });
+    const requests = JSON.parse(String(calls[3].init?.body)).requests;
+    expect(requests[0].deleteDimension.range).toMatchObject({ sheetId: 7, startIndex: 4, endIndex: 5 });
+    expect(requests[1].deleteDimension.range).toMatchObject({ sheetId: 7, startIndex: 1, endIndex: 2 });
+    expect(requests[2].appendDimension).toMatchObject({ sheetId: 7, dimension: 'ROWS', length: 2 });
   });
 
 });

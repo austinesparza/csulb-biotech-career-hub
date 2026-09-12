@@ -70,7 +70,8 @@ export function SheetSync() {
       <p className="font-semibold">Review Queue updated</p>
       <p>
         {pushSummary.appended} added · {pushSummary.refreshed} system rows refreshed ·{' '}
-        {pushSummary.linked} existing rows linked · {pushSummary.alreadyPresent} already present
+        {pushSummary.linked} existing rows linked · {pushSummary.alreadyPresent} already present ·{' '}
+        {pushSummary.archived} resolved rows moved to Archive
       </p>
       <p className="mt-1 text-xs">
         {pushSummary.totalMachineCandidates} machine candidates considered. Officer notes,
@@ -81,7 +82,8 @@ export function SheetSync() {
     {pullSummary ? <div className="rounded bg-emerald-50 p-3 text-sm text-emerald-900">
       <p className="font-semibold">Sheet decisions archived</p>
       <p>
-        {pullSummary.sheetRows} Sheet rows read · {pullSummary.inserted} new · {pullSummary.updated} refreshed ·{' '}
+        {pullSummary.sheetRows} candidate rows read · {pullSummary.skippedTemplateRows} unused template rows skipped ·{' '}
+        {pullSummary.inserted} new · {pullSummary.updated} refreshed ·{' '}
         {pullSummary.touched} approved records checked · {pullSummary.changeFlags} changes queued ·{' '}
         {pullSummary.errors.length} errors
       </p>

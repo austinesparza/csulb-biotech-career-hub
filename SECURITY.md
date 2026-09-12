@@ -37,7 +37,7 @@ entirely preventable.
 remembers. Put it in the same calendar entry as the officer transition.
 
 - [ ] Remove from the GitHub org and from any repo collaborator list
-- [ ] Remove from the Supabase project and delete their `officers` row (`active = false`)
+- [ ] Remove from the Supabase project and deactivate their `officers` row (`is_active = false`)
 - [ ] Remove from Vercel
 - [ ] Remove their vault access
 - [ ] Rotate every credential in the table above that they could have read

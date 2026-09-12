@@ -1,6 +1,6 @@
 # Connector contracts
 
-Last reviewed: 2026-09-10
+Last reviewed: 2026-09-11
 
 These checks validate request and response shapes. They do not prove that a
 particular employer identifier exists or that a production credential works.
@@ -9,9 +9,9 @@ Each new source still needs a preview fetch before activation.
 | Source | Contract checked | Runtime status | Remaining onboarding check |
 |---|---|---|---|
 | Greenhouse | Public GET `/v1/boards/{board_token}/jobs?content=true`; `jobs[].id`, `absolute_url`, `location`, `departments`, `offices`, and optional content | Parser fixture and contract tests pass | Fetch the employer's actual board token |
-| Lever | Public GET `/v0/postings/{site}?mode=json`; stable `id`, URLs, categories, locations, workplace type, and optional salary data | Official contract checked; public demo endpoint returned JSON | Fetch the employer's actual site name |
-| Ashby | Public GET `/posting-api/job-board/{name}?includeCompensation=true`; public schema has no job `id`, so `jobUrl` is the connector identity | Parser corrected to the documented schema; unlisted and malformed records are skipped | Fetch one real board response and retain a redacted fixture |
-| USAJOBS | GET `/api/Search`; requires registration email as `User-Agent` and an `Authorization-Key` header | Parser fixture passes; source-specific credential boundary implemented | Obtain a key, test against a preview source, and confirm rate-limit handling |
+| Lever | Public GET `/v0/postings/{site}?mode=json`; stable `id`, URLs, categories, locations, workplace type, and optional salary data | Canonical persistence adapter and fixture tests pass; malformed timestamps fail safely | Fetch and privately persist one employer's actual site |
+| Ashby | Public GET `/posting-api/job-board/{name}?includeCompensation=true`; public schema has no job `id`, so `jobUrl` is the connector identity | Canonical persistence adapter and fixture tests pass; unlisted and malformed records are skipped | Fetch and privately persist one real board response |
+| USAJOBS | GET `/api/Search`; requires registration email as `User-Agent` and an `Authorization-Key` header | Canonical credentialed persistence adapter and fixture tests pass | Obtain a key, privately persist one query, and confirm rate-limit handling |
 
 Primary references:
 

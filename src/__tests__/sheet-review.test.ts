@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deriveSheetAudienceDefaults, readSheetReviewIntent } from '../lib/sheet-review';
+import { deriveSheetAudienceDefaults, filterMeaningfulReviewRows, readSheetReviewIntent } from '../lib/sheet-review';
 
 describe('officer spreadsheet review handoff', () => {
   it('turns evidence into private review defaults without publishing', () => {
@@ -35,6 +35,20 @@ describe('officer spreadsheet review handoff', () => {
     expect(deriveSheetAudienceDefaults({ eligibility: 'PhD candidates only' })).toMatchObject({
       audienceBucket: 'unknown',
       graduateStage: 'doctoral_only',
+    });
+  });
+
+  it('drops unused checkbox template rows but retains partial candidates', () => {
+    const rows = [
+      ['Candidate ID', 'Employer', 'Role Title', 'Source URL', 'Public Safe?'],
+      ['', '', '', '', 'FALSE'],
+      ['CAND-1', 'Example Bio', '', '', 'FALSE'],
+      ['', 'Example Lab', 'Research Intern', 'https://example.org/job', 'FALSE'],
+    ];
+    expect(filterMeaningfulReviewRows(rows)).toEqual({
+      rows: [rows[0], rows[2], rows[3]],
+      candidateRows: 2,
+      skippedTemplateRows: 1,
     });
   });
 });

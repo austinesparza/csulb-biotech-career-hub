@@ -63,6 +63,13 @@ if (!/create\s+table(?:\s+if\s+not\s+exists)?\s+public\.opportunity_revisions\b/
 if (!/trg_opportunity_revisions_append_only/i.test(sql)) {
   failures.push('opportunity revision history is not protected as append-only');
 }
+if (!/create\s+or\s+replace\s+function\s+public\.search_public_opportunities/i.test(sql)
+    || !/returns\s+setof\s+public\.public_opportunities/i.test(sql)) {
+  failures.push('public opportunity filters must run before the bounded result limit');
+}
+if (!/grant\s+execute\s+on\s+function\s+public\.search_public_opportunities[\s\S]+to\s+anon,\s*authenticated/i.test(sql)) {
+  failures.push('bounded public opportunity search RPC grant is missing');
+}
 
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL ${failure}`);

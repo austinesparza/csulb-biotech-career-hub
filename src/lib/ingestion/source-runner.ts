@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { fetchGreenhouseJobs } from "./connectors/greenhouse";
+import { fetchPublicApiJobs } from "./connectors/public-api";
 import { sha256Hex, stableSerialize } from "./hash";
 import {
   canonicalizeUrl,
@@ -230,6 +231,13 @@ async function fetchStaticPage(source: RunnableJobSource, db: SupabaseClient, pr
 export function defaultConnector(source: RunnableJobSource, context: { db: SupabaseClient; privateTest?: boolean }): Promise<ConnectorFetchResult> {
   if (source.source_kind === "static_html" || source.source_kind === "schema_org") {
     return fetchStaticPage(source, context.db, context.privateTest);
+  }
+  if (["ashby", "lever", "usajobs"].includes(source.source_kind)) {
+    return fetchPublicApiJobs({
+      source: source as RunnableJobSource & { source_kind: "ashby" | "lever" | "usajobs" },
+      usaJobsApiKey: process.env.USAJOBS_API_KEY,
+      usaJobsRegisteredEmail: process.env.USAJOBS_REGISTERED_EMAIL,
+    });
   }
   if (source.source_kind !== "greenhouse") {
     return Promise.resolve(failure(

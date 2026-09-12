@@ -77,8 +77,9 @@ path.
 9. Enums live in the SQL migration and `src/lib/types.ts` — change both in the same PR.
 10. `SUPABASE_SECRET_KEY` is server-only; it must never gain a `NEXT_PUBLIC_`
     prefix. `SUPABASE_SERVICE_ROLE_KEY` is a temporary legacy fallback only.
-11. Google Sheet intake uses a fixed file, range, and source UUID with a read-only
-    service account. Browser input can never choose the spreadsheet or authorize publication.
+11. Google Sheet intake and review handoff use fixed queue and archive ranges and
+    a fixed source UUID. The Editor service account can update only the configured
+    workbook; browser input can never choose it or authorize publication.
 
 ## For future officers
 Start with `HANDOFF.md` (operational runbook), then `docs/01` and `docs/02`.

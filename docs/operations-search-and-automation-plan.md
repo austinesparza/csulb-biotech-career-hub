@@ -26,10 +26,10 @@ history records the same change as
 | Officer review | Officers edit, approve, reject, or hide `opportunities` in `needs_review` | Working for opportunity records |
 | GitHub staging | Reviewed JSON is validated and staged as private drafts or change tasks | Working; it cannot approve or publish |
 | Weekly email | Monday GitHub Action summarizes private review work when production mail configuration is valid | Implemented; delivery acceptance remains manual |
-| Source ingestion | Daily authenticated Vercel orchestration claims bounded Greenhouse and governed public-page runs and archives payloads | Deployed; zero production machine sources are configured; three verified feeds can be added disabled from `/admin/sources` |
+| Source ingestion | Daily authenticated Vercel orchestration claims bounded Greenhouse, Ashby, Lever, USAJOBS, and governed public-page runs and archives payloads | Deployed; three governance-reviewed Greenhouse sources are configured disabled pending private persistence tests |
 | Fetch fallbacks | Scrapling and ScrapeGraphAI are wired as fetch-only public-page tiers | Implemented, disabled by default |
 | Extraction | An OmniRoute-compatible worker writes quote-bound private extraction records | Implemented, disabled by default |
-| Scheduled orchestration | Daily ingestion and weekly health routes are deployed with fail-closed authorization | Active but intentionally idle with zero enabled sources; no search provider is connected |
+| Scheduled orchestration | Daily ingestion and weekly health routes are deployed with fail-closed authorization | Active but intentionally idle with zero enabled sources; bounded search remains disabled pending provider storage rights and credentials |
 
 The public safety boundary is sound: an opportunity is visible only after it is approved and marked public-safe. Anonymous visitors can submit records but cannot read private submissions.
 
@@ -519,7 +519,8 @@ Do not optimize one combined score. A search can have good precision while missi
 1. Add a production worker around the existing Greenhouse connector.
 2. Enable Supabase Cron and source-health reporting.
 3. Add a small curated employer source registry.
-4. Add Ashby, Lever, and USAJOBS connectors only after per-source tests and policy review.
+4. Private-test the implemented Ashby, Lever, and USAJOBS adapters only after
+   per-source contract and policy review, then enable one source at a time.
 
 ### Phase 4: add AI drafting and discovery
 

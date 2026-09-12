@@ -36,7 +36,9 @@ export async function archiveDiscoveryLead(
   if (!runId || !originalUrl) throw new Error("runId and originalUrl are required");
   if (!Number.isFinite(Date.parse(observation.retrievedAt))) throw new Error("retrievedAt must be an ISO timestamp");
   const leadKey = hash([observation.route, observation.normalizedUrl ?? originalUrl]);
-  const observationKey = hash([leadKey, runId, observation.query, observation.retrievedAt]);
+  // A retry of the same bounded run and query must not create another
+  // observation merely because wall-clock retrieval time changed.
+  const observationKey = hash([leadKey, runId, observation.query]);
   const { data, error } = await db.rpc("archive_discovery_lead", {
     p_lead_key: leadKey,
     p_observation_key: observationKey,

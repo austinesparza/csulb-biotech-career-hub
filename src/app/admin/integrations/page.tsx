@@ -29,6 +29,9 @@ export default async function IntegrationsPage() {
   const sheetSourceId = process.env.GOOGLE_SHEETS_SOURCE_RECORD_ID?.trim();
   const cronSecret = process.env.CRON_SECRET?.trim();
   const cronReady = Boolean(cronSecret && cronSecret.length >= 32);
+  const searchReady = process.env.DISCOVERY_SEARCH_ENABLED === 'true'
+    && Boolean(process.env.BRAVE_SEARCH_API_KEY?.trim())
+    && process.env.BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED === 'true';
   const [
     latestImport,
     latestFetch,
@@ -78,7 +81,7 @@ export default async function IntegrationsPage() {
       <StatusCard
         title="Google Sheet → private intake"
         state={!sheetReady ? 'Waiting' : sheetSource.error || !sheetSource.data || latestImport.error || importRow?.status === 'failed' ? 'Attention' : importRow?.status === 'completed' ? 'Ready' : 'Waiting'}
-        detail={!sheetReady ? 'Read-only Sheet credentials are not configured.' : sheetSource.error || !sheetSource.data ? 'The configured Sheet source record is unavailable.' : `Last import: ${when(importRow?.finished_at ?? importRow?.started_at ?? sheetSource.data.last_imported_at)}`}
+        detail={!sheetReady ? 'Governed Sheet credentials are not configured.' : sheetSource.error || !sheetSource.data ? 'The configured Sheet source record is unavailable.' : `Last import: ${when(importRow?.finished_at ?? importRow?.started_at ?? sheetSource.data.last_imported_at)}`}
         footnote={importRow ? `${importRow.filename} · ${importRow.status} · ${importRow.total_rows} rows · ${importRow.error_count} errors` : sheetSource.data ? `${sheetSource.data.name} is connected, but no import run has been recorded.` : 'No import run has been recorded.'}
       />
       <StatusCard
@@ -115,7 +118,9 @@ export default async function IntegrationsPage() {
         title="Discovery → officer tasks"
         state={leadCount.error || reviewCount.error ? 'Attention' : 'Ready'}
         detail={leadCount.error ? `Lead archive unavailable: ${leadCount.error.message}` : `${leadCount.count ?? 0} new discovery leads retained.`}
-        footnote={reviewCount.error ? reviewCount.error.message : `${reviewCount.count ?? 0} open or in-progress review tasks.`}
+        footnote={reviewCount.error
+          ? reviewCount.error.message
+          : `${reviewCount.count ?? 0} open or in-progress review tasks. Governed search is ${searchReady ? 'configured' : 'disabled pending an API key and storage rights'}.`}
       />
       <StatusCard
         title="Officer approval → public view"

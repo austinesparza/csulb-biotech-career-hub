@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/client';
 import { FOCUS_AREAS } from '@/lib/focusAreas';
 import { sanitizeSearchTerm } from '@/lib/normalize';
+import { createPublicServerClient } from '@/lib/supabase/public-server';
 import type { PublicOpportunity } from '@/lib/types';
 import { Board } from './board';
 
@@ -21,33 +21,16 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
   const loc = sanitizeSearchTerm(params.loc);
   const paid = params.paid === 'paid' ? 'paid' : undefined;
   const sort = ['deadline', 'newest', 'company'].includes(params.sort ?? '') ? params.sort : undefined;
-  const supabase = createClient();
-
-  let query = supabase
-    .from('public_opportunities')
-    .select('*')
-    .in('audience_bucket', ['graduate', 'mixed']);
-  if (paid) query = query.in('paid_status', ['paid', 'stipend']);
-  query = sort === 'deadline'
-    ? query.order('deadline', { ascending: true, nullsFirst: false })
-    : sort === 'newest'
-      ? query.order('first_seen_at', { ascending: false })
-      : sort === 'company'
-        ? query.order('company_name', { ascending: true })
-        : query.order('relevance_score', { ascending: false, nullsFirst: false });
-
-  const { data, error } = await query.limit(200);
-  const normalized = (value: unknown) => String(value ?? '').toLocaleLowerCase();
-  const includes = (value: unknown, term: string | null | undefined) => !term || normalized(value).includes(term.toLocaleLowerCase());
-  const opportunities = ((data ?? []) as PublicOpportunity[]).filter((row) => {
-    const searchable = [
-      row.company_name, row.title, row.location, row.eligibility, row.focus_area,
-      ...(row.scientific_lanes ?? []), ...(row.job_functions ?? []), ...(row.methods ?? []),
-    ].join(' ');
-    return includes(searchable, q)
-      && (!focus || includes([row.focus_area, ...(row.scientific_lanes ?? [])].join(' '), focus))
-      && includes(row.location, loc);
+  const supabase = createPublicServerClient();
+  const { data, error } = await supabase.rpc('search_public_opportunities', {
+    p_query: q ?? null,
+    p_focus: focus ?? null,
+    p_location: loc ?? null,
+    p_paid_only: !!paid,
+    p_sort: sort ?? 'recommended',
+    p_limit: 200,
   });
+  const opportunities = (data ?? []) as PublicOpportunity[];
 
   return (
     <div className="site-wrap">
