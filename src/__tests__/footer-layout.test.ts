@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const layout = readFileSync('src/app/layout.tsx', 'utf8');
 const home = readFileSync('src/app/page.tsx', 'utf8');
-const styles = readFileSync('src/app/globals.css', 'utf8');
+const styles = readFileSync('src/app/career-hub.css', 'utf8');
 
 describe('editorial footer containment', () => {
   it('uses a dimensioned footer image instead of an uncontained fill image', () => {
