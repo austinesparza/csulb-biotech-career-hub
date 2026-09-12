@@ -41,28 +41,31 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </header>
         <main className="site-main">{children}</main>
         <footer className="site-footer">
-          <div className="footer-visual" aria-label="Microscopy and laboratory research">
-            <div className="footer-image footer-image-cells">
-              <Image src="/brand/hero-cells.webp" alt="Human fibroblast cells with stained nuclei and cytoskeleton" fill sizes="(max-width: 720px) 100vw, 42vw" />
+          <div className="footer-banner">
+            <div className="footer-banner-media">
+              <Image
+                className="footer-banner-image"
+                src="/brand/hero-cells.webp"
+                alt="Human fibroblast cells with stained nuclei and cytoskeleton"
+                width={1600}
+                height={1067}
+                sizes="(max-width: 720px) 100vw, 72vw"
+              />
+              <div className="footer-banner-copy">
+                <p>See where science can take you.</p>
+                <Link href="/internships">Explore current opportunities <span aria-hidden="true">→</span></Link>
+              </div>
             </div>
-            <div className="footer-image footer-image-neurons">
-              <Image src="/brand/discipline-neuroscience.webp" alt="Green fluorescent neurons branching across a dark field" fill sizes="(max-width: 720px) 50vw, 24vw" />
-            </div>
-            <div className="footer-image footer-image-protein">
-              <Image src="/brand/discipline-protein.webp" alt="Protein crystals viewed through a microscope" fill sizes="(max-width: 720px) 50vw, 18vw" />
-            </div>
-            <div className="footer-invitation">
-              <p>See where science can take you.</p>
-              <Link href="/internships">Explore current opportunities <span aria-hidden="true">→</span></Link>
+            <div className="footer-brand-panel">
+              <BrandMark className="footer-brand-mark" />
+              <div className="footer-brand-name"><span>CSULB</span> Biotech<br />Career Hub</div>
+              <p>Built in Long Beach.<br />For undergraduate and graduate students.</p>
             </div>
           </div>
           <div className="site-wrap footer-grid">
             <div className="footer-identity">
-              <BrandMark className="brand-mark" />
-              <div>
-                <div className="footer-title"><span>CSULB</span> Biotech Career Hub</div>
-                <p>Built by students to make biotechnology opportunities easier to find, understand, and share.</p>
-              </div>
+              <div className="footer-title"><span>CSULB</span> Biotech Career Hub</div>
+              <p>Opportunities, application timing, and evidence gathered by the CSULB Biotechnology Club.</p>
             </div>
             <div className="footer-links">
               <div><span>Explore</span><Link href="/internships">Opportunities</Link><Link href="/calendar">Calendar</Link><Link href="/companies">Employers</Link></div>
