@@ -2,18 +2,18 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const SIGNALS = [
-  ['Real work', 'A question, process, or product the team genuinely needs.'],
-  ['Real teaching', 'Someone who makes time to show you how the work is done and judged.'],
-  ['A new capability', 'A method or way of thinking you can use long after the role ends.'],
-  ['Room to participate', 'Pay, timing, location, and support that make the experience possible.'],
+  ['A problem to solve', 'The team can name the question, process, or product your work will move forward.'],
+  ['Work you can own', 'You make something the team can use, evaluate, or build on.'],
+  ['People who invest', 'You get context, feedback, and access to how decisions are made.'],
+  ['A path forward', 'Strong work can lead to a return offer, a referral, or a clearer next role.'],
 ] as const;
 
 const CHECKS = [
-  ['The work', 'What will you own, practice, or produce?'],
-  ['The people', 'Who will teach you, and how often will you work together?'],
-  ['The learning', 'Which methods, systems, or decisions will become familiar?'],
-  ['The access', 'Do your degree stage, enrollment, and work authorization fit?'],
-  ['The reality', 'Do pay, location, schedule, and relocation make the role possible?'],
+  ['The project', 'What problem will you help solve?'],
+  ['The ownership', 'What will be yours to run, build, analyze, or deliver?'],
+  ['The skills', 'Which methods, systems, and decisions will you practice?'],
+  ['The mentorship', 'Who will review your work, and how often?'],
+  ['The practical fit', 'Do the pay, timing, location, and requirements work for you?'],
   ['The evidence', 'Does the live employer posting support every important claim?'],
 ] as const;
 
@@ -70,11 +70,7 @@ export default function PreparationPage() {
     <div className="prepare-page">
       <header className="prepare-hero site-wrap">
         <div className="prepare-hero-copy">
-          <h1>An internship should change what you can do.</h1>
-          <p>
-            Look past the title. The right role gives you a real problem, someone who
-            will teach you, and enough support to do the work well.
-          </p>
+          <h1>The right internship can launch your career.</h1>
         </div>
         <div className="prepare-hero-image">
           <Image
@@ -89,7 +85,14 @@ export default function PreparationPage() {
 
       <section className="prepare-signals" aria-labelledby="signals-title">
         <div className="site-wrap">
-          <h2 id="signals-title">What makes the experience worth your time.</h2>
+          <div className="prepare-signals-intro">
+            <h2 id="signals-title">You are there to move the work forward.</h2>
+            <p>
+              Teams hire interns because there is a real problem to solve. The work also
+              gives you a chance to show how you think, contribute, and grow into what
+              comes next.
+            </p>
+          </div>
           <div className="prepare-signal-grid">
             {SIGNALS.map(([title, body]) => (
               <article key={title}><h3>{title}</h3><p>{body}</p></article>
@@ -108,7 +111,7 @@ export default function PreparationPage() {
           />
         </div>
         <div className="prepare-choice-copy">
-          <h2 id="choice-title">Read the work, not the brand.</h2>
+          <h2 id="choice-title">Choose the project before the logo.</h2>
           <div className="prepare-check-grid">
             {CHECKS.map(([title, body]) => (
               <article key={title}><h3>{title}</h3><p>{body}</p></article>

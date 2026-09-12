@@ -28,6 +28,10 @@ export default async function CalendarPage() {
     count: HISTORICAL_ROLE_ACTIVITY[monthIndex],
   }));
   const maxActivity = Math.max(...activity.map((month) => month.count), 1);
+  const autumnPeakRoles = HISTORICAL_ROLE_ACTIVITY[2] + HISTORICAL_ROLE_ACTIVITY[3];
+  const autumnPeakShare = Math.round(
+    autumnPeakRoles / HISTORICAL_ARCHIVE_SUMMARY.datedRoles * 100,
+  );
 
   return (
     <div className="site-wrap">
@@ -79,30 +83,39 @@ export default async function CalendarPage() {
 
       <section className="calendar-pattern" aria-labelledby="pattern-title">
         <div className="site-wrap calendar-pattern-grid">
-          <div>
-            <h2 id="pattern-title">Learning from our past searches.</h2>
+          <div className="calendar-pattern-intro">
+            <h2 id="pattern-title">What past searches tell us.</h2>
             <p>
-              Every dated role from the club&apos;s two supplied tracking cycles contributes
-              to this chart. It shows when we found listings, not when an employer has
-              promised to recruit again.
+              Two tracked cycles cannot predict the next one. They can tell us when to
+              begin looking and which employers deserve another look.
             </p>
             <dl className="calendar-history-metrics">
               <div><dt>Roles studied</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.roles}</dd></div>
               <div><dt>Cycles</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.cycles}</dd></div>
-              <div><dt>Named employer records</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.namedEmployerRecords}</dd></div>
+              <div><dt>Dated roles</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.datedRoles}</dd></div>
             </dl>
           </div>
-          <ol className="calendar-bars" aria-label="Historical recruiting activity by month">
-            {activity.map((item) => (
-              <li key={item.month}>
-                <span className="calendar-bar-count">{item.count}</span>
-                <span className="calendar-bar-track">
-                  <span style={{ height: `${Math.max(10, item.count / maxActivity * 100)}%` }} />
-                </span>
-                <span>{item.month}</span>
-              </li>
-            ))}
-          </ol>
+          <div className="calendar-season">
+            <div className="calendar-season-insight">
+              <strong>{autumnPeakShare}%</strong>
+              <span>of dated roles in the archive appeared in October or November.</span>
+            </div>
+            <ol className="calendar-bars" aria-label="Historical recruiting activity by month">
+              {activity.map((item) => (
+                <li key={item.month} aria-label={`${item.month}: ${item.count} roles`}>
+                  <span className="calendar-bar-count" aria-hidden="true">{item.count || ''}</span>
+                  <span className="calendar-bar-track" aria-hidden="true">
+                    <span style={{ height: `${item.count / maxActivity * 100}%` }} />
+                  </span>
+                  <span>{item.month}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="calendar-pattern-caveat">
+              <strong>Use the pattern as a head start.</strong> Begin active monitoring by
+              September. A past month is evidence, not a promise.
+            </p>
+          </div>
         </div>
       </section>
 
