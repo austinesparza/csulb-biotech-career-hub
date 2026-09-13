@@ -21,6 +21,7 @@ import type {
 export const PENDING_OPPORTUNITY_MIN_SCORE = 35;
 
 const ELIGIBILITY_SIGNAL = /\b(master(?:'s|s)|master(?: degree| students?| program| candidates?)|graduate students?|graduate degree|bachelor'?s?|undergraduate|post[ -]?baccalaureate|postbac|ph\.?d\.?|doctoral|degree program|currently enrolled|pursuing an? (?:advanced|graduate) degree|no college degree(?: is)? (?:necessary|required))\b/i;
+const STRUCTURAL_ELIGIBILITY_SIGNAL = /\b(?:open|available) exclusively to current .{0,100}(?:university|college).{0,50}students?\b/i;
 const WORK_AUTHORIZATION_SIGNAL = /\b(work authorization|authorized to work|visa sponsorship|sponsorship|citizenship|required citizen|permanent resident|cpt|opt)\b/i;
 const CONTINUED_ENROLLMENT_SIGNAL = /\b(return(?:ing)? to (?:school|college|university|the program)|remain enrolled|continued? enrollment|continuing (?:their|your) (?:degree|studies|education)|enrolled .* (?:after|following) (?:the )?(?:internship|co-op))\b/i;
 const GRADUATE_EVIDENCE_SIGNAL = /\bmaster(?:'s|s)?\b|\bgraduate students?\b|\bgraduate degree\b|(?:^|[\s(,;/])m\.?\s?s\.?c?\.?(?=[\s),;/]|$)/i;
@@ -114,18 +115,20 @@ export function deriveOpportunityEnrichment(posting: NormalizedSourcePosting) {
     closesAt: posting.closesAt,
     uncertaintyFlags: posting.uncertaintyFlags,
   });
-  const eligibilityEvidence = sourceSnippets(posting.descriptionText, ELIGIBILITY_SIGNAL).join(' | ') || null;
+  const degreeEligibilityEvidence = sourceSnippets(posting.descriptionText, ELIGIBILITY_SIGNAL).join(' | ') || null;
+  const structuralEligibilityEvidence = sourceSnippets(posting.descriptionText, STRUCTURAL_ELIGIBILITY_SIGNAL, 2).join(' | ') || null;
+  const eligibilityEvidence = [structuralEligibilityEvidence, degreeEligibilityEvidence].filter(Boolean).join(' | ') || null;
   const workAuthorization = sourceSnippets(posting.descriptionText, WORK_AUTHORIZATION_SIGNAL, 2).join(' | ') || null;
   const continuedEnrollmentEvidence = sourceSnippets(posting.descriptionText, CONTINUED_ENROLLMENT_SIGNAL, 1);
   const broadNoDegreeRequirement = Boolean(
-    eligibilityEvidence
-    && /\bno college degree(?: is)? (?:necessary|required)\b/i.test(eligibilityEvidence),
+    degreeEligibilityEvidence
+    && /\bno college degree(?: is)? (?:necessary|required)\b/i.test(degreeEligibilityEvidence),
   );
   const graduateStage = broadNoDegreeRequirement
     ? 'msc_any' as const
     : mapGraduateStage(classification.stage.id);
   const audienceBucket = classification.keep
-    ? mapAudienceBucket(classification.suggestedBucket, classification.stage.id, eligibilityEvidence)
+    ? mapAudienceBucket(classification.suggestedBucket, classification.stage.id, degreeEligibilityEvidence)
     : 'unknown';
   const eligibilityStatus = !classification.stage.eligible
     ? 'not_eligible' as const
@@ -143,11 +146,13 @@ export function deriveOpportunityEnrichment(posting: NormalizedSourcePosting) {
     eligibility: eligibilityEvidence,
     paidStatus: inferPaidStatus(posting.descriptionText),
     audienceBucket,
-    audienceReason: eligibilityEvidence
-      ? broadNoDegreeRequirement
-        ? `The official posting does not require a college degree. Undergraduate and graduate students may qualify if they have the stated skills: ${eligibilityEvidence}`
-        : `${classification.stage.label}: ${eligibilityEvidence}`
-      : 'Graduate access is not stated clearly in the authoritative source; officer verification is required.',
+    audienceReason: classification.structuralGates.length > 0
+      ? `Program-specific eligibility restriction: ${structuralEligibilityEvidence ?? eligibilityEvidence ?? 'Officer verification is required.'}`
+      : degreeEligibilityEvidence
+        ? broadNoDegreeRequirement
+          ? `The official posting does not require a college degree. Undergraduate and graduate students may qualify if they have the stated skills: ${degreeEligibilityEvidence}`
+          : `${classification.stage.label}: ${degreeEligibilityEvidence}`
+        : 'Graduate access is not stated clearly in the authoritative source; officer verification is required.',
     scientificLanes: classification.lanes.map((lane) => lane.label),
     jobFunctions: classification.functions.map((jobFunction) => jobFunction.label),
     methods,
