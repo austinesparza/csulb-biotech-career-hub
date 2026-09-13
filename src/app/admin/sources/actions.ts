@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 
 import { googleSheetsConfigured } from "@/lib/google-sheets";
+import { resolveSourceIdentifier } from "@/lib/ingestion/source-identifiers";
 import { runClaimedFetch } from "@/lib/ingestion/source-runner";
 import { governedStarterSource, GREENHOUSE_POLICY_LINKS } from "@/lib/ingestion/starter-sources";
 import { assertSafePublicUrl } from "@/lib/pipeline/safe-fetch";
@@ -33,7 +34,11 @@ export async function createJobSource(formData: FormData): Promise<void> {
   const sourceName = field(formData, "source_name");
   const sourceKind = field(formData, "source_kind");
   const careersUrl = (await assertSafePublicUrl(field(formData, "careers_url"))).toString();
-  const sourceIdentifier = field(formData, "source_identifier") || null;
+  const sourceIdentifier = resolveSourceIdentifier({
+    sourceKind,
+    explicitIdentifier: field(formData, "source_identifier") || null,
+    careersUrl,
+  });
   const interval = Number(field(formData, "fetch_interval_hours") || 24);
   const termsReviewed = checked(formData, "terms_reviewed");
   const robotsReviewed = checked(formData, "robots_reviewed");
@@ -43,11 +48,11 @@ export async function createJobSource(formData: FormData): Promise<void> {
   if (!Number.isInteger(interval) || interval < 24 || interval > 720) {
     throw new Error("Fetch interval must be between 24 and 720 hours.");
   }
-  if (sourceKind === "greenhouse" && !sourceIdentifier) {
-    throw new Error("Greenhouse sources require the board token.");
+  if (["greenhouse", "ashby", "lever"].includes(sourceKind) && !sourceIdentifier) {
+    throw new Error(`Could not determine the ${sourceKind} board identifier. Paste the official ATS board URL or enter its board identifier.`);
   }
-  if (["ashby", "lever", "usajobs"].includes(sourceKind) && !sourceIdentifier) {
-    throw new Error(`${sourceKind} sources require a board identifier or query configuration.`);
+  if (sourceKind === "usajobs" && !sourceIdentifier) {
+    throw new Error("USAJOBS sources require a JSON query configuration.");
   }
   const { data: provenance, error: provenanceError } = await db.from("source_records").insert({
     name: sourceName,
