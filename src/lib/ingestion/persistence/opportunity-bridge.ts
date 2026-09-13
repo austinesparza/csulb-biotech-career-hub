@@ -305,7 +305,10 @@ export async function bridgeOpportunityForSourcePosting(params: {
           linkedOpportunity as unknown as Record<string, unknown>,
         );
 
-        if (materialChanged || changed.length > 0) {
+        // Protected opportunity fields can legitimately differ from current
+        // enrichment output after classifier changes. Only source material
+        // changes should reopen an officer source_changed review task.
+        if (materialChanged) {
           await ensureOpenSourceReviewTask({
             repository,
             taskType: 'source_changed',
