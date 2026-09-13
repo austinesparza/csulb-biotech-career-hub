@@ -45,3 +45,22 @@ jobs:
           test -n "$SOURCE_IDENTIFIER"
       - name: Run governed private source test
         run: node --conditions=react-server --import tsx scripts/run-private-source-test.ts
+
+  validate_reference_feed:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SOURCE_IDENTIFIER: ginkgobioworks
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install from the lockfile only
+        run: npm ci --ignore-scripts
+      - name: Run reference-feed idempotency check
+        run: node --conditions=react-server --import tsx scripts/run-private-source-test.ts
