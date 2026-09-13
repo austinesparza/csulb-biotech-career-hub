@@ -1,9 +1,7 @@
--- Surface officer-reviewed company context alongside public opportunities.
--- Company fields are appended to the existing view column order so dependent
--- SETOF functions retain the same relation identity and publication gates.
--- Internal spreadsheet/manual review sources are not useful public evidence
--- when the record already links to an employer posting, so suppress those
--- labels while preserving named public source feeds.
+-- Keep the public opportunity view contract stable while cleaning up evidence labels.
+-- Company context is already exposed through public.public_companies and is joined
+-- by the server-rendered opportunity page. Internal spreadsheet/manual review
+-- source names are not useful public evidence when an employer posting is linked.
 
 create or replace view public.public_opportunities as
 select o.id, c.name as company_name, o.title, o.posting_url, o.location,
@@ -20,11 +18,7 @@ select o.id, c.name as company_name, o.title, o.posting_url, o.location,
        o.graduate_stage, o.eligibility_status, o.eligibility_evidence,
        o.continued_enrollment_required, o.graduation_window_start,
        o.graduation_window_end, o.work_authorization, o.application_opened_at,
-       o.date_basis, o.source_check_result, o.discovery_route,
-       c.website as company_website,
-       c.location as company_location,
-       c.industry_tags as company_industry_tags,
-       c.description as company_description
+       o.date_basis, o.source_check_result, o.discovery_route
 from public.opportunities o
 join public.companies c on c.id = o.company_id and c.public_safe
 left join public.source_records s on s.id = o.source_record_id and s.public_safe
@@ -45,4 +39,4 @@ where o.public_safe and o.review_status = 'approved'
 grant select on public.public_opportunities to anon, authenticated;
 
 comment on view public.public_opportunities is
-  'Officer-approved public opportunities with reviewed company context; publication, audience, and eligibility gates remain enforced.';
+  'Officer-approved public opportunities; publication, audience, and eligibility gates remain enforced.';
