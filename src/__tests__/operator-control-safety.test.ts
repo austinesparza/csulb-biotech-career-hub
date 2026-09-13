@@ -11,6 +11,7 @@ const integrationPage = readFileSync('src/app/admin/integrations/page.tsx', 'utf
 const adminPage = readFileSync('src/app/admin/page.tsx', 'utf8');
 const importPage = readFileSync('src/app/admin/import/page.tsx', 'utf8');
 const sheetSync = readFileSync('src/app/admin/import/sheet-sync.tsx', 'utf8');
+const sheetReconcileActions = readFileSync('src/app/admin/import/sheet-reconcile-actions.ts', 'utf8');
 const importActions = readFileSync('src/app/admin/import/actions.ts', 'utf8');
 const reviewSheetSync = readFileSync('src/lib/review-sheet-sync.ts', 'utf8');
 const googleSheets = readFileSync('src/lib/google-sheets.ts', 'utf8');
@@ -66,12 +67,17 @@ describe('operator control safety', () => {
     expect(adminPage).toContain('Spreadsheet to website');
     expect(adminPage).toContain('They never publish by themselves');
     expect(importPage).toContain('Sheet approval is not website approval');
-    expect(sheetSync).toContain('Sync existing discoveries to Sheet');
+    expect(sheetSync).toContain('Reconcile + sync discoveries');
     expect(sheetSync).toContain('Pull decisions from Sheet');
     expect(sheetSync).toContain('It does not search employers');
     expect(sheetSync).toContain('/admin/sources');
     expect(sheetSync).toContain('Neither direction publishes automatically');
     expect(sheetSync).toContain('Confirm decisions and publish');
+    expect(sheetReconcileActions.indexOf('await requireOfficer()')).toBeLessThan(
+      sheetReconcileActions.indexOf('createServiceClient()'),
+    );
+    expect(sheetReconcileActions).toContain('reconcileReviewableSourcePostings({ db })');
+    expect(sheetReconcileActions).toContain('syncReviewQueueToGoogleSheet({ db })');
     expect(importActions).toContain("return { ok: false, error: safeError }");
     expect(importActions).toContain("console.error('[spreadsheet-sync] action failed'");
     expect(reviewCard).toContain('Confirm Sheet approval and publish');
