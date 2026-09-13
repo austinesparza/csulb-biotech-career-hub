@@ -19,8 +19,58 @@
   padding: 18px clamp(14px, 3vw, 28px);
 }
 
+/* Image workshop, round 1.
+   Candidate 4 becomes the intimate hero detail: Tom Deerinck / NCMIR epithelial
+   cells, with yellow-green Golgi, magenta actin and cyan DNA. Candidate 2 becomes
+   the global footer statement: Kevin Eliceiri's zebrafish vasculature image.
+   Both source images come from the NIGMS Image & Video Gallery and are credited
+   on /image-credits. The existing local images remain in the DOM as a fallback
+   while this visual direction is being evaluated in preview. */
+.science-image {
+  background-color: #090b0d;
+  background-image: url("https://nigms.nih.gov/sites/nigms/files/image-and-video-gallery/Epithelial%20cells%20stitched%20together.jpg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.science-image > img {
+  opacity: 0;
+}
+
+.footer-banner-media {
+  background-color: #02070a;
+  background-image: url("https://www.nigms.nih.gov/sites/nigms/files/image-and-video-gallery/stiched_fish_blending_high_contrast.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.footer-banner-image {
+  opacity: 0;
+}
+
+.footer-banner-media::after {
+  background: linear-gradient(90deg, rgba(1, 9, 12, .7) 0%, rgba(1, 9, 12, .32) 48%, rgba(1, 9, 12, .08) 100%);
+}
+
 @media (max-width: 700px) {
   .trust-metrics {
     min-height: 86px;
+  }
+
+  .footer-banner-media,
+  .footer-banner-image {
+    min-height: 290px;
+    height: 290px;
+  }
+
+  .footer-banner-media {
+    background-size: 118% auto;
+    background-position: 58% 46%;
+  }
+
+  .footer-banner-media::after {
+    background: linear-gradient(180deg, rgba(1, 9, 12, .08) 12%, rgba(1, 9, 12, .72) 100%);
   }
 }
