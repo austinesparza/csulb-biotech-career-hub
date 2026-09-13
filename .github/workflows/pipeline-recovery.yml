@@ -1,0 +1,56 @@
+name: Pipeline recovery cycle
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Runs 15 minutes after the primary Vercel daily cron. The database scheduler
+    # and active-run invariant make this an idempotent recovery path, not a second
+    # source of publication authority.
+    - cron: '15 14 * * *'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/pipeline-recovery.yml'
+      - 'scripts/run-pipeline-cycle.ts'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-pipeline-cycle
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      PIPELINE_BATCH_LIMIT: '5'
+      PIPELINE_SHEET_SYNC_LIMIT: '50'
+      GOOGLE_SHEETS_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_SPREADSHEET_ID }}
+      GOOGLE_SHEETS_RANGE: ${{ secrets.GOOGLE_SHEETS_RANGE }}
+      GOOGLE_SHEETS_ARCHIVE_RANGE: ${{ secrets.GOOGLE_SHEETS_ARCHIVE_RANGE }}
+      GOOGLE_SHEETS_SOURCE_RECORD_ID: ${{ secrets.GOOGLE_SHEETS_SOURCE_RECORD_ID }}
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+      GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY }}
+      DISCOVERY_SEARCH_ENABLED: ${{ vars.DISCOVERY_SEARCH_ENABLED }}
+      BRAVE_SEARCH_API_KEY: ${{ secrets.BRAVE_SEARCH_API_KEY }}
+      BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED: ${{ vars.BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED }}
+      PIPELINE_MODEL_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install from the lockfile only
+        run: npm ci --ignore-scripts
+      - name: Verify protected worker configuration
+        shell: bash
+        run: |
+          test -n "$NEXT_PUBLIC_SUPABASE_URL"
+          test -n "$SUPABASE_SECRET_KEY"
+      - name: Run canonical private pipeline recovery
+        run: node --conditions=react-server --import tsx scripts/run-pipeline-cycle.ts
