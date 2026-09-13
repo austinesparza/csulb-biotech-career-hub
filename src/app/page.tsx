@@ -87,11 +87,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="trust-ledger" aria-label="How the hub helps">
+      <section className="trust-ledger" aria-label="Current opportunity board counts">
         <div className="site-wrap trust-ledger-inner">
-          <article><h2>Current employer page linked</h2></article>
-          <article><h2>Degree rules in plain language</h2></article>
-          <article><h2>Missing details shown as unknown</h2></article>
           <div className="trust-metrics" aria-label="Current board counts">
             <div><strong>{studentRoles.length}</strong><span>open roles</span></div>
             <div><strong>{companies}</strong><span>employers</span></div>
