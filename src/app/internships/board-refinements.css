@@ -1,0 +1,133 @@
+.record-main { min-width: 0; }
+.record-company a { color: inherit; text-decoration: none; }
+.record-company a:hover { color: var(--teal-deep); text-decoration: underline; text-underline-offset: 3px; }
+.record-company-context {
+  margin-top: 3px;
+  color: var(--ink-faint);
+  font-size: .7rem;
+  line-height: 1.35;
+}
+.record-public-note {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr);
+  gap: 10px;
+  align-items: baseline;
+  margin-top: 13px;
+  padding-top: 11px;
+  border-top: 1px solid var(--line);
+}
+.record-public-note > span {
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: .62rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.record-public-note p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: .78rem;
+  line-height: 1.45;
+}
+.record-company-details {
+  margin-top: 12px;
+  color: var(--ink-soft);
+  font-size: .76rem;
+}
+.record-company-details summary {
+  width: max-content;
+  max-width: 100%;
+  cursor: pointer;
+  color: var(--teal-deep);
+  font-weight: 700;
+}
+.record-company-details p {
+  max-width: 60ch;
+  margin: 7px 0 0;
+  line-height: 1.5;
+}
+.record-company-details a {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--teal);
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .ledger { margin-top: 20px; }
+  .ledger-group-title { padding-top: 18px; }
+  .opportunity-record {
+    gap: 10px;
+    padding: 21px 0 23px;
+  }
+  .record-aside {
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+  .company-mark { width: 70px; height: 46px; }
+  .company-mark-logo { width: 102px; height: 46px; }
+  .company-mark img { padding: 5px 2px; }
+  .record-urgency {
+    max-width: none;
+    margin-top: 0;
+    text-align: right;
+    font-size: .61rem;
+    letter-spacing: .035em;
+  }
+  .record-company { margin-top: 1px; font-size: .8rem; }
+  .record-company-context {
+    max-width: 42ch;
+    margin-top: 2px;
+    font-size: .66rem;
+  }
+  .record-title {
+    max-width: none;
+    margin-top: 7px;
+    font-size: clamp(1.55rem, 6.8vw, 1.95rem);
+    line-height: 1.08;
+    letter-spacing: -.018em;
+  }
+  .record-tags { margin-top: 10px; }
+  .record-meta {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 4px 12px;
+    margin-top: 11px;
+    font-size: .72rem;
+    line-height: 1.4;
+  }
+  .record-meta span:first-child { grid-column: 1 / -1; }
+  .record-meta span:not(:last-child)::after { display: none; }
+  .record-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 8px;
+    margin-top: 13px;
+  }
+  .record-actions .primary-button {
+    grid-column: 1 / -1;
+    min-height: 48px;
+  }
+  .record-actions .pill {
+    justify-content: center;
+    align-items: center;
+    min-height: 28px;
+    text-align: center;
+  }
+  .record-public-note {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+  .record-public-note p { font-size: .76rem; }
+  .record-company-details { margin-top: 10px; }
+  .annotation {
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+  .annotation dt { font-size: .68rem; }
+  .annotation dd { font-size: .8rem; line-height: 1.42; }
+}

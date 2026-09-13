@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * Keep this equal to the basename of the newest executable migration.
  * scripts/check-migration-release.mjs enforces that contract in CI.
  */
-export const EXPECTED_PRODUCTION_MIGRATION_NAME = 'private_test_source_health_isolation';
+export const EXPECTED_PRODUCTION_MIGRATION_NAME = 'xaira_company_profile';
 
 export type DatabaseReleaseHealth =
   | {

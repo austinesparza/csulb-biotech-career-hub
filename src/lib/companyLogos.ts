@@ -5,6 +5,7 @@ const COMPANY_LOGOS: Array<[RegExp, string]> = [
   [/^sanofi$/i, '/brand/logos/sanofi.svg'],
   [/md anderson/i, '/brand/logos/md-anderson.png'],
   [/^cas$/i, '/brand/logos/cas.svg'],
+  [/^xaira(?:\s+therapeutics)?$/i, '/brand/logos/xaira-therapeutics.png'],
 ];
 
 export function companyLogoPath(name: string): string | null {

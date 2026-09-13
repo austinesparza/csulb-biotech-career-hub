@@ -6,6 +6,7 @@ import {
 import { createPublicServerClient } from '@/lib/supabase/public-server';
 import type { PublicOpportunity } from '@/lib/types';
 import { Board } from './board';
+import './board-refinements.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,26 @@ interface Search {
   audience?: string;
 }
 
+type CompanyContextFields =
+  | 'company_website'
+  | 'company_location'
+  | 'company_industry_tags'
+  | 'company_description';
+
+type PublicOpportunityRow = Omit<PublicOpportunity, CompanyContextFields>;
+
+interface PublicCompanyContext {
+  name: string;
+  website: string | null;
+  location: string | null;
+  industry_tags: string[] | null;
+  description: string | null;
+}
+
+function companyKey(name: string): string {
+  return name.trim().toLowerCase();
+}
+
 export default async function InternshipsPage({ searchParams }: { searchParams: Promise<Search> }) {
   const params = await searchParams;
   const q = sanitizeSearchTerm(params.q);
@@ -27,15 +48,41 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
   const sort = ['deadline', 'newest', 'company'].includes(params.sort ?? '') ? params.sort : undefined;
   const audience = normalizeOpportunityAudienceFilter(params.audience);
   const supabase = createPublicServerClient();
-  const { data, error } = await supabase.rpc('search_public_opportunities', {
-    p_query: q ?? null,
-    p_focus: focus ?? null,
-    p_location: loc ?? null,
-    p_paid_only: !!paid,
-    p_sort: sort ?? 'recommended',
-    p_limit: 200,
+
+  const [opportunityResult, companyResult] = await Promise.all([
+    supabase.rpc('search_public_opportunities', {
+      p_query: q ?? null,
+      p_focus: focus ?? null,
+      p_location: loc ?? null,
+      p_paid_only: !!paid,
+      p_sort: sort ?? 'recommended',
+      p_limit: 200,
+    }),
+    supabase
+      .from('public_companies')
+      .select('name,website,location,industry_tags,description'),
+  ]);
+
+  const { data, error } = opportunityResult;
+  const companyRows = (companyResult.data ?? []) as PublicCompanyContext[];
+  const companyByName = new Map(companyRows.map((company) => [companyKey(company.name), company]));
+  const opportunities = ((data ?? []) as PublicOpportunityRow[]).map((opportunity): PublicOpportunity => {
+    const company = companyByName.get(companyKey(opportunity.company_name));
+    return {
+      ...opportunity,
+      company_website: company?.website ?? null,
+      company_location: company?.location ?? null,
+      company_industry_tags: company?.industry_tags ?? [],
+      company_description: company?.description ?? null,
+    };
   });
-  const opportunities = (data ?? []) as PublicOpportunity[];
+
+  if (companyResult.error) {
+    console.warn('[opportunities] public company context unavailable', {
+      code: companyResult.error.code ?? null,
+      message: companyResult.error.message,
+    });
+  }
 
   return (
     <div className="site-wrap">
