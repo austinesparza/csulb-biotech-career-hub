@@ -17,6 +17,10 @@ function opportunity(overrides: Partial<PublicOpportunity>): PublicOpportunity {
   return {
     id: 'role-1',
     company_name: 'Example Institute',
+    company_website: null,
+    company_location: null,
+    company_industry_tags: [],
+    company_description: null,
     title: 'Research Intern',
     posting_url: 'https://example.org/jobs/1',
     location: null,
