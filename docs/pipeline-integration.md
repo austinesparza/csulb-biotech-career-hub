@@ -2,11 +2,9 @@
 
 ## Current contract
 
-There is one source registry, one observation history, one officer queue, and one
-public opportunity table. The automated extraction work adds evidence to that
-system. It does not create a second publishing path.
+There is one source registry, one observation history, one officer queue, one review Sheet handoff, and one public opportunity table. Automated retrieval, discovery, extraction, and reconciliation add private evidence to that system. They do not create a second publishing path.
 
-| Responsibility | Canonical table or view |
+| Responsibility | Canonical table, view, or service |
 |---|---|
 | Source provenance | `source_records` |
 | Approved machine-readable sources | `job_sources` |
@@ -15,102 +13,84 @@ system. It does not create a second publishing path.
 | Current source posting | `source_postings` |
 | Immutable normalized observation | `source_posting_versions` |
 | Bound model output | `pipeline_extractions` |
+| End-to-end cycle observability | `pipeline_cycles` |
 | Officer work | `review_tasks` plus pending `opportunities` |
+| Spreadsheet handoff | `Review Queue` and `Archive`, reconciled through the application |
 | Public records | `opportunities` through `public_opportunities` |
 | Public suggestions | `user_submissions` |
 
-The SQL proposals under `supabase/proposals` are retained for design history and
-are not run by the migration tool.
+The SQL proposals under `supabase/proposals` are retained for design history and are not run by the migration tool.
 
-## Event flow
+## Canonical orchestration
 
-1. An officer approves a `job_sources` record only after terms and robots review.
-   Sources are disabled by default.
-2. The existing connector and persistence bridge create a fetch run, store the
-   private payload, upsert the source posting, append a posting version, and open
-   a review task in one transaction.
-3. The deterministic classifier reads the normalized posting text. It keeps
-   scientific lanes, job functions, and methods separate. Ambiguous MSc access
-   remains unresolved rather than being labelled eligible.
-4. An extraction model may process the immutable posting version. Every asserted
-   field includes a quote. Code checks each quote against the exact normalized
-   text stored in that version.
-5. `pending_pipeline_extractions` selects work for an exact schema and prompt
-   version. A prompt upgrade can therefore reprocess the same immutable source
-   without deleting history.
-6. `persist_pipeline_extraction` stores the output and attaches it to the existing
-   source-posting review task. Extraction neither creates a parallel task type
-   nor changes public opportunity fields.
-7. `/admin/review` shows the source link, extracted values, quotes, and original
-   text. The officer chooses the audience and MSc stage.
-8. `decide_opportunity_review` changes the opportunity, resolves its linked
-   source-posting and opportunity tasks, records the officer and final decision,
-   and optionally exposes the company in one transaction.
-9. The public view admits only approved, public-safe, open, MSc-accessible records.
+`src/lib/pipeline-cycle.ts` owns the normal private operations sequence. Both `/api/cron/ingest` and the officer **Run pipeline now** action call `runPipelineCycle()` rather than maintaining separate versions of the workflow.
+
+The ordered cycle is:
+
+1. Recover abandoned running source fetches after the worker-lease timeout.
+2. Queue due, enabled, unpaused sources.
+3. Claim and process a bounded source-fetch batch.
+4. Reconcile any reviewable source posting that is missing its canonical opportunity bridge.
+5. Run governed employer/lane discovery only when explicitly enabled.
+6. Run evidence-bound model extraction only when explicitly enabled.
+7. Deliver private review candidates to Google Sheets when configured.
+8. Finalize one `pipeline_cycles` record with stage counts, partial/failure state, and errors.
+
+The database enforces at most one active `pending` or `running` fetch for a source. Stale-worker recovery finalizes abandoned work as a timeout failure and queues at most one retry only when the source remains enabled and unpaused.
+
+A source run can be `completed`, `partial`, or `failed`. Partial is not counted as completed. Any partial source run or stage error makes the overall cycle partial so the officer UI and runtime monitoring do not report false success.
+
+## Source and review flow
+
+1. An officer approves a `job_sources` record only after terms and robots review. Sources are disabled by default.
+2. The connector and persistence bridge create a fetch run, store the private payload, upsert the source posting, append a posting version, and open a review task using the canonical persistence contract.
+3. The deterministic classifier reads normalized posting text. It keeps scientific lanes, job functions, and methods separate. Ambiguous MSc access remains unresolved rather than being labelled eligible.
+4. An extraction model may process the immutable posting version. Every asserted field includes source evidence, and code checks evidence against the exact normalized text stored in that version.
+5. `pending_pipeline_extractions` selects work for an exact schema and prompt version. A prompt upgrade can therefore reprocess the same immutable source without deleting history.
+6. `persist_pipeline_extraction` stores output and attaches it to the existing source-posting review task. Extraction neither creates a parallel publication path nor changes public opportunity fields.
+7. The reconciliation bridge materializes reviewable source postings into the existing opportunity-review workflow when that link is missing. The operation is idempotent.
+8. Machine-created candidates are delivered to the fixed `Review Queue` Sheet range without overwriting officer-owned decision cells.
+9. The normal **Sync review workflow** action imports officer Sheet edits first, then reconciles and refreshes the Sheet. One-way pull and refresh controls remain available only as advanced recovery tools.
+10. `/admin/review` and the publication controls keep final approval with an authenticated active officer.
+11. `decide_opportunity_review` changes the opportunity, resolves linked review tasks, records the officer and final decision, and optionally exposes the company in one transaction.
+12. The public view admits only approved, public-safe, open, audience-eligible records.
 
 ## Classification ownership
 
-`pipeline/classify.ts` is the canonical subject and eligibility classifier.
-`relevance.ts` only orders already-created review records by practical factors
-such as deadline, compensation, location, and whether MSc eligibility is stated.
-It does not decide inclusion. `focusAreas.ts` is a legacy display adapter for the
-single `focus_area` column; new structured records use `scientific_lanes`,
-`job_functions`, and `methods`.
+`pipeline/classify.ts` is the canonical subject and eligibility classifier. `relevance.ts` only orders already-created review records by practical factors such as deadline, compensation, location, and whether MSc eligibility is stated. It does not decide inclusion. `focusAreas.ts` is a legacy display adapter for the single `focus_area` column; new structured records use `scientific_lanes`, `job_functions`, and `methods`.
 
 ## Digest ownership
 
-`scripts/review-digest.mjs` is the production entrypoint. It owns the Supabase
-query, combined opportunity/submission reminder, configuration checks, Gmail
-transport, HTML escaping, and scheduled workflow. `pipeline/digest.ts` remains a
-pure formatter experiment for future source-health, evidence, stale-record, and
-recruiting-window sections; it is not a second delivery path.
+`scripts/review-digest.mjs` is the production entrypoint for the weekly review digest. It owns the Supabase query, combined opportunity/submission reminder, configuration checks, Gmail transport, HTML escaping, and scheduled workflow. `pipeline/digest.ts` remains a pure formatter experiment for future source-health, evidence, stale-record, and recruiting-window sections; it is not a second delivery path.
 
-## Controls
+## Safety controls
 
-- A quote binding proves that text exists in the source. It does not prove that
-  the quote entails the extracted value. Officer review and the golden set cover
-  that different failure class.
-- The extraction worker receives no publishing credential or approval function.
-- Compression and prompt-rewriting tools do not sit in the extraction request
-  path because they would invalidate evidence offsets and transit checks.
-- `test:schema` rejects duplicate migration numbers, the superseded parallel
-  tables, and pgvector before its benchmark gate.
-- The branch does not apply migrations or enable a source. Those are separate
-  rollout decisions against a preview database first.
+- A quote or evidence binding proves that text exists in the source. It does not by itself prove that the text entails the extracted value. Human review and the evaluation set cover that different failure class.
+- Retrieval, discovery, extraction, reconciliation, and Sheet synchronization do not receive publication authority.
+- Compression and prompt-rewriting tools do not sit in the extraction request path because they can invalidate evidence offsets and transit checks.
+- Raw source payloads and immutable posting versions remain available even when a later stage fails.
+- `test:schema` rejects duplicate migration numbers, superseded parallel tables, and pgvector before its benchmark gate.
+- The disposable **Database contracts** workflow applies every migration to a clean database and runs SQL contract tests. It does not deploy migrations to production.
+- Production database migrations remain an explicit rollout action. Application deployment and database migration must both be verified before the new orchestration path is treated as live.
 
-## Operational wiring now present
+## Operational wiring
 
-- `scripts/run-ingestion-worker.ts` claims the existing queue and processes
-  governed Greenhouse sources. Static or schema.org program pages can use the
-  conditional GET, Scrapling, and ScrapeGraphAI fetch chain.
-- `scripts/run-extraction-worker.ts` reads immutable versions through the
-  existing inbox RPC and writes evidence-bound private extraction records.
-- Both commands are manual and unscheduled. Installing tooling does not enable
-  a source, apply a migration, or publish a record.
-- See `docs/15-operational-pipeline.md` for the exact Sheet, LinkedIn, archive,
-  officer-review, and website flow.
-- `/admin/sources` includes a small, dated set of live-verified Greenhouse
-  starter feeds. A starter is always added disabled and unreviewed. It cannot
-  run on the scheduler until an officer records policy review, privately tests
-  it, and explicitly enables it.
+- `/api/cron/ingest` runs the canonical cycle on the production Vercel schedule.
+- `/admin/sources` exposes **Run pipeline now** as the normal officer control and keeps queue-only processing under an advanced recovery section.
+- Per-source **Test privately** and **Run and archive now** remain available for source-specific validation and intervention.
+- `scripts/run-ingestion-worker.ts` remains useful for direct worker operations, but it is not a second scheduler.
+- `scripts/run-extraction-worker.ts` remains useful for direct extraction operations, but normal configured extraction is orchestrated by the shared cycle.
+- Governed discovery requires the search provider configuration and explicit result-storage-rights confirmation. Search results remain private leads until they enter officer review.
+- Google Sheets is a review surface, not a publication authority. The normal bidirectional sync pulls officer edits before pushing the refreshed queue.
+- See `docs/scheduled-sheet-ingestion.md` for the operational sequence and failure behavior.
 
-## Remaining work before a live extraction run
+## Validation gates
 
-1. Apply migrations `0011` through `0013` to a preview database and test RLS
-   with anonymous, officer, and service-role clients.
-2. Run each connector against a verified vendor endpoint and record fixtures.
-   Only Greenhouse and generic public-page retrieval are wired into the live
-   runner today.
-3. Preserve the 33-case synthetic extraction contract, then add a distinct set
-   of at least 30 real, officer-labelled postings across all ten lanes. Do not
-   report synthetic-contract scores as evidence of real-world model quality.
-4. Run classification-only against disabled source snapshots and inspect every
-   routing and archive reason. Nothing is deleted for a low score. Do not enable
-   recurring source fetches yet.
-5. Select an extraction model only after it passes the eval gate with zero
-   fabrications, at least 0.95 precision on critical fields, and at least 0.70
-   recall on the expanded set.
-6. Keep the disposable **Database contracts** workflow green, then repeat the RLS
-   acceptance checks against a preview project before applying migrations live.
-7. Benchmark lexical and hybrid retrieval on the real corpus. Keep pgvector in
-   proposals until hybrid retrieval materially improves the agreed metrics.
+Before changing retrieval, model, or publication behavior, preserve these gates:
+
+1. Database contracts must apply all migrations from a clean database and pass every SQL invariant test.
+2. Type checking, unit tests, production build, and security scanning must remain green.
+3. Connector changes should be verified against vendor fixtures and a reviewed live endpoint before broadening scheduled use.
+4. Model extraction should remain optional until a real officer-labelled evaluation set meets the agreed precision, recall, fabrication, budget, and failure-policy thresholds.
+5. Classification-only experiments should use private or disabled-source snapshots before recurring source coverage is expanded.
+6. Publication remains a separate authenticated officer decision regardless of retrieval or model quality.
