@@ -152,7 +152,7 @@ begin
     on conflict do nothing
     returning id
   )
-  select retries.id from retries;
+  select failed.id from failed;
 end;
 $$;
 
@@ -162,4 +162,4 @@ grant execute on function public.recover_stale_source_fetch_runs(integer, intege
 comment on table public.pipeline_cycles is
   'One observable end-to-end private ingestion cycle. Cycle records never authorize publication.';
 comment on function public.recover_stale_source_fetch_runs(integer, integer) is
-  'Finalizes abandoned running source fetches and queues at most one retry per enabled, resumed source. Service-role only.';
+  'Finalizes abandoned running source fetches, returns the recovered run IDs, and queues at most one retry per enabled, resumed source. Service-role only.';
