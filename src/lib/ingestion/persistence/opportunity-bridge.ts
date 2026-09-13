@@ -87,6 +87,7 @@ function mapAudienceBucket(
   if (suggestedBucket === 'graduate') {
     return hasUndergraduateEvidence ? 'mixed' : 'graduate';
   }
+  if (suggestedBucket === 'undergraduate') return 'undergraduate';
   if (suggestedBucket === 'adjacent') return 'adjacent';
   if (suggestedBucket === 'excluded') return stageId === 'undergrad_only' ? 'undergraduate' : 'ineligible';
   return 'unknown';
@@ -130,7 +131,9 @@ export function deriveOpportunityEnrichment(posting: NormalizedSourcePosting) {
   const audienceBucket = classification.keep
     ? mapAudienceBucket(classification.suggestedBucket, classification.stage.id, degreeEligibilityEvidence)
     : 'unknown';
-  const eligibilityStatus = !classification.stage.eligible
+  const isCoreStudentAudienceStage = classification.stage.eligible
+    || classification.stage.id === 'undergrad_only';
+  const eligibilityStatus = !isCoreStudentAudienceStage
     ? 'not_eligible' as const
     : eligibilityEvidence && graduateStage !== 'unknown'
       ? 'possible' as const

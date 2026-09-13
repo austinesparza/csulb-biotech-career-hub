@@ -93,11 +93,12 @@ export interface RunReport {
 export function reviewPriority(c: Classification, deadlineText: string | null): number {
   let priority = 100;
   if (c.suggestedBucket === "graduate") priority -= 30;
+  if (c.suggestedBucket === "undergraduate") priority -= 25;
   if (c.suggestedBucket === "excluded") priority += 40;
   if (c.opportunityType?.scope === "in_scope") priority -= 10;
   const soon = /(\b(oct|nov|dec)\b|priority deadline|closes|apply by|rolling)/i.test(deadlineText ?? "");
   if (soon) priority -= 20;
-  if (!c.stage.eligible) priority += 25;
+  if (!c.stage.eligible && c.stage.id !== "undergrad_only") priority += 25;
   return Math.max(1, priority);
 }
 

@@ -311,7 +311,7 @@ describe('scoreIngestionCandidate SoCal geography safeguards', () => {
 });
 
 // ============================================================
-// UNDERGRAD-ONLY ELIGIBILITY — never promoted on the graduate board
+// UNDERGRADUATE ELIGIBILITY — first-class Career Hub audience
 // ============================================================
 
 describe('scoreIngestionCandidate undergrad-only eligibility', () => {
@@ -328,24 +328,26 @@ describe('scoreIngestionCandidate undergrad-only eligibility', () => {
     expect(breakdown.taxonomyClassification.stage.id).not.toBe('undergrad_only');
   });
 
-  it('college junior phrase is classified as undergrad-only and held below threshold', () => {
+  it('college junior scientific internship is classified as undergrad-only and queued for review', () => {
     const input: ScoringInput = {
       ...undergradBase,
       descriptionText: 'Open to college juniors and seniors.',
     };
     const breakdown = scoreIngestionCandidate(input);
     expect(breakdown.taxonomyClassification.stage.id).toBe('undergrad_only');
-    expect(breakdown.total).toBeLessThan(35);
+    expect(breakdown.total).toBeGreaterThanOrEqual(35);
+    expect(breakdown.positiveReasons.some((r) => r.category === 'undergraduate_access')).toBe(true);
   });
 
-  it('rising senior phrase is classified as undergrad-only and held below threshold', () => {
+  it('rising senior scientific internship is classified as undergrad-only and queued for review', () => {
     const input: ScoringInput = {
       ...undergradBase,
       descriptionText: 'Perfect for a rising senior studying biology.',
     };
     const breakdown = scoreIngestionCandidate(input);
     expect(breakdown.taxonomyClassification.stage.id).toBe('undergrad_only');
-    expect(breakdown.total).toBeLessThan(35);
+    expect(breakdown.total).toBeGreaterThanOrEqual(35);
+    expect(breakdown.positiveReasons.some((r) => r.category === 'undergraduate_access')).toBe(true);
   });
 
   it('generic junior job title is not treated as an undergraduate stage', () => {

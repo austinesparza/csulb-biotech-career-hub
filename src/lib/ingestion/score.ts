@@ -1,9 +1,9 @@
 /**
- * Deterministic relevance scoring for automated ingestion candidates (version 2).
+ * Deterministic relevance scoring for automated ingestion candidates.
  *
  * Rules:
  * - Range: 0–100 (clamped).
- * - Score version is a positive integer, currently 2.
+ * - Score version is a positive integer, currently 4.
  * - Complete breakdown with explicit positive and negative reasons.
  * - No hidden AI or model calls.
  * - No protected-characteristic inference.
@@ -19,6 +19,9 @@
  *       structural gates and scientific lanes are classified independently.
  *   v3: only scientifically relevant student programs may cross the review
  *       threshold. Full-time roles remain archived but do not flood officers.
+ *   v4: undergraduate and graduate scientific student programs are both core
+ *       review audiences. Doctoral-only, post-baccalaureate, and non-program
+ *       roles remain archived unless policy expands them later.
  */
 
 import { classify, loadTaxonomy, type Classification } from '../pipeline/classify';
@@ -30,7 +33,7 @@ import type { OpportunityClassification, RemoteType, ScoreBreakdown, ScoreReason
 // relevance_score and relevance_score_version must always be updated together.
 // ============================================================
 
-export const SCORE_VERSION = 3;
+export const SCORE_VERSION = 4;
 
 // ============================================================
 // SCORING WEIGHTS
@@ -44,6 +47,7 @@ const BASELINE = 40;
 const W_CANONICAL_LANE = 20;           // at least one scientific lane from the canonical taxonomy
 const W_BROAD_BIOSCIENCE = 8;          // weaker fallback signal when taxonomy is inconclusive
 const W_MSC_EXPLICIT = 20;             // explicitly accessible to master's students
+const W_UNDERGRAD_EXPLICIT = 20;       // explicitly accessible to undergraduate students
 const W_INTERNSHIP = 15;               // classified as internship
 const W_FELLOWSHIP = 12;               // classified as fellowship
 const W_RESEARCH = 8;                  // classified as research role
@@ -56,7 +60,7 @@ const W_HYBRID = 6;                    // hybrid
 const W_SENIORITY_STRONG = -25;        // VP, director, principal, staff, head of
 const W_SENIORITY_MODERATE = -15;      // senior, lead, manager
 const W_ADVANCED_DEGREE = -20;         // PhD, MD, postdoc credential required
-const W_NON_MSC_STAGE = -45;           // undergrad-only, doctoral-only, or postbac-only
+const W_NON_CORE_STUDENT_STAGE = -45;  // doctoral-only or postbac-only
 const W_NO_SCIENTIFIC_MATCH = -35;     // canonical taxonomy found no relevant science
 const W_STRUCTURAL_GATE = -10;         // institution/program/residency restriction
 const W_UNRELATED_DEPT = -20;          // clearly unrelated department
@@ -330,7 +334,7 @@ export function scoreIngestionCandidate(
     && taxonomyClassification.opportunityType !== null
     && (input.classification === 'internship' || input.classification === 'fellowship');
 
-  // --- 1. Canonical graduate-science relevance ---
+  // --- 1. Canonical student-science relevance ---
   const bioStrong = BIOTECH_TITLE_STRONG.some((t) => titleLower.includes(t));
   const bioModerate = !bioStrong && BIOTECH_TITLE_MODERATE.some((t) => titleLower.includes(t));
   const bioDept = BIOTECH_DEPARTMENTS.some((t) => deptLower.includes(t) || allDepts.includes(t));
@@ -351,7 +355,7 @@ export function scoreIngestionCandidate(
     );
   }
 
-  // --- 2. Graduate stage and structural access ---
+  // --- 2. Student stage and structural access ---
   const hasDescription = !!input.descriptionText?.trim();
   let eligibilityMissing = input.uncertaintyFlags.includes('eligibility_missing');
   let eligibilityAmbiguous = input.uncertaintyFlags.includes('eligibility_ambiguous');
@@ -362,12 +366,15 @@ export function scoreIngestionCandidate(
 
   const stageId = taxonomyClassification.stage.id;
   const isExplicitMsc = ['msc_year1', 'msc_year2', 'msc_any'].includes(stageId);
-  const isNonMscStage = ['undergrad_only', 'phd_only', 'postbac_stage'].includes(stageId);
+  const isExplicitUndergraduate = stageId === 'undergrad_only';
+  const isOutsideCoreStudentStage = ['phd_only', 'postbac_stage'].includes(stageId);
 
   if (isExplicitMsc) {
     addPositive('graduate_access', W_MSC_EXPLICIT, taxonomyClassification.stage.label);
-  } else if (isNonMscStage) {
-    addNegative('graduate_access', W_NON_MSC_STAGE, taxonomyClassification.stage.label);
+  } else if (isExplicitUndergraduate) {
+    addPositive('undergraduate_access', W_UNDERGRAD_EXPLICIT, taxonomyClassification.stage.label);
+  } else if (isOutsideCoreStudentStage) {
+    addNegative('student_stage', W_NON_CORE_STUDENT_STAGE, taxonomyClassification.stage.label);
   } else if (hasDescription) {
     eligibilityAmbiguous = true;
   }
@@ -471,9 +478,10 @@ export function scoreIngestionCandidate(
   if (eligibilityMissing) derivedFlags.add('eligibility_missing');
   if (eligibilityAmbiguous) derivedFlags.add('eligibility_ambiguous');
 
-  // Non-MSc stages and non-program roles must stay below the candidate-creation
-  // threshold of 35. Every record is still archived with its full evidence.
-  const total = isNonMscStage || !isReviewScopedProgram
+  // Doctoral-only, post-baccalaureate, and non-program roles stay below the
+  // candidate-creation threshold of 35. Undergraduate and graduate scientific
+  // student programs are both allowed into officer review.
+  const total = isOutsideCoreStudentStage || !isReviewScopedProgram
     ? Math.max(0, Math.min(25, raw))
     : Math.max(0, Math.min(100, raw));
   return {
