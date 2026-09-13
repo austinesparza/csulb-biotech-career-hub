@@ -1,0 +1,117 @@
+.officer-content .review-records {
+  display: grid;
+  gap: 12px;
+  border-top: 0;
+}
+
+.officer-content .review-record {
+  padding: 20px 22px 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: #fffefb;
+  box-shadow: 0 7px 22px rgba(24, 32, 18, .03);
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.officer-content .review-record:hover {
+  border-color: #b8b2a0;
+  box-shadow: 0 10px 28px rgba(24, 32, 18, .05);
+}
+
+.officer-content .review-record-header {
+  gap: 14px;
+}
+
+.officer-content .review-record-header h2 {
+  color: var(--navy);
+  font-size: clamp(1.2rem, 2vw, 1.48rem);
+  line-height: 1.2;
+}
+
+.officer-content .review-record-header h2 span {
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: .76rem;
+  font-weight: 650;
+}
+
+.officer-content .review-score {
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-2);
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: .63rem;
+}
+
+.officer-content .review-evidence,
+.officer-content .review-form,
+.officer-content .review-private {
+  border-color: var(--line-strong);
+}
+
+.officer-content .review-form {
+  padding: 0 14px 14px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #faf8f2;
+}
+
+.officer-content .review-form > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--teal-deep);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.officer-content .review-actions {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.officer-content .review-actions button {
+  min-height: 40px;
+  border-radius: 5px;
+  font-size: .75rem;
+  font-weight: 750;
+}
+
+.officer-content .review-actions button:first-of-type:not(:disabled) {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: white;
+}
+
+.officer-content .review-actions button:first-of-type:not(:disabled):hover {
+  background: var(--teal-deep);
+}
+
+.officer-content .sheet-review-status {
+  border-left-color: var(--teal);
+  border-radius: 0 4px 4px 0;
+}
+
+.officer-content .review-record-done {
+  border-color: #cde6d1;
+  background: #f1f8f1;
+  color: #166534;
+}
+
+@media (max-width: 700px) {
+  .officer-content .review-record {
+    padding: 17px 16px 18px;
+  }
+
+  .officer-content .review-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .officer-content .review-actions :where(button, select) {
+    width: 100%;
+  }
+}
