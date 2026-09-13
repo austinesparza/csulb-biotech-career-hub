@@ -6,7 +6,7 @@ export function PipelineRunForm() {
       </button>
     </form>
     <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
-      Runs through a normal authenticated POST and returns here when the cycle finishes. This avoids relying on the browser's Server Action transport for a long-running operational task.
+      Runs through a normal authenticated POST and returns here when the cycle finishes. This avoids relying on the browser&apos;s Server Action transport for a long-running operational task.
     </p>
   </div>;
 }
