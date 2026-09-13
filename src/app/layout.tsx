@@ -7,6 +7,7 @@ import { PrivacyAnalytics } from '@/components/privacy-analytics';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
 import './career-hub-v2.css';
 import './mobile-polish.css';
+import './site-refinement.css';
 
 export const metadata: Metadata = {
   title: 'CSULB Biotech Career Hub',
