@@ -30,10 +30,11 @@ describe('canonical pipeline orchestration', () => {
     expect(cron).not.toContain('syncReviewQueueToGoogleSheet');
   });
 
-  it('runs the worker frequently while source intervals remain database-governed', () => {
+  it('keeps the production cron deployable on all Vercel plans while source intervals remain database-governed', () => {
     const config = JSON.parse(vercel) as { crons: Array<{ path: string; schedule: string }> };
-    expect(config.crons.find((item) => item.path === '/api/cron/ingest')?.schedule).toBe('17 * * * *');
+    expect(config.crons.find((item) => item.path === '/api/cron/ingest')?.schedule).toBe('0 14 * * *');
     expect(cycle).toContain("options.db.rpc('schedule_due_source_fetch_runs'");
+    expect(cycle).toContain("options.db.rpc('recover_stale_source_fetch_runs'");
   });
 
   it('records cycles and safely retries abandoned running work', () => {
