@@ -201,6 +201,13 @@ begin
     'pending opportunity did not receive authoritative pay/timing enrichment'
   );
 
+  -- The unique active-run invariant permits only one pending/running fetch per
+  -- source. Complete the observed inventory before starting the next inventory.
+  update public.source_fetch_runs
+  set status = 'completed', finished_at = '2026-09-13T10:05:00Z',
+      http_status = 200, payload_count = 1, log_json = '{}'::jsonb
+  where id = v_run1;
+
   -- First complete inventory after both postings were last seen. Neither appears
   -- in this inventory, so the system should flag but not unpublish.
   insert into public.source_fetch_runs(
