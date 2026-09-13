@@ -6,10 +6,11 @@ import { runPipelineCycle } from '@/lib/pipeline-cycle';
 import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
 
 export interface QueueDrainActionState {
-  status: 'idle' | 'success' | 'error';
+  status: 'idle' | 'success' | 'warning' | 'error';
   message: string;
   claimed?: number;
   completed?: number;
+  partial?: number;
   failed?: number;
   repaired?: number;
   sheetAdded?: number;
@@ -45,12 +46,15 @@ export async function drainQueuedSourceRuns(
 
     if (report.claimed === 0) {
       return {
-        status: report.status === 'failed' ? 'error' : 'success',
+        status: report.status === 'failed' ? 'error' : report.status === 'partial' ? 'warning' : 'success',
         message: report.status === 'failed'
           ? 'The queue was empty, but pipeline maintenance reported an error. Check integration status.'
-          : 'No queued source runs were waiting. Backlog reconciliation and Sheet delivery still ran.',
+          : report.status === 'partial'
+            ? 'No queued source runs were waiting, but downstream maintenance reported a warning. Check integration status.'
+            : 'No queued source runs were waiting. Backlog reconciliation and Sheet delivery still ran.',
         claimed: 0,
         completed: 0,
+        partial: 0,
         failed: 0,
         repaired,
         sheetAdded,
@@ -58,12 +62,15 @@ export async function drainQueuedSourceRuns(
     }
 
     return {
-      status: report.status === 'completed' ? 'success' : 'error',
+      status: report.status === 'completed' ? 'success' : report.status === 'partial' ? 'warning' : 'error',
       message: report.status === 'completed'
         ? `${report.claimed} queued source runs were claimed and processed through the canonical pipeline.`
-        : `${report.claimed} queued runs were claimed; ${report.failed} source runs or downstream stages need attention. Completed work was preserved.`,
+        : report.status === 'partial'
+          ? `${report.claimed} queued runs were claimed; ${report.partial} were partial and ${report.failed} failed or downstream stages need attention. Completed work was preserved.`
+          : `${report.claimed} queued runs were claimed, but the cycle could not complete its core work. Completed work was preserved.`,
       claimed: report.claimed,
       completed: report.completed,
+      partial: report.partial,
       failed: report.failed,
       repaired,
       sheetAdded,
