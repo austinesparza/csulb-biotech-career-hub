@@ -1,5 +1,5 @@
 import { createBraveSearchProvider } from '../src/lib/pipeline/brave-search';
-import { runEmployerDiscoveryBatch } from '../src/lib/pipeline/discovery-runner';
+import { runEmployerDiscoveryBatch, runLaneDiscoveryBatch } from '../src/lib/pipeline/discovery-runner';
 import { createPipelineServiceClient } from '../src/lib/pipeline/store-supabase';
 
 function positiveInteger(name: string, fallback: number, maximum: number): number {
@@ -18,11 +18,19 @@ const provider = createBraveSearchProvider({
   apiKey,
   storageRightsConfirmed: process.env.BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED === 'true',
 });
-const report = await runEmployerDiscoveryBatch({
-  db: createPipelineServiceClient(),
+const db = createPipelineServiceClient();
+const employer = await runEmployerDiscoveryBatch({
+  db,
   provider,
   employerLimit: positiveInteger('EMPLOYER_DISCOVERY_BATCH_SIZE', 5, 5),
   resultsPerQuery: positiveInteger('EMPLOYER_DISCOVERY_RESULTS_PER_QUERY', 5, 10),
 });
+const lanes = await runLaneDiscoveryBatch({
+  db,
+  provider,
+  laneLimit: positiveInteger('LANE_DISCOVERY_BATCH_SIZE', 1, 2),
+  resultsPerQuery: positiveInteger('EMPLOYER_DISCOVERY_RESULTS_PER_QUERY', 5, 10),
+});
+const report = { employer, lanes };
 console.log(JSON.stringify(report));
-if (report.errors.length > 0) process.exitCode = 1;
+if (employer.errors.length > 0 || lanes.errors.length > 0) process.exitCode = 1;

@@ -266,6 +266,35 @@ export interface ReviewTask {
   resolved_at: string | null;
 }
 
+export type DiscoveryLeadStatus = 'new' | 'in_review' | 'resolved' | 'archived';
+
+export interface DiscoveryLead {
+  id: string;
+  route: 'official_feed' | 'employer_page' | 'web_search' | 'linkedin_lead';
+  original_url: string;
+  normalized_url: string | null;
+  canonical_employer_url: string | null;
+  resolution: 'official_source_found' | 'linkedin_only' | 'aggregator_only' | 'dead_link' | 'unresolved';
+  archive_reason: string;
+  lane: string | null;
+  latest_title: string | null;
+  latest_snippet: string | null;
+  employer_hint: string | null;
+  original_reachable: boolean;
+  officer_status: DiscoveryLeadStatus;
+  first_seen_at: string;
+  last_seen_at: string;
+  occurrence_count: number;
+}
+
+export interface DiscoveryLeadObservationRow {
+  lead_id: string;
+  run_id: string;
+  query: string | null;
+  retrieved_at: string;
+  raw_metadata: Record<string, unknown>;
+}
+
 export interface UserSubmission {
   id: string;
   submission_type: SubmissionType;

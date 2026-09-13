@@ -5,7 +5,7 @@ import { authorizeCronRequest } from "@/lib/cron/auth";
 import { googleSheetsConfigured } from "@/lib/google-sheets";
 import { runIngestionBatch } from "@/lib/ingestion/source-runner";
 import { createBraveSearchProvider } from "@/lib/pipeline/brave-search";
-import { runEmployerDiscoveryBatch } from "@/lib/pipeline/discovery-runner";
+import { runEmployerDiscoveryBatch, runLaneDiscoveryBatch } from "@/lib/pipeline/discovery-runner";
 import { runExtractionBatch } from "@/lib/pipeline/extraction-runner";
 import { createOpenAiCompatibleExtractionModel } from "@/lib/pipeline/model-openai";
 import { syncReviewQueueToGoogleSheet } from "@/lib/review-sheet-sync";
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
   let discoveryFailed = false;
   let discovery:
     | { status: "disabled" }
-    | { status: "completed"; employers: number; queries: number; results: number; archived: number; errors: number }
+    | { status: "completed"; employers: number; lanes: number; queries: number; results: number; archived: number; errors: number }
     | { status: "failed"; error: string } = { status: "disabled" };
   if (process.env.DISCOVERY_SEARCH_ENABLED === "true") {
     try {
@@ -61,20 +61,28 @@ export async function GET(request: Request) {
         apiKey,
         storageRightsConfirmed: process.env.BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED === "true",
       });
-      const discoveryReport = await runEmployerDiscoveryBatch({
+      const employerReport = await runEmployerDiscoveryBatch({
         db,
         provider,
         employerLimit: Math.max(1, Math.min(Number(process.env.EMPLOYER_DISCOVERY_BATCH_SIZE ?? 5) || 5, 5)),
         resultsPerQuery: Math.max(1, Math.min(Number(process.env.EMPLOYER_DISCOVERY_RESULTS_PER_QUERY ?? 5) || 5, 10)),
       });
-      discoveryFailed = discoveryReport.errors.length > 0;
+      const laneReport = await runLaneDiscoveryBatch({
+        db,
+        provider,
+        laneLimit: Math.max(1, Math.min(Number(process.env.LANE_DISCOVERY_BATCH_SIZE ?? 1) || 1, 2)),
+        resultsPerQuery: Math.max(1, Math.min(Number(process.env.EMPLOYER_DISCOVERY_RESULTS_PER_QUERY ?? 5) || 5, 10)),
+      });
+      const errors = [...employerReport.errors, ...laneReport.errors];
+      discoveryFailed = errors.length > 0;
       discovery = {
         status: "completed",
-        employers: discoveryReport.employers,
-        queries: discoveryReport.queries,
-        results: discoveryReport.results,
-        archived: discoveryReport.archived,
-        errors: discoveryReport.errors.length,
+        employers: employerReport.employers,
+        lanes: laneReport.lanes,
+        queries: employerReport.queries + laneReport.queries,
+        results: employerReport.results + laneReport.results,
+        archived: employerReport.archived + laneReport.archived,
+        errors: errors.length,
       };
     } catch (error) {
       discoveryFailed = true;

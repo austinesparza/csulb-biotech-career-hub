@@ -1,4 +1,5 @@
 import type { Taxonomy } from "./classify";
+import { atsSearchClause } from "./ats-hosts";
 
 export type DiscoveryRoute = "official_feed" | "employer_page" | "web_search" | "linkedin_lead";
 
@@ -95,7 +96,7 @@ export function buildLaneSearchPlans(taxonomy: Taxonomy, cycleYear: number): Lan
         },
         {
           route: "web_search",
-          query: `(site:boards.greenhouse.io OR site:jobs.lever.co OR site:jobs.ashbyhq.com) (${compactScience}) (intern OR co-op)`,
+          query: `(${atsSearchClause()}) (${compactScience}) (intern OR co-op)`,
         },
         {
           route: "linkedin_lead",

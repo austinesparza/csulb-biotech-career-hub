@@ -149,6 +149,42 @@ export async function resolveReviewTask(formData: FormData): Promise<void> {
   revalidatePath('/admin/review');
 }
 
+/** Manage private discovery workflow state. This never creates or publishes an opportunity. */
+export async function updateDiscoveryLeadStatus(formData: FormData): Promise<void> {
+  const { user } = await requireOfficer();
+  const id = requiredFormText(formData, 'id');
+  const status = requiredFormText(formData, 'status');
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+    throw new Error('Invalid discovery lead ID');
+  }
+  if (!['new', 'in_review', 'archived'].includes(status)) {
+    throw new Error('Invalid discovery lead decision');
+  }
+
+  const db = createServiceClient();
+  const { data, error } = await db.from('discovery_leads').update({
+    officer_status: status,
+    updated_at: new Date().toISOString(),
+  }).eq('id', id).in('officer_status', ['new', 'in_review']).select('id').maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Discovery lead was already resolved');
+
+  const taskUpdate = status === 'archived'
+    ? { status: 'dismissed', resolved_at: new Date().toISOString(), decided_by: user.id }
+    : status === 'in_review'
+      ? { status: 'in_progress', assigned_to: user.id, resolved_at: null, decided_by: null }
+      : { status: 'open', assigned_to: null, resolved_at: null, decided_by: null };
+  const { error: taskError } = await db.from('review_tasks').update(taskUpdate)
+    .eq('entity_table', 'discovery_leads')
+    .eq('entity_id', id)
+    .in('status', ['open', 'in_progress']);
+  if (taskError) throw new Error(taskError.message);
+
+  revalidatePath('/admin');
+  revalidatePath('/admin/integrations');
+  revalidatePath('/admin/review');
+}
+
 /**
  * Approve guardrail lives in the UI (link opened + notes confirmed), but the
  * server enforces the hard parts: officer auth, a valid target status, and

@@ -88,16 +88,16 @@ export default async function SourcesPage() {
     </section>
 
     <section className="rounded-xl bg-white p-5" style={{ border: "1px solid var(--line)" }}>
-      <h2 className="font-semibold">Employer and LinkedIn lead discovery</h2>
+      <h2 className="font-semibold">Employer, scientific lane, and LinkedIn lead discovery</h2>
       <p className="mt-2 max-w-3xl text-sm" style={{ color: "var(--ink-soft)" }}>
-        Search a rotating five-employer cohort on command. Results enter the private lead archive and officer task queue. LinkedIn results remain leads and cannot establish publication facts.
+        Search a rotating five-employer cohort plus one scientific lane on command. Results enter the private lead archive and officer task queue. LinkedIn results remain leads and cannot establish publication facts.
       </p>
       <p className="mt-2 text-xs" style={{ color: "var(--ink-soft)" }}>
         The search provider stays disabled until its API key and contractual result-storage right are both recorded in production.
       </p>
       <form action={runEmployerDiscoveryNow} className="mt-4">
         <button className="secondary-button" type="submit" disabled={!searchConfigured}>
-          {searchConfigured ? "Run employer discovery now" : "Search provider not configured"}
+          {searchConfigured ? "Run discovery now" : "Search provider not configured"}
         </button>
       </form>
     </section>
