@@ -5,6 +5,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { companyLogoPath } from '@/lib/companyLogos';
 import { allFocusAreas } from '@/lib/focusAreas';
 import {
+  companyContextLine,
+  noteLabel,
+  opportunityTags,
+  postingLinkLabel,
+  sourceEvidenceLabel,
+  timingFallbackLabel,
+} from '@/lib/opportunityCard';
+import {
   opportunityAudienceLabel,
   opportunityMatchesAudience,
   type OpportunityAudienceFilter,
@@ -28,10 +36,14 @@ function isFresh(o: PublicOpportunity, referenceTime: number): boolean {
 function prefsActive(p: Prefs): boolean {
   return p.focus.length > 0 || p.paid || p.remote || p.local || !!p.term;
 }
+function matchesFocus(o: PublicOpportunity, focus: string): boolean {
+  return o.focus_area === focus || (o.scientific_lanes ?? []).includes(focus);
+}
 function personalBonus(o: PublicOpportunity, p: Prefs): { pts: number; why: string[] } {
   let pts = 0;
   const why: string[] = [];
-  if (p.focus.length && o.focus_area && p.focus.includes(o.focus_area)) { pts += 15; why.push(`focus: ${o.focus_area}`); }
+  const matchedFocus = p.focus.find((focus) => matchesFocus(o, focus));
+  if (matchedFocus) { pts += 15; why.push(`focus: ${matchedFocus}`); }
   if (p.paid && ['paid', 'stipend'].includes(o.paid_status)) { pts += 10; why.push('paid or stipend'); }
   if (p.remote && /remote|hybrid/i.test(o.location ?? '')) { pts += 10; why.push('remote or hybrid'); }
   if (p.local && LOCAL_HINTS.test(o.location ?? '')) { pts += 10; why.push('near Long Beach'); }
@@ -40,36 +52,6 @@ function personalBonus(o: PublicOpportunity, p: Prefs): { pts: number; why: stri
 }
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-const SHORT_TAGS: Record<string, string> = {
-  'Cancer and oncology': 'Oncology',
-  'Genomics and genetics': 'Genomics',
-  'Single-cell and spatial': 'Single-cell & spatial',
-  'Bioinformatics and computational biology': 'Bioinformatics',
-  'Biological data science and ML': 'Data science & ML',
-  'Diagnostics and clinical data': 'Diagnostics',
-  'Bioprocess and manufacturing science': 'Bioprocess',
-  'Protein science and drug discovery': 'Drug discovery',
-  'Neuroscience and neurodegeneration': 'Neuroscience',
-  'Immunology and infectious disease': 'Immunology',
-};
-
-function opportunityTags(o: PublicOpportunity): string[] {
-  const seen = new Set<string>();
-  const discipline = [o.focus_area ?? '', ...(o.scientific_lanes ?? [])];
-  const methods = o.methods ?? [];
-  const fallback = o.job_functions ?? [];
-  return [...discipline.slice(0, 1), ...methods.slice(0, 2), ...fallback]
-    .map((tag) => SHORT_TAGS[tag] ?? tag)
-    .filter((tag) => {
-      const normalized = tag.trim().toLowerCase();
-      if (!normalized || /^(?:(?:bio)?tech(?:nology)?|pharma(?:ceuticals?)?|life sciences?)$/.test(normalized)) return false;
-      if (seen.has(normalized)) return false;
-      seen.add(normalized);
-      return true;
-    })
-    .slice(0, 3);
 }
 
 function companyInitials(name: string): string {
@@ -87,27 +69,6 @@ function CompanyMark({ name }: { name: string }) {
       )}
     </div>
   );
-}
-
-function primaryCompanyLocation(value: string | null): string | null {
-  return value?.split(';')[0]?.trim() || null;
-}
-
-function companyContextLine(o: PublicOpportunity): string | null {
-  const industry = o.company_industry_tags?.find((tag) => tag.trim())?.trim() || null;
-  const location = primaryCompanyLocation(o.company_location);
-  const parts = [industry, location].filter((value): value is string => Boolean(value));
-  return parts.length > 0 ? parts.join(' · ') : null;
-}
-
-function sourceEvidenceLabel(o: PublicOpportunity): string {
-  if (!o.source_name) return 'Employer posting';
-  const employerFeed = o.source_name.match(/^(.*?)\s+careers board$/i);
-  return employerFeed ? `Official employer feed: ${employerFeed[1]}` : `Source: ${o.source_name}`;
-}
-
-function noteLabel(note: string): string {
-  return /\b(compensation|pay|salary|hour|month|stipend|wage)\b/i.test(note) ? 'Compensation' : 'Officer note';
 }
 
 function payLabel(value: PublicOpportunity['paid_status']): string {
@@ -148,7 +109,9 @@ export function Board({ opportunities, sorted, initialAudience, referenceTime }:
     undergraduate: opportunities.filter((opportunity) => opportunityMatchesAudience(opportunity, 'undergraduate')).length,
     graduate: opportunities.filter((opportunity) => opportunityMatchesAudience(opportunity, 'graduate')).length,
   }), [opportunities]);
-  const focuses = useMemo(() => allFocusAreas(visibleOpportunities.map((o) => o.focus_area)), [visibleOpportunities]);
+  const focuses = useMemo(() => allFocusAreas(
+    visibleOpportunities.flatMap((o) => (o.scientific_lanes?.length ? o.scientific_lanes : [o.focus_area])),
+  ), [visibleOpportunities]);
   const active = loaded && prefsActive(prefs);
   const total = (o: PublicOpportunity) => (o.relevance_score ?? 0) + (active ? personalBonus(o, prefs).pts : 0);
   const referenceTimeMs = Date.parse(referenceTime);
@@ -263,16 +226,23 @@ function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
   const deadlinePassed = !!o.deadline && daysUntil(o.deadline, referenceTime) < 0;
   const timing = o.deadline
     ? `${deadlinePassed ? 'Deadline passed' : 'Apply by'} ${formatDate(o.deadline + 'T00:00:00')}`
-    : (o.deadline_text ?? 'No deadline stated');
+    : timingFallbackLabel(o.deadline_text);
   const eligibility = o.eligibility ?? 'Confirm the degree and enrollment requirements in the live posting.';
   const tags = opportunityTags(o);
   const companyContext = companyContextLine(o);
+  const urgency = deadlinePassed
+    ? 'Deadline passed'
+    : urgent
+      ? 'Closing soon'
+      : isFresh(o, referenceTime)
+        ? 'New this week'
+        : null;
 
   return (
     <li className="opportunity-record">
       <div className="record-aside">
         <CompanyMark name={o.company_name} />
-        <div className="record-urgency">{deadlinePassed ? 'Deadline passed' : urgent ? 'Closing soon' : (isFresh(o, referenceTime) ? 'New this week' : 'Review details')}</div>
+        {urgency && <div className="record-urgency">{urgency}</div>}
       </div>
       <div className="record-main">
         <div className="record-company">
@@ -294,7 +264,7 @@ function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
         </div>
         <div className="record-actions">
           {o.posting_url
-            ? <a className="primary-button" href={o.posting_url} target="_blank" rel="noopener noreferrer nofollow">Official posting ↗</a>
+            ? <a className="primary-button" href={o.posting_url} target="_blank" rel="noopener noreferrer nofollow">{postingLinkLabel(o)}</a>
             : <span className="record-verified">Ask a club officer for the source.</span>}
           {bonus.pts > 0 && <span className="pill pill-teal" title={bonus.why.join(', ')}>Match for you</span>}
           {isFresh(o, referenceTime) && <span className="pill pill-gold">New</span>}
@@ -312,6 +282,7 @@ function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
           <details className="record-company-details">
             <summary>About {o.company_name}</summary>
             <p>{o.company_description}</p>
+            {o.company_location && <p className="record-company-location">Company locations: {o.company_location}</p>}
             {o.company_website && (
               <a href={o.company_website} target="_blank" rel="noopener noreferrer nofollow">Company website ↗</a>
             )}
