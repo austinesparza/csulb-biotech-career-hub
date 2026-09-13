@@ -39,12 +39,21 @@ describe('canonical pipeline orchestration', () => {
 
   it('records cycles and safely retries abandoned running work', () => {
     expect(migration).toContain('create table if not exists public.pipeline_cycles');
+    expect(migration).toContain('partial_count');
     expect(migration).toContain('idx_source_fetch_runs_one_active_per_source');
     expect(migration).toContain('recover_stale_source_fetch_runs');
     expect(migration).toContain("error_class = 'timeout'");
     expect(migration).toContain("'retry'");
+    expect(migration).toContain('select failed.id from failed');
     expect(migration).toContain('idx_opportunity_source_links_source_posting_id');
     expect(migration).toContain('idx_opportunities_source_record_id');
+  });
+
+  it('does not misreport partial source runs as completed', () => {
+    expect(cycle).toContain("reports.filter((report) => report.status === 'completed').length");
+    expect(cycle).toContain("reports.filter((report) => report.status === 'partial').length");
+    expect(cycle).toContain('partial_count: report.partial');
+    expect(cycle).toContain('errors.length + failed + partial');
   });
 
   it('pulls officer edits before refreshing the Sheet', () => {
