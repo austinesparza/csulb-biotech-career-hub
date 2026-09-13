@@ -63,7 +63,7 @@ export default async function AdminHome() {
       .order('started_at', { ascending: false })
       .limit(6),
     db.from('job_sources')
-      .select('id, source_name, enabled, automatic_scheduling_paused_at, consecutive_failures, degraded_at, last_attempted_at, last_successful_at, next_scheduled_at')
+      .select('id, source_name, enabled, automatic_scheduling_paused_at, consecutive_failures, degraded_at, last_attempted_at, last_successful_at')
       .order('source_name'),
     db.from('source_fetch_runs')
       .select('id, job_source_id, status, scheduled_for, started_at, created_at')
