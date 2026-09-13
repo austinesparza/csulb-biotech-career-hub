@@ -1,13 +1,21 @@
 -- Surface officer-reviewed company context alongside public opportunities.
 -- Company fields are appended to the existing view column order so dependent
 -- SETOF functions retain the same relation identity and publication gates.
+-- Internal spreadsheet/manual review sources are not useful public evidence
+-- when the record already links to an employer posting, so suppress those
+-- labels while preserving named public source feeds.
 
 create or replace view public.public_opportunities as
 select o.id, c.name as company_name, o.title, o.posting_url, o.location,
        o.eligibility, o.focus_area, o.deadline, o.deadline_text, o.start_date_text,
        o.paid_status, o.application_type, o.status, o.public_notes,
        o.relevance_score, o.last_checked_at, o.first_seen_at,
-       s.name as source_name, o.audience_bucket, o.audience_reason,
+       case
+         when o.posting_url is not null
+          and s.source_type in ('spreadsheet', 'manual') then null
+         else s.name
+       end as source_name,
+       o.audience_bucket, o.audience_reason,
        o.scientific_lanes, o.job_functions, o.methods, o.industry_context,
        o.graduate_stage, o.eligibility_status, o.eligibility_evidence,
        o.continued_enrollment_required, o.graduation_window_start,
