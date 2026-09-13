@@ -20,9 +20,11 @@ import type {
 
 export const PENDING_OPPORTUNITY_MIN_SCORE = 35;
 
-const ELIGIBILITY_SIGNAL = /\b(master(?:'s|s)|master(?: degree| students?| program| candidates?)|m\.?s\.?c?|graduate students?|graduate degree|bachelor'?s?|undergraduate|post[ -]?baccalaureate|postbac|ph\.?d\.?|doctoral|degree program|currently enrolled|pursuing an? (?:advanced|graduate) degree|no college degree(?: is)? (?:necessary|required))\b/i;
+const ELIGIBILITY_SIGNAL = /\b(master(?:'s|s)|master(?: degree| students?| program| candidates?)|graduate students?|graduate degree|bachelor'?s?|undergraduate|post[ -]?baccalaureate|postbac|ph\.?d\.?|doctoral|degree program|currently enrolled|pursuing an? (?:advanced|graduate) degree|no college degree(?: is)? (?:necessary|required))\b/i;
 const WORK_AUTHORIZATION_SIGNAL = /\b(work authorization|authorized to work|visa sponsorship|sponsorship|citizenship|required citizen|permanent resident|cpt|opt)\b/i;
 const CONTINUED_ENROLLMENT_SIGNAL = /\b(return(?:ing)? to (?:school|college|university|the program)|remain enrolled|continued? enrollment|continuing (?:their|your) (?:degree|studies|education)|enrolled .* (?:after|following) (?:the )?(?:internship|co-op))\b/i;
+const GRADUATE_EVIDENCE_SIGNAL = /\bmaster(?:'s|s)?\b|\bgraduate students?\b|\bgraduate degree\b|(?:^|[\s(,;/])m\.?\s?s\.?c?\.?(?=[\s),;/]|$)/i;
+const UNDERGRAD_EVIDENCE_SIGNAL = /\bbachelor'?s?\b|\bundergraduate\b|\bpost[ -]?baccalaureate\b|\bpostbac\b|(?:^|[\s(,;/])b\.?\s?s\.?(?=[\s),;/]|$)|(?:^|[\s(,;/])b\.?\s?a\.?(?=[\s),;/]|$)/i;
 
 function sourceSnippets(text: string | null, signal: RegExp, limit = 3): string[] {
   if (!text?.trim()) return [];
@@ -62,20 +64,20 @@ function mapAudienceBucket(
   stageId: string,
   evidence: string | null,
 ): AudienceBucket {
+  // Structural restrictions such as institution-only programs must remain
+  // special even when the posting also names otherwise eligible degree levels.
+  if (suggestedBucket === 'special') return 'special';
   if (evidence && /\bno college degree(?: is)? (?:necessary|required)\b/i.test(evidence)) {
     return 'mixed';
   }
-  if (
-    evidence
-    && /\bmaster(?:'s|s)?\b|\bgraduate students?\b/i.test(evidence)
-    && /\bbachelor'?s?\b|\bundergraduate\b|\bpost[ -]?baccalaureate\b|\bpostbac\b/i.test(evidence)
-  ) {
-    return 'mixed';
-  }
+
+  const hasGraduateEvidence = Boolean(evidence && GRADUATE_EVIDENCE_SIGNAL.test(evidence));
+  const hasUndergraduateEvidence = Boolean(evidence && UNDERGRAD_EVIDENCE_SIGNAL.test(evidence));
+  if (hasGraduateEvidence && hasUndergraduateEvidence) return 'mixed';
+
   if (suggestedBucket === 'graduate') {
-    return evidence && /\bbachelor'?s?|\bundergraduate\b|\bpost[ -]?baccalaureate\b|\bpostbac\b/i.test(evidence) ? 'mixed' : 'graduate';
+    return hasUndergraduateEvidence ? 'mixed' : 'graduate';
   }
-  if (suggestedBucket === 'special') return 'special';
   if (suggestedBucket === 'adjacent') return 'adjacent';
   if (suggestedBucket === 'excluded') return stageId === 'undergrad_only' ? 'undergraduate' : 'ineligible';
   return 'unknown';
