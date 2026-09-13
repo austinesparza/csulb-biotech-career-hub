@@ -85,17 +85,21 @@ export default async function DuplicatesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-baseline gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Duplicate scanner</h1>
-        <span className="text-sm" style={{ color: 'var(--ink-soft)' }}>
-          {rows.length} records scanned · {clusters.length} possible {clusters.length === 1 ? 'cluster' : 'clusters'}
+    <div className="admin-page-flow">
+      <header className="admin-page-head">
+        <div className="admin-page-head-copy">
+          <div className="admin-page-eyebrow">Data quality</div>
+          <h1 className="admin-page-title">Duplicate scanner</h1>
+          <p className="admin-page-deck">
+            Compare likely collisions before they confuse students or split one opportunity across multiple records. Records are never deleted by this workflow.
+          </p>
+        </div>
+        <span className="admin-status-badge admin-status-watch">
+          {clusters.length} possible {clusters.length === 1 ? 'cluster' : 'clusters'}
         </span>
-      </div>
-      <p className="max-w-2xl text-sm" style={{ color: 'var(--ink-soft)' }}>
-        Pick the record to keep in each cluster; the others are marked as duplicates
-        pointing at it (never deleted). Posting-family matches are usually legitimate
-        new cycles, so keeping both is often right for those.
+      </header>
+      <p className="max-w-3xl text-sm" style={{ color: 'var(--ink-soft)' }}>
+        {rows.length} records scanned. Pick the record to keep in each cluster; the others are marked as duplicates pointing at it. Posting-family matches are usually legitimate new cycles, so keeping both is often correct.
       </p>
       <DuplicateList clusters={clusters} />
     </div>
