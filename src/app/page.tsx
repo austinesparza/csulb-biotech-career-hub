@@ -57,7 +57,11 @@ export default async function HomePage() {
     <div className="home-editorial">
       <section className="editorial-hero site-wrap">
         <div className="editorial-hero-copy">
-          <h1>Opportunities for what comes next.</h1>
+          <h1>
+            <span className="hero-line">Opportunities</span>{' '}
+            <span className="hero-line">for what</span>{' '}
+            <span className="hero-line">comes next.</span>
+          </h1>
           <p className="editorial-intro">
             Biotechnology begins with the urge to look closer. Find internships,
             research, and early career work that can turn that curiosity into practice.
