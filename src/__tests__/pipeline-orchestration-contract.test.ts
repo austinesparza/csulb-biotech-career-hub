@@ -9,11 +9,11 @@ const sheetWorkflow = readFileSync('src/app/admin/import/review-workflow-actions
 
 describe('canonical pipeline orchestration', () => {
   it('keeps all normal pipeline stages in one ordered service', () => {
-    const recover = cycle.indexOf("rpc('recover_stale_source_fetch_runs'");
-    const schedule = cycle.indexOf("rpc('schedule_due_source_fetch_runs'");
-    const ingest = cycle.indexOf('runIngestionBatch');
-    const reconcile = cycle.indexOf('reconcileReviewableSourcePostings');
-    const sheet = cycle.indexOf('syncReviewQueueToGoogleSheet');
+    const recover = cycle.indexOf("options.db.rpc('recover_stale_source_fetch_runs'");
+    const schedule = cycle.indexOf("options.db.rpc('schedule_due_source_fetch_runs'");
+    const ingest = cycle.indexOf('reports.push(...await runIngestionBatch');
+    const reconcile = cycle.indexOf('...await reconcileReviewableSourcePostings');
+    const sheet = cycle.indexOf('...await syncReviewQueueToGoogleSheet');
 
     expect(recover).toBeGreaterThan(-1);
     expect(schedule).toBeGreaterThan(recover);
@@ -33,7 +33,7 @@ describe('canonical pipeline orchestration', () => {
   it('runs the worker frequently while source intervals remain database-governed', () => {
     const config = JSON.parse(vercel) as { crons: Array<{ path: string; schedule: string }> };
     expect(config.crons.find((item) => item.path === '/api/cron/ingest')?.schedule).toBe('17 * * * *');
-    expect(cycle).toContain("rpc('schedule_due_source_fetch_runs'");
+    expect(cycle).toContain("options.db.rpc('schedule_due_source_fetch_runs'");
   });
 
   it('records cycles and safely retries abandoned running work', () => {
