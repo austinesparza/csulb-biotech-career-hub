@@ -172,6 +172,10 @@ export function classify(posting: Posting, tax: Taxonomy): Classification {
   const structuralGates: Classification["structuralGates"] = tax.structural_gates
     .filter((gate) => gate.patterns.some((pattern) => new RegExp(pattern, "i").test(all)))
     .map((gate) => ({ id: gate.id, bucket: gate.bucket }));
+  const institutionExclusive = /\b(?:open|available) exclusively to current .{0,80}(?:university|college).{0,40}students?\b/i.test(all);
+  if (institutionExclusive && !structuralGates.some((gate) => gate.id === "institution_affiliation")) {
+    structuralGates.push({ id: "institution_affiliation", bucket: "special" });
+  }
   const personalGates = Object.entries(tax.personal_gates)
     .filter(([, patterns]) => patterns.some((p) => new RegExp(p, "i").test(all)))
     .map(([name]) => name);
