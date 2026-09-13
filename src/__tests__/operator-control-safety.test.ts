@@ -43,10 +43,10 @@ describe('operator control safety', () => {
     expect(sourcePage).toContain('Latest private test:');
     expect(sourcePage).toContain('Open review queue');
     expect(sourcePage).toContain('SourceRunForm');
-    expect(sourceRunForm).toContain('useActionState');
-    expect(sourceRunForm).toContain("state.status === 'error'");
-    expect(sourceActions).toContain("console.info(\"[source-run] fetch record created\"");
-    expect(sourceActions).toContain("console.error(\"[source-run] action failed\"");
+    expect(sourceRunForm).toContain('action="/api/admin/sources/run"');
+    expect(sourceRunForm).toContain('method="post"');
+    expect(sourceRunForm).not.toContain('useActionState');
+    expect(sourcePage).toContain('action="/api/admin/sources/test"');
   });
 
   it('marks every cron response private and non-cacheable', () => {
