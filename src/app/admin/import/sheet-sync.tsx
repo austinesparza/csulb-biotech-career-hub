@@ -87,6 +87,11 @@ export function SheetSync() {
       {summary.reconciliation.missingMaterialization} bridge gaps found ·{' '}
       {summary.reconciliation.repaired} repaired.
     </p>
+    <p className="mt-1 text-xs">
+      {summary.totalMachineCandidates > 0
+        ? `${summary.totalMachineCandidates} unresolved machine candidates are currently eligible for the Review Queue.`
+        : 'No unresolved machine candidates remain. Previously resolved machine rows are retained in the Sheet Archive tab.'}
+    </p>
   </>;
 
   return <section className="space-y-4 rounded-xl bg-white p-5" style={{ border: '1px solid var(--line)' }}>
