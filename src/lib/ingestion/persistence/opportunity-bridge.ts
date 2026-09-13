@@ -25,12 +25,20 @@ const WORK_AUTHORIZATION_SIGNAL = /\b(work authorization|authorized to work|visa
 const CONTINUED_ENROLLMENT_SIGNAL = /\b(return(?:ing)? to (?:school|college|university|the program)|remain enrolled|continued? enrollment|continuing (?:their|your) (?:degree|studies|education)|enrolled .* (?:after|following) (?:the )?(?:internship|co-op))\b/i;
 const GRADUATE_EVIDENCE_SIGNAL = /\bmaster(?:'s|s)?\b|\bgraduate students?\b|\bgraduate degree\b|(?:^|[\s(,;/])m\.?\s?s\.?c?\.?(?=[\s),;/]|$)/i;
 const UNDERGRAD_EVIDENCE_SIGNAL = /\bbachelor'?s?\b|\bundergraduate\b|\bpost[ -]?baccalaureate\b|\bpostbac\b|(?:^|[\s(,;/])b\.?\s?s\.?(?=[\s),;/]|$)|(?:^|[\s(,;/])b\.?\s?a\.?(?=[\s),;/]|$)/i;
+const ABBREVIATION_DOT = '\uE000';
+
+function protectSentenceAbbreviations(text: string): string {
+  return text.replace(
+    /\b(?:B\.S\.|M\.S\.|B\.A\.|M\.A\.|M\.Sc\.|Ph\.D\.|U\.S\.)/gi,
+    (value) => value.replaceAll('.', ABBREVIATION_DOT),
+  );
+}
 
 function sourceSnippets(text: string | null, signal: RegExp, limit = 3): string[] {
   if (!text?.trim()) return [];
-  const sentences = text
+  const sentences = protectSentenceAbbreviations(text)
     .split(/(?<=[.!?])\s+|\s*[•▪◦]\s*/)
-    .map((value) => value.replace(/\s+/g, ' ').trim())
+    .map((value) => value.replaceAll(ABBREVIATION_DOT, '.').replace(/\s+/g, ' ').trim())
     .filter(Boolean);
   const matches = sentences.filter((sentence) => signal.test(sentence));
   const candidates = matches.length > 0 ? matches : [text.replace(/\s+/g, ' ').trim()];
