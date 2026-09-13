@@ -1,0 +1,225 @@
+name: Apply source run POST transport patch
+
+on:
+  push:
+    branches:
+      - fix/source-run-post-transport
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: fix/source-run-post-transport
+          fetch-depth: 0
+      - name: Patch source operator transport
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          run_route = r'''import { randomUUID } from 'node:crypto';
+          import { NextResponse } from 'next/server';
+
+          import { googleSheetsConfigured } from '@/lib/google-sheets';
+          import { runClaimedFetch } from '@/lib/ingestion/source-runner';
+          import { syncReviewQueueToGoogleSheet } from '@/lib/review-sheet-sync';
+          import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
+
+          export const runtime = 'nodejs';
+          export const dynamic = 'force-dynamic';
+          export const maxDuration = 300;
+
+          function sourcesUrl(request: Request, params: Record<string, string>): URL {
+            const url = new URL('/admin/sources', request.url);
+            for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+            return url;
+          }
+
+          export async function POST(request: Request) {
+            let runId: string | undefined;
+            try {
+              await requireOfficer();
+              const formData = await request.formData();
+              const id = String(formData.get('id') ?? '').trim();
+              if (!id) throw new Error('Source ID is required.');
+
+              const db = createServiceClient();
+              const { data: source, error: sourceError } = await db.from('job_sources')
+                .select('id, source_name, enabled, automatic_scheduling_paused_at')
+                .eq('id', id)
+                .maybeSingle();
+              if (sourceError || !source) throw new Error('Source not found.');
+              if (!source.enabled || source.automatic_scheduling_paused_at) {
+                throw new Error('Enable and resume the source before running it.');
+              }
+
+              const now = new Date().toISOString();
+              const { data: run, error: runError } = await db.from('source_fetch_runs').insert({
+                job_source_id: id,
+                trigger_kind: 'manual',
+                status: 'running',
+                scheduled_for: now,
+                started_at: now,
+                worker_id: `officer:${randomUUID()}`,
+              }).select('id, job_source_id').single();
+              if (runError || !run) throw new Error(`Could not start source run: ${runError?.message ?? 'unknown error'}`);
+              runId = run.id;
+
+              const report = await runClaimedFetch({ db, storage: db.storage, claim: run });
+              if (report.status === 'failed') {
+                return NextResponse.redirect(sourcesUrl(request, {
+                  operation: 'source_run',
+                  outcome: 'failed',
+                  run: report.fetchRunId,
+                }), 303);
+              }
+
+              if (googleSheetsConfigured()) {
+                await syncReviewQueueToGoogleSheet({ db });
+              }
+
+              return NextResponse.redirect(sourcesUrl(request, {
+                operation: 'source_run',
+                outcome: report.status,
+                run: report.fetchRunId,
+              }), 303);
+            } catch (error) {
+              console.error('[source-run] operator route failed', {
+                runId: runId ?? null,
+                error: error instanceof Error ? error.message : 'unknown error',
+              });
+              return NextResponse.redirect(sourcesUrl(request, {
+                operation: 'source_run',
+                outcome: 'error',
+                ...(runId ? { run: runId } : {}),
+              }), 303);
+            }
+          }
+          '''
+
+          test_route = r'''import { randomUUID } from 'node:crypto';
+          import { NextResponse } from 'next/server';
+
+          import { runClaimedFetch } from '@/lib/ingestion/source-runner';
+          import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
+
+          export const runtime = 'nodejs';
+          export const dynamic = 'force-dynamic';
+          export const maxDuration = 300;
+
+          function sourcesUrl(request: Request, params: Record<string, string>): URL {
+            const url = new URL('/admin/sources', request.url);
+            for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+            return url;
+          }
+
+          export async function POST(request: Request) {
+            let runId: string | undefined;
+            try {
+              await requireOfficer();
+              const formData = await request.formData();
+              const id = String(formData.get('id') ?? '').trim();
+              if (!id) throw new Error('Source ID is required.');
+
+              const db = createServiceClient();
+              const { data: source, error: sourceError } = await db.from('job_sources')
+                .select('id, terms_reviewed, terms_review_date, robots_reviewed')
+                .eq('id', id)
+                .maybeSingle();
+              if (sourceError || !source) throw new Error('Source not found.');
+              if (!source.terms_reviewed || !source.terms_review_date || !source.robots_reviewed) {
+                throw new Error('Record both terms and robots review before testing a source.');
+              }
+
+              const now = new Date().toISOString();
+              const { data: run, error: runError } = await db.from('source_fetch_runs').insert({
+                job_source_id: id,
+                trigger_kind: 'manual',
+                status: 'running',
+                scheduled_for: now,
+                started_at: now,
+                worker_id: `officer-test:${randomUUID()}`,
+                log_json: { privateTest: true },
+              }).select('id, job_source_id').single();
+              if (runError || !run) throw new Error(`Could not start private test: ${runError?.message ?? 'unknown error'}`);
+              runId = run.id;
+
+              const report = await runClaimedFetch({ db, storage: db.storage, claim: run, privateTest: true });
+              return NextResponse.redirect(sourcesUrl(request, {
+                operation: 'source_test',
+                outcome: report.status,
+                run: report.fetchRunId,
+              }), 303);
+            } catch (error) {
+              console.error('[source-test] operator route failed', {
+                runId: runId ?? null,
+                error: error instanceof Error ? error.message : 'unknown error',
+              });
+              return NextResponse.redirect(sourcesUrl(request, {
+                operation: 'source_test',
+                outcome: 'error',
+                ...(runId ? { run: runId } : {}),
+              }), 303);
+            }
+          }
+          '''
+
+          # Dedent TypeScript embedded in the YAML block.
+          import textwrap
+          run_route = textwrap.dedent(run_route)
+          test_route = textwrap.dedent(test_route)
+          Path('src/app/api/admin/sources/run').mkdir(parents=True, exist_ok=True)
+          Path('src/app/api/admin/sources/test').mkdir(parents=True, exist_ok=True)
+          Path('src/app/api/admin/sources/run/route.ts').write_text(run_route)
+          Path('src/app/api/admin/sources/test/route.ts').write_text(test_route)
+
+          Path('src/app/admin/sources/source-run-form.tsx').write_text('''export function SourceRunForm({ sourceId, disabled }: { sourceId: string; disabled: boolean }) {\n  return <form action="/api/admin/sources/run" method="post" className="space-y-2">\n    <input type="hidden" name="id" value={sourceId} />\n    <button className="primary-button" type="submit" disabled={disabled}>\n      Run and archive now\n    </button>\n  </form>;\n}\n''')
+
+          page_path = Path('src/app/admin/sources/page.tsx')
+          page = page_path.read_text()
+          page = page.replace(
+            'import { createJobSource, createStarterSource, runEmployerDiscoveryNow, testSourceNow, toggleSourcePause, updateSourceGovernance } from "./actions";',
+            'import { createJobSource, createStarterSource, runEmployerDiscoveryNow, toggleSourcePause, updateSourceGovernance } from "./actions";'
+          )
+          page = page.replace(
+            'function when(value: string | null): string {\n  return value ? new Date(value).toLocaleString() : "Never";\n}',
+            '''function when(value: string | null): string {\n  if (!value) return "Never";\n  const date = new Date(value);\n  if (!Number.isFinite(date.valueOf())) return "Invalid timestamp";\n  return `${new Intl.DateTimeFormat("en-US", {\n    dateStyle: "medium",\n    timeStyle: "short",\n    timeZone: "UTC",\n  }).format(date)} UTC`;\n}'''
+          )
+          page = page.replace(
+            '<form action={testSourceNow}>\n              <input type="hidden" name="id" value={source.id} />',
+            '<form action="/api/admin/sources/test" method="post">\n              <input type="hidden" name="id" value={source.id} />'
+          )
+          page_path.write_text(page)
+
+          test_path = Path('src/__tests__/operator-route-runtime-contract.test.ts')
+          test = test_path.read_text()
+          test = test.replace(
+            "const queueForm = readFileSync('src/app/admin/sources/queue-drain-form.tsx', 'utf8');",
+            "const queueForm = readFileSync('src/app/admin/sources/queue-drain-form.tsx', 'utf8');\nconst sourceRunRoute = readFileSync('src/app/api/admin/sources/run/route.ts', 'utf8');\nconst sourceTestRoute = readFileSync('src/app/api/admin/sources/test/route.ts', 'utf8');\nconst sourceRunForm = readFileSync('src/app/admin/sources/source-run-form.tsx', 'utf8');\nconst sourcesPage = readFileSync('src/app/admin/sources/page.tsx', 'utf8');"
+          )
+          test = test.replace(
+            'for (const route of [pipelineRoute, queueRoute]) {',
+            'for (const route of [pipelineRoute, queueRoute, sourceRunRoute, sourceTestRoute]) {'
+          )
+          test = test.replace(
+            "    expect(queueForm).not.toContain('useActionState');\n  });",
+            """    expect(queueForm).not.toContain('useActionState');\n    expect(sourceRunForm).toContain('action=\"/api/admin/sources/run\"');\n    expect(sourceRunForm).toContain('method=\"post\"');\n    expect(sourceRunForm).not.toContain('useActionState');\n    expect(sourcesPage).toContain('action=\"/api/admin/sources/test\"');\n    expect(sourcesPage).toContain('method=\"post\"');\n    expect(sourcesPage).not.toContain('action={testSourceNow}');\n  });\n\n  it('keeps manual source execution private and preserves private-test isolation', () => {\n    expect(sourceRunRoute).toContain('runClaimedFetch');\n    expect(sourceRunRoute).toContain('googleSheetsConfigured');\n    expect(sourceRunRoute).not.toContain('decide_opportunity_review');\n    expect(sourceTestRoute).toContain('runClaimedFetch');\n    expect(sourceTestRoute).toContain('privateTest: true');\n    expect(sourceTestRoute).not.toContain('syncReviewQueueToGoogleSheet');\n    expect(sourceTestRoute).not.toContain('decide_opportunity_review');\n  });\n\n  it('labels server-rendered operational timestamps explicitly as UTC', () => {\n    expect(sourcesPage).toContain('timeZone: \"UTC\"');\n    expect(sourcesPage).toContain('} UTC`');\n    expect(sourcesPage).not.toContain('new Date(value).toLocaleString()');\n  });"""
+          )
+          test_path.write_text(test)
+
+          Path('.github/workflows/apply-source-run-post-transport.yml').unlink()
+          PY
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Harden individual source operator controls'
+          git push origin HEAD:fix/source-run-post-transport
