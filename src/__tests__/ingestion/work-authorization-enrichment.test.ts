@@ -35,7 +35,7 @@ describe('work authorization evidence extraction', () => {
     expect(result.workAuthorization).toBeNull();
   });
 
-  it('ignores the combined Flagship-style EEO and privacy boilerplate', () => {
+  it('ignores the exact combined EEO and privacy boilerplate pattern from Flagship postings', () => {
     const result = deriveOpportunityEnrichment(posting(
       'This position is open exclusively to current Northeastern University Co-Op students. Equal employment opportunity applies regardless of age, citizenship, disability, or veteran status. California residents may opt out of sharing personal information.',
     ));
