@@ -347,4 +347,8 @@ export interface PublicOpportunity {
   last_checked_at: string | null;
   first_seen_at: string;
   source_name: string | null;
+  company_website: string | null;
+  company_location: string | null;
+  company_industry_tags: string[];
+  company_description: string | null;
 }
