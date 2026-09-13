@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { inferSourceIdentifier, resolveSourceIdentifier } from '@/lib/ingestion/source-identifiers';
+import { inferSourceIdentifier, resolveSourceIdentifier } from '../lib/ingestion/source-identifiers';
 
 describe('ATS source identifier inference', () => {
   it('infers Greenhouse tokens from public and API URLs', () => {
