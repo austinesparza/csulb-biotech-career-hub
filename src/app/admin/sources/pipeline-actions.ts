@@ -13,6 +13,7 @@ export interface PipelineRunActionState {
   recovered?: number;
   claimed?: number;
   completed?: number;
+  partial?: number;
   failed?: number;
   recordsSeen?: number;
   repaired?: number;
@@ -62,6 +63,7 @@ export async function runFullPipelineNow(
       recovered: report.recovered,
       claimed: report.claimed,
       completed: report.completed,
+      partial: report.partial,
       failed: report.failed,
       recordsSeen: report.recordsSeen,
       repaired,
