@@ -12,6 +12,7 @@ create table if not exists public.pipeline_cycles (
   recovered_count       integer not null default 0 check (recovered_count >= 0),
   claimed_count         integer not null default 0 check (claimed_count >= 0),
   completed_count       integer not null default 0 check (completed_count >= 0),
+  partial_count         integer not null default 0 check (partial_count >= 0),
   failed_count          integer not null default 0 check (failed_count >= 0),
   records_seen          integer not null default 0 check (records_seen >= 0),
   records_archived      integer not null default 0 check (records_archived >= 0),
