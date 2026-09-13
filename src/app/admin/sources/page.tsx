@@ -43,11 +43,13 @@ export default async function SourcesPage() {
   if (sourceResult.error) throw new Error(`Could not load sources: ${sourceResult.error.message}`);
   if (testRunResult.error) throw new Error(`Could not load private test history: ${testRunResult.error.message}`);
   if (queueResult.error) throw new Error(`Could not load source queue health: ${queueResult.error.message}`);
+
   const sources = sourceResult.data ?? [];
   const pendingRuns = queueResult.data ?? [];
   const oldestPending = pendingRuns[0] ?? null;
   const oldestPendingHours = hoursSince(oldestPending?.scheduled_for ?? oldestPending?.created_at ?? null);
   const queueStale = oldestPendingHours !== null && oldestPendingHours >= 2;
+  const activeSourceCount = sources.filter((source) => source.enabled && !source.automatic_scheduling_paused_at).length;
   const latestPrivateTestBySource = new Map<string, NonNullable<typeof testRunResult.data>[number]>();
   for (const run of testRunResult.data ?? []) {
     if (!latestPrivateTestBySource.has(run.job_source_id)) latestPrivateTestBySource.set(run.job_source_id, run);
@@ -61,31 +63,34 @@ export default async function SourcesPage() {
     && Boolean(process.env.BRAVE_SEARCH_API_KEY?.trim())
     && process.env.BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED === "true";
 
-  return <div className="space-y-8">
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Automated sources</h1>
-          <p className="mt-2 max-w-3xl text-sm" style={{ color: "var(--ink-soft)" }}>
-            Add only public employer-controlled feeds or pages. New sources stay disabled until an officer records terms and robots review.
-          </p>
-        </div>
+  return <div className="admin-page-flow">
+    <header className="admin-page-head">
+      <div className="admin-page-head-copy">
+        <div className="admin-page-eyebrow">Ingestion operations</div>
+        <h1 className="admin-page-title">Automated sources</h1>
+        <p className="admin-page-deck">
+          Operate public employer-controlled feeds, pipeline recovery, and governed discovery. New sources stay disabled until an officer records terms and robots review.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={queueStale ? "admin-status-badge admin-status-bad" : "admin-status-badge admin-status-good"}>
+          {pendingRuns.length} queued
+        </span>
+        <span className="admin-status-badge admin-status-good">{activeSourceCount} active</span>
         <Link className="secondary-button" href="/admin/integrations">Integration status</Link>
       </div>
-    </div>
+    </header>
 
-    <section className="rounded-xl bg-white p-5" style={{ border: "1px solid var(--line)" }}>
+    <section className="admin-source-hero rounded-xl bg-white p-5" style={{ border: "1px solid var(--line)" }}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="font-semibold">Run the career pipeline</h2>
+          <div className="admin-page-eyebrow">Primary control</div>
+          <h2 className="text-xl font-semibold">Run the career pipeline</h2>
           <p className="mt-2 max-w-3xl text-sm" style={{ color: "var(--ink-soft)" }}>
-            This is the normal officer control. One cycle schedules due sources, recovers abandoned worker runs,
-            processes queued sources, repairs any missing review materialization, and updates the private Google Sheet.
+            One cycle schedules due sources, recovers abandoned worker runs, processes queued sources, repairs missing review materialization, and updates the private Google Sheet.
           </p>
         </div>
-        <span className="rounded-full px-2 py-1 text-xs font-semibold" style={{ background: "#16653412", color: "#166534" }}>
-          private until approval
-        </span>
+        <span className="admin-status-badge admin-status-good">Private until approval</span>
       </div>
       <PipelineRunForm />
       <p className="mt-3 text-xs" style={{ color: "var(--ink-soft)" }}>
@@ -93,18 +98,16 @@ export default async function SourcesPage() {
       </p>
     </section>
 
-    <section className="rounded-xl bg-white p-5" style={{ border: queueStale ? "1px solid #b45309" : "1px solid var(--line)" }}>
+    <section className={`${queueStale ? "admin-queue-warning " : ""}rounded-xl bg-white p-5`} style={{ border: queueStale ? "1px solid #b45309" : "1px solid var(--line)" }}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="font-semibold">Worker queue health</h2>
+          <div className="admin-page-eyebrow">Worker state</div>
+          <h2 className="text-xl font-semibold">Queue health</h2>
           <p className="mt-2 max-w-3xl text-sm" style={{ color: "var(--ink-soft)" }}>
             Scheduled source runs wait here until a worker claims them. This is operational health, not the Google Sheet Review Queue.
           </p>
         </div>
-        <span className="rounded-full px-2 py-1 text-xs font-semibold" style={{
-          background: pendingRuns.length === 0 ? "#16653412" : queueStale ? "#b4530916" : "#07567212",
-          color: pendingRuns.length === 0 ? "#166534" : queueStale ? "#92400e" : "#075672",
-        }}>
+        <span className={pendingRuns.length === 0 ? "admin-status-badge admin-status-good" : queueStale ? "admin-status-badge admin-status-bad" : "admin-status-badge admin-status-watch"}>
           {pendingRuns.length} pending
         </span>
       </div>
@@ -125,9 +128,10 @@ export default async function SourcesPage() {
     </section>
 
     <section className="rounded-xl bg-white p-5" style={{ border: "1px solid var(--line)" }}>
-      <h2 className="font-semibold">Verified starter feeds</h2>
+      <div className="admin-page-eyebrow">Governed onboarding</div>
+      <h2 className="text-xl font-semibold">Verified starter feeds</h2>
       <p className="mt-2 max-w-3xl text-sm" style={{ color: "var(--ink-soft)" }}>
-        Add a current official feed as a disabled source. Then review the linked policy evidence, save both review checks, run one private test, and enable it only after the results look right.
+        Add a current official feed as a disabled source. Review the linked policy evidence, save both checks, run one private test, and enable it only after the results look right.
       </p>
       <div className="mt-4 grid gap-3 lg:grid-cols-3">
         {GOVERNED_STARTER_SOURCES.map((starter) => {
@@ -157,9 +161,10 @@ export default async function SourcesPage() {
     </section>
 
     <section className="rounded-xl bg-white p-5" style={{ border: "1px solid var(--line)" }}>
-      <h2 className="font-semibold">Employer, scientific lane, and LinkedIn lead discovery</h2>
+      <div className="admin-page-eyebrow">Discovery</div>
+      <h2 className="text-xl font-semibold">Employer, scientific lane, and LinkedIn leads</h2>
       <p className="mt-2 max-w-3xl text-sm" style={{ color: "var(--ink-soft)" }}>
-        Configured discovery runs as part of the canonical pipeline. Use the control below only when you need an extra discovery pass without rerunning source ingestion.
+        Configured discovery runs as part of the canonical pipeline. Use this control only when you need an extra discovery pass without rerunning source ingestion.
       </p>
       <p className="mt-2 text-xs" style={{ color: "var(--ink-soft)" }}>
         Results enter the private lead archive and officer task queue. LinkedIn results remain leads and cannot establish publication facts.
@@ -172,7 +177,8 @@ export default async function SourcesPage() {
     </section>
 
     <section className="rounded-xl bg-white p-5" style={{ border: "1px solid var(--line)" }}>
-      <h2 className="font-semibold">Add a source</h2>
+      <div className="admin-page-eyebrow">Source registry</div>
+      <h2 className="text-xl font-semibold">Add a source</h2>
       <form action={createJobSource} className="mt-4 grid gap-4 md:grid-cols-2">
         <label className="text-sm">Source name
           <input className="mt-1 w-full rounded-md border p-2" name="source_name" required placeholder="Company careers board" />
@@ -214,22 +220,29 @@ export default async function SourcesPage() {
     </section>
 
     <section className="space-y-4">
-      <h2 className="font-semibold">Configured sources ({sources.length})</h2>
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b pb-3" style={{ borderColor: "var(--line-strong)" }}>
+        <div>
+          <div className="admin-page-eyebrow">Configured registry</div>
+          <h2 className="text-xl font-semibold">Sources</h2>
+        </div>
+        <span className="text-xs" style={{ color: "var(--ink-soft)" }}>{sources.length} configured</span>
+      </div>
       {sources.length === 0 ? <div className="rounded-xl bg-white p-5 text-sm" style={{ border: "1px solid var(--line)" }}>
         No machine sources are configured yet. Add one disabled employer source above, record its policy review, and run a private test before enabling the automated loop.
       </div> : sources.map((source) => {
         const paused = Boolean(source.automatic_scheduling_paused_at);
         const latestPrivateTest = latestPrivateTestBySource.get(source.id);
+        const active = source.enabled && !paused;
         return <article key={source.id} className="rounded-xl bg-white p-5" style={{ border: "1px solid var(--line)" }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h3 className="font-semibold">{source.source_name}</h3>
+              <h3 className="text-xl font-semibold">{source.source_name}</h3>
               <a className="text-sm underline" href={source.careers_url} target="_blank" rel="noreferrer">Open source</a>
               <p className="mt-2 text-xs" style={{ color: "var(--ink-soft)" }}>
                 {source.source_kind} · every {source.fetch_interval_hours}h · last success {when(source.last_successful_at)} · failures {source.consecutive_failures}
               </p>
             </div>
-            <span className="rounded-full px-2 py-1 text-xs font-semibold" style={{ background: source.enabled && !paused ? "#16653412" : "#92400e12", color: source.enabled && !paused ? "#166534" : "#92400e" }}>
+            <span className={active ? "admin-status-badge admin-status-good" : "admin-status-badge admin-status-watch"}>
               {paused ? "Paused" : source.enabled ? "Active" : "Disabled"}
             </span>
           </div>

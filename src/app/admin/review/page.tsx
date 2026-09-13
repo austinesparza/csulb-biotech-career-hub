@@ -17,9 +17,27 @@ function TabNav({ selected }: { selected: ReviewTab }) {
   const tabs: Array<[ReviewTab, string]> = [
     ['opportunities', 'Opportunities'], ['leads', 'Discovery leads'], ['submissions', 'Submissions'], ['tasks', 'Tasks'],
   ];
-  return <nav className="flex flex-wrap gap-2" aria-label="Review queues">{tabs.map(([key, label]) => (
-    <a key={key} className={selected === key ? 'primary-button' : 'secondary-button'} href={key === 'opportunities' ? '/admin/review' : `/admin/review?tab=${key}`}>{label}</a>
+  return <nav className="admin-tabs" aria-label="Review queues">{tabs.map(([key, label]) => (
+    <a
+      key={key}
+      className={selected === key ? 'admin-tab-link is-active' : 'admin-tab-link'}
+      href={key === 'opportunities' ? '/admin/review' : `/admin/review?tab=${key}`}
+      aria-current={selected === key ? 'page' : undefined}
+    >
+      {label}
+    </a>
   ))}</nav>;
+}
+
+function ReviewHeader({ title, deck, badge }: { title: string; deck: string; badge?: string }) {
+  return <header className="admin-page-head">
+    <div className="admin-page-head-copy">
+      <div className="admin-page-eyebrow">Officer review</div>
+      <h1 className="admin-page-title">{title}</h1>
+      <p className="admin-page-deck">{deck}</p>
+    </div>
+    {badge ? <span className="admin-status-badge admin-status-watch">{badge}</span> : null}
+  </header>;
 }
 
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
@@ -44,8 +62,11 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
         .order('retrieved_at', { ascending: false })
         .limit(500);
       if (observationResult.error) {
-        return <div className="space-y-6">
-          <h1 className="text-2xl font-semibold tracking-tight">Officer review</h1>
+        return <div className="admin-page-flow">
+          <ReviewHeader
+            title="Discovery leads"
+            deck="Search results stay private until an officer resolves provenance and follows an employer-controlled source."
+          />
           <TabNav selected={selected} />
           <p role="alert">Could not load discovery evidence: {observationResult.error.message}</p>
         </div>;
@@ -60,10 +81,13 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
       ...lead,
       latest_observation: latestObservationByLead.get(lead.id) ?? null,
     }));
-    return <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Officer review</h1>
+    return <div className="admin-page-flow">
+      <ReviewHeader
+        title="Discovery leads"
+        deck="Review provenance and follow employer-controlled sources before creating any opportunity draft. Nothing on this tab can publish to the public board."
+        badge={`${rows.length} active leads`}
+      />
       <TabNav selected={selected} />
-      <p className="max-w-3xl text-sm">Search results stay private here. Review their provenance and follow employer-controlled sources before creating any opportunity draft. Nothing on this tab can publish to the public board.</p>
       {error ? <p role="alert">Could not load discovery leads: {error.message}</p> : <DiscoveryLeadList rows={rows} />}
     </div>;
   }
@@ -72,10 +96,13 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     const { data, error } = await db.from('user_submissions').select('*')
       .in('status', ['new', 'in_review']).order('created_at', { ascending: true }).limit(100);
     const rows = (data ?? []) as UserSubmission[];
-    return <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Officer review</h1>
+    return <div className="admin-page-flow">
+      <ReviewHeader
+        title="Student submissions"
+        deck="Suggestions stay private here. Creating a draft routes an opportunity through normal officer review and never publishes it directly."
+        badge={`${rows.length} pending`}
+      />
       <TabNav selected={selected} />
-      <p className="max-w-2xl text-sm">Suggestions stay private here. Creating a draft sends an opportunity through the normal officer review; it does not publish it.</p>
       {error ? <p role="alert">Could not load submissions: {error.message}</p> : <SubmissionList rows={rows} />}
     </div>;
   }
@@ -84,10 +111,13 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     const { data, error } = await db.from('review_tasks').select('*')
       .in('status', ['open', 'in_progress']).order('priority', { ascending: true }).order('created_at', { ascending: true }).limit(100);
     const rows = (data ?? []) as ReviewTask[];
-    return <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Officer review</h1>
+    return <div className="admin-page-flow">
+      <ReviewHeader
+        title="Review tasks"
+        deck="Tasks flag changes, possible duplicates, broken links, and source-health problems that need an officer decision."
+        badge={`${rows.length} active tasks`}
+      />
       <TabNav selected={selected} />
-      <p className="max-w-2xl text-sm">Tasks flag changes, possible duplicates, broken links, and source-health problems for an officer to resolve.</p>
       {error ? <p role="alert">Could not load tasks: {error.message}</p> : <TaskList rows={rows} />}
     </div>;
   }
@@ -166,18 +196,13 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-baseline gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Review queue</h1>
-        <span className="text-sm" style={{ color: 'var(--ink-soft)' }}>
-          {rows.length} pending · sorted by relevance
-        </span>
-      </div>
+    <div className="admin-page-flow">
+      <ReviewHeader
+        title="Opportunity review"
+        deck="Open the official posting first, verify the evidence, and confirm that public notes contain no private information before approval."
+        badge={`${rows.length} pending`}
+      />
       <TabNav selected={selected} />
-      <p className="max-w-2xl text-sm" style={{ color: 'var(--ink-soft)' }}>
-        Nothing goes public until you approve it here. Open the posting link first,
-        then confirm the public notes contain no private information.
-      </p>
       {error ? <p role="alert">Could not load opportunities: {error.message}</p> : <ReviewList rows={rows} />}
     </div>
   );

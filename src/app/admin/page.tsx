@@ -5,6 +5,8 @@ import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
+type HealthTone = 'good' | 'watch' | 'bad' | 'neutral';
+
 function when(value: string | null | undefined): string {
   return value ? new Date(value).toLocaleString() : 'Never';
 }
@@ -26,11 +28,17 @@ function sheetStatus(value: unknown): string {
   return typeof status === 'string' ? status : 'unknown';
 }
 
-function healthStyle(tone: 'good' | 'watch' | 'bad' | 'neutral') {
+function healthStyle(tone: HealthTone) {
   if (tone === 'good') return { background: '#16653412', color: '#166534' };
   if (tone === 'watch') return { background: '#b4530916', color: '#92400e' };
   if (tone === 'bad') return { background: '#991b1b12', color: '#991b1b' };
   return { background: '#07567212', color: '#075672' };
+}
+
+function statusClass(tone: HealthTone) {
+  if (tone === 'good') return 'admin-status-badge admin-status-good';
+  if (tone === 'bad') return 'admin-status-badge admin-status-bad';
+  return 'admin-status-badge admin-status-watch';
 }
 
 export default async function AdminHome() {
@@ -97,8 +105,8 @@ export default async function AdminHome() {
   }, null);
   const staleQueue = (oldestPendingHours ?? 0) >= 2 || (oldestRunningHours ?? 0) >= 0.5;
 
-  const schemaTone = databaseRelease.status === 'current' ? 'good' : databaseRelease.status === 'drift' ? 'bad' : 'watch';
-  const pipelineTone = cyclesResult.error
+  const schemaTone: HealthTone = databaseRelease.status === 'current' ? 'good' : databaseRelease.status === 'drift' ? 'bad' : 'watch';
+  const pipelineTone: HealthTone = cyclesResult.error
     ? 'watch'
     : lastCycle?.status === 'completed'
       ? 'good'
@@ -107,8 +115,8 @@ export default async function AdminHome() {
         : lastCycle?.status === 'partial'
           ? 'watch'
           : 'neutral';
-  const queueTone = activeRunsResult.error ? 'watch' : staleQueue ? 'bad' : activeRuns.length > 0 ? 'neutral' : 'good';
-  const sourceTone = sourceHealthResult.error ? 'watch' : degradedSources.length > 0 ? 'bad' : 'good';
+  const queueTone: HealthTone = activeRunsResult.error ? 'watch' : staleQueue ? 'bad' : activeRuns.length > 0 ? 'neutral' : 'good';
+  const sourceTone: HealthTone = sourceHealthResult.error ? 'watch' : degradedSources.length > 0 ? 'bad' : 'good';
   const operationsNeedAttention = schemaTone !== 'good' || pipelineTone === 'bad' || pipelineTone === 'watch' || queueTone === 'bad' || sourceTone === 'bad';
 
   const healthCards = [
@@ -142,103 +150,114 @@ export default async function AdminHome() {
     },
   ] as const;
 
+  const quickActions = [
+    { href: '/admin/review', title: 'Open review queue', note: 'Approve, reject, and resolve evidence' },
+    { href: '/admin/sources', title: 'Run pipeline', note: 'Ingestion, recovery, reconciliation, Sheet sync' },
+    { href: '/admin/import', title: 'Sync spreadsheet', note: 'Bring officer workspace rows into the archive' },
+    { href: '/admin/add', title: 'Add a posting', note: 'Create a private draft from an official source' },
+    { href: '/admin/manage', title: 'Correct published records', note: 'Correct or archive approved opportunities' },
+    { href: '/admin/duplicates', title: 'Duplicate scan', note: 'Review likely record collisions' },
+    { href: '/admin/integrations', title: 'Integration status', note: 'Inspect external service configuration' },
+    { href: '/api/export?format=csv', title: 'Export approved', note: 'Download the current public dataset as CSV' },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Officer dashboard</h1>
-          <p className="mt-1 text-sm" style={{ color: 'var(--ink-soft)' }}>
-            Review workload and production pipeline health in one place.
-          </p>
+    <div className="admin-page-flow">
+      <header className="admin-page-head">
+        <div className="admin-page-head-copy">
+          <div className="admin-page-eyebrow">Operations</div>
+          <h1 className="admin-page-title">Officer dashboard</h1>
+          <p className="admin-page-deck">A private control room for review workload, publication safety, and the health of the Career Hub pipeline.</p>
         </div>
-        <span className="rounded-full px-3 py-1 text-xs font-semibold" style={healthStyle(operationsNeedAttention ? 'watch' : 'good')}>
+        <span className={statusClass(operationsNeedAttention ? 'watch' : 'good')}>
           {operationsNeedAttention ? 'Operations need attention' : 'Operations healthy'}
         </span>
-      </div>
+      </header>
 
-      <div className="grid gap-3 sm:grid-cols-4">
-        {cards.map((c) => (
-          <Link key={c.label} href={c.href} className="rounded-xl bg-white p-4 hover:bg-[var(--brand-soft)]"
-            style={{ border: '1px solid var(--line)' }}>
-            <div className="text-2xl font-semibold">{c.count}</div>
-            <div className="text-sm" style={{ color: 'var(--ink-soft)' }}>{c.label}</div>
+      <section aria-label="Review workload" className="admin-metric-grid">
+        {cards.map((card) => (
+          <Link key={card.label} href={card.href} className="admin-metric-card">
+            <div className="admin-metric-value">{card.count}</div>
+            <div className="admin-metric-label">{card.label}</div>
+            <span className="admin-metric-arrow" aria-hidden="true">↗</span>
           </Link>
         ))}
-      </div>
+      </section>
 
-      <section className="rounded-xl bg-white p-5" style={{ border: operationsNeedAttention ? '1px solid #b45309' : '1px solid var(--line)' }}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <section className={operationsNeedAttention ? 'admin-health-panel is-attention' : 'admin-health-panel'}>
+        <div className="admin-panel-head">
           <div>
-            <h2 className="font-semibold">Production health</h2>
-            <p className="mt-1 text-sm" style={{ color: 'var(--ink-soft)' }}>
-              These checks distinguish review workload from actual ingestion, database, and worker failures.
-            </p>
+            <div className="admin-page-eyebrow">System state</div>
+            <h2>Production health</h2>
+            <p>Review workload is separate from infrastructure health. These checks show whether the database, pipeline, worker queue, and automated sources are actually operating.</p>
           </div>
           <Link href="/admin/sources" className="secondary-button">Open pipeline controls</Link>
         </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="admin-health-grid">
           {healthCards.map((card) => (
-            <article key={card.label} className="rounded-lg p-4" style={{ border: '1px solid var(--line)' }}>
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="text-sm font-semibold">{card.label}</h3>
-                <span className="rounded-full px-2 py-1 text-[11px] font-semibold" style={healthStyle(card.tone)}>{card.value}</span>
-              </div>
-              <p className="mt-3 text-xs" style={{ color: 'var(--ink-soft)' }}>{card.detail}</p>
+            <article key={card.label} className="admin-health-card">
+              <div className="admin-health-label">{card.label}</div>
+              <div className="admin-health-value">{card.value}</div>
+              <p className="admin-health-detail">{card.detail}</p>
+              <span className="mt-3 inline-flex rounded-full px-2 py-1 text-[11px] font-semibold" style={healthStyle(card.tone)}>
+                {card.tone === 'good' ? 'Healthy' : card.tone === 'bad' ? 'Action needed' : card.tone === 'watch' ? 'Review' : 'Active'}
+              </span>
             </article>
           ))}
         </div>
         {degradedSources.length > 0 ? (
-          <p className="mt-4 text-xs" style={{ color: 'var(--restricted)' }}>
-            Degraded sources: {degradedSources.map((source) => source.source_name).join(', ')}. Open Automated Sources to inspect or pause them.
+          <p className="admin-health-footnote" style={{ color: 'var(--restricted)' }}>
+            Degraded sources: {degradedSources.map((source) => source.source_name).join(', ')}. Open Sources to inspect or pause them.
           </p>
         ) : null}
         {databaseRelease.status !== 'current' ? (
-          <p className="mt-2 text-xs" style={{ color: 'var(--restricted)' }}>
+          <p className="admin-health-footnote" style={{ color: 'var(--restricted)' }}>
             Application code expects database migration <code>{databaseRelease.expectedMigration}</code>. This warning never applies migrations automatically.
           </p>
         ) : null}
       </section>
 
-      <section className="rounded-xl bg-white p-5" style={{ border: '1px solid var(--line)' }}>
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <section className="admin-health-panel">
+        <div className="admin-panel-head">
           <div>
-            <h2 className="font-semibold">Recent pipeline cycles</h2>
-            <p className="mt-1 text-xs" style={{ color: 'var(--ink-soft)' }}>Newest first. Partial and failed cycles remain visible instead of being reported as successful.</p>
+            <div className="admin-page-eyebrow">Telemetry</div>
+            <h2>Recent pipeline cycles</h2>
+            <p>Newest first. Partial and failed cycles remain visible rather than being reported as successful.</p>
           </div>
         </div>
         {cyclesResult.error ? (
-          <p className="mt-4 text-sm" style={{ color: 'var(--restricted)' }}>Pipeline telemetry could not be loaded.</p>
+          <p className="p-5 text-sm" style={{ color: 'var(--restricted)' }}>Pipeline telemetry could not be loaded.</p>
         ) : recentCycles.length === 0 ? (
-          <p className="mt-4 text-sm" style={{ color: 'var(--ink-soft)' }}>No pipeline cycles have been recorded yet.</p>
+          <p className="p-5 text-sm" style={{ color: 'var(--ink-soft)' }}>No pipeline cycles have been recorded yet. Run the pipeline from Sources to establish the first production baseline.</p>
         ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
+          <div className="admin-cycle-table-wrap">
+            <table className="admin-cycle-table">
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--line)' }}>
-                  <th className="pb-2 pr-4">Started</th>
-                  <th className="pb-2 pr-4">Trigger</th>
-                  <th className="pb-2 pr-4">Status</th>
-                  <th className="pb-2 pr-4">Sources</th>
-                  <th className="pb-2 pr-4">Records</th>
-                  <th className="pb-2 pr-4">Review tasks</th>
-                  <th className="pb-2">Sheet</th>
+                <tr>
+                  <th>Started</th>
+                  <th>Trigger</th>
+                  <th>Status</th>
+                  <th>Sources</th>
+                  <th>Records</th>
+                  <th>Review tasks</th>
+                  <th>Sheet</th>
                 </tr>
               </thead>
               <tbody>
                 {recentCycles.map((cycle) => {
-                  const tone = cycle.status === 'completed' ? 'good' : cycle.status === 'failed' ? 'bad' : 'watch';
+                  const tone: HealthTone = cycle.status === 'completed' ? 'good' : cycle.status === 'failed' ? 'bad' : 'watch';
                   return (
-                    <tr key={cycle.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                      <td className="py-3 pr-4 whitespace-nowrap">{when(cycle.started_at)}</td>
-                      <td className="py-3 pr-4">{cycle.trigger_kind}</td>
-                      <td className="py-3 pr-4">
+                    <tr key={cycle.id}>
+                      <td className="whitespace-nowrap">{when(cycle.started_at)}</td>
+                      <td>{cycle.trigger_kind}</td>
+                      <td>
                         <span className="rounded-full px-2 py-1 text-xs font-semibold" style={healthStyle(tone)}>{cycle.status}</span>
                         {errorCount(cycle.errors_json) > 0 ? <span className="ml-2 text-xs" style={{ color: 'var(--restricted)' }}>{errorCount(cycle.errors_json)} errors</span> : null}
                       </td>
-                      <td className="py-3 pr-4">{cycle.completed_count ?? 0} ok · {cycle.partial_count ?? 0} partial · {cycle.failed_count ?? 0} failed</td>
-                      <td className="py-3 pr-4">{cycle.records_seen ?? 0}</td>
-                      <td className="py-3 pr-4">{cycle.review_tasks_created ?? 0}</td>
-                      <td className="py-3">{sheetStatus(cycle.sheet_sync_json)}</td>
+                      <td>{cycle.completed_count ?? 0} ok · {cycle.partial_count ?? 0} partial · {cycle.failed_count ?? 0} failed</td>
+                      <td>{cycle.records_seen ?? 0}</td>
+                      <td>{cycle.review_tasks_created ?? 0}</td>
+                      <td>{sheetStatus(cycle.sheet_sync_json)}</td>
                     </tr>
                   );
                 })}
@@ -248,44 +267,44 @@ export default async function AdminHome() {
         )}
       </section>
 
-      <div className="flex flex-wrap gap-3 text-sm">
-        <Link href="/admin/import" className="rounded-md px-4 py-2 font-medium text-white" style={{ background: 'var(--ink)' }}>
-          Sync spreadsheet
-        </Link>
-        <Link href="/admin/add" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
-          Add a posting
-        </Link>
-        <Link href="/admin/review" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
-          Open review queue
-        </Link>
-        <Link href="/admin/manage" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
-          Correct published records
-        </Link>
-        <Link href="/admin/duplicates" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
-          Scan for duplicates
-        </Link>
-        <Link href="/admin/integrations" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
-          Integration status
-        </Link>
-        <a href="/api/export?format=csv" className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
-          Export approved (CSV)
-        </a>
-        <form method="post" action="/api/auth/logout">
-          <button className="rounded-md bg-white px-4 py-2" style={{ border: '1px solid var(--line)' }}>
-            Sign out
-          </button>
-        </form>
-      </div>
-      <section className="rounded-xl bg-white p-5" style={{ border: '1px solid var(--line)' }}>
-        <h2 className="font-semibold">Spreadsheet to website</h2>
-        <ol className="mt-3 grid gap-3 text-sm md:grid-cols-3">
-          <li><strong>1. Sync</strong><br /><span style={{ color: 'var(--ink-soft)' }}>Copy Sheet rows into the private database archive.</span></li>
-          <li><strong>2. Review</strong><br /><span style={{ color: 'var(--ink-soft)' }}>Open each private draft and approve it as a signed-in officer.</span></li>
-          <li><strong>3. Publish</strong><br /><span style={{ color: 'var(--ink-soft)' }}>Approved records appear on the public site immediately.</span></li>
+      <section>
+        <div className="admin-page-head" style={{ paddingTop: 0 }}>
+          <div className="admin-page-head-copy">
+            <div className="admin-page-eyebrow">Workspace</div>
+            <h2 className="text-2xl">Common actions</h2>
+            <p className="admin-page-deck">The everyday officer tools, ordered around review and source stewardship rather than implementation details.</p>
+          </div>
+        </div>
+        <nav className="admin-action-grid mt-4" aria-label="Officer actions">
+          {quickActions.map((action) => (
+            <Link key={action.href} href={action.href} className="admin-action-card">
+              <strong>{action.title}</strong>
+              <span>{action.note}</span>
+            </Link>
+          ))}
+          <form method="post" action="/api/auth/logout">
+            <button className="admin-signout-button" type="submit">
+              <strong>Sign out</strong>
+              <span>End this officer session</span>
+            </button>
+          </form>
+        </nav>
+      </section>
+
+      <section className="admin-health-panel">
+        <div className="admin-panel-head">
+          <div>
+            <div className="admin-page-eyebrow">Publication path</div>
+            <h2>Spreadsheet to website</h2>
+            <p>The Sheet is an officer workspace. Publication authority stays inside the signed-in review flow.</p>
+          </div>
+        </div>
+        <ol className="admin-process">
+          <li><strong>01 · Sync</strong><span>Copy Sheet rows into the private database archive.</span></li>
+          <li><strong>02 · Review</strong><span>Open each private draft and approve it as a signed-in officer.</span></li>
+          <li><strong>03 · Publish</strong><span>Approved records appear on the public site immediately.</span></li>
         </ol>
-        <p className="mt-4 text-xs" style={{ color: 'var(--ink-soft)' }}>
-          Sheet cells labeled Publish Decision or Public Safe are review notes only. They never publish by themselves.
-        </p>
+        <p className="admin-health-footnote">Sheet cells labeled Publish Decision or Public Safe are review notes only. They never publish by themselves.</p>
       </section>
     </div>
   );

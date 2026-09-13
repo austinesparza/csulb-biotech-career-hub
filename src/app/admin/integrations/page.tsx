@@ -11,11 +11,16 @@ function when(value: string | null | undefined): string {
 function StatusCard({
   title, state, detail, footnote,
 }: { title: string; state: 'Ready' | 'Waiting' | 'Attention'; detail: string; footnote?: string }) {
-  const color = state === 'Ready' ? '#166534' : state === 'Attention' ? '#991b1b' : '#92400e';
+  const statusClass = state === 'Ready'
+    ? 'admin-status-badge admin-status-good'
+    : state === 'Attention'
+      ? 'admin-status-badge admin-status-bad'
+      : 'admin-status-badge admin-status-watch';
+
   return <article className="rounded-xl bg-white p-5" style={{ border: '1px solid var(--line)' }}>
     <div className="flex items-start justify-between gap-3">
-      <h2 className="font-semibold">{title}</h2>
-      <span className="rounded-full px-2 py-1 text-xs font-semibold" style={{ color, background: `${color}12` }}>{state}</span>
+      <h2 className="text-xl font-semibold">{title}</h2>
+      <span className={statusClass}>{state}</span>
     </div>
     <p className="mt-3 text-sm">{detail}</p>
     {footnote ? <p className="mt-2 text-xs" style={{ color: 'var(--ink-soft)' }}>{footnote}</p> : null}
@@ -67,15 +72,20 @@ export default async function IntegrationsPage() {
   const sourceQueriesFailed = Boolean(sourceCount.error || enabledSourceCount.error);
   const configuredSources = sourceCount.count ?? 0;
   const enabledSources = enabledSourceCount.count ?? 0;
+  const activeOfficers = officerCount.count ?? 0;
+  const publicOpportunities = publicCount.count ?? 0;
 
-  return <div className="space-y-7">
-    <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Integration status</h1>
-      <p className="mt-2 max-w-3xl text-sm" style={{ color: 'var(--ink-soft)' }}>
-        This page reports the last durable handoff at each boundary. A green public count does not mean
-        unreviewed data was published. Publication still requires an officer decision.
-      </p>
-    </div>
+  return <div className="admin-page-flow">
+    <header className="admin-page-head">
+      <div className="admin-page-head-copy">
+        <div className="admin-page-eyebrow">Infrastructure</div>
+        <h1 className="admin-page-title">Integration status</h1>
+        <p className="admin-page-deck">
+          Inspect the last durable handoff at each system boundary. A healthy public count never means unreviewed data was published; publication still requires an officer decision.
+        </p>
+      </div>
+      <span className="admin-status-badge admin-status-good">{publicOpportunities} public records</span>
+    </header>
 
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       <StatusCard
@@ -98,9 +108,9 @@ export default async function IntegrationsPage() {
       />
       <StatusCard
         title="Officer continuity"
-        state={officerCount.error || (officerCount.count ?? 0) < 2 ? 'Attention' : 'Ready'}
-        detail={officerCount.error ? 'Active officer count is unavailable.' : `${officerCount.count ?? 0} active officer account${officerCount.count === 1 ? '' : 's'}.`}
-        footnote={(officerCount.count ?? 0) < 2 ? 'Add and test a second named officer before relying on this system during officer turnover.' : 'At least two named officers can maintain the review workflow.'}
+        state={officerCount.error || activeOfficers < 2 ? 'Attention' : 'Ready'}
+        detail={officerCount.error ? 'Active officer count is unavailable.' : `${activeOfficers} active officer account${activeOfficers === 1 ? '' : 's'}.`}
+        footnote={activeOfficers < 2 ? 'Add and test a second named officer before relying on this system during officer turnover.' : 'At least two named officers can maintain the review workflow.'}
       />
       <StatusCard
         title="Approved sources → raw archive"
@@ -125,11 +135,12 @@ export default async function IntegrationsPage() {
       <StatusCard
         title="Officer approval → public view"
         state={publicCount.error ? 'Attention' : 'Ready'}
-        detail={publicCount.error ? `Public view unavailable: ${publicCount.error.message}` : `${publicCount.count ?? 0} approved opportunities are currently public.`}
+        detail={publicCount.error ? `Public view unavailable: ${publicCount.error.message}` : `${publicOpportunities} approved opportunities are currently public.`}
         footnote="The website reads public_opportunities directly. No export, Git commit, or redeploy is needed after approval."
       />
       <article className="rounded-xl p-5" style={{ border: '1px solid var(--line)', background: 'var(--brand-soft)' }}>
-        <h2 className="font-semibold">Operator actions</h2>
+        <div className="admin-page-eyebrow">Operator actions</div>
+        <h2 className="text-xl font-semibold">Move through the workflow</h2>
         <div className="mt-4 flex flex-wrap gap-2 text-sm">
           <Link className="primary-button" href="/admin/import">Sync intake</Link>
           <Link className="secondary-button" href="/admin/sources">Manage sources</Link>

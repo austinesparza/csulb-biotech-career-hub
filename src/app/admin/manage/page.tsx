@@ -118,13 +118,19 @@ export default async function ManageOpportunitiesPage() {
     revisions: revisionsByOpportunity.get(row.id) ?? [],
   }));
 
-  return <div className="space-y-6">
-    <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Correct published records</h1>
-      <p className="mt-2 max-w-2xl text-sm" style={{ color: 'var(--ink-soft)' }}>
-        Fix a public field, remove a record immediately, or restore an earlier version. Every action requires a reason and keeps a permanent officer audit trail.
-      </p>
-    </div>
+  const liveCount = rows.filter((row) => row.live).length;
+
+  return <div className="admin-page-flow">
+    <header className="admin-page-head">
+      <div className="admin-page-head-copy">
+        <div className="admin-page-eyebrow">Publication stewardship</div>
+        <h1 className="admin-page-title">Published records</h1>
+        <p className="admin-page-deck">
+          Correct a public field, remove a record immediately, or restore an earlier version. Every action requires a reason and keeps a permanent officer audit trail.
+        </p>
+      </div>
+      <span className="admin-status-badge admin-status-good">{liveCount} live records</span>
+    </header>
     <OpportunityManager rows={rows} />
   </div>;
 }

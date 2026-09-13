@@ -19,54 +19,49 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const linkSent = params.sent === '1';
 
   return (
-    <div className="mx-auto max-w-sm space-y-4">
-      <h1 className="text-xl font-bold">Officer sign-in</h1>
-      <p className="text-sm text-gray-600">
-        Enter your existing officer email. We will send a secure, one-time sign-in link.
+    <section className="officer-login-card">
+      <div className="officer-login-kicker">Private officer access</div>
+      <h1 className="officer-login-title">Officer sign-in</h1>
+      <p className="officer-login-deck">
+        Use your existing officer account to review opportunities, operate ingestion, and manage approved records.
       </p>
 
       {linkSent ? (
-        <div className="space-y-3">
+        <div className="mt-6 space-y-4">
           <p role="status" className="rounded border border-green-700 bg-green-50 px-3 py-2 text-sm text-green-900">
-            If that email belongs to an officer account, a sign-in link is on its way.
-            Use only the newest email.
+            If that email belongs to an officer account, a sign-in link is on its way. Use only the newest email.
           </p>
-          <Link className="block text-center text-sm underline" href="/admin/login">
+          <Link className="block text-sm underline" href="/admin/login">
             Send a link to a different email
           </Link>
         </div>
       ) : (
-        <form method="post" action="/api/auth/email-otp/request" className="space-y-3">
+        <form method="post" action="/api/auth/email-otp/request" className="mt-6 space-y-3">
           <label className="block text-sm font-medium" htmlFor="email">Officer email</label>
-          <input id="email" name="email" type="email" autoComplete="username" required
-            placeholder="Email" className="w-full rounded border px-3 py-2" />
-          <button className="w-full rounded bg-gray-900 px-4 py-2 text-white">
-            Email me a sign-in link
-          </button>
+          <input id="email" name="email" type="email" autoComplete="username" required placeholder="name@csulb.edu" />
+          <button className="officer-login-primary" type="submit">Email me a sign-in link</button>
         </form>
       )}
 
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {error ? <p role="alert" className="mt-4 text-sm" style={{ color: 'var(--restricted)' }}>{error}</p> : null}
 
-      <details className="rounded border px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium">Use password instead</summary>
-        <form method="post" action="/api/auth/login" className="mt-3 space-y-3">
-          <input name="email" type="email" autoComplete="username" required placeholder="Email"
-            className="w-full rounded border px-3 py-2" />
-          <input name="password" type="password" autoComplete="current-password" required placeholder="Password"
-            className="w-full rounded border px-3 py-2" />
-          <button className="w-full rounded border border-gray-900 px-4 py-2">
-            Sign in with password
-          </button>
-          <p className="text-sm">
-            <Link className="underline" href="/auth/forgot-password">Forgot your password?</Link>
-          </p>
-        </form>
+      <details className="officer-login-advanced mt-5">
+        <summary>Use password instead</summary>
+        <div>
+          <form method="post" action="/api/auth/login" className="space-y-3">
+            <input name="email" type="email" autoComplete="username" required placeholder="Officer email" />
+            <input name="password" type="password" autoComplete="current-password" required placeholder="Password" />
+            <button className="officer-login-secondary" type="submit">Sign in with password</button>
+            <p className="text-sm">
+              <Link className="underline" href="/auth/forgot-password">Forgot your password?</Link>
+            </p>
+          </form>
+        </div>
       </details>
-      <p className="text-xs text-gray-500">
-        Accounts are created by the webmaster in the Supabase dashboard and added to the
-        officers allowlist. There is no self-signup.
+
+      <p className="officer-login-note mt-5">
+        Officer access is allowlisted. There is no public self-signup, and private review data is never exposed on the public Career Hub.
       </p>
-    </div>
+    </section>
   );
 }
