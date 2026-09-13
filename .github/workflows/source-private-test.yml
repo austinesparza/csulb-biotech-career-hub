@@ -13,6 +13,8 @@ on:
     paths:
       - '.github/workflows/source-private-test.yml'
       - 'scripts/run-private-source-test.ts'
+      - 'src/lib/pipeline/classify.ts'
+      - 'src/lib/ingestion/persistence/opportunity-bridge.ts'
 
 permissions:
   contents: read
