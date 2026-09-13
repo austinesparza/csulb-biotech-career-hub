@@ -2,19 +2,20 @@
 // service client (after requireOfficer); the client list handles the
 // guardrailed approve flow.
 import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
-import type { ReviewTask, UserSubmission } from '@/lib/types';
+import type { DiscoveryLead, DiscoveryLeadObservationRow, ReviewTask, UserSubmission } from '@/lib/types';
 import { readSheetReviewIntent } from '@/lib/sheet-review';
 import { ReviewList, type ReviewRow } from './review-list';
 import { SubmissionList } from './submission-list';
 import { TaskList } from './task-list';
+import { DiscoveryLeadList, type DiscoveryLeadRow } from './discovery-lead-list';
 
 export const dynamic = 'force-dynamic';
 
-type ReviewTab = 'opportunities' | 'submissions' | 'tasks';
+type ReviewTab = 'opportunities' | 'leads' | 'submissions' | 'tasks';
 
 function TabNav({ selected }: { selected: ReviewTab }) {
   const tabs: Array<[ReviewTab, string]> = [
-    ['opportunities', 'Opportunities'], ['submissions', 'Submissions'], ['tasks', 'Tasks'],
+    ['opportunities', 'Opportunities'], ['leads', 'Discovery leads'], ['submissions', 'Submissions'], ['tasks', 'Tasks'],
   ];
   return <nav className="flex flex-wrap gap-2" aria-label="Review queues">{tabs.map(([key, label]) => (
     <a key={key} className={selected === key ? 'primary-button' : 'secondary-button'} href={key === 'opportunities' ? '/admin/review' : `/admin/review?tab=${key}`}>{label}</a>
@@ -25,7 +26,47 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   await requireOfficer();
   const db = createServiceClient();
   const requested = (await searchParams).tab;
-  const selected: ReviewTab = requested === 'submissions' || requested === 'tasks' ? requested : 'opportunities';
+  const selected: ReviewTab = requested === 'leads' || requested === 'submissions' || requested === 'tasks' ? requested : 'opportunities';
+
+  if (selected === 'leads') {
+    const { data, error } = await db.from('discovery_leads')
+      .select('id, route, original_url, normalized_url, canonical_employer_url, resolution, archive_reason, lane, latest_title, latest_snippet, employer_hint, original_reachable, officer_status, first_seen_at, last_seen_at, occurrence_count')
+      .in('officer_status', ['new', 'in_review'])
+      .order('last_seen_at', { ascending: false })
+      .limit(100);
+    const leads = (data ?? []) as DiscoveryLead[];
+    const ids = leads.map((lead) => lead.id);
+    const latestObservationByLead = new Map<string, DiscoveryLeadObservationRow>();
+    if (ids.length > 0) {
+      const observationResult = await db.from('discovery_lead_observations')
+        .select('lead_id, run_id, query, retrieved_at, raw_metadata')
+        .in('lead_id', ids)
+        .order('retrieved_at', { ascending: false })
+        .limit(500);
+      if (observationResult.error) {
+        return <div className="space-y-6">
+          <h1 className="text-2xl font-semibold tracking-tight">Officer review</h1>
+          <TabNav selected={selected} />
+          <p role="alert">Could not load discovery evidence: {observationResult.error.message}</p>
+        </div>;
+      }
+      for (const observation of (observationResult.data ?? []) as DiscoveryLeadObservationRow[]) {
+        if (!latestObservationByLead.has(observation.lead_id)) {
+          latestObservationByLead.set(observation.lead_id, observation);
+        }
+      }
+    }
+    const rows: DiscoveryLeadRow[] = leads.map((lead) => ({
+      ...lead,
+      latest_observation: latestObservationByLead.get(lead.id) ?? null,
+    }));
+    return <div className="space-y-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Officer review</h1>
+      <TabNav selected={selected} />
+      <p className="max-w-3xl text-sm">Search results stay private here. Review their provenance and follow employer-controlled sources before creating any opportunity draft. Nothing on this tab can publish to the public board.</p>
+      {error ? <p role="alert">Could not load discovery leads: {error.message}</p> : <DiscoveryLeadList rows={rows} />}
+    </div>;
+  }
 
   if (selected === 'submissions') {
     const { data, error } = await db.from('user_submissions').select('*')

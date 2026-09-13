@@ -9,7 +9,7 @@ import { governedStarterSource, GREENHOUSE_POLICY_LINKS } from "@/lib/ingestion/
 import { assertSafePublicUrl } from "@/lib/pipeline/safe-fetch";
 import { syncReviewQueueToGoogleSheet } from "@/lib/review-sheet-sync";
 import { createBraveSearchProvider } from "@/lib/pipeline/brave-search";
-import { runEmployerDiscoveryBatch } from "@/lib/pipeline/discovery-runner";
+import { runEmployerDiscoveryBatch, runLaneDiscoveryBatch } from "@/lib/pipeline/discovery-runner";
 import { createServiceClient, requireOfficer } from "@/lib/supabase/server";
 
 const KINDS = new Set(["greenhouse", "ashby", "lever", "usajobs", "static_html", "schema_org"]);
@@ -304,15 +304,24 @@ export async function runEmployerDiscoveryNow(): Promise<void> {
     apiKey,
     storageRightsConfirmed: process.env.BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED === "true",
   });
-  const report = await runEmployerDiscoveryBatch({
-    db: createServiceClient(),
+  const db = createServiceClient();
+  const employerReport = await runEmployerDiscoveryBatch({
+    db,
     provider,
-    employerLimit: 1,
+    employerLimit: 5,
     resultsPerQuery: 5,
-    runId: `officer:${new Date().toISOString()}`,
+    runId: `officer-employers:${new Date().toISOString()}`,
   });
-  if (report.errors.length > 0) {
-    throw new Error(`Discovery archived ${report.archived} results with ${report.errors.length} errors. Check runtime logs.`);
+  const laneReport = await runLaneDiscoveryBatch({
+    db,
+    provider,
+    laneLimit: 1,
+    resultsPerQuery: 5,
+    runId: `officer-lanes:${new Date().toISOString()}`,
+  });
+  const errors = employerReport.errors.length + laneReport.errors.length;
+  if (errors > 0) {
+    throw new Error(`Discovery archived ${employerReport.archived + laneReport.archived} results with ${errors} errors. Check runtime logs.`);
   }
   refresh();
   revalidatePath("/admin/review");
