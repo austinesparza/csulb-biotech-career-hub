@@ -17,6 +17,7 @@ import {
 } from './opportunity-bridge';
 import {
   createSupabaseIngestionRepository,
+  type IngestionDbClient,
   type SourcePostingRow,
 } from './repository';
 
@@ -238,7 +239,10 @@ export async function reconcileReviewableSourcePostings(params: {
     posting.canonical_url,
     linksByPosting.get(posting.id) ?? [],
   ));
-  const repository = createSupabaseIngestionRepository({ db: params.db, storage: params.db.storage });
+  const repository = createSupabaseIngestionRepository({
+    db: params.db as unknown as IngestionDbClient,
+    storage: params.db.storage,
+  });
   let repaired = 0;
   let skippedMissingVersion = 0;
   const errors: string[] = [];
