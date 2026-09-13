@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* Versioned entry path forces deployment caches to rebuild the complete
+   responsive stylesheet whenever the layout contract changes. */
+
 :root {
   --paper: #fdfbf6;
   --paper-2: #f5f1e6;
