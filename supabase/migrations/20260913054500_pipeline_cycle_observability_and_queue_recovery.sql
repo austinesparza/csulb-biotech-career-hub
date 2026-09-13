@@ -70,8 +70,9 @@ begin
 end
 $$;
 
--- Convert abandoned running work into an explicit failed attempt and a retry.
--- A worker is considered abandoned only after a conservative lease timeout.
+-- Convert abandoned running work into an explicit failed attempt. Requeue only
+-- when the source is still enabled and resumed. Paused or disabled sources are
+-- finalized instead of being left permanently in a running state.
 create or replace function public.recover_stale_source_fetch_runs(
   p_stale_after_minutes integer default 20,
   p_limit integer default 20
@@ -91,14 +92,18 @@ begin
 
   return query
   with stale as (
-    select sfr.id, sfr.job_source_id, sfr.attempt_no, sfr.worker_id
+    select
+      sfr.id,
+      sfr.job_source_id,
+      sfr.attempt_no,
+      sfr.worker_id,
+      js.enabled,
+      js.automatic_scheduling_paused_at
     from public.source_fetch_runs sfr
     join public.job_sources js on js.id = sfr.job_source_id
     where sfr.status = 'running'
       and sfr.started_at is not null
       and sfr.started_at <= now() - make_interval(mins => p_stale_after_minutes)
-      and js.enabled
-      and js.automatic_scheduling_paused_at is null
     order by sfr.started_at asc, sfr.created_at asc
     for update of sfr skip locked
     limit p_limit
@@ -107,14 +112,24 @@ begin
        set status = 'failed',
            finished_at = now(),
            error_class = 'timeout',
-           error_message = 'Worker lease expired before the run was finalized; a retry was queued.',
+           error_message = case
+             when stale.enabled and stale.automatic_scheduling_paused_at is null
+               then 'Worker lease expired before the run was finalized; a retry was queued.'
+             else 'Worker lease expired before the run was finalized; source is disabled or paused, so no retry was queued.'
+           end,
            log_json = coalesce(sfr.log_json, '{}'::jsonb) || jsonb_build_object(
              'staleWorkerRecoveredAt', now(),
-             'staleWorkerId', stale.worker_id
+             'staleWorkerId', stale.worker_id,
+             'retryEligible', stale.enabled and stale.automatic_scheduling_paused_at is null
            )
       from stale
      where sfr.id = stale.id
-    returning sfr.id, sfr.job_source_id, sfr.attempt_no
+    returning
+      sfr.id,
+      sfr.job_source_id,
+      sfr.attempt_no,
+      stale.enabled,
+      stale.automatic_scheduling_paused_at
   ), retries as (
     insert into public.source_fetch_runs(
       job_source_id,
@@ -132,6 +147,8 @@ begin
       failed.attempt_no + 1,
       jsonb_build_object('retryOfStaleRun', failed.id)
     from failed
+    where failed.enabled
+      and failed.automatic_scheduling_paused_at is null
     on conflict do nothing
     returning id
   )
@@ -145,4 +162,4 @@ grant execute on function public.recover_stale_source_fetch_runs(integer, intege
 comment on table public.pipeline_cycles is
   'One observable end-to-end private ingestion cycle. Cycle records never authorize publication.';
 comment on function public.recover_stale_source_fetch_runs(integer, integer) is
-  'Fails abandoned running source fetches and queues at most one retry per source. Service-role only.';
+  'Finalizes abandoned running source fetches and queues at most one retry per enabled, resumed source. Service-role only.';
