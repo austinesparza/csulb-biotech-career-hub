@@ -14,33 +14,43 @@ export default async function ImportPage() {
     .from('source_records')
     .select('id, name')
     .order('name');
+  const sheetReady = googleSheetsConfigured();
 
   return (
-    <div className="max-w-xl space-y-8">
-      <div>
-      <h1 className="text-2xl font-bold">Spreadsheet intake</h1>
-      <p className="text-sm text-gray-600">
-        Use this two-way review handoff for scheduled or on-command discoveries and officer decisions. Rows are stored raw, normalized,
-        deduplicated, and queued as <code>needs_review</code>. Nothing goes public here.
-        Records already approved and public are never changed by an import. Differences
-        are flagged for review instead.
-      </p>
-      </div>
-      <aside className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950" style={{ border: '1px solid #f3d38a' }}>
-        <p className="font-semibold">Sheet approval is not website approval</p>
-        <p className="mt-1">
-          Machine discoveries are pushed into system-owned Sheet columns without overwriting officer notes or decisions. Publish Decision and Public Safe cells are preserved as officer workspace notes,
-          but they cannot publish a record. Pull decisions, then approve the private draft in
-          the signed-in review queue. The public site updates as soon as that approval succeeds.
+    <div className="admin-page-flow max-w-4xl">
+      <header className="admin-page-head">
+        <div className="admin-page-head-copy">
+          <div className="admin-page-eyebrow">Officer handoff</div>
+          <h1 className="admin-page-title">Spreadsheet intake</h1>
+          <p className="admin-page-deck">
+            Move scheduled or on-command discoveries into the private review workflow. Rows are stored raw, normalized, deduplicated, and queued for review. Approved public records are never silently overwritten.
+          </p>
+        </div>
+        <span className={sheetReady ? 'admin-status-badge admin-status-good' : 'admin-status-badge admin-status-watch'}>
+          {sheetReady ? 'Google Sheet connected' : 'CSV fallback available'}
+        </span>
+      </header>
+
+      <aside className="rounded-xl p-5 text-sm" style={{ border: '1px solid #e5c875', background: 'var(--gold-tint)', color: '#67480f' }}>
+        <div className="admin-page-eyebrow" style={{ color: '#7e5310' }}>Publication boundary</div>
+        <h2 className="text-xl font-semibold" style={{ color: '#4f3c16' }}>Sheet approval is not website approval</h2>
+        <p className="mt-2 max-w-3xl">
+          Machine discoveries are pushed into system-owned Sheet columns without overwriting officer notes or decisions. Publish Decision and Public Safe cells remain workspace notes only. Pull decisions, then approve the private draft in the signed-in review queue.
         </p>
       </aside>
-      {googleSheetsConfigured() ? <SheetSync /> : <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
-        Direct Google Sheet sync is not configured. CSV upload remains available below.
+
+      {sheetReady ? <SheetSync /> : <div className="rounded-xl bg-white p-5 text-sm" style={{ border: '1px solid var(--line-strong)' }}>
+        <strong>Direct Google Sheet sync is not configured.</strong>
+        <p className="mt-1" style={{ color: 'var(--ink-soft)' }}>CSV upload remains available below, so intake can continue without Google.</p>
       </div>}
-      <section className="space-y-3">
-        <h2 className="font-semibold">Upload CSV</h2>
-        <p className="text-sm text-gray-600">Use this fallback for Excel files exported as CSV or when Google is unavailable.</p>
-      <ImportForm sources={sources ?? []} />
+
+      <section className="rounded-xl bg-white p-5" style={{ border: '1px solid var(--line)' }}>
+        <div className="admin-page-eyebrow">Fallback intake</div>
+        <h2 className="text-xl font-semibold">Upload CSV</h2>
+        <p className="mt-2 text-sm" style={{ color: 'var(--ink-soft)' }}>Use an Excel export or this path when Google is unavailable.</p>
+        <div className="mt-4">
+          <ImportForm sources={sources ?? []} />
+        </div>
       </section>
     </div>
   );
