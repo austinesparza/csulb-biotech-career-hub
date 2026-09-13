@@ -1,0 +1,105 @@
+/* Cross-site editorial cleanup that sits after the core and mobile layers. */
+
+/* The old three-item trust checklist repeated product claims as oversized UI.
+   Keep the useful live board counts and let the surrounding science imagery and
+   opportunity content carry the page narrative. */
+.trust-ledger-inner {
+  grid-template-columns: 1fr;
+}
+
+.trust-metrics {
+  grid-column: 1;
+  width: min(100%, 760px);
+  min-height: 108px;
+  margin-inline: auto;
+  padding-left: 0;
+}
+
+.trust-metrics > div {
+  padding: 18px clamp(14px, 3vw, 28px);
+}
+
+/* Keep the hero headline editorial rather than allowing the browser's global
+   break-word rule to split "Opportunities" on wider layouts. On desktop the
+   three authored phrase units become deliberate display lines, while the copy
+   column gets enough width to hold the longest line comfortably. */
+.editorial-hero h1 {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+@media (min-width: 821px) {
+  .editorial-hero {
+    grid-template-columns: minmax(0, 1.04fr) minmax(410px, .96fr);
+    gap: clamp(42px, 4.5vw, 68px);
+  }
+
+  .editorial-hero h1 {
+    max-width: none;
+    font-size: clamp(4.1rem, 5.5vw, 5.8rem);
+    line-height: .9;
+    letter-spacing: -.045em;
+  }
+
+  .editorial-hero h1 .hero-line {
+    display: block;
+    white-space: nowrap;
+  }
+}
+
+/* Image workshop, round 1.
+   Candidate 4 becomes the intimate hero detail: Tom Deerinck / NCMIR epithelial
+   cells, with yellow-green Golgi, magenta actin and cyan DNA. Candidate 2 becomes
+   the global footer statement: Kevin Eliceiri's zebrafish vasculature image.
+   Both source images come from the NIGMS Image & Video Gallery and are credited
+   on /image-credits. The existing local images remain in the DOM as a fallback
+   while this visual direction is being evaluated in preview. */
+.science-image {
+  background-color: #090b0d;
+  background-image: url("https://nigms.nih.gov/sites/nigms/files/image-and-video-gallery/Epithelial%20cells%20stitched%20together.jpg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.science-image > img {
+  opacity: 0;
+}
+
+.footer-banner-media {
+  background-color: #02070a;
+  background-image: url("https://www.nigms.nih.gov/sites/nigms/files/image-and-video-gallery/stiched_fish_blending_high_contrast.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.footer-banner-image {
+  opacity: 0;
+}
+
+.footer-banner-media::after {
+  background: linear-gradient(90deg, rgba(1, 9, 12, .7) 0%, rgba(1, 9, 12, .32) 48%, rgba(1, 9, 12, .08) 100%);
+}
+
+@media (max-width: 700px) {
+  .trust-metrics {
+    min-height: 86px;
+  }
+
+  .footer-banner-media,
+  .footer-banner-image {
+    min-height: 290px;
+    height: 290px;
+  }
+
+  .footer-banner-media {
+    background-size: 118% auto;
+    background-position: 58% 46%;
+  }
+
+  .footer-banner-media::after {
+    background: linear-gradient(180deg, rgba(1, 9, 12, .08) 12%, rgba(1, 9, 12, .72) 100%);
+  }
+}

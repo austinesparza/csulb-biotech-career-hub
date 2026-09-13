@@ -72,13 +72,13 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div className="science-collage" aria-label="An original microscopy-inspired visualization representing discovery in biotechnology">
+        <div className="science-collage" aria-label="Fluorescence microscopy of cultured epithelial cells used as an editorial image for discovery in biotechnology">
           <div className="science-orbit science-orbit-one" aria-hidden="true" />
           <div className="science-orbit science-orbit-two" aria-hidden="true" />
           <div className="science-image">
             <Image
               src="/brand/hero-cells.webp"
-              alt="Fluorescence microscopy of the cytoskeleton in cultured fibroblasts"
+              alt="Cultured epithelial cells with Golgi in yellow-green, actin in magenta, and DNA in cyan"
               fill
               preload
               sizes="(max-width: 760px) 82vw, 42vw"
@@ -87,11 +87,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="trust-ledger" aria-label="How the hub helps">
+      <section className="trust-ledger" aria-label="Current opportunity board counts">
         <div className="site-wrap trust-ledger-inner">
-          <article><h2>Current employer page linked</h2></article>
-          <article><h2>Degree rules in plain language</h2></article>
-          <article><h2>Missing details shown as unknown</h2></article>
           <div className="trust-metrics" aria-label="Current board counts">
             <div><strong>{studentRoles.length}</strong><span>open roles</span></div>
             <div><strong>{companies}</strong><span>employers</span></div>

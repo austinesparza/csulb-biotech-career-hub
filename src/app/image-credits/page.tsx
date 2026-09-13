@@ -1,4 +1,6 @@
 const MICROSCOPY = [
+  ['Epithelial cells', 'Tom Deerinck, National Center for Microscopy and Imaging Research (NCMIR)', 'https://nigms.nih.gov/image-gallery/3647', 'CC BY-NC-SA 3.0', 'https://creativecommons.org/licenses/by-nc-sa/3.0/'],
+  ['Zebrafish embryo showing vasculature', 'Kevin Eliceiri, University of Wisconsin-Madison', 'https://www.nigms.nih.gov/image-gallery/6661', 'CC BY-NC-SA 3.0', 'https://creativecommons.org/licenses/by-nc-sa/3.0/'],
   ['Fibroblast cytoskeleton', 'Heiti Paves', 'https://commons.wikimedia.org/wiki/File:Fibroblastid.jpg', 'CC BY-SA 3.0', 'https://creativecommons.org/licenses/by-sa/3.0/'],
   ['Basal-like breast cancer histology', 'Mikael Häggström, M.D.', 'https://commons.wikimedia.org/wiki/File:Histopathology_of_basal-like_breast_cancer.jpg', 'CC0', 'https://creativecommons.org/publicdomain/zero/1.0/'],
   ['DNA in oral cancer cells', 'Korinna', 'https://commons.wikimedia.org/wiki/File:Fluorescence_microscopy_of_the_DNA_of_the_oral_cancer_cells.jpg', 'CC BY 4.0', 'https://creativecommons.org/licenses/by/4.0/'],

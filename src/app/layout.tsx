@@ -7,6 +7,7 @@ import { PrivacyAnalytics } from '@/components/privacy-analytics';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
 import './career-hub-v2.css';
 import './mobile-polish.css';
+import './site-refinement.css';
 
 export const metadata: Metadata = {
   title: 'CSULB Biotech Career Hub',
@@ -64,7 +65,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Image
                 className="footer-banner-image"
                 src="/brand/footer-purkinje-cells.webp"
-                alt="Confocal microscopy of cerebellar Purkinje cells"
+                alt="Zebrafish embryo with cell bodies in blue and blood vessels in green"
                 width={1200}
                 height={569}
                 sizes="(max-width: 720px) 100vw, 72vw"
