@@ -79,7 +79,7 @@ export interface Classification {
   personalGates: string[];
   /** True when no lane had a core term: every lane rests on corroborating supporting hits. Review more carefully. */
   corroboratedOnly?: boolean;
-  suggestedBucket: "graduate" | "special" | "adjacent" | "excluded" | "needs_review";
+  suggestedBucket: "undergraduate" | "graduate" | "special" | "adjacent" | "excluded" | "needs_review";
   score: number;
 }
 
@@ -158,7 +158,7 @@ export function classify(posting: Posting, tax: Taxonomy): Classification {
     }
   }
 
-  // --- 6. Graduate stage. First match wins; taxonomy order is most-specific-first. ---
+  // --- 6. Student stage. First match wins; taxonomy order is most-specific-first. ---
   let stage = { id: "unclear", label: "Not stated", eligible: true };
   for (const s of tax.graduate_stage) {
     if (s.patterns.some((p) => new RegExp(p, "i").test(all))) {
@@ -191,21 +191,21 @@ export function classify(posting: Posting, tax: Taxonomy): Classification {
     return { ...empty, ...analysis, dropReason: "scientific lanes matched but no internship or research-function signal" };
   }
 
-  // Audience and opportunity scope are orthogonal. A co-op remains an adjacent
-  // opportunity type for ranking/labeling, but an explicitly MS-eligible co-op
-  // is still a graduate-audience opportunity. Do not overwrite the stage-derived
-  // audience bucket merely because the opportunity type is a co-op.
+  // Audience and opportunity scope are orthogonal. Undergraduate and graduate
+  // student programs are both core Career Hub audiences. Structural restrictions
+  // override degree stage because an institution-only posting is not broadly
+  // accessible even when its degree requirement is otherwise in scope.
   let suggestedBucket: Classification["suggestedBucket"] = stage.id === "unclear" ? "needs_review" : "graduate";
-  if (stage.id === "undergrad_only") suggestedBucket = "excluded";
+  if (structuralGates.length > 0) suggestedBucket = structuralGates[0].bucket as Classification["suggestedBucket"];
+  else if (stage.id === "undergrad_only") suggestedBucket = "undergraduate";
   else if (stage.id === "phd_only") suggestedBucket = "special";
-  else if (structuralGates.length > 0) suggestedBucket = structuralGates[0].bucket as Classification["suggestedBucket"];
   else if (stage.id === "postbac_stage") suggestedBucket = "adjacent";
 
   const score = Number((
     lanes.reduce((sum, l) => sum + l.score, 0) +
     functions.length * 2 +
     (opportunityType?.scope === "in_scope" ? 4 : 0) +
-    (stage.eligible ? 3 : -6) +
+    (stage.eligible || stage.id === "undergrad_only" ? 3 : -6) +
     Math.min(methods.dry_lab.length + methods.wet_lab.length, 6) * 0.5
   ).toFixed(2));
 

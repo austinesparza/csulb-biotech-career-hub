@@ -111,7 +111,7 @@ const undergradOnly = P(
   `Cancer biology and genomics research. Applicants must be currently enrolled in an undergraduate program; rising juniors and seniors preferred.`,
 );
 const c7 = classify(undergradOnly, tax);
-ok("Undergrad-only -> excluded, not silently dropped", c7.suggestedBucket === "excluded" && c7.keep, `${c7.suggestedBucket}/${c7.keep}`);
+ok("Undergrad-only -> undergraduate, not silently dropped", c7.suggestedBucket === "undergraduate" && c7.keep, `${c7.suggestedBucket}/${c7.keep}`);
 
 console.log("\n=== Should DROP: the false positives that break naive scorers ===\n");
 

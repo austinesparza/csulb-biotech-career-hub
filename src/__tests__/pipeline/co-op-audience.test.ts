@@ -35,7 +35,7 @@ describe('co-op audience classification', () => {
     expect(result.suggestedBucket).toBe('special');
   });
 
-  it('does not promote an undergraduate-only co-op to the graduate audience', () => {
+  it('routes an undergraduate-only co-op to the undergraduate audience', () => {
     const result = classify({
       title: 'Cell Biology Co-Op',
       employer: 'Flagship Labs',
@@ -47,6 +47,21 @@ describe('co-op audience classification', () => {
     expect(result.keep).toBe(true);
     expect(result.opportunityType?.scope).toBe('adjacent');
     expect(result.stage.id).toBe('undergrad_only');
-    expect(result.suggestedBucket).toBe('excluded');
+    expect(result.suggestedBucket).toBe('undergraduate');
+  });
+
+  it('keeps an institution-exclusive undergraduate co-op in the special audience', () => {
+    const result = classify({
+      title: 'Cell Biology Co-Op',
+      employer: 'Flagship Labs',
+      body: "This position is open exclusively to current Northeastern University Co-Op students. Currently pursuing a bachelor's degree only in Biology. Perform mammalian cell culture and protein assays.",
+      location: 'Cambridge, MA',
+      url: 'https://example.org/jobs/4',
+    }, taxonomy);
+
+    expect(result.keep).toBe(true);
+    expect(result.stage.id).toBe('undergrad_only');
+    expect(result.structuralGates).toContainEqual({ id: 'institution_affiliation', bucket: 'special' });
+    expect(result.suggestedBucket).toBe('special');
   });
 });

@@ -41,7 +41,7 @@ export interface InboxDeps {
   publish(id: string, officerId: string): Promise<{ publishedId: string }>;
 }
 
-const BUCKETS = ["graduate", "special", "adjacent", "excluded"];
+const BUCKETS = ["undergraduate", "graduate", "mixed", "special", "adjacent", "excluded"];
 
 export async function listInbox(ctx: Ctx, query: { state?: string; limit?: number; offset?: number }, deps: InboxDeps): Promise<ApiResult> {
   if (!ctx.isActiveOfficer) return forbidden();
