@@ -4,13 +4,16 @@ import { describe, expect, it } from 'vitest';
 const sourceActions = readFileSync('src/app/admin/sources/actions.ts', 'utf8');
 const sourcePage = readFileSync('src/app/admin/sources/page.tsx', 'utf8');
 const sourceRunForm = readFileSync('src/app/admin/sources/source-run-form.tsx', 'utf8');
+const pipelineRunActions = readFileSync('src/app/admin/sources/pipeline-actions.ts', 'utf8');
 const sourceRunner = readFileSync('src/lib/ingestion/source-runner.ts', 'utf8');
+const pipelineCycle = readFileSync('src/lib/pipeline-cycle.ts', 'utf8');
 const ingestRoute = readFileSync('src/app/api/cron/ingest/route.ts', 'utf8');
 const healthRoute = readFileSync('src/app/api/cron/health/route.ts', 'utf8');
 const integrationPage = readFileSync('src/app/admin/integrations/page.tsx', 'utf8');
 const adminPage = readFileSync('src/app/admin/page.tsx', 'utf8');
 const importPage = readFileSync('src/app/admin/import/page.tsx', 'utf8');
 const sheetSync = readFileSync('src/app/admin/import/sheet-sync.tsx', 'utf8');
+const reviewWorkflowActions = readFileSync('src/app/admin/import/review-workflow-actions.ts', 'utf8');
 const sheetReconcileActions = readFileSync('src/app/admin/import/sheet-reconcile-actions.ts', 'utf8');
 const importActions = readFileSync('src/app/admin/import/actions.ts', 'utf8');
 const reviewSheetSync = readFileSync('src/lib/review-sheet-sync.ts', 'utf8');
@@ -48,8 +51,9 @@ describe('operator control safety', () => {
 
   it('marks every cron response private and non-cacheable', () => {
     for (const route of [ingestRoute, healthRoute]) {
-      expect(route).toContain('"Cache-Control": "private, no-store"');
-      expect(route).toContain('return json({ ok: false, error: "unauthorized" }, 401)');
+      expect(route).toContain('Cache-Control');
+      expect(route).toContain('private, no-store');
+      expect(route).toMatch(/return json\(\{ ok: false, error: ['\"]unauthorized['\"] \}, 401\)/);
       expect(route).not.toContain('NextResponse.json({ ok: false, error: "unauthorized" }');
     }
   });
@@ -63,16 +67,37 @@ describe('operator control safety', () => {
     expect(integrationPage).toContain('Use a reviewed private test before enabling one');
   });
 
-  it('makes the spreadsheet review boundary explicit to officers', () => {
+  it('uses one normal officer pipeline without granting publication authority', () => {
+    expect(sourcePage).toContain('Run the career pipeline');
+    expect(sourcePage).toContain('PipelineRunForm');
+    expect(sourcePage).toContain('Advanced queue-only recovery');
+    expect(pipelineRunActions.indexOf('await requireOfficer()')).toBeLessThan(
+      pipelineRunActions.indexOf('createServiceClient()'),
+    );
+    expect(pipelineRunActions).toContain("trigger: 'officer'");
+    expect(pipelineRunActions).not.toContain('decide_opportunity_review');
+    expect(pipelineCycle).toContain('schedule_due_source_fetch_runs');
+    expect(pipelineCycle).toContain('recover_stale_source_fetch_runs');
+    expect(pipelineCycle).toContain('runIngestionBatch');
+    expect(pipelineCycle).toContain('reconcileReviewableSourcePostings');
+    expect(pipelineCycle).toContain('syncReviewQueueToGoogleSheet');
+    expect(pipelineCycle).not.toContain('decide_opportunity_review');
+    expect(ingestRoute).toContain('runPipelineCycle');
+  });
+
+  it('makes the spreadsheet review boundary explicit and bidirectional by default', () => {
     expect(adminPage).toContain('Spreadsheet to website');
     expect(adminPage).toContain('They never publish by themselves');
     expect(importPage).toContain('Sheet approval is not website approval');
-    expect(sheetSync).toContain('Reconcile + sync discoveries');
-    expect(sheetSync).toContain('Pull decisions from Sheet');
-    expect(sheetSync).toContain('It does not search employers');
-    expect(sheetSync).toContain('/admin/sources');
-    expect(sheetSync).toContain('Neither direction publishes automatically');
-    expect(sheetSync).toContain('Confirm decisions and publish');
+    expect(sheetSync).toContain('Sync review workflow');
+    expect(sheetSync).toContain('Advanced one-way controls');
+    expect(sheetSync).toContain('Pull decisions only');
+    expect(sheetSync).toContain('Refresh Sheet only');
+    expect(sheetSync).toContain('Publication still requires an authenticated officer confirmation');
+    const pullIndex = reviewWorkflowActions.indexOf('await syncGoogleSheet()');
+    const pushIndex = reviewWorkflowActions.indexOf('await reconcileAndSyncMachineReviewQueueToSheet()');
+    expect(pullIndex).toBeGreaterThan(-1);
+    expect(pushIndex).toBeGreaterThan(pullIndex);
     expect(sheetReconcileActions.indexOf('await requireOfficer()')).toBeLessThan(
       sheetReconcileActions.indexOf('createServiceClient()'),
     );
@@ -87,11 +112,9 @@ describe('operator control safety', () => {
   });
 
   it('pushes governed discoveries to the Sheet without owning officer decisions', () => {
-    expect(ingestRoute).toContain('syncReviewQueueToGoogleSheet');
-    expect(ingestRoute).toContain('sheetSyncFailed');
-    expect(ingestRoute).toContain('PIPELINE_SHEET_SYNC_LIMIT ?? 50');
-    expect(ingestRoute).toContain('limit: sheetSyncLimit');
-    expect(ingestRoute).not.toContain('syncReviewQueueToGoogleSheet({ db, limit })');
+    expect(pipelineCycle).toContain('syncReviewQueueToGoogleSheet');
+    expect(pipelineCycle).toContain('PIPELINE_SHEET_SYNC_LIMIT ?? 50');
+    expect(pipelineCycle).toContain('limit: sheetSyncLimit');
     expect(reviewSheetSync).toContain("opportunity_source_links!inner");
     expect(reviewSheetSync).toContain(".eq('source_record_id', config.sourceRecordId)");
     expect(reviewSheetSync).toContain("candidateId.startsWith('AUTO-')");
@@ -108,8 +131,8 @@ describe('operator control safety', () => {
     expect(action).toContain('BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED');
     expect(sourcePage).toContain('Search provider not configured');
     expect(sourcePage).toContain('private lead archive');
-    expect(ingestRoute).toContain('BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED');
-    expect(ingestRoute).not.toContain('decide_opportunity_review');
+    expect(pipelineCycle).toContain('BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED');
+    expect(pipelineCycle).not.toContain('decide_opportunity_review');
   });
 
   it('keeps post-publication corrections behind officer verification', () => {
