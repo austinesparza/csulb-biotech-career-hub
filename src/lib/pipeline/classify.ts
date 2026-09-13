@@ -172,6 +172,10 @@ export function classify(posting: Posting, tax: Taxonomy): Classification {
   const structuralGates: Classification["structuralGates"] = tax.structural_gates
     .filter((gate) => gate.patterns.some((pattern) => new RegExp(pattern, "i").test(all)))
     .map((gate) => ({ id: gate.id, bucket: gate.bucket }));
+  const institutionExclusive = /\b(?:open|available) exclusively to current .{0,80}(?:university|college).{0,40}students?\b/i.test(all);
+  if (institutionExclusive && !structuralGates.some((gate) => gate.id === "institution_affiliation")) {
+    structuralGates.push({ id: "institution_affiliation", bucket: "special" });
+  }
   const personalGates = Object.entries(tax.personal_gates)
     .filter(([, patterns]) => patterns.some((p) => new RegExp(p, "i").test(all)))
     .map(([name]) => name);
@@ -187,11 +191,15 @@ export function classify(posting: Posting, tax: Taxonomy): Classification {
     return { ...empty, ...analysis, dropReason: "scientific lanes matched but no internship or research-function signal" };
   }
 
+  // Audience and opportunity scope are orthogonal. A co-op remains an adjacent
+  // opportunity type for ranking/labeling, but an explicitly MS-eligible co-op
+  // is still a graduate-audience opportunity. Do not overwrite the stage-derived
+  // audience bucket merely because the opportunity type is a co-op.
   let suggestedBucket: Classification["suggestedBucket"] = stage.id === "unclear" ? "needs_review" : "graduate";
   if (stage.id === "undergrad_only") suggestedBucket = "excluded";
   else if (stage.id === "phd_only") suggestedBucket = "special";
   else if (structuralGates.length > 0) suggestedBucket = structuralGates[0].bucket as Classification["suggestedBucket"];
-  else if (opportunityType?.scope === "adjacent" || stage.id === "postbac_stage") suggestedBucket = "adjacent";
+  else if (stage.id === "postbac_stage") suggestedBucket = "adjacent";
 
   const score = Number((
     lanes.reduce((sum, l) => sum + l.score, 0) +

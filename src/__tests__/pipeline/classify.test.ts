@@ -93,7 +93,8 @@ const sanofi = P(
 );
 const c5 = classify(sanofi, tax);
 ok("Sanofi kept", c5.keep, c5.dropReason);
-ok("Sanofi bucket = adjacent (co-op beats 'internship')", c5.suggestedBucket === "adjacent", c5.suggestedBucket);
+ok("Sanofi bucket = graduate when master's eligibility is explicit", c5.suggestedBucket === "graduate", c5.suggestedBucket);
+ok("Sanofi opportunity type remains adjacent because it is a co-op", c5.opportunityType?.scope === "adjacent", c5.opportunityType?.scope);
 ok("Sanofi reason names the term", /co-?op/.test(c5.opportunityType?.reason ?? ""), c5.opportunityType?.reason);
 
 const allen = P(
