@@ -155,7 +155,7 @@ export default async function AdminHome() {
     { href: '/admin/sources', title: 'Run pipeline', note: 'Ingestion, recovery, reconciliation, Sheet sync' },
     { href: '/admin/import', title: 'Sync spreadsheet', note: 'Bring officer workspace rows into the archive' },
     { href: '/admin/add', title: 'Add a posting', note: 'Create a private draft from an official source' },
-    { href: '/admin/manage', title: 'Published records', note: 'Correct or archive approved opportunities' },
+    { href: '/admin/manage', title: 'Correct published records', note: 'Correct or archive approved opportunities' },
     { href: '/admin/duplicates', title: 'Duplicate scan', note: 'Review likely record collisions' },
     { href: '/admin/integrations', title: 'Integration status', note: 'Inspect external service configuration' },
     { href: '/api/export?format=csv', title: 'Export approved', note: 'Download the current public dataset as CSV' },
