@@ -6,6 +6,7 @@ import {
 import { createPublicServerClient } from '@/lib/supabase/public-server';
 import type { PublicOpportunity } from '@/lib/types';
 import { Board } from './board';
+import './board-refinements.css';
 
 export const dynamic = 'force-dynamic';
 
