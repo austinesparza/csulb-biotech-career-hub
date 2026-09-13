@@ -94,7 +94,7 @@ export default async function SourcesPage() {
       </div>
       <PipelineRunForm />
       <p className="mt-3 text-xs" style={{ color: "var(--ink-soft)" }}>
-        The automated cycle also runs on schedule. Neither scheduled nor manual pipeline execution can approve or publish an opportunity.
+        The automated cycle also runs on schedule. Neither the scheduled nor manual pipeline can approve or publish an opportunity.
       </p>
     </section>
 
