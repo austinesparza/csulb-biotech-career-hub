@@ -15,7 +15,7 @@ export function buildContentSecurityPolicy(input: {
     `default-src 'self'`,
     `script-src ${scripts.join(' ')}`,
     `style-src 'self' 'unsafe-inline'`,
-    `img-src 'self' data:`,
+    `img-src 'self' data: https://nigms.nih.gov https://www.nigms.nih.gov`,
     `font-src 'self'`,
     `connect-src 'self'${supabaseOrigin ? ` ${supabaseOrigin}` : ''}`,
     `form-action 'self'`, `frame-ancestors 'none'`, `base-uri 'none'`, `object-src 'none'`,
