@@ -17,9 +17,9 @@ describe('source worker queue recovery', () => {
   });
 
   it('uses the same ingest → reconcile → Sheet order as normal automation', () => {
-    const runIndex = pipelineCycle.indexOf('runIngestionBatch');
-    const reconcileIndex = pipelineCycle.indexOf('reconcileReviewableSourcePostings');
-    const sheetIndex = pipelineCycle.indexOf('syncReviewQueueToGoogleSheet');
+    const runIndex = pipelineCycle.indexOf('reports.push(...await runIngestionBatch');
+    const reconcileIndex = pipelineCycle.indexOf('...await reconcileReviewableSourcePostings');
+    const sheetIndex = pipelineCycle.indexOf('...await syncReviewQueueToGoogleSheet');
     expect(runIndex).toBeGreaterThan(-1);
     expect(reconcileIndex).toBeGreaterThan(runIndex);
     expect(sheetIndex).toBeGreaterThan(reconcileIndex);
