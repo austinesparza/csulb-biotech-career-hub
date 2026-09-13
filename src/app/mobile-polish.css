@@ -1,0 +1,59 @@
+/* Final narrow-screen finishing layer.
+   This file is imported after career-hub-v2.css so phone-specific typography and
+   spacing remain stable even as the broader editorial stylesheet evolves. */
+
+@media (max-width: 700px) {
+  .editorial-hero h1 {
+    max-width: 100%;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .editorial-hero {
+    gap: 14px;
+    padding-block: 32px 26px;
+  }
+
+  .editorial-hero h1 {
+    max-width: none;
+    font-size: clamp(2.8rem, 13.8vw, 4rem);
+    line-height: .92;
+    letter-spacing: -.042em;
+  }
+
+  .editorial-hero h1 .hero-line {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .editorial-intro {
+    max-width: 35ch;
+    margin-top: 18px;
+    font-size: 1.04rem;
+    line-height: 1.48;
+  }
+
+  .editorial-actions {
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .editorial-actions .primary-button,
+  .editorial-actions .secondary-button {
+    min-height: 50px;
+    padding-inline: 18px;
+    font-size: .98rem;
+  }
+
+  .science-collage {
+    min-height: 300px;
+  }
+
+  .science-image {
+    top: 8px;
+    width: min(82vw, 328px);
+  }
+}
