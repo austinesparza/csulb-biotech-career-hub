@@ -1,0 +1,167 @@
+name: Apply student audience ingestion v4
+
+on:
+  push:
+    branches:
+      - fix/student-audience-ingestion-v4
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: fix/student-audience-ingestion-v4
+          fetch-depth: 0
+
+      - name: Apply focused student-audience patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_exact(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"Expected block not found in {path}:\n{old}")
+              if text.count(old) != 1:
+                  raise SystemExit(f"Expected exactly one match in {path}, found {text.count(old)}")
+              p.write_text(text.replace(old, new))
+
+          # 1. Canonical classifier: undergraduate is a first-class audience bucket.
+          replace_exact(
+              'src/lib/pipeline/classify.ts',
+              '  suggestedBucket: "graduate" | "special" | "adjacent" | "excluded" | "needs_review";\n',
+              '  suggestedBucket: "undergraduate" | "graduate" | "special" | "adjacent" | "excluded" | "needs_review";\n',
+          )
+          replace_exact(
+              'src/lib/pipeline/classify.ts',
+              '  // --- 6. Graduate stage. First match wins; taxonomy order is most-specific-first. ---\n',
+              '  // --- 6. Student stage. First match wins; taxonomy order is most-specific-first. ---\n',
+          )
+          replace_exact(
+              'src/lib/pipeline/classify.ts',
+              '''  // Audience and opportunity scope are orthogonal. A co-op remains an adjacent\n  // opportunity type for ranking/labeling, but an explicitly MS-eligible co-op\n  // is still a graduate-audience opportunity. Do not overwrite the stage-derived\n  // audience bucket merely because the opportunity type is a co-op.\n  let suggestedBucket: Classification["suggestedBucket"] = stage.id === "unclear" ? "needs_review" : "graduate";\n  if (stage.id === "undergrad_only") suggestedBucket = "excluded";\n  else if (stage.id === "phd_only") suggestedBucket = "special";\n  else if (structuralGates.length > 0) suggestedBucket = structuralGates[0].bucket as Classification["suggestedBucket"];\n  else if (stage.id === "postbac_stage") suggestedBucket = "adjacent";\n''',
+              '''  // Audience and opportunity scope are orthogonal. Undergraduate and graduate\n  // student programs are both core Career Hub audiences. Structural restrictions\n  // override degree stage because an institution-only posting is not broadly\n  // accessible even when its degree requirement is otherwise in scope.\n  let suggestedBucket: Classification["suggestedBucket"] = stage.id === "unclear" ? "needs_review" : "graduate";\n  if (structuralGates.length > 0) suggestedBucket = structuralGates[0].bucket as Classification["suggestedBucket"];\n  else if (stage.id === "undergrad_only") suggestedBucket = "undergraduate";\n  else if (stage.id === "phd_only") suggestedBucket = "special";\n  else if (stage.id === "postbac_stage") suggestedBucket = "adjacent";\n''',
+          )
+          replace_exact(
+              'src/lib/pipeline/classify.ts',
+              '    (stage.eligible ? 3 : -6) +\n',
+              '    (stage.eligible || stage.id === "undergrad_only" ? 3 : -6) +\n',
+          )
+
+          # 2. Relevance scorer v4: undergraduate scientific student programs cross review threshold.
+          replace_exact(
+              'src/lib/ingestion/score.ts',
+              ' * Deterministic relevance scoring for automated ingestion candidates (version 2).\n',
+              ' * Deterministic relevance scoring for automated ingestion candidates.\n',
+          )
+          replace_exact(
+              'src/lib/ingestion/score.ts',
+              ' * - Score version is a positive integer, currently 2.\n',
+              ' * - Score version is a positive integer, currently 4.\n',
+          )
+          replace_exact(
+              'src/lib/ingestion/score.ts',
+              ''' *   v3: only scientifically relevant student programs may cross the review\n *       threshold. Full-time roles remain archived but do not flood officers.\n''',
+              ''' *   v3: only scientifically relevant student programs may cross the review\n *       threshold. Full-time roles remain archived but do not flood officers.\n *   v4: undergraduate and graduate scientific student programs are both core\n *       review audiences. Doctoral-only, post-baccalaureate, and non-program\n *       roles remain archived unless policy expands them later.\n''',
+          )
+          replace_exact(
+              'src/lib/ingestion/score.ts',
+              'export const SCORE_VERSION = 3;\n',
+              'export const SCORE_VERSION = 4;\n',
+          )
+          replace_exact(
+              'src/lib/ingestion/score.ts',
+              "const W_MSC_EXPLICIT = 20;             // explicitly accessible to master's students\n",
+              "const W_MSC_EXPLICIT = 20;             // explicitly accessible to master's students\nconst W_UNDERGRAD_EXPLICIT = 20;       // explicitly accessible to undergraduate students\n",
+          )
+          replace_exact(
+              'src/lib/ingestion/score.ts',
+              'const W_NON_MSC_STAGE = -45;           // undergrad-only, doctoral-only, or postbac-only\n',
+              'const W_NON_CORE_STUDENT_STAGE = -45;  // doctoral-only or postbac-only\n',
+          )
+          replace_exact(
+              'src/lib/ingestion/score.ts',
+              '  // --- 1. Canonical graduate-science relevance ---\n',
+              '  // --- 1. Canonical student-science relevance ---\n',
+          )
+          replace_exact(
+              'src/lib/ingestion/score.ts',
+              '''  // --- 2. Graduate stage and structural access ---\n  const hasDescription = !!input.descriptionText?.trim();\n  let eligibilityMissing = input.uncertaintyFlags.includes('eligibility_missing');\n  let eligibilityAmbiguous = input.uncertaintyFlags.includes('eligibility_ambiguous');\n\n  if (!hasDescription && !eligibilityMissing) {\n    eligibilityMissing = true;\n  }\n\n  const stageId = taxonomyClassification.stage.id;\n  const isExplicitMsc = ['msc_year1', 'msc_year2', 'msc_any'].includes(stageId);\n  const isNonMscStage = ['undergrad_only', 'phd_only', 'postbac_stage'].includes(stageId);\n\n  if (isExplicitMsc) {\n    addPositive('graduate_access', W_MSC_EXPLICIT, taxonomyClassification.stage.label);\n  } else if (isNonMscStage) {\n    addNegative('graduate_access', W_NON_MSC_STAGE, taxonomyClassification.stage.label);\n  } else if (hasDescription) {\n    eligibilityAmbiguous = true;\n  }\n''',
+              '''  // --- 2. Student stage and structural access ---\n  const hasDescription = !!input.descriptionText?.trim();\n  let eligibilityMissing = input.uncertaintyFlags.includes('eligibility_missing');\n  let eligibilityAmbiguous = input.uncertaintyFlags.includes('eligibility_ambiguous');\n\n  if (!hasDescription && !eligibilityMissing) {\n    eligibilityMissing = true;\n  }\n\n  const stageId = taxonomyClassification.stage.id;\n  const isExplicitMsc = ['msc_year1', 'msc_year2', 'msc_any'].includes(stageId);\n  const isExplicitUndergraduate = stageId === 'undergrad_only';\n  const isOutsideCoreStudentStage = ['phd_only', 'postbac_stage'].includes(stageId);\n\n  if (isExplicitMsc) {\n    addPositive('graduate_access', W_MSC_EXPLICIT, taxonomyClassification.stage.label);\n  } else if (isExplicitUndergraduate) {\n    addPositive('undergraduate_access', W_UNDERGRAD_EXPLICIT, taxonomyClassification.stage.label);\n  } else if (isOutsideCoreStudentStage) {\n    addNegative('student_stage', W_NON_CORE_STUDENT_STAGE, taxonomyClassification.stage.label);\n  } else if (hasDescription) {\n    eligibilityAmbiguous = true;\n  }\n''',
+          )
+          replace_exact(
+              'src/lib/ingestion/score.ts',
+              '''  // Non-MSc stages and non-program roles must stay below the candidate-creation\n  // threshold of 35. Every record is still archived with its full evidence.\n  const total = isNonMscStage || !isReviewScopedProgram\n    ? Math.max(0, Math.min(25, raw))\n    : Math.max(0, Math.min(100, raw));\n''',
+              '''  // Doctoral-only, post-baccalaureate, and non-program roles stay below the\n  // candidate-creation threshold of 35. Undergraduate and graduate scientific\n  // student programs are both allowed into officer review.\n  const total = isOutsideCoreStudentStage || !isReviewScopedProgram\n    ? Math.max(0, Math.min(25, raw))\n    : Math.max(0, Math.min(100, raw));\n''',
+          )
+
+          # 3. Persistence bridge: map undergraduates explicitly and do not mark them ineligible.
+          replace_exact(
+              'src/lib/ingestion/persistence/opportunity-bridge.ts',
+              "  if (suggestedBucket === 'graduate') {\n    return hasUndergraduateEvidence ? 'mixed' : 'graduate';\n  }\n  if (suggestedBucket === 'adjacent') return 'adjacent';\n",
+              "  if (suggestedBucket === 'graduate') {\n    return hasUndergraduateEvidence ? 'mixed' : 'graduate';\n  }\n  if (suggestedBucket === 'undergraduate') return 'undergraduate';\n  if (suggestedBucket === 'adjacent') return 'adjacent';\n",
+          )
+          replace_exact(
+              'src/lib/ingestion/persistence/opportunity-bridge.ts',
+              '''  const eligibilityStatus = !classification.stage.eligible\n    ? 'not_eligible' as const\n    : eligibilityEvidence && graduateStage !== 'unknown'\n      ? 'possible' as const\n      : 'unknown' as const;\n''',
+              '''  const isCoreStudentAudienceStage = classification.stage.eligible\n    || classification.stage.id === 'undergrad_only';\n  const eligibilityStatus = !isCoreStudentAudienceStage\n    ? 'not_eligible' as const\n    : eligibilityEvidence && graduateStage !== 'unknown'\n      ? 'possible' as const\n      : 'unknown' as const;\n''',
+          )
+
+          # 4. Legacy pipeline review priority and explicit officer buckets.
+          replace_exact(
+              'src/lib/pipeline/worker.ts',
+              '''export function reviewPriority(c: Classification, deadlineText: string | null): number {\n  let priority = 100;\n  if (c.suggestedBucket === "graduate") priority -= 30;\n  if (c.suggestedBucket === "excluded") priority += 40;\n  if (c.opportunityType?.scope === "in_scope") priority -= 10;\n  const soon = /(\\b(oct|nov|dec)\\b|priority deadline|closes|apply by|rolling)/i.test(deadlineText ?? "");\n  if (soon) priority -= 20;\n  if (!c.stage.eligible) priority += 25;\n  return Math.max(1, priority);\n}\n''',
+              '''export function reviewPriority(c: Classification, deadlineText: string | null): number {\n  let priority = 100;\n  if (c.suggestedBucket === "graduate") priority -= 30;\n  if (c.suggestedBucket === "undergraduate") priority -= 25;\n  if (c.suggestedBucket === "excluded") priority += 40;\n  if (c.opportunityType?.scope === "in_scope") priority -= 10;\n  const soon = /(\\b(oct|nov|dec)\\b|priority deadline|closes|apply by|rolling)/i.test(deadlineText ?? "");\n  if (soon) priority -= 20;\n  if (!c.stage.eligible && c.stage.id !== "undergrad_only") priority += 25;\n  return Math.max(1, priority);\n}\n''',
+          )
+          replace_exact(
+              'src/lib/pipeline/inbox.ts',
+              'const BUCKETS = ["graduate", "special", "adjacent", "excluded"];\n',
+              'const BUCKETS = ["undergraduate", "graduate", "mixed", "special", "adjacent", "excluded"];\n',
+          )
+
+          # 5. Regression expectations for the new student-audience contract.
+          replace_exact(
+              'src/__tests__/pipeline/classify.test.ts',
+              'ok("Undergrad-only -> excluded, not silently dropped", c7.suggestedBucket === "excluded" && c7.keep, `${c7.suggestedBucket}/${c7.keep}`);\n',
+              'ok("Undergrad-only -> undergraduate, not silently dropped", c7.suggestedBucket === "undergraduate" && c7.keep, `${c7.suggestedBucket}/${c7.keep}`);\n',
+          )
+          replace_exact(
+              'src/__tests__/pipeline/co-op-audience.test.ts',
+              '''  it('does not promote an undergraduate-only co-op to the graduate audience', () => {\n    const result = classify({\n      title: 'Cell Biology Co-Op',\n      employer: 'Flagship Labs',\n      body: "Currently pursuing a bachelor's degree only in Biology or Biochemistry. Perform mammalian cell culture and protein assays.",\n      location: 'Cambridge, MA',\n      url: 'https://example.org/jobs/3',\n    }, taxonomy);\n\n    expect(result.keep).toBe(true);\n    expect(result.opportunityType?.scope).toBe('adjacent');\n    expect(result.stage.id).toBe('undergrad_only');\n    expect(result.suggestedBucket).toBe('excluded');\n  });\n''',
+              '''  it('routes an undergraduate-only co-op to the undergraduate audience', () => {\n    const result = classify({\n      title: 'Cell Biology Co-Op',\n      employer: 'Flagship Labs',\n      body: "Currently pursuing a bachelor's degree only in Biology or Biochemistry. Perform mammalian cell culture and protein assays.",\n      location: 'Cambridge, MA',\n      url: 'https://example.org/jobs/3',\n    }, taxonomy);\n\n    expect(result.keep).toBe(true);\n    expect(result.opportunityType?.scope).toBe('adjacent');\n    expect(result.stage.id).toBe('undergrad_only');\n    expect(result.suggestedBucket).toBe('undergraduate');\n  });\n\n  it('keeps an institution-exclusive undergraduate co-op in the special audience', () => {\n    const result = classify({\n      title: 'Cell Biology Co-Op',\n      employer: 'Flagship Labs',\n      body: "This position is open exclusively to current Northeastern University Co-Op students. Currently pursuing a bachelor's degree only in Biology. Perform mammalian cell culture and protein assays.",\n      location: 'Cambridge, MA',\n      url: 'https://example.org/jobs/4',\n    }, taxonomy);\n\n    expect(result.keep).toBe(true);\n    expect(result.stage.id).toBe('undergrad_only');\n    expect(result.structuralGates).toContainEqual({ id: 'institution_affiliation', bucket: 'special' });\n    expect(result.suggestedBucket).toBe('special');\n  });\n''',
+          )
+          replace_exact(
+              'src/__tests__/ingestion/score.test.ts',
+              '// UNDERGRAD-ONLY ELIGIBILITY — never promoted on the graduate board\n',
+              '// UNDERGRADUATE ELIGIBILITY — first-class Career Hub audience\n',
+          )
+          replace_exact(
+              'src/__tests__/ingestion/score.test.ts',
+              '''  it('college junior phrase is classified as undergrad-only and held below threshold', () => {\n    const input: ScoringInput = {\n      ...undergradBase,\n      descriptionText: 'Open to college juniors and seniors.',\n    };\n    const breakdown = scoreIngestionCandidate(input);\n    expect(breakdown.taxonomyClassification.stage.id).toBe('undergrad_only');\n    expect(breakdown.total).toBeLessThan(35);\n  });\n''',
+              '''  it('college junior scientific internship is classified as undergrad-only and queued for review', () => {\n    const input: ScoringInput = {\n      ...undergradBase,\n      descriptionText: 'Open to college juniors and seniors.',\n    };\n    const breakdown = scoreIngestionCandidate(input);\n    expect(breakdown.taxonomyClassification.stage.id).toBe('undergrad_only');\n    expect(breakdown.total).toBeGreaterThanOrEqual(35);\n    expect(breakdown.positiveReasons.some((r) => r.category === 'undergraduate_access')).toBe(true);\n  });\n''',
+          )
+          replace_exact(
+              'src/__tests__/ingestion/score.test.ts',
+              '''  it('rising senior phrase is classified as undergrad-only and held below threshold', () => {\n    const input: ScoringInput = {\n      ...undergradBase,\n      descriptionText: 'Perfect for a rising senior studying biology.',\n    };\n    const breakdown = scoreIngestionCandidate(input);\n    expect(breakdown.taxonomyClassification.stage.id).toBe('undergrad_only');\n    expect(breakdown.total).toBeLessThan(35);\n  });\n''',
+              '''  it('rising senior scientific internship is classified as undergrad-only and queued for review', () => {\n    const input: ScoringInput = {\n      ...undergradBase,\n      descriptionText: 'Perfect for a rising senior studying biology.',\n    };\n    const breakdown = scoreIngestionCandidate(input);\n    expect(breakdown.taxonomyClassification.stage.id).toBe('undergrad_only');\n    expect(breakdown.total).toBeGreaterThanOrEqual(35);\n    expect(breakdown.positiveReasons.some((r) => r.category === 'undergraduate_access')).toBe(true);\n  });\n''',
+          )
+
+          Path('src/__tests__/ingestion/student-audience-v4.test.ts').write_text('''import { describe, expect, it } from 'vitest';\n\nimport { SCORE_VERSION, scoreIngestionCandidate } from '../../lib/ingestion/score';\nimport type { ScoringInput } from '../../lib/ingestion/score';\n\nconst base: ScoringInput = {\n  employerName: 'Example Biotech',\n  titleRaw: 'Genomics Research Intern',\n  titleNormalized: 'genomics research intern',\n  locationNormalized: 'long beach, ca',\n  department: 'research',\n  departments: ['Research'],\n  classification: 'internship',\n  remoteType: 'onsite',\n  canonicalUrl: 'https://example.org/jobs/1',\n  descriptionText: 'Cancer genomics internship with RNA sequencing and Python analysis.',\n  closesAt: null,\n  uncertaintyFlags: [],\n};\n\ndescribe('student audience relevance scorer v4', () => {\n  it('uses score version 4', () => {\n    expect(SCORE_VERSION).toBe(4);\n  });\n\n  it('queues a scientifically relevant undergraduate-only internship', () => {\n    const result = scoreIngestionCandidate({\n      ...base,\n      descriptionText: "Cancer genomics internship. Applicants must be currently enrolled in an undergraduate program; rising juniors and seniors are welcome. Work includes RNA sequencing and Python analysis.",\n    });\n\n    expect(result.taxonomyClassification.keep).toBe(true);\n    expect(result.taxonomyClassification.stage.id).toBe('undergrad_only');\n    expect(result.taxonomyClassification.suggestedBucket).toBe('undergraduate');\n    expect(result.total).toBeGreaterThanOrEqual(35);\n  });\n\n  it('keeps doctoral-only internships below the review threshold', () => {\n    const result = scoreIngestionCandidate({\n      ...base,\n      descriptionText: 'Cancer genomics internship for PhD students only. Work includes RNA sequencing and Python analysis.',\n    });\n\n    expect(result.taxonomyClassification.stage.id).toBe('phd_only');\n    expect(result.total).toBeLessThan(35);\n  });\n\n  it('keeps post-baccalaureate programs below the core student review threshold', () => {\n    const result = scoreIngestionCandidate({\n      ...base,\n      titleRaw: 'Genomics Post-Baccalaureate Internship',\n      titleNormalized: 'genomics post baccalaureate internship',\n      descriptionText: "Year-long post-baccalaureate genomics program for recent bachelor's graduates. Work includes sequencing and Python analysis.",\n    });\n\n    expect(result.taxonomyClassification.stage.id).toBe('postbac_stage');\n    expect(result.total).toBeLessThan(35);\n  });\n\n  it('does not queue a non-scientific undergraduate student role', () => {\n    const result = scoreIngestionCandidate({\n      ...base,\n      titleRaw: 'Communications Intern',\n      titleNormalized: 'communications intern',\n      department: 'communications',\n      departments: ['Communications'],\n      descriptionText: "Undergraduate students only. Support communications, media relations, and social content.",\n    });\n\n    expect(result.taxonomyClassification.keep).toBe(false);\n    expect(result.total).toBeLessThan(35);\n  });\n});\n''')
+          PY
+
+      - name: Commit focused patch and remove bootstrap workflow
+        shell: bash
+        run: |
+          rm .github/workflows/apply-student-audience-v4.yml
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Treat undergraduate science programs as core review audience"
+          git push origin HEAD:fix/student-audience-ingestion-v4
