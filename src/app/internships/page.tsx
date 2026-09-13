@@ -89,7 +89,12 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
           <div className="notice"><span>◇</span><span>No matching opportunities right now. Try another filter or <a href="/submit">submit a role</a>.</span></div>
         )}
         {opportunities.length > 0 && (
-          <Board opportunities={opportunities} sorted={!!sort} initialAudience={audience} />
+          <Board
+            opportunities={opportunities}
+            sorted={!!sort}
+            initialAudience={audience}
+            referenceTime={new Date().toISOString()}
+          />
         )}
       </section>
     </div>

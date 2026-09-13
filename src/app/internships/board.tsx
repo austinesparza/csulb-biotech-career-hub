@@ -17,11 +17,13 @@ const EMPTY_PREFS: Prefs = { focus: [], paid: false, remote: false, local: false
 const TERMS = ['spring', 'summer', 'fall', 'winter'] as const;
 const LOCAL_HINTS = /long beach|los angeles|orange|irvine|carson|torrance|carlsbad/i;
 
-function daysUntil(iso: string): number {
-  return Math.floor((Date.parse(iso) - Date.now()) / 86_400_000);
+function daysUntil(iso: string, referenceTime: number): number {
+  const referenceDate = new Date(referenceTime).toISOString().slice(0, 10);
+  return Math.round((Date.parse(`${iso}T00:00:00Z`) - Date.parse(`${referenceDate}T00:00:00Z`)) / 86_400_000);
 }
-function isFresh(o: PublicOpportunity): boolean {
-  return Date.now() - Date.parse(o.first_seen_at) < 7 * 86_400_000;
+function isFresh(o: PublicOpportunity, referenceTime: number): boolean {
+  const age = referenceTime - Date.parse(o.first_seen_at);
+  return age >= 0 && age < 7 * 86_400_000;
 }
 function prefsActive(p: Prefs): boolean {
   return p.focus.length > 0 || p.paid || p.remote || p.local || !!p.term;
@@ -87,10 +89,11 @@ function CompanyMark({ name }: { name: string }) {
   );
 }
 
-export function Board({ opportunities, sorted, initialAudience }: {
+export function Board({ opportunities, sorted, initialAudience, referenceTime }: {
   opportunities: PublicOpportunity[];
   sorted: boolean;
   initialAudience?: OpportunityAudienceFilter;
+  referenceTime: string;
 }) {
   const [audience, setAudience] = useState<OpportunityAudienceFilter | undefined>(initialAudience);
   const [prefs, setPrefs] = useState<Prefs>(EMPTY_PREFS);
@@ -121,6 +124,7 @@ export function Board({ opportunities, sorted, initialAudience }: {
   const focuses = useMemo(() => allFocusAreas(visibleOpportunities.map((o) => o.focus_area)), [visibleOpportunities]);
   const active = loaded && prefsActive(prefs);
   const total = (o: PublicOpportunity) => (o.relevance_score ?? 0) + (active ? personalBonus(o, prefs).pts : 0);
+  const referenceTimeMs = Date.parse(referenceTime);
 
   let groups: Array<{ label: string | null; items: PublicOpportunity[] }>;
   if (sorted) {
@@ -128,9 +132,9 @@ export function Board({ opportunities, sorted, initialAudience }: {
   } else {
     const byScore = (a: PublicOpportunity, b: PublicOpportunity) => total(b) - total(a);
     const closing = visibleOpportunities
-      .filter((o) => o.deadline && daysUntil(o.deadline) >= 0 && daysUntil(o.deadline) <= 14)
-      .sort((a, b) => daysUntil(a.deadline!) - daysUntil(b.deadline!));
-    const fresh = visibleOpportunities.filter((o) => !closing.includes(o) && isFresh(o)).sort(byScore);
+      .filter((o) => o.deadline && daysUntil(o.deadline, referenceTimeMs) >= 0 && daysUntil(o.deadline, referenceTimeMs) <= 14)
+      .sort((a, b) => daysUntil(a.deadline!, referenceTimeMs) - daysUntil(b.deadline!, referenceTimeMs));
+    const fresh = visibleOpportunities.filter((o) => !closing.includes(o) && isFresh(o, referenceTimeMs)).sort(byScore);
     const rest = visibleOpportunities.filter((o) => !closing.includes(o) && !fresh.includes(o)).sort(byScore);
     groups = [
       { label: 'Closing soon', items: closing },
@@ -212,6 +216,7 @@ export function Board({ opportunities, sorted, initialAudience }: {
                   key={opportunity.id}
                   opportunity={opportunity}
                   bonus={active ? personalBonus(opportunity, prefs) : { pts: 0, why: [] }}
+                  referenceTime={referenceTimeMs}
                 />
               ))}
             </ol>
@@ -222,12 +227,13 @@ export function Board({ opportunities, sorted, initialAudience }: {
   );
 }
 
-function OpportunityRecord({ opportunity: o, bonus }: {
+function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
   opportunity: PublicOpportunity;
   bonus: { pts: number; why: string[] };
+  referenceTime: number;
 }) {
-  const urgent = !!o.deadline && daysUntil(o.deadline) >= 0 && daysUntil(o.deadline) <= 14;
-  const deadlinePassed = !!o.deadline && daysUntil(o.deadline) < 0;
+  const urgent = !!o.deadline && daysUntil(o.deadline, referenceTime) >= 0 && daysUntil(o.deadline, referenceTime) <= 14;
+  const deadlinePassed = !!o.deadline && daysUntil(o.deadline, referenceTime) < 0;
   const timing = o.deadline
     ? `${deadlinePassed ? 'Deadline passed' : 'Apply by'} ${formatDate(o.deadline + 'T00:00:00')}`
     : (o.deadline_text ?? 'No deadline stated');
@@ -238,7 +244,7 @@ function OpportunityRecord({ opportunity: o, bonus }: {
     <li className="opportunity-record">
       <div className="record-aside">
         <CompanyMark name={o.company_name} />
-        <div className="record-urgency">{deadlinePassed ? 'Deadline passed' : urgent ? 'Closing soon' : (isFresh(o) ? 'New this week' : 'Review details')}</div>
+        <div className="record-urgency">{deadlinePassed ? 'Deadline passed' : urgent ? 'Closing soon' : (isFresh(o, referenceTime) ? 'New this week' : 'Review details')}</div>
       </div>
       <div>
         <div className="record-company">{o.company_name}</div>
@@ -258,7 +264,7 @@ function OpportunityRecord({ opportunity: o, bonus }: {
             ? <a className="primary-button" href={o.posting_url} target="_blank" rel="noopener noreferrer nofollow">Official posting ↗</a>
             : <span className="record-verified">Ask a club officer for the source.</span>}
           {bonus.pts > 0 && <span className="pill pill-teal" title={bonus.why.join(', ')}>Match for you</span>}
-          {isFresh(o) && <span className="pill pill-gold">New</span>}
+          {isFresh(o, referenceTime) && <span className="pill pill-gold">New</span>}
           <span className={!deadlinePassed && o.status === 'open_verified' ? 'pill pill-green' : 'pill pill-gold'}>
             {deadlinePassed ? 'Past deadline' : o.status === 'open_verified' ? 'Reviewed' : 'Check current status'}
           </span>

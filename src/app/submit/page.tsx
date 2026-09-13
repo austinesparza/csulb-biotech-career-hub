@@ -16,10 +16,15 @@ export default function SubmitPage() {
 
     setPending(true);
     setError(null);
-    const result = await submitSuggestion(fd);
-    setPending(false);
-    if (!result.ok) setError(result.error);
-    else setDone(true);
+    try {
+      const result = await submitSuggestion(fd);
+      if (!result.ok) setError(result.error);
+      else setDone(true);
+    } catch {
+      setError('Could not send your submission. Please try again or email the club.');
+    } finally {
+      setPending(false);
+    }
   }
 
   if (done) {
@@ -97,7 +102,7 @@ export default function SubmitPage() {
           style={{ background: 'var(--ink)' }}>
           {pending ? 'Sending…' : 'Send to the officers'}
         </button>
-        {error && <p className="mt-2 text-red-700">{error}</p>}
+        {error && <p className="mt-2 text-red-700" role="alert">{error}</p>}
       </form>
 
       <div className="rounded-xl bg-white p-4 text-sm" style={inputStyle}>

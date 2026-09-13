@@ -20,6 +20,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body>
+        <a className="skip-link" href="#main-content">Skip to main content</a>
         <header className="masthead">
           <div className="site-wrap masthead-inner">
             <Link href="/" className="brand-lockup" aria-label="CSULB Biotech Career Hub home">
@@ -37,9 +38,25 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/about">About</Link>
             </nav>
             <Link href="/submit" className="masthead-action">Submit a role</Link>
+            <details className="mobile-nav">
+              <summary aria-label="Open navigation">
+                <span aria-hidden="true" />
+                <span aria-hidden="true" />
+                <span aria-hidden="true" />
+                <span className="mobile-nav-label">Menu</span>
+              </summary>
+              <nav aria-label="Mobile navigation">
+                <Link href="/internships">Opportunities</Link>
+                <Link href="/calendar">Calendar</Link>
+                <Link href="/eligibility">Prepare</Link>
+                <Link href="/companies">Employers</Link>
+                <Link href="/about">About</Link>
+                <Link href="/submit">Submit a role</Link>
+              </nav>
+            </details>
           </div>
         </header>
-        <main className="site-main">{children}</main>
+        <main className="site-main" id="main-content">{children}</main>
         <footer className="site-footer">
           <div className="footer-banner">
             <div className="footer-banner-media">

@@ -106,7 +106,11 @@ export default async function HomePage() {
           <ol className="featured-list">
             {featured.map((opportunity) => (
               <li key={opportunity.id}>
-                <a href={opportunity.posting_url ?? '/internships'}>
+                <a
+                  href={opportunity.posting_url ?? '/internships'}
+                  target={opportunity.posting_url ? '_blank' : undefined}
+                  rel={opportunity.posting_url ? 'noopener noreferrer nofollow' : undefined}
+                >
                   <FeaturedCompany name={opportunity.company_name} />
                   <span className="featured-role">
                     <strong>{opportunity.title}</strong>
