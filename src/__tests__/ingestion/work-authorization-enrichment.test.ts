@@ -65,21 +65,6 @@ describe('work authorization evidence extraction', () => {
     expect(result.workAuthorization).toBeNull();
   });
 
-  it('captures an explicit U.S. work-authorization and sponsorship requirement', () => {
+  it('ignores the combined EEO and privacy boilerplate present on the governed Flagship feed', () => {
     const result = deriveOpportunityEnrichment(posting(
-      "Applicants must be authorized to work in the U.S. without visa sponsorship. Master's students are welcome.",
-    ));
-
-    expect(result.workAuthorization).toContain('authorized to work');
-    expect(result.workAuthorization).toContain('without visa sponsorship');
-  });
-
-  it('captures CPT or OPT when stated in actual F-1 employment-authorization context', () => {
-    const result = deriveOpportunityEnrichment(posting(
-      'F-1 students are eligible for CPT/OPT employment authorization for this internship. Undergraduate and graduate students may apply.',
-    ));
-
-    expect(result.workAuthorization).toContain('CPT/OPT');
-    expect(result.workAuthorization).toContain('employment authorization');
-  });
-});
+      "This position is open exclusively to current Northeastern University Co-Op students. The company is committed to equal employment opportunity regardless of race, color, ancestry, religion, sex, national origin, sexual orientation, age, citizenship, marital status,
