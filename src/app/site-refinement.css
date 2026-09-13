@@ -1,0 +1,26 @@
+/* Cross-site editorial cleanup that sits after the core and mobile layers. */
+
+/* The old three-item trust checklist repeated product claims as oversized UI.
+   Keep the useful live board counts and let the surrounding science imagery and
+   opportunity content carry the page narrative. */
+.trust-ledger-inner {
+  grid-template-columns: 1fr;
+}
+
+.trust-metrics {
+  grid-column: 1;
+  width: min(100%, 760px);
+  min-height: 108px;
+  margin-inline: auto;
+  padding-left: 0;
+}
+
+.trust-metrics > div {
+  padding: 18px clamp(14px, 3vw, 28px);
+}
+
+@media (max-width: 700px) {
+  .trust-metrics {
+    min-height: 86px;
+  }
+}
