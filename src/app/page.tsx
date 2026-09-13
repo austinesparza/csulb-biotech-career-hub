@@ -72,13 +72,13 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div className="science-collage" aria-label="An original microscopy-inspired visualization representing discovery in biotechnology">
+        <div className="science-collage" aria-label="Fluorescence microscopy of cultured epithelial cells used as an editorial image for discovery in biotechnology">
           <div className="science-orbit science-orbit-one" aria-hidden="true" />
           <div className="science-orbit science-orbit-two" aria-hidden="true" />
           <div className="science-image">
             <Image
               src="/brand/hero-cells.webp"
-              alt="Fluorescence microscopy of the cytoskeleton in cultured fibroblasts"
+              alt="Cultured epithelial cells with Golgi in yellow-green, actin in magenta, and DNA in cyan"
               fill
               preload
               sizes="(max-width: 760px) 82vw, 42vw"
