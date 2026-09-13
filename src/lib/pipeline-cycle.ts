@@ -50,6 +50,7 @@ export interface PipelineCycleReport {
   recovered: number;
   claimed: number;
   completed: number;
+  partial: number;
   failed: number;
   recordsSeen: number;
   recordsArchived: number;
@@ -117,6 +118,7 @@ async function finishCycleRecord(params: {
     recovered_count: report.recovered,
     claimed_count: report.claimed,
     completed_count: report.completed,
+    partial_count: report.partial,
     failed_count: report.failed,
     records_seen: report.recordsSeen,
     records_archived: report.recordsArchived,
@@ -300,9 +302,10 @@ export async function runPipelineCycle(options: RunPipelineCycleOptions): Promis
     }
   }
 
+  const completed = reports.filter((report) => report.status === 'completed').length;
+  const partial = reports.filter((report) => report.status === 'partial').length;
   const failed = reports.filter((report) => report.status === 'failed').length;
-  const completed = reports.length - failed;
-  const stageFailures = errors.length + failed;
+  const stageFailures = errors.length + failed + partial;
   const status: PipelineCycleStatus = stageFailures === 0
     ? 'completed'
     : reports.length > 0 || scheduled > 0 || recovered > 0 || reconciliation.status === 'completed'
@@ -318,6 +321,7 @@ export async function runPipelineCycle(options: RunPipelineCycleOptions): Promis
     recovered,
     claimed: reports.length,
     completed,
+    partial,
     failed,
     recordsSeen: reports.reduce((sum, item) => sum + item.recordsSeen, 0),
     recordsArchived: reports.reduce((sum, item) => sum + item.recordsArchived, 0),
