@@ -192,6 +192,20 @@ begin
 
   perform _assert('rpc_rejects_stale_observation_regression', v_out.stale_observation and not v_out.material_changed, 'stale observation should be rejected');
 
+  begin
+    insert into public.source_fetch_runs (job_source_id, trigger_kind, status, scheduled_for, started_at)
+    values (v_js, 'manual', 'running', now(), now());
+    perform _assert('one_active_fetch_run_per_source', false, 'second active fetch run accepted for the same source');
+  exception when unique_violation then
+    perform _assert('one_active_fetch_run_per_source', true);
+  end;
+
+  update public.source_fetch_runs
+     set status = 'completed',
+         finished_at = now()
+   where id = v_run
+     and status = 'running';
+
   -- Verify version idempotency by source_fetch_run_id (not material_hash)
   -- Set up a second fetch run and payload for further version tests
   insert into public.source_fetch_runs (job_source_id, trigger_kind, status, scheduled_for, started_at)
@@ -234,6 +248,12 @@ begin
   exception when unique_violation then
     perform _assert('version_unique_run_prevents_duplicate', true);
   end;
+
+  update public.source_fetch_runs
+     set status = 'completed',
+         finished_at = now()
+   where id = v_run2
+     and status = 'running';
 
   -- Different runs with the same material_hash must NOT conflict (A → B → A allowed)
   -- Re-use v_run2/v_payload2 for "run 3" (hash matching run 1's 'b' hash)

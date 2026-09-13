@@ -3,6 +3,7 @@ import Link from "next/link";
 import { GOVERNED_STARTER_SOURCES, GREENHOUSE_POLICY_LINKS } from "@/lib/ingestion/starter-sources";
 import { createServiceClient, requireOfficer } from "@/lib/supabase/server";
 import { createJobSource, createStarterSource, runEmployerDiscoveryNow, testSourceNow, toggleSourcePause, updateSourceGovernance } from "./actions";
+import { PipelineRunForm } from "./pipeline-run-form";
 import { QueueDrainForm } from "./queue-drain-form";
 import { SourceRunForm } from "./source-run-form";
 
@@ -73,12 +74,31 @@ export default async function SourcesPage() {
       </div>
     </div>
 
+    <section className="rounded-xl bg-white p-5" style={{ border: "1px solid var(--line)" }}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="font-semibold">Run the career pipeline</h2>
+          <p className="mt-2 max-w-3xl text-sm" style={{ color: "var(--ink-soft)" }}>
+            This is the normal officer control. One cycle schedules due sources, recovers abandoned worker runs,
+            processes queued sources, repairs any missing review materialization, and updates the private Google Sheet.
+          </p>
+        </div>
+        <span className="rounded-full px-2 py-1 text-xs font-semibold" style={{ background: "#16653412", color: "#166534" }}>
+          private until approval
+        </span>
+      </div>
+      <PipelineRunForm />
+      <p className="mt-3 text-xs" style={{ color: "var(--ink-soft)" }}>
+        The automated cycle also runs on schedule. Neither the scheduled nor manual pipeline can approve or publish an opportunity.
+      </p>
+    </section>
+
     <section className="rounded-xl bg-white p-5" style={{ border: queueStale ? "1px solid #b45309" : "1px solid var(--line)" }}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="font-semibold">Source worker queue</h2>
+          <h2 className="font-semibold">Worker queue health</h2>
           <p className="mt-2 max-w-3xl text-sm" style={{ color: "var(--ink-soft)" }}>
-            Scheduled source runs wait here until a worker claims them. This is separate from the Google Sheet Review Queue.
+            Scheduled source runs wait here until a worker claims them. This is operational health, not the Google Sheet Review Queue.
           </p>
         </div>
         <span className="rounded-full px-2 py-1 text-xs font-semibold" style={{
@@ -91,14 +111,17 @@ export default async function SourcesPage() {
       {oldestPending ? <p className="mt-3 text-xs" style={{ color: queueStale ? "var(--restricted)" : "var(--ink-soft)" }}>
         Oldest queued run: {when(oldestPending.scheduled_for ?? oldestPending.created_at)}
         {oldestPendingHours !== null ? ` · ${oldestPendingHours.toFixed(1)} hours waiting` : ""}.
-        {queueStale ? " The scheduled worker appears behind; use the recovery control instead of creating duplicate source runs." : ""}
+        {queueStale ? " The worker is behind. Run the normal pipeline above first; use queue-only recovery only for diagnosis." : ""}
       </p> : <p className="mt-3 text-xs" style={{ color: "var(--ink-soft)" }}>
         No source runs are waiting for a worker.
       </p>}
-      <QueueDrainForm pendingCount={pendingRuns.length} />
-      <p className="mt-3 text-xs" style={{ color: "var(--ink-soft)" }}>
-        Manual recovery claims existing queued runs, reconciles their review records, and updates the private Sheet if configured. It does not schedule extra fetches or publish opportunities.
-      </p>
+      <details className="mt-4 rounded-lg p-3" style={{ background: "var(--paper-2)", border: "1px solid var(--line)" }}>
+        <summary className="cursor-pointer text-sm font-semibold">Advanced queue-only recovery</summary>
+        <QueueDrainForm pendingCount={pendingRuns.length} />
+        <p className="mt-3 text-xs" style={{ color: "var(--ink-soft)" }}>
+          This claims existing queued runs without scheduling additional source fetches. The canonical pipeline order is still used for reconciliation and Sheet delivery.
+        </p>
+      </details>
     </section>
 
     <section className="rounded-xl bg-white p-5" style={{ border: "1px solid var(--line)" }}>
@@ -136,14 +159,14 @@ export default async function SourcesPage() {
     <section className="rounded-xl bg-white p-5" style={{ border: "1px solid var(--line)" }}>
       <h2 className="font-semibold">Employer, scientific lane, and LinkedIn lead discovery</h2>
       <p className="mt-2 max-w-3xl text-sm" style={{ color: "var(--ink-soft)" }}>
-        Search a rotating five-employer cohort plus one scientific lane on command. Results enter the private lead archive and officer task queue. LinkedIn results remain leads and cannot establish publication facts.
+        Configured discovery runs as part of the canonical pipeline. Use the control below only when you need an extra discovery pass without rerunning source ingestion.
       </p>
       <p className="mt-2 text-xs" style={{ color: "var(--ink-soft)" }}>
-        The search provider stays disabled until its API key and contractual result-storage right are both recorded in production.
+        Results enter the private lead archive and officer task queue. LinkedIn results remain leads and cannot establish publication facts.
       </p>
       <form action={runEmployerDiscoveryNow} className="mt-4">
         <button className="secondary-button" type="submit" disabled={!searchConfigured}>
-          {searchConfigured ? "Run discovery now" : "Search provider not configured"}
+          {searchConfigured ? "Run discovery only" : "Search provider not configured"}
         </button>
       </form>
     </section>
@@ -193,7 +216,7 @@ export default async function SourcesPage() {
     <section className="space-y-4">
       <h2 className="font-semibold">Configured sources ({sources.length})</h2>
       {sources.length === 0 ? <div className="rounded-xl bg-white p-5 text-sm" style={{ border: "1px solid var(--line)" }}>
-        No machine sources are configured yet. Add one disabled employer source above, record its policy review, and run a private test before enabling the daily loop.
+        No machine sources are configured yet. Add one disabled employer source above, record its policy review, and run a private test before enabling the automated loop.
       </div> : sources.map((source) => {
         const paused = Boolean(source.automatic_scheduling_paused_at);
         const latestPrivateTest = latestPrivateTestBySource.get(source.id);
