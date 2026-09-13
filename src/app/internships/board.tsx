@@ -89,6 +89,33 @@ function CompanyMark({ name }: { name: string }) {
   );
 }
 
+function primaryCompanyLocation(value: string | null): string | null {
+  return value?.split(';')[0]?.trim() || null;
+}
+
+function companyContextLine(o: PublicOpportunity): string | null {
+  const industry = o.company_industry_tags?.find((tag) => tag.trim())?.trim() || null;
+  const location = primaryCompanyLocation(o.company_location);
+  const parts = [industry, location].filter((value): value is string => Boolean(value));
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+function sourceEvidenceLabel(o: PublicOpportunity): string {
+  if (!o.source_name) return 'Employer posting';
+  const employerFeed = o.source_name.match(/^(.*?)\s+careers board$/i);
+  return employerFeed ? `Official employer feed: ${employerFeed[1]}` : `Source: ${o.source_name}`;
+}
+
+function noteLabel(note: string): string {
+  return /\b(compensation|pay|salary|hour|month|stipend|wage)\b/i.test(note) ? 'Compensation' : 'Officer note';
+}
+
+function payLabel(value: PublicOpportunity['paid_status']): string {
+  if (value === 'unknown') return 'Pay not stated';
+  if (value === 'stipend') return 'Stipend';
+  return value[0].toUpperCase() + value.slice(1);
+}
+
 export function Board({ opportunities, sorted, initialAudience, referenceTime }: {
   opportunities: PublicOpportunity[];
   sorted: boolean;
@@ -239,6 +266,7 @@ function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
     : (o.deadline_text ?? 'No deadline stated');
   const eligibility = o.eligibility ?? 'Confirm the degree and enrollment requirements in the live posting.';
   const tags = opportunityTags(o);
+  const companyContext = companyContextLine(o);
 
   return (
     <li className="opportunity-record">
@@ -246,8 +274,13 @@ function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
         <CompanyMark name={o.company_name} />
         <div className="record-urgency">{deadlinePassed ? 'Deadline passed' : urgent ? 'Closing soon' : (isFresh(o, referenceTime) ? 'New this week' : 'Review details')}</div>
       </div>
-      <div>
-        <div className="record-company">{o.company_name}</div>
+      <div className="record-main">
+        <div className="record-company">
+          {o.company_website
+            ? <a href={o.company_website} target="_blank" rel="noopener noreferrer nofollow">{o.company_name}</a>
+            : o.company_name}
+        </div>
+        {companyContext && <div className="record-company-context">{companyContext}</div>}
         <h3 className="record-title">{o.title}</h3>
         {tags.length > 0 && (
           <div className="record-tags" aria-label="Disciplines and methods">
@@ -257,7 +290,7 @@ function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
         <div className="record-meta">
           {o.location && <span>{o.location}</span>}
           {o.start_date_text && <span>{o.start_date_text}</span>}
-          <span>{o.paid_status === 'unknown' ? 'Pay not stated' : o.paid_status}</span>
+          <span>{payLabel(o.paid_status)}</span>
         </div>
         <div className="record-actions">
           {o.posting_url
@@ -269,7 +302,21 @@ function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
             {deadlinePassed ? 'Past deadline' : o.status === 'open_verified' ? 'Reviewed' : 'Check current status'}
           </span>
         </div>
-        {o.public_notes && <p style={{ marginTop: 12, fontSize: '.86rem' }}>{o.public_notes}</p>}
+        {o.public_notes && (
+          <div className="record-public-note">
+            <span>{noteLabel(o.public_notes)}</span>
+            <p>{o.public_notes}</p>
+          </div>
+        )}
+        {o.company_description && (
+          <details className="record-company-details">
+            <summary>About {o.company_name}</summary>
+            <p>{o.company_description}</p>
+            {o.company_website && (
+              <a href={o.company_website} target="_blank" rel="noopener noreferrer nofollow">Company website ↗</a>
+            )}
+          </details>
+        )}
       </div>
       <dl className="annotation">
         <dt>For</dt>
@@ -281,9 +328,7 @@ function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
         <dt>Deadline or timing</dt>
         <dd>{timing}</dd>
         <dt style={{ marginTop: 12 }}>Evidence</dt>
-        <dd className="record-verified">
-          {o.source_name ? `Source: ${o.source_name}` : 'Employer posting'}
-        </dd>
+        <dd className="record-verified">{sourceEvidenceLabel(o)}</dd>
       </dl>
     </li>
   );
