@@ -1,0 +1,39 @@
+name: Fix source run transport contract
+
+on:
+  push:
+    branches:
+      - fix/source-run-post-transport
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: fix/source-run-post-transport
+          fetch-depth: 0
+      - name: Update stale operator safety assertions
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/__tests__/operator-control-safety.test.ts')
+          s = p.read_text()
+          s = s.replace("    expect(sourceRunForm).toContain('useActionState');\n    expect(sourceRunForm).toContain(\"state.status === 'error'\");\n    expect(sourceActions).toContain(\"console.info(\\\"[source-run] fetch record created\\\"\");\n    expect(sourceActions).toContain(\"console.error(\\\"[source-run] action failed\\\"\");",
+          "    expect(sourceRunForm).toContain('action=\"/api/admin/sources/run\"');\n    expect(sourceRunForm).toContain('method=\"post\"');\n    expect(sourceRunForm).not.toContain('useActionState');\n    expect(sourcePage).toContain('action=\"/api/admin/sources/test\"');")
+          p.write_text(s)
+          Path('.github/workflows/fix-source-run-contract.yml').unlink()
+          PY
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Update source operator safety contract'
+          git push origin HEAD:fix/source-run-post-transport
