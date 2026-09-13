@@ -15,13 +15,17 @@ export default async function QuickAddPage() {
   const defaultSourceId = list.find((s) => s.name === 'Manual Officer Entry')?.id ?? '';
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Add a posting</h1>
-      <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
-        Found a role while browsing? Paste the posting text below to prefill the form,
-        fix anything the parser got wrong, and save. It lands in the review queue, not
-        on the public board.
-      </p>
+    <div className="admin-page-flow max-w-3xl">
+      <header className="admin-page-head">
+        <div className="admin-page-head-copy">
+          <div className="admin-page-eyebrow">Curation</div>
+          <h1 className="admin-page-title">Add a posting</h1>
+          <p className="admin-page-deck">
+            Paste an official posting to prefill a private draft, correct anything the parser missed, and send it into officer review. Nothing publishes from this page.
+          </p>
+        </div>
+        <span className="admin-status-badge admin-status-good">Private draft</span>
+      </header>
       <QuickAddForm sources={list} defaultSourceId={defaultSourceId} />
     </div>
   );
