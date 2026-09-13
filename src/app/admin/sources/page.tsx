@@ -3,6 +3,7 @@ import Link from "next/link";
 import { GOVERNED_STARTER_SOURCES, GREENHOUSE_POLICY_LINKS } from "@/lib/ingestion/starter-sources";
 import { createServiceClient, requireOfficer } from "@/lib/supabase/server";
 import { createJobSource, createStarterSource, runEmployerDiscoveryNow, testSourceNow, toggleSourcePause, updateSourceGovernance } from "./actions";
+import { QueueDrainForm } from "./queue-drain-form";
 import { SourceRunForm } from "./source-run-form";
 
 export const dynamic = "force-dynamic";
@@ -12,10 +13,17 @@ function when(value: string | null): string {
   return value ? new Date(value).toLocaleString() : "Never";
 }
 
+function hoursSince(value: string | null): number | null {
+  if (!value) return null;
+  const timestamp = new Date(value).valueOf();
+  if (!Number.isFinite(timestamp)) return null;
+  return Math.max(0, (Date.now() - timestamp) / 3_600_000);
+}
+
 export default async function SourcesPage() {
   await requireOfficer();
   const db = createServiceClient();
-  const [sourceResult, testRunResult] = await Promise.all([
+  const [sourceResult, testRunResult, queueResult] = await Promise.all([
     db.from("job_sources")
       .select("id, source_name, source_kind, source_identifier, careers_url, enabled, fetch_interval_hours, terms_reviewed, terms_review_date, robots_reviewed, automatic_scheduling_paused_at, last_attempted_at, last_successful_at, consecutive_failures")
       .order("priority")
@@ -25,10 +33,20 @@ export default async function SourcesPage() {
       .contains("log_json", { privateTest: true })
       .order("started_at", { ascending: false })
       .limit(100),
+    db.from("source_fetch_runs")
+      .select("id, job_source_id, status, scheduled_for, created_at, trigger_kind")
+      .eq("status", "pending")
+      .order("scheduled_for", { ascending: true })
+      .limit(50),
   ]);
   if (sourceResult.error) throw new Error(`Could not load sources: ${sourceResult.error.message}`);
   if (testRunResult.error) throw new Error(`Could not load private test history: ${testRunResult.error.message}`);
+  if (queueResult.error) throw new Error(`Could not load source queue health: ${queueResult.error.message}`);
   const sources = sourceResult.data ?? [];
+  const pendingRuns = queueResult.data ?? [];
+  const oldestPending = pendingRuns[0] ?? null;
+  const oldestPendingHours = hoursSince(oldestPending?.scheduled_for ?? oldestPending?.created_at ?? null);
+  const queueStale = oldestPendingHours !== null && oldestPendingHours >= 2;
   const latestPrivateTestBySource = new Map<string, NonNullable<typeof testRunResult.data>[number]>();
   for (const run of testRunResult.data ?? []) {
     if (!latestPrivateTestBySource.has(run.job_source_id)) latestPrivateTestBySource.set(run.job_source_id, run);
@@ -54,6 +72,34 @@ export default async function SourcesPage() {
         <Link className="secondary-button" href="/admin/integrations">Integration status</Link>
       </div>
     </div>
+
+    <section className="rounded-xl bg-white p-5" style={{ border: queueStale ? "1px solid #b45309" : "1px solid var(--line)" }}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="font-semibold">Source worker queue</h2>
+          <p className="mt-2 max-w-3xl text-sm" style={{ color: "var(--ink-soft)" }}>
+            Scheduled source runs wait here until a worker claims them. This is separate from the Google Sheet Review Queue.
+          </p>
+        </div>
+        <span className="rounded-full px-2 py-1 text-xs font-semibold" style={{
+          background: pendingRuns.length === 0 ? "#16653412" : queueStale ? "#b4530916" : "#07567212",
+          color: pendingRuns.length === 0 ? "#166534" : queueStale ? "#92400e" : "#075672",
+        }}>
+          {pendingRuns.length} pending
+        </span>
+      </div>
+      {oldestPending ? <p className="mt-3 text-xs" style={{ color: queueStale ? "var(--restricted)" : "var(--ink-soft)" }}>
+        Oldest queued run: {when(oldestPending.scheduled_for ?? oldestPending.created_at)}
+        {oldestPendingHours !== null ? ` · ${oldestPendingHours.toFixed(1)} hours waiting` : ""}.
+        {queueStale ? " The scheduled worker appears behind; use the recovery control instead of creating duplicate source runs." : ""}
+      </p> : <p className="mt-3 text-xs" style={{ color: "var(--ink-soft)" }}>
+        No source runs are waiting for a worker.
+      </p>}
+      <QueueDrainForm pendingCount={pendingRuns.length} />
+      <p className="mt-3 text-xs" style={{ color: "var(--ink-soft)" }}>
+        Manual recovery claims existing queued runs, reconciles their review records, and updates the private Sheet if configured. It does not schedule extra fetches or publish opportunities.
+      </p>
+    </section>
 
     <section className="rounded-xl bg-white p-5" style={{ border: "1px solid var(--line)" }}>
       <h2 className="font-semibold">Verified starter feeds</h2>
