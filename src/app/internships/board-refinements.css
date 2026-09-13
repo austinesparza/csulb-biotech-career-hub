@@ -46,6 +46,10 @@
   margin: 7px 0 0;
   line-height: 1.5;
 }
+.record-company-details .record-company-location {
+  color: var(--ink-faint);
+  font-size: .72rem;
+}
 .record-company-details a {
   display: inline-block;
   margin-top: 6px;
