@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * Keep this equal to the basename of the newest executable migration.
  * scripts/check-migration-release.mjs enforces that contract in CI.
  */
-export const EXPECTED_PRODUCTION_MIGRATION_NAME = 'backfill_legacy_scientific_lanes';
+export const EXPECTED_PRODUCTION_MIGRATION_NAME = 'audit_public_role_compensation';
 
 export type DatabaseReleaseHealth =
   | {
