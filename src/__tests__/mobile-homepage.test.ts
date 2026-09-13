@@ -26,7 +26,7 @@ describe('mobile homepage finishing contract', () => {
 
   it('keeps the phone hero compact enough to expose the scientific visual sooner', () => {
     expect(mobileStyles).toContain('@media (max-width: 520px)');
-    expect(mobileStyles).toContain('padding-block: 32px 26px;');
+    expect(mobileStyles).toContain('padding-block: 34px 26px;');
     expect(mobileStyles).toContain('min-height: 300px;');
   });
 });
