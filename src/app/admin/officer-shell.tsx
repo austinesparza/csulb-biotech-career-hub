@@ -23,7 +23,7 @@ export function OfficerShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   if (pathname === '/admin/login') {
-    return <div className="officer-login-frame">{children}</div>;
+    return <div className="site-wrap officer-login-frame">{children}</div>;
   }
 
   return (
