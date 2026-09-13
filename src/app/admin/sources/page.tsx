@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { GOVERNED_STARTER_SOURCES, GREENHOUSE_POLICY_LINKS } from "@/lib/ingestion/starter-sources";
 import { createServiceClient, requireOfficer } from "@/lib/supabase/server";
-import { createJobSource, createStarterSource, runEmployerDiscoveryNow, testSourceNow, toggleSourcePause, updateSourceGovernance } from "./actions";
+import { createJobSource, createStarterSource, runEmployerDiscoveryNow, toggleSourcePause, updateSourceGovernance } from "./actions";
 import { PipelineRunForm } from "./pipeline-run-form";
 import { QueueDrainForm } from "./queue-drain-form";
 import { SourceRunForm } from "./source-run-form";
@@ -11,7 +11,14 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 function when(value: string | null): string {
-  return value ? new Date(value).toLocaleString() : "Never";
+  if (!value) return "Never";
+  const date = new Date(value);
+  if (!Number.isFinite(date.valueOf())) return "Invalid timestamp";
+  return `${new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }).format(date)} UTC`;
 }
 
 function hoursSince(value: string | null): number | null {
@@ -261,7 +268,7 @@ export default async function SourcesPage() {
               <button className="secondary-button" type="submit">{paused ? "Resume" : "Pause"}</button>
             </form>
             <SourceRunForm sourceId={source.id} disabled={!source.enabled || paused} />
-            <form action={testSourceNow}>
+            <form action="/api/admin/sources/test" method="post">
               <input type="hidden" name="id" value={source.id} />
               <button className="secondary-button" type="submit" disabled={!source.terms_reviewed || !source.terms_review_date || !source.robots_reviewed}>
                 Test privately
