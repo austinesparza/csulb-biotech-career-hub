@@ -125,6 +125,12 @@ begin
     select count(*) = 1 from public.review_tasks where entity_id = v_posting and status = 'open'
   ), 'expected exactly 1 open task after replay');
 
+  update public.source_fetch_runs
+     set status = 'completed',
+         finished_at = now()
+   where id = v_run1
+     and status = 'running';
+
   -- ── 3. Run 2: material change (hash 'c') ─────────────────────────────────
 
   insert into public.source_fetch_runs (job_source_id, trigger_kind, status, scheduled_for, started_at)
@@ -148,7 +154,7 @@ begin
     'https://example.com/jobs/42',
     '42',
     'Acme Corp', 'acme corp',
-    'Lab Technician II', 'lab technician ii',  -- title changed
+    'Lab Technician II', 'lab technician ii',
     'Los Angeles, CA', 'los angeles, ca',
     'onsite', 'full_time', 'entry_level',
     'Research', 'biotech',
@@ -172,7 +178,13 @@ begin
     select count(*) = 2 from public.source_posting_versions where source_posting_id = v_posting
   ), 'expected 2 versions after run2');
 
-  -- ── 4. Run 3: A → B → A — same hash as run 1 must produce a third version ─
+  update public.source_fetch_runs
+     set status = 'completed',
+         finished_at = now()
+   where id = v_run2
+     and status = 'running';
+
+  -- ── 4. Run 3: A → B → A, same hash as run 1 must produce a third version ─
 
   insert into public.source_fetch_runs (job_source_id, trigger_kind, status, scheduled_for, started_at)
   values (v_js, 'manual', 'running', now(), now())
@@ -195,7 +207,7 @@ begin
     'https://example.com/jobs/42',
     '42',
     'Acme Corp', 'acme corp',
-    'Lab Technician', 'lab technician',  -- title reverted to run1 value
+    'Lab Technician', 'lab technician',
     'Los Angeles, CA', 'los angeles, ca',
     'onsite', 'full_time', 'entry_level',
     'Research', 'biotech',
@@ -203,7 +215,7 @@ begin
     'open',
     75, 1::smallint,
     '{"score":75}'::jsonb, '{}'::text[],
-    v_payload, lpad('b', 64, 'b'),  -- same hash as run 1 ('b')
+    v_payload, lpad('b', 64, 'b'),
     '2026-07-15T00:00:00Z'::timestamptz,
     '1.0.0',
     '{"identityKey":"greenhouse:rpc-test:42","title":"Lab Technician"}'::jsonb,
@@ -218,7 +230,6 @@ begin
   perform _assert('aba_version_count', (
     select count(*) = 3 from public.source_posting_versions where source_posting_id = v_posting
   ), 'A→B→A: expected exactly 3 versions');
-  -- All three versions are immutable — none were updated
   perform _assert('aba_versions_immutable', (
     select count(*) = 3
     from public.source_posting_versions
@@ -243,7 +254,7 @@ begin
     75, 1::smallint,
     '{}'::jsonb, '{}'::text[],
     v_payload, lpad('z', 64, 'z'),
-    '2026-07-10T00:00:00Z'::timestamptz,  -- earlier than last_seen_at
+    '2026-07-10T00:00:00Z'::timestamptz,
     '1.0.0', '{}'::jsonb, 60
   );
 
@@ -251,21 +262,18 @@ begin
 
   -- ── 6. Privilege verification ─────────────────────────────────────────────
 
-  -- persist_posting_observation must be granted only to service_role
   perform _assert('persist_rpc_not_public', not exists (
     select 1 from information_schema.role_routine_grants
     where routine_name = 'persist_posting_observation'
       and grantee in ('public', 'anon', 'authenticated')
   ), 'persist_posting_observation is executable by public/anon/authenticated');
 
-  -- create_pending_opportunity must be granted only to service_role
   perform _assert('create_opp_rpc_not_public', not exists (
     select 1 from information_schema.role_routine_grants
     where routine_name = 'create_pending_opportunity'
       and grantee in ('public', 'anon', 'authenticated')
   ), 'create_pending_opportunity is executable by public/anon/authenticated');
 
-  -- upsert_source_posting_observation must NOT be callable by public/anon/authenticated
   perform _assert('old_rpc_not_public', not exists (
     select 1 from information_schema.role_routine_grants
     where routine_name = 'upsert_source_posting_observation'
