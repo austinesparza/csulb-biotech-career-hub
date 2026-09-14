@@ -8,7 +8,7 @@ export interface CompanyLogoAsset {
 const COMPANY_LOGOS: Array<[RegExp, CompanyLogoAsset]> = [
   [/^3m$/i, { src: '/brand/logos/3m.svg', fit: 'compact' }],
   [/^abbvie$/i, { src: '/brand/logos/abbvie.svg', fit: 'compact' }],
-  [/^fujifilm(?:\s+diosynth\s+biotechnologies|\s+biotechnologies)?$/i, { src: '/brand/logos/fujifilm.svg', fit: 'compact' }],
+  [/^fujifilm(?:\s+diosynth\s+biotechnologies|\s+biotechnologies)?$/i, { src: '/brand/logos/fujifilm.svg', fit: 'wide' }],
   [/^merck(?:\s*&\s*co\.)?$/i, { src: '/brand/logos/merck.svg', fit: 'compact' }],
   [/^genentech$/i, { src: '/brand/logos/genentech.svg', fit: 'wide' }],
   [/^thermo\s+fisher\s+scientific$/i, { src: '/brand/logos/thermo-fisher-scientific.svg', fit: 'wide' }],
