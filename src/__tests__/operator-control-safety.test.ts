@@ -111,15 +111,19 @@ describe('operator control safety', () => {
     expect(reviewActions).toContain("console.error('[review-action] failed'");
   });
 
-  it('pushes governed discoveries to the Sheet without owning officer decisions', () => {
+  it('pushes the complete private review queue to the Sheet without owning officer decisions', () => {
     expect(pipelineCycle).toContain('syncReviewQueueToGoogleSheet');
     expect(pipelineCycle).toContain('PIPELINE_SHEET_SYNC_LIMIT ?? 50');
     expect(pipelineCycle).toContain('limit: sheetSyncLimit');
-    expect(reviewSheetSync).toContain("opportunity_source_links!inner");
-    expect(reviewSheetSync).toContain(".eq('source_record_id', config.sourceRecordId)");
+    expect(reviewSheetSync).not.toContain("opportunity_source_links!inner");
+    expect(reviewSheetSync).toContain(".eq('status', 'needs_review')");
+    expect(reviewSheetSync).toContain(".eq('review_status', 'pending')");
+    expect(reviewSheetSync).toContain(".eq('public_safe', false)");
     expect(reviewSheetSync).toContain("candidateId.startsWith('AUTO-')");
     expect(reviewSheetSync).toContain('row.slice(0, 20)');
     expect(reviewSheetSync).toContain('X${byRecord.rowNumber}:X');
+    expect(reviewSheetSync).toContain("'Pending'");
+    expect(reviewSheetSync).toContain("'FALSE'");
     expect(googleSheets).toContain('https://www.googleapis.com/auth/spreadsheets');
     expect(googleSheets).toContain("valueInputOption: 'RAW'");
     expect(googleSheets).toContain("insertDataOption', 'INSERT_ROWS'");
