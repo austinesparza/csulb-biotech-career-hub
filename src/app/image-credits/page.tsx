@@ -21,6 +21,10 @@ const MICROSCOPY = [
 const LOGOS = [
   ['3M', 'https://simpleicons.org/?q=3m'],
   ['AbbVie', 'https://simpleicons.org/?q=abbvie'],
+  ['Fujifilm', 'https://simpleicons.org/?q=fujifilm'],
+  ['Merck', 'https://simpleicons.org/?q=merck'],
+  ['Genentech', 'https://commons.wikimedia.org/wiki/File:Genentech.svg'],
+  ['Thermo Fisher Scientific', 'https://commons.wikimedia.org/wiki/File:Thermo_Fisher_Scientific_logo.svg'],
   ['Johnson & Johnson', 'https://commons.wikimedia.org/wiki/File:Johnson_and_Johnson_Logo.svg'],
   ['Amgen', 'https://commons.wikimedia.org/wiki/File:Amgen.svg'],
   ['Ginkgo Bioworks', 'https://commons.wikimedia.org/wiki/File:Ginkgo_Bioworks_logo.svg'],
