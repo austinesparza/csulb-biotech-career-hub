@@ -4,6 +4,7 @@ import { updateDiscoveryLeadStatus } from './actions';
 import {
   promoteAllVerifiedDiscoveryLeads,
   promoteDiscoveryLeadToDraft,
+  promoteVerifiedLinkedInLead,
   resolveEmployerSourceAndPromote,
 } from './discovery-promotion-actions';
 
@@ -19,6 +20,15 @@ function safeHttpsUrl(value: string | null): string | null {
   } catch {
     return null;
   }
+}
+
+function isDirectLinkedInJob(value: string | null): boolean {
+  const url = safeHttpsUrl(value);
+  if (!url) return false;
+  const parsed = new URL(url);
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+  return (host === 'linkedin.com' || host.endsWith('.linkedin.com'))
+    && /^\/jobs\/view\//i.test(parsed.pathname);
 }
 
 function metadataText(metadata: Record<string, unknown>, key: string): string | null {
@@ -54,7 +64,7 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
         <h2 id="discovery-promotion-title">Move verified leads into opportunity review</h2>
         <p>
           Discovery is only the first stage. Leads with an employer-controlled source can become private opportunity drafts in one step.
-          For a LinkedIn-only lead, paste the official employer or ATS posting directly on its card to resolve provenance and promote it without leaving this page.
+          If the employer only published a role directly on LinkedIn, use the verified first-party exception with separate employer-site evidence.
         </p>
       </div>
       <div className="review-publish-stats" aria-label="Discovery promotion status">
@@ -91,6 +101,10 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
         employerHint: row.employer_hint,
         title: row.latest_title,
       });
+      const canUseLinkedInException = row.resolution === 'linkedin_only'
+        && isDirectLinkedInJob(row.original_url)
+        && !!row.employer_hint?.trim()
+        && !!row.latest_title?.trim();
 
       return <li key={row.id} className="review-record">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -137,7 +151,7 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
         {!promotion.ready ? <>
           <p className="mt-3 text-xs font-semibold">
             {row.route === 'linkedin_lead' || row.resolution === 'linkedin_only'
-              ? 'LinkedIn is discovery evidence only. Resolve an employer-controlled source before promotion.'
+              ? 'LinkedIn is discovery evidence only unless an officer verifies the narrow first-party exception below.'
               : promotion.reason}
           </p>
           {row.employer_hint?.trim() && row.latest_title?.trim() ? <details className="mt-3 rounded-lg border p-3" style={{ borderColor: 'var(--line)', background: 'var(--paper-2)' }}>
@@ -163,6 +177,37 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
               <button type="submit" className="primary-button justify-self-start">Save source + promote to Review Queue</button>
               <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
                 This creates a private review draft only. It does not publish the opportunity.
+              </p>
+            </form>
+          </details> : null}
+
+          {canUseLinkedInException ? <details className="mt-3 rounded-lg border p-3" style={{ borderColor: 'var(--line)', background: '#fffdf5' }}>
+            <summary className="cursor-pointer text-sm font-semibold">Only a first-party LinkedIn posting exists</summary>
+            <form action={promoteVerifiedLinkedInLead} className="mt-3 grid gap-3">
+              <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>
+                Use this only when the employer itself posted the role on LinkedIn and no role-specific employer or ATS page is available.
+                Supply a separate employer-controlled page that supports the company identity or its recruiting channel.
+              </p>
+              <input type="hidden" name="id" value={row.id} />
+              <label className="grid gap-1 text-xs font-semibold">
+                Employer-site evidence URL
+                <input
+                  type="url"
+                  name="employer_evidence_url"
+                  required
+                  inputMode="url"
+                  placeholder="https://company.com/careers"
+                  className="rounded border bg-white px-3 py-2 text-sm font-normal"
+                  style={{ borderColor: 'var(--line-strong)' }}
+                />
+              </label>
+              <label className="flex items-start gap-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
+                <input type="checkbox" name="linkedin_confirmed" required className="mt-0.5" />
+                <span>I verified the LinkedIn job was published by the employer, the evidence URL is employer-controlled, and no role-specific employer/ATS posting is available.</span>
+              </label>
+              <button type="submit" className="secondary-button justify-self-start">Promote verified LinkedIn posting</button>
+              <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                The LinkedIn URL remains the source posting. This creates a private review draft only and never bypasses publication review.
               </p>
             </form>
           </details> : null}

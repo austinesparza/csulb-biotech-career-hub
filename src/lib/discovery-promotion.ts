@@ -5,8 +5,26 @@ export interface DiscoveryPromotionInput {
   title: string | null;
 }
 
+export interface VerifiedLinkedInPromotionInput {
+  resolution: string;
+  originalUrl: string | null;
+  employerEvidenceUrl: string | null;
+  employerHint: string | null;
+  title: string | null;
+}
+
 export type DiscoveryPromotionResolution =
   | { ready: true; canonicalUrl: string; employer: string; title: string }
+  | { ready: false; reason: string };
+
+export type VerifiedLinkedInPromotionResolution =
+  | {
+      ready: true;
+      postingUrl: string;
+      employerEvidenceUrl: string;
+      employer: string;
+      title: string;
+    }
   | { ready: false; reason: string };
 
 export type EmployerSourceUrlResolution =
@@ -44,6 +62,14 @@ function hostMatches(hostname: string, blocked: string): boolean {
   return hostname === blocked || hostname.endsWith(`.${blocked}`);
 }
 
+function isLinkedInJobUrl(value: string | null): value is string {
+  const url = safeHttpsUrl(value);
+  if (!url) return false;
+  const parsed = new URL(url);
+  const hostname = parsed.hostname.toLowerCase().replace(/^www\./, '');
+  return hostMatches(hostname, 'linkedin.com') && /^\/jobs\/view\//i.test(parsed.pathname);
+}
+
 /**
  * Validate a URL supplied by an officer as employer-controlled publication
  * evidence. Known social, aggregator, and discovery-only hosts are rejected.
@@ -66,6 +92,42 @@ export function validateEmployerControlledSourceUrl(value: string): EmployerSour
   }
 
   return { valid: true, canonicalUrl };
+}
+
+/**
+ * Conservative exception for cases where the employer publishes the role only
+ * on LinkedIn. The LinkedIn URL remains the posting URL, while a separate
+ * employer-controlled page is required to support company identity/provenance.
+ * This only authorizes creation of a private review draft, never publication.
+ */
+export function resolveVerifiedLinkedInPromotion(
+  input: VerifiedLinkedInPromotionInput,
+): VerifiedLinkedInPromotionResolution {
+  if (input.resolution !== 'linkedin_only') {
+    return { ready: false, reason: 'This exception applies only to unresolved LinkedIn-only leads' };
+  }
+  if (!isLinkedInJobUrl(input.originalUrl)) {
+    return { ready: false, reason: 'A direct LinkedIn job posting URL is required' };
+  }
+
+  const employerEvidence = validateEmployerControlledSourceUrl(input.employerEvidenceUrl ?? '');
+  if (!employerEvidence.valid) {
+    return { ready: false, reason: employerEvidence.reason };
+  }
+
+  const employer = input.employerHint?.trim() ?? '';
+  if (!employer) return { ready: false, reason: 'Employer name is missing' };
+
+  const title = input.title?.trim() ?? '';
+  if (!title) return { ready: false, reason: 'Role title is missing' };
+
+  return {
+    ready: true,
+    postingUrl: safeHttpsUrl(input.originalUrl) as string,
+    employerEvidenceUrl: employerEvidence.canonicalUrl,
+    employer,
+    title,
+  };
 }
 
 /**
