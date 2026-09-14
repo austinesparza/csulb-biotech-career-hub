@@ -54,7 +54,7 @@ describe('machine review queue to Sheet planning', () => {
     expect(row[0]).toBe('AUTO-11111111');
     expect(row[18]).toBe('https://example.org/jobs/1');
     expect(row[19]).toBe('2026-09-11');
-    expect(row[21]).toBe('');
+    expect(row[21]).toBe('Pending');
     expect(row[22]).toBe('FALSE');
     expect(row[23]).toBe(candidate().id);
   });
