@@ -1,13 +1,27 @@
-const COMPANY_LOGOS: Array<[RegExp, string]> = [
-  [/^johnson\s*(?:&|and)\s*johnson$/i, '/brand/logos/johnson-johnson.svg'],
-  [/^amgen$/i, '/brand/logos/amgen.svg'],
-  [/^ginkgo bioworks$/i, '/brand/logos/ginkgo-bioworks.svg'],
-  [/^sanofi$/i, '/brand/logos/sanofi.svg'],
-  [/md anderson/i, '/brand/logos/md-anderson.png'],
-  [/^cas$/i, '/brand/logos/cas.svg'],
-  [/^xaira(?:\s+therapeutics)?$/i, '/brand/logos/xaira-therapeutics.png'],
+export type CompanyLogoFit = 'wide' | 'compact';
+
+export interface CompanyLogoAsset {
+  src: string;
+  fit: CompanyLogoFit;
+}
+
+const COMPANY_LOGOS: Array<[RegExp, CompanyLogoAsset]> = [
+  [/^3m$/i, { src: '/brand/logos/3m.svg', fit: 'compact' }],
+  [/^abbvie$/i, { src: '/brand/logos/abbvie.svg', fit: 'compact' }],
+  [/^johnson\s*(?:&|and)\s*johnson(?:\s+innovative\s+medicine)?$/i, { src: '/brand/logos/johnson-johnson.svg', fit: 'wide' }],
+  [/^amgen$/i, { src: '/brand/logos/amgen.svg', fit: 'wide' }],
+  [/^ginkgo bioworks$/i, { src: '/brand/logos/ginkgo-bioworks.svg', fit: 'wide' }],
+  [/^sanofi$/i, { src: '/brand/logos/sanofi.svg', fit: 'wide' }],
+  [/md anderson/i, { src: '/brand/logos/md-anderson.png', fit: 'wide' }],
+  [/^cas$/i, { src: '/brand/logos/cas.svg', fit: 'wide' }],
+  [/^xaira(?:\s+therapeutics)?$/i, { src: '/brand/logos/xaira-therapeutics.svg', fit: 'wide' }],
 ];
 
-export function companyLogoPath(name: string): string | null {
+export function companyLogoAsset(name: string): CompanyLogoAsset | null {
   return COMPANY_LOGOS.find(([pattern]) => pattern.test(name.trim()))?.[1] ?? null;
+}
+
+/** Compatibility helper for callers that only need the local asset path. */
+export function companyLogoPath(name: string): string | null {
+  return companyLogoAsset(name)?.src ?? null;
 }
