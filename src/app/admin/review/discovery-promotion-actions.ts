@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { quickAddOpportunity } from '@/app/admin/add/actions';
 import {
   resolveDiscoveryPromotion,
+  resolveVerifiedLinkedInPromotion,
   validateEmployerControlledSourceUrl,
 } from '@/lib/discovery-promotion';
 import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
@@ -16,10 +17,41 @@ function requiredId(formData: FormData): string {
   return id;
 }
 
-async function closeLeadWorkflow(db: ReturnType<typeof createServiceClient>, id: string): Promise<void> {
+async function ensureOpportunityReviewTask(
+  db: ReturnType<typeof createServiceClient>,
+  opportunityId: string,
+  notes: string,
+): Promise<void> {
+  const { data: existing, error: existingError } = await db.from('review_tasks')
+    .select('id')
+    .eq('entity_table', 'opportunities')
+    .eq('entity_id', opportunityId)
+    .in('status', ['open', 'in_progress'])
+    .limit(1)
+    .maybeSingle();
+  if (existingError) throw new Error(existingError.message);
+  if (existing) return;
+
+  const { error } = await db.from('review_tasks').insert({
+    task_type: 'source_new',
+    entity_table: 'opportunities',
+    entity_id: opportunityId,
+    status: 'open',
+    priority: 100,
+    notes,
+  });
+  if (error) throw new Error(error.message);
+}
+
+async function closeLeadWorkflow(
+  db: ReturnType<typeof createServiceClient>,
+  id: string,
+  archiveReason?: string,
+): Promise<void> {
   const now = new Date().toISOString();
   const { error: leadError } = await db.from('discovery_leads').update({
     officer_status: 'resolved',
+    ...(archiveReason ? { archive_reason: archiveReason } : {}),
     updated_at: now,
   }).eq('id', id).in('officer_status', ['new', 'in_review']);
   if (leadError) throw new Error(leadError.message);
@@ -80,7 +112,12 @@ async function promoteDiscoveryLead(id: string): Promise<'created' | 'existing'>
     lead.latest_snippet?.trim() ? `Discovery snippet: ${lead.latest_snippet.trim()}` : null,
   ].filter(Boolean).join('\n'));
 
-  await quickAddOpportunity(draft);
+  const created = await quickAddOpportunity(draft);
+  await ensureOpportunityReviewTask(
+    db,
+    created.id,
+    'Promoted from a verified discovery lead with an employer-controlled posting; officer review required.',
+  );
   await closeLeadWorkflow(db, id);
   return 'created';
 }
@@ -126,6 +163,88 @@ export async function resolveEmployerSourceAndPromote(formData: FormData): Promi
   if (!updated) throw new Error('Discovery lead is no longer active; refresh the queue before retrying');
 
   await promoteDiscoveryLead(id);
+  revalidatePath('/admin');
+  revalidatePath('/admin/review');
+}
+
+/**
+ * Narrow exception for employers that use LinkedIn as the only role-specific
+ * posting. An officer must verify both the first-party LinkedIn job and a
+ * separate employer-controlled page supporting company/hiring provenance.
+ * The result is still a private opportunity draft.
+ */
+export async function promoteVerifiedLinkedInLead(formData: FormData): Promise<void> {
+  await requireOfficer();
+  const id = requiredId(formData);
+  if (String(formData.get('linkedin_confirmed') ?? '') !== 'on') {
+    throw new Error('Confirm the first-party LinkedIn posting and employer-site evidence before promotion');
+  }
+
+  const db = createServiceClient();
+  const { data: lead, error: leadError } = await db.from('discovery_leads')
+    .select('id, resolution, employer_hint, latest_title, original_url, latest_snippet, officer_status')
+    .eq('id', id)
+    .single();
+  if (leadError || !lead) throw new Error('Discovery lead not found');
+  if (!['new', 'in_review'].includes(lead.officer_status)) throw new Error('Discovery lead is already resolved');
+
+  const resolution = resolveVerifiedLinkedInPromotion({
+    resolution: lead.resolution,
+    originalUrl: lead.original_url,
+    employerEvidenceUrl: String(formData.get('employer_evidence_url') ?? ''),
+    employerHint: lead.employer_hint,
+    title: lead.latest_title,
+  });
+  if (!resolution.ready) throw new Error(resolution.reason);
+
+  const { data: existing, error: existingError } = await db.from('opportunities')
+    .select('id')
+    .eq('posting_url', resolution.postingUrl)
+    .limit(1)
+    .maybeSingle();
+  if (existingError) throw new Error(existingError.message);
+  if (existing) {
+    await closeLeadWorkflow(
+      db,
+      id,
+      `Officer verified a first-party LinkedIn job posting with supporting employer-controlled evidence: ${resolution.employerEvidenceUrl}`,
+    );
+    return;
+  }
+
+  const { data: source, error: sourceError } = await db.from('source_records')
+    .select('id')
+    .eq('name', 'Manual Officer Entry')
+    .limit(1)
+    .maybeSingle();
+  if (sourceError || !source) throw new Error('Manual Officer Entry source is missing');
+
+  const draft = new FormData();
+  draft.set('company', resolution.employer);
+  draft.set('title', resolution.title);
+  draft.set('posting_url', resolution.postingUrl);
+  draft.set('source_record_id', source.id);
+  draft.set('application_type', /co[ -]?op/i.test(resolution.title) ? 'Co-op' : 'Internship');
+  draft.set('private_notes', [
+    `Promoted from verified first-party LinkedIn discovery lead ${lead.id}.`,
+    `LinkedIn posting: ${resolution.postingUrl}`,
+    `Employer-controlled provenance evidence: ${resolution.employerEvidenceUrl}`,
+    'Officer attested that the LinkedIn job was published by the employer and no role-specific employer/ATS posting was available. Final publication still requires normal officer review and public-safety approval.',
+    lead.latest_snippet?.trim() ? `Discovery snippet: ${lead.latest_snippet.trim()}` : null,
+  ].filter(Boolean).join('\n'));
+
+  const created = await quickAddOpportunity(draft);
+  await ensureOpportunityReviewTask(
+    db,
+    created.id,
+    'Promoted through the verified first-party LinkedIn exception; officer review of eligibility and public fields required.',
+  );
+  await closeLeadWorkflow(
+    db,
+    id,
+    `Officer verified a first-party LinkedIn job posting with supporting employer-controlled evidence: ${resolution.employerEvidenceUrl}`,
+  );
+
   revalidatePath('/admin');
   revalidatePath('/admin/review');
 }
