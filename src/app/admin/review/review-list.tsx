@@ -2,8 +2,8 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { isPublishableAudienceStage } from '@/lib/opportunityAudience';
 import { resolveSheetPublishCandidate } from '@/lib/review-publish';
+import { reviewReadinessBucket } from '@/lib/review-readiness';
 import { ReviewCard, type ReviewRow } from './review-card';
 import {
   syncAndPublishReviewedOpportunities,
@@ -19,11 +19,13 @@ interface ReviewGroup {
   rows: ReviewRow[];
 }
 
-function isDecisionReady(row: ReviewRow): boolean {
-  return Boolean(row.posting_url)
-    && ['undergraduate', 'graduate', 'mixed'].includes(row.audience_bucket)
-    && isPublishableAudienceStage(row.audience_bucket, row.graduate_stage)
-    && (row.audience_reason?.trim().length ?? 0) >= 8;
+function bucketFor(row: ReviewRow) {
+  return reviewReadinessBucket({
+    postingUrl: row.posting_url,
+    audienceBucket: row.audience_bucket,
+    audienceReason: row.audience_reason,
+    graduateStage: row.graduate_stage,
+  });
 }
 
 export function ReviewList({ rows }: { rows: ReviewRow[] }) {
@@ -43,13 +45,19 @@ export function ReviewList({ rows }: { rows: ReviewRow[] }) {
     }),
   })), [rows]);
 
-  const decisionReady = useMemo(() => rows.filter(isDecisionReady), [rows]);
-  const outsideBoardRows = useMemo(() => rows.filter((row) => (
-    ['special', 'adjacent', 'ineligible'].includes(row.audience_bucket)
-  )), [rows]);
-  const needsConfirmation = useMemo(() => rows.filter((row) => (
-    !isDecisionReady(row) && !['special', 'adjacent', 'ineligible'].includes(row.audience_bucket)
-  )), [rows]);
+  const groupedRows = useMemo(() => {
+    const grouped = {
+      'decision-ready': [] as ReviewRow[],
+      'needs-confirmation': [] as ReviewRow[],
+      'outside-board': [] as ReviewRow[],
+    };
+    for (const row of rows) grouped[bucketFor(row)].push(row);
+    return grouped;
+  }, [rows]);
+
+  const decisionReady = groupedRows['decision-ready'];
+  const needsConfirmation = groupedRows['needs-confirmation'];
+  const outsideBoardRows = groupedRows['outside-board'];
 
   const groups: ReviewGroup[] = useMemo(() => [
     {
