@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { companyLogoPath } from '@/lib/companyLogos';
+import { companyLogoAsset } from '@/lib/companyLogos';
 import { createClient } from '@/lib/supabase/client';
 import type { PublicOpportunity } from '@/lib/types';
 
@@ -30,10 +30,12 @@ const DISCIPLINES = [
 ] as const;
 
 function FeaturedCompany({ name }: { name: string }) {
-  const logo = companyLogoPath(name);
+  const logo = companyLogoAsset(name);
   return (
-    <span className="featured-company">
-      {logo ? <Image src={logo} alt={`${name} logo`} width={132} height={48} /> : name}
+    <span className={`featured-company${logo ? ` has-logo logo-${logo.fit}` : ' is-wordmark'}`}>
+      {logo
+        ? <Image src={logo.src} alt={`${name} logo`} width={180} height={64} />
+        : <span>{name}</span>}
     </span>
   );
 }
