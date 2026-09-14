@@ -128,6 +128,7 @@ function companyName(candidate: ReviewSheetCandidate): string {
 
 function graduateAccess(bucket: string | null): string {
   if (bucket === 'graduate' || bucket === 'mixed') return 'Explicit';
+  if (bucket === 'undergraduate') return 'Undergraduate only';
   if (bucket && bucket !== 'unknown') return 'Out of scope';
   return 'Needs officer confirmation';
 }
@@ -186,7 +187,7 @@ export function buildReviewSheetRow(
     stated(candidate.posting_url, 'Missing official URL'),
     checkedDate(candidate),
     'Added by the governed ingestion system. Review the official source before deciding.',
-    '',
+    'Pending',
     'FALSE',
     candidate.id,
     '',
@@ -416,12 +417,14 @@ export async function syncReviewQueueToGoogleSheet(params: {
     'application_type, source_status_raw, relevance_score, audience_bucket, audience_reason, ' +
     'eligibility_evidence, continued_enrollment_required, work_authorization, application_opened_at, ' +
     'last_checked_at, source_check_result, first_seen_at, companies(name), ';
-  const [machineResult, sheetResult] = await Promise.all([
+  const [candidateResult, sheetResult] = await Promise.all([
     params.db.from('opportunities').select(
       baseColumns +
-      'opportunity_source_links!inner(source_posting_id, source_postings(canonical_url, external_posting_id, remote_type, posted_at))',
+      'opportunity_source_links(source_posting_id, source_postings(canonical_url, external_posting_id, remote_type, posted_at))',
     )
       .eq('status', 'needs_review')
+      .eq('review_status', 'pending')
+      .eq('public_safe', false)
       .order('relevance_score', { ascending: false, nullsFirst: false })
       .limit(limit),
     params.db.from('opportunities').select(
@@ -433,11 +436,11 @@ export async function syncReviewQueueToGoogleSheet(params: {
       .order('relevance_score', { ascending: false, nullsFirst: false })
       .limit(limit),
   ]);
-  if (machineResult.error) throw new Error(`Could not load machine review candidates: ${machineResult.error.message}`);
+  if (candidateResult.error) throw new Error(`Could not load private review candidates: ${candidateResult.error.message}`);
   if (sheetResult.error) throw new Error(`Could not load Sheet review candidates: ${sheetResult.error.message}`);
 
   const byCandidateId = new Map<string, ReviewSheetCandidate>();
-  const loaded = [...(machineResult.data ?? []), ...(sheetResult.data ?? [])] as unknown as ReviewSheetCandidate[];
+  const loaded = [...(candidateResult.data ?? []), ...(sheetResult.data ?? [])] as unknown as ReviewSheetCandidate[];
   for (const candidate of loaded) byCandidateId.set(candidate.id, candidate);
   const candidates = [...byCandidateId.values()]
     .toSorted((a, b) => (b.relevance_score ?? -1) - (a.relevance_score ?? -1))
