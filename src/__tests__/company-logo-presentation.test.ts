@@ -26,7 +26,7 @@ describe('employer logo presentation', () => {
   it('covers more high-value historical employers with traceable local marks', () => {
     expect(companyLogoAsset('Fujifilm Diosynth Biotechnologies')).toEqual({
       src: '/brand/logos/fujifilm.svg',
-      fit: 'compact',
+      fit: 'wide',
     });
     expect(companyLogoAsset('Merck & Co.')).toEqual({
       src: '/brand/logos/merck.svg',
