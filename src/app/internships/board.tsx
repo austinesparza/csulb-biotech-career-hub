@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
-import { companyLogoPath } from '@/lib/companyLogos';
+import { companyLogoAsset } from '@/lib/companyLogos';
 import { allFocusAreas } from '@/lib/focusAreas';
 import {
   companyContextLine,
@@ -59,13 +59,13 @@ function companyInitials(name: string): string {
 }
 
 function CompanyMark({ name }: { name: string }) {
-  const logo = companyLogoPath(name);
+  const logo = companyLogoAsset(name);
   return (
-    <div className={`company-mark${logo ? ' company-mark-logo' : ''}`}>
+    <div className={`company-mark${logo ? ` company-mark-logo logo-${logo.fit}` : ''}`}>
       {logo ? (
-        <Image src={logo} alt={`${name} logo`} width={112} height={52} />
+        <Image src={logo.src} alt="" aria-hidden="true" width={180} height={64} />
       ) : (
-        <span aria-label={name}>{companyInitials(name)}</span>
+        <span aria-hidden="true">{companyInitials(name)}</span>
       )}
     </div>
   );
