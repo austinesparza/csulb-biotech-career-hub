@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   resolveDiscoveryPromotion,
+  resolveVerifiedLinkedInPromotion,
   validateEmployerControlledSourceUrl,
 } from '../lib/discovery-promotion';
 
@@ -79,5 +80,107 @@ describe('validateEmployerControlledSourceUrl', () => {
     const insecure = validateEmployerControlledSourceUrl('http://careers.example.com/job/123');
     expect(insecure.valid).toBe(false);
     if (!insecure.valid) expect(insecure.reason).toMatch(/https/i);
+  });
+});
+
+describe('resolveVerifiedLinkedInPromotion', () => {
+  it('allows a direct first-party LinkedIn job when separate employer evidence is supplied', () => {
+    expect(resolveVerifiedLinkedInPromotion({
+      resolution: 'linkedin_only',
+      originalUrl: 'https://www.linkedin.com/jobs/view/4463619983',
+      employerEvidenceUrl: 'https://www.examplebio.com/careers',
+      employerHint: 'Example Bio',
+      title: 'Research Intern - Cell Biology',
+    })).toEqual({
+      ready: true,
+      postingUrl: 'https://www.linkedin.com/jobs/view/4463619983',
+      employerEvidenceUrl: 'https://www.examplebio.com/careers',
+      employer: 'Example Bio',
+      title: 'Research Intern - Cell Biology',
+    });
+  });
+
+  it('rejects shortened LinkedIn and non-job LinkedIn URLs', () => {
+    expect(resolveVerifiedLinkedInPromotion({
+      resolution: 'linkedin_only',
+      originalUrl: 'https://lnkd.in/example',
+      employerEvidenceUrl: 'https://www.examplebio.com/careers',
+      employerHint: 'Example Bio',
+      title: 'Research Intern',
+    }).ready).toBe(false);
+
+    expect(resolveVerifiedLinkedInPromotion({
+      resolution: 'linkedin_only',
+      originalUrl: 'https://www.linkedin.com/company/example-bio',
+      employerEvidenceUrl: 'https://www.examplebio.com/careers',
+      employerHint: 'Example Bio',
+      title: 'Research Intern',
+    }).ready).toBe(false);
+  });
+
+  it('rejects aggregator or social URLs as employer evidence', () => {
+    const indeed = resolveVerifiedLinkedInPromotion({
+      resolution: 'linkedin_only',
+      originalUrl: 'https://www.linkedin.com/jobs/view/123456',
+      employerEvidenceUrl: 'https://www.indeed.com/viewjob?jk=123',
+      employerHint: 'Example Bio',
+      title: 'Research Intern',
+    });
+    expect(indeed.ready).toBe(false);
+    if (!indeed.ready) expect(indeed.reason).toMatch(/discovery evidence/i);
+
+    expect(resolveVerifiedLinkedInPromotion({
+      resolution: 'linkedin_only',
+      originalUrl: 'https://www.linkedin.com/jobs/view/123456',
+      employerEvidenceUrl: 'https://www.linkedin.com/company/example-bio',
+      employerHint: 'Example Bio',
+      title: 'Research Intern',
+    }).ready).toBe(false);
+  });
+
+  it('does not apply the exception to already resolved or non-LinkedIn leads', () => {
+    const resolved = resolveVerifiedLinkedInPromotion({
+      resolution: 'official_source_found',
+      originalUrl: 'https://www.linkedin.com/jobs/view/123456',
+      employerEvidenceUrl: 'https://www.examplebio.com/careers',
+      employerHint: 'Example Bio',
+      title: 'Research Intern',
+    });
+    expect(resolved.ready).toBe(false);
+    if (!resolved.ready) expect(resolved.reason).toMatch(/linkedin-only/i);
+
+    expect(resolveVerifiedLinkedInPromotion({
+      resolution: 'linkedin_only',
+      originalUrl: 'https://jobs.examplebio.com/role/123',
+      employerEvidenceUrl: 'https://www.examplebio.com/careers',
+      employerHint: 'Example Bio',
+      title: 'Research Intern',
+    }).ready).toBe(false);
+  });
+
+  it('requires employer identity, title, and employer evidence', () => {
+    expect(resolveVerifiedLinkedInPromotion({
+      resolution: 'linkedin_only',
+      originalUrl: 'https://www.linkedin.com/jobs/view/123456',
+      employerEvidenceUrl: '',
+      employerHint: 'Example Bio',
+      title: 'Research Intern',
+    }).ready).toBe(false);
+
+    expect(resolveVerifiedLinkedInPromotion({
+      resolution: 'linkedin_only',
+      originalUrl: 'https://www.linkedin.com/jobs/view/123456',
+      employerEvidenceUrl: 'https://www.examplebio.com/careers',
+      employerHint: null,
+      title: 'Research Intern',
+    }).ready).toBe(false);
+
+    expect(resolveVerifiedLinkedInPromotion({
+      resolution: 'linkedin_only',
+      originalUrl: 'https://www.linkedin.com/jobs/view/123456',
+      employerEvidenceUrl: 'https://www.examplebio.com/careers',
+      employerHint: 'Example Bio',
+      title: null,
+    }).ready).toBe(false);
   });
 });
