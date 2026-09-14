@@ -158,7 +158,7 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
               </label>
               <label className="flex items-start gap-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
                 <input type="checkbox" name="source_confirmed" required className="mt-0.5" />
-                <span>I verified this is an employer-controlled career page or the employer's recruiting/ATS posting, not LinkedIn or a job aggregator.</span>
+                <span>I verified this is an employer-controlled career page or an employer recruiting/ATS posting, not LinkedIn or a job aggregator.</span>
               </label>
               <button type="submit" className="primary-button justify-self-start">Save source + promote to Review Queue</button>
               <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
