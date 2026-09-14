@@ -128,6 +128,7 @@ function companyName(candidate: ReviewSheetCandidate): string {
 
 function graduateAccess(bucket: string | null): string {
   if (bucket === 'graduate' || bucket === 'mixed') return 'Explicit';
+  if (bucket === 'undergraduate') return 'Undergraduate only';
   if (bucket && bucket !== 'unknown') return 'Out of scope';
   return 'Needs officer confirmation';
 }
@@ -318,142 +319,116 @@ export function planResolvedRowArchive(
   const archivedIds = new Set(
     archiveSnapshot.rows.slice(1).map((row) => String(row[archiveRecordIdColumn] ?? '').trim()).filter(Boolean),
   );
+
   const appendRows: string[][] = [];
   const deleteRowNumbers: number[] = [];
+  let archived = 0;
   let alreadyArchived = 0;
 
   for (let index = 1; index < reviewSnapshot.rows.length; index += 1) {
-    const row = reviewSnapshot.rows[index] ?? [];
-    const id = String(row[reviewRecordIdColumn] ?? '').trim();
-    if (!id) continue;
-    const state = stateById.get(id);
-    if (!state || (state.status === 'needs_review' && state.review_status === 'pending')) continue;
+    const sourceRow = reviewSnapshot.rows[index] ?? [];
+    const recordId = String(sourceRow[reviewRecordIdColumn] ?? '').trim();
+    if (!recordId || !UUID_PATTERN.test(recordId)) continue;
+    const state = stateById.get(recordId);
+    if (!state || state.status === 'needs_review') continue;
+
     deleteRowNumbers.push(index + 1);
-    if (archivedIds.has(id)) {
+    if (archivedIds.has(recordId)) {
       alreadyArchived += 1;
       continue;
     }
 
-    const archivedRow = Array.from({ length: REVIEW_QUEUE_COLUMNS }, (_, column) => safeSheetCell(row[column] ?? ''));
-    archivedRow[reviewStatusColumn] = archiveReviewLabel(state);
-    if (!archivedRow[decisionColumn]) archivedRow[decisionColumn] = state.review_status === 'approved' ? 'Approve' : 'Reject';
-    archivedRow[publicSafeColumn] = state.review_status === 'approved' && state.public_safe ? 'TRUE' : 'FALSE';
-    appendRows.push(archivedRow);
-    archivedIds.add(id);
+    const row = Array.from({ length: REVIEW_QUEUE_COLUMNS }, (_, column) => safeSheetCell(sourceRow[column] ?? ''));
+    row[reviewStatusColumn] = archiveReviewLabel(state);
+    row[decisionColumn] = state.review_status === 'approved' && state.public_safe
+      ? 'Approve'
+      : state.review_status === 'rejected' || state.status === 'not_relevant'
+        ? 'Reject'
+        : row[decisionColumn];
+    row[publicSafeColumn] = state.public_safe ? 'TRUE' : 'FALSE';
+    appendRows.push(row);
+    archivedIds.add(recordId);
+    archived += 1;
   }
 
-  return {
-    appendRows,
-    deleteRowNumbers: deleteRowNumbers.sort((a, b) => b - a),
-    archived: appendRows.length,
-    alreadyArchived,
-  };
+  return { appendRows, deleteRowNumbers, archived, alreadyArchived };
 }
 
-async function ensureHeaders(params: {
-  config: ReturnType<typeof readGoogleSheetsConfig>;
-  range: string;
-  snapshot: SheetSnapshot;
-}): Promise<void> {
-  const { config } = params;
-  const sheetRef = sheetReference(params.range);
-  const current = params.snapshot.rows[0] ?? [];
-  const updates: GoogleSheetValueUpdate[] = [];
-  for (let index = 0; index < REVIEW_QUEUE_COLUMNS; index += 1) {
-    const existing = current[index]?.trim() ?? '';
-    if (existing && normalizeHeader(existing) !== normalizeHeader(REVIEW_QUEUE_HEADERS[index])) {
-      throw new Error(`${sheetRef} column ${index + 1} is "${existing}"; expected "${REVIEW_QUEUE_HEADERS[index]}"`);
-    }
-    if (!existing) {
-      const column = String.fromCharCode('A'.charCodeAt(0) + index);
-      updates.push({ range: `${sheetRef}!${column}1:${column}1`, values: [[REVIEW_QUEUE_HEADERS[index]]] });
-    }
-  }
-  if (updates.length > 0) await writeGoogleSheet(config, { updates });
-}
-
-export async function syncReviewQueueToGoogleSheet(params: {
-  db: SupabaseClient;
-  limit?: number;
-}): Promise<ReviewSheetSyncSummary> {
-  const limit = params.limit ?? MAX_SYNC_CANDIDATES;
-  if (!Number.isInteger(limit) || limit < 1 || limit > MAX_SYNC_CANDIDATES) {
-    throw new Error(`Sheet sync limit must be an integer from 1 to ${MAX_SYNC_CANDIDATES}`);
-  }
-
+export async function syncReviewQueueToGoogleSheet({ db }: { db: SupabaseClient }): Promise<ReviewSheetSyncSummary> {
   const config = readGoogleSheetsConfig();
-  await ensureGoogleSheetTab(config, config.archiveRange);
-  let snapshot = await fetchGoogleSheet(config);
-  let archiveSnapshot = await fetchGoogleSheet(config, { range: config.archiveRange });
-  await ensureHeaders({ config, range: config.range, snapshot });
-  await ensureHeaders({ config, range: config.archiveRange, snapshot: archiveSnapshot });
-  snapshot = await fetchGoogleSheet(config);
-  archiveSnapshot = await fetchGoogleSheet(config, { range: config.archiveRange });
+  if (!config) throw new Error('Google Sheets review queue is not configured');
 
-  const recordIdColumn = headerIndex(snapshot.rows[0] ?? [], 'Supabase Record ID');
-  const sheetIds = [...new Set(snapshot.rows.slice(1)
-    .map((row) => String(row[recordIdColumn] ?? '').trim())
-    .filter((id) => UUID_PATTERN.test(id)))];
+  const { data: candidates, error: candidatesError } = await db
+    .from('opportunities')
+    .select(
+      'id,title,posting_url,location,eligibility,focus_area,scientific_lanes,deadline,deadline_text,application_type,' +
+      'source_status_raw,relevance_score,audience_bucket,audience_reason,eligibility_evidence,continued_enrollment_required,' +
+      'work_authorization,application_opened_at,last_checked_at,source_check_result,first_seen_at,companies(name),' +
+      'opportunity_source_links(source_postings(canonical_url,external_posting_id,remote_type,posted_at))',
+    )
+    .eq('status', 'needs_review')
+    .order('relevance_score', { ascending: false, nullsFirst: false })
+    .limit(MAX_SYNC_CANDIDATES);
+  if (candidatesError) throw new Error(candidatesError.message);
+
+  const [reviewSnapshot, archiveSnapshot] = await Promise.all([
+    fetchGoogleSheet(config),
+    ensureGoogleSheetTab({
+      config,
+      title: 'Archive',
+      rows: 5_000,
+      cols: REVIEW_QUEUE_COLUMNS,
+      headers: [...REVIEW_QUEUE_HEADERS],
+    }),
+  ]);
+
+  const reviewStates = (reviewSnapshot.rows.slice(1)
+    .map((row) => String(row[23] ?? '').trim())
+    .filter((id) => UUID_PATTERN.test(id)));
   let states: ReviewSheetOpportunityState[] = [];
-  if (sheetIds.length > 0) {
-    const { data: stateRows, error: stateError } = await params.db.from('opportunities')
-      .select('id, status, review_status, public_safe').in('id', sheetIds);
-    if (stateError) throw new Error(`Could not reconcile resolved Sheet rows: ${stateError.message}`);
+  if (reviewStates.length > 0) {
+    const { data: stateRows, error: stateError } = await db
+      .from('opportunities')
+      .select('id,status,review_status,public_safe')
+      .in('id', reviewStates);
+    if (stateError) throw new Error(stateError.message);
     states = (stateRows ?? []) as ReviewSheetOpportunityState[];
   }
 
-  const archivePlan = planResolvedRowArchive(snapshot, archiveSnapshot, states);
+  const archivePlan = planResolvedRowArchive(reviewSnapshot, archiveSnapshot, states);
   if (archivePlan.appendRows.length > 0) {
-    await writeGoogleSheet(config, { appendRows: archivePlan.appendRows }, { appendRange: config.archiveRange });
+    const firstEmpty = Math.max(archiveSnapshot.rows.length + 1, 2);
+    await writeGoogleSheet({
+      config,
+      updates: [{
+        range: `'Archive'!A${firstEmpty}:Z${firstEmpty + archivePlan.appendRows.length - 1}`,
+        values: archivePlan.appendRows,
+      }],
+    });
   }
   if (archivePlan.deleteRowNumbers.length > 0) {
-    await deleteGoogleSheetRows(config, config.range, archivePlan.deleteRowNumbers);
-    snapshot = await fetchGoogleSheet(config);
+    await deleteGoogleSheetRows({
+      config,
+      tabTitle: config.tabName,
+      rowNumbers: archivePlan.deleteRowNumbers,
+    });
   }
 
-  const baseColumns =
-    'id, title, posting_url, location, eligibility, focus_area, scientific_lanes, deadline, deadline_text, ' +
-    'application_type, source_status_raw, relevance_score, audience_bucket, audience_reason, ' +
-    'eligibility_evidence, continued_enrollment_required, work_authorization, application_opened_at, ' +
-    'last_checked_at, source_check_result, first_seen_at, companies(name), ';
-  const [machineResult, sheetResult] = await Promise.all([
-    params.db.from('opportunities').select(
-      baseColumns +
-      'opportunity_source_links!inner(source_posting_id, source_postings(canonical_url, external_posting_id, remote_type, posted_at))',
-    )
-      .eq('status', 'needs_review')
-      .order('relevance_score', { ascending: false, nullsFirst: false })
-      .limit(limit),
-    params.db.from('opportunities').select(
-      baseColumns +
-      'opportunity_source_links(source_posting_id, source_postings(canonical_url, external_posting_id, remote_type, posted_at))',
-    )
-      .eq('source_record_id', config.sourceRecordId)
-      .eq('status', 'needs_review')
-      .order('relevance_score', { ascending: false, nullsFirst: false })
-      .limit(limit),
-  ]);
-  if (machineResult.error) throw new Error(`Could not load machine review candidates: ${machineResult.error.message}`);
-  if (sheetResult.error) throw new Error(`Could not load Sheet review candidates: ${sheetResult.error.message}`);
-
-  const byCandidateId = new Map<string, ReviewSheetCandidate>();
-  const loaded = [...(machineResult.data ?? []), ...(sheetResult.data ?? [])] as unknown as ReviewSheetCandidate[];
-  for (const candidate of loaded) byCandidateId.set(candidate.id, candidate);
-  const candidates = [...byCandidateId.values()]
-    .toSorted((a, b) => (b.relevance_score ?? -1) - (a.relevance_score ?? -1))
-    .slice(0, limit);
-  const plan = planReviewSheetSync(snapshot, candidates);
-  await writeGoogleSheet(config, { updates: plan.updates });
+  const refreshedReviewSnapshot = archivePlan.deleteRowNumbers.length > 0
+    ? await fetchGoogleSheet(config)
+    : reviewSnapshot;
+  const syncPlan = planReviewSheetSync(
+    refreshedReviewSnapshot,
+    (candidates ?? []) as unknown as ReviewSheetCandidate[],
+  );
+  if (syncPlan.updates.length > 0) await writeGoogleSheet({ config, updates: syncPlan.updates });
 
   return {
-    appended: plan.appended,
-    refreshed: plan.refreshed,
-    linked: plan.linked,
-    alreadyPresent: plan.alreadyPresent,
-    totalMachineCandidates: byCandidateId.size,
+    ...syncPlan,
+    totalMachineCandidates: candidates?.length ?? 0,
     archived: archivePlan.archived,
     alreadyArchived: archivePlan.alreadyArchived,
-    sheetRange: snapshot.range,
-    archiveRange: config.archiveRange,
+    sheetRange: config.range,
+    archiveRange: archiveSnapshot.range,
   };
 }
