@@ -9,6 +9,27 @@ export type DiscoveryPromotionResolution =
   | { ready: true; canonicalUrl: string; employer: string; title: string }
   | { ready: false; reason: string };
 
+export type EmployerSourceUrlResolution =
+  | { valid: true; canonicalUrl: string }
+  | { valid: false; reason: string };
+
+const DISCOVERY_ONLY_HOSTS = [
+  'linkedin.com',
+  'lnkd.in',
+  'indeed.com',
+  'glassdoor.com',
+  'monster.com',
+  'ziprecruiter.com',
+  'simplyhired.com',
+  'talent.com',
+  'jobleads.com',
+  'tallo.com',
+  'internships.com',
+  'builtin.com',
+  'handshake.com',
+  'joinhandshake.com',
+] as const;
+
 function safeHttpsUrl(value: string | null): string | null {
   if (!value) return null;
   try {
@@ -17,6 +38,34 @@ function safeHttpsUrl(value: string | null): string | null {
   } catch {
     return null;
   }
+}
+
+function hostMatches(hostname: string, blocked: string): boolean {
+  return hostname === blocked || hostname.endsWith(`.${blocked}`);
+}
+
+/**
+ * Validate a URL supplied by an officer as employer-controlled publication
+ * evidence. Known social, aggregator, and discovery-only hosts are rejected.
+ * The officer must still attest that an allowed URL belongs to the employer or
+ * its recruiting/ATS provider because hostname allowlists cannot prove that.
+ */
+export function validateEmployerControlledSourceUrl(value: string): EmployerSourceUrlResolution {
+  const canonicalUrl = safeHttpsUrl(value.trim());
+  if (!canonicalUrl) {
+    return { valid: false, reason: 'Enter a valid HTTPS employer or recruiting-system URL' };
+  }
+
+  const hostname = new URL(canonicalUrl).hostname.toLowerCase().replace(/^www\./, '');
+  const blocked = DISCOVERY_ONLY_HOSTS.find((domain) => hostMatches(hostname, domain));
+  if (blocked) {
+    return {
+      valid: false,
+      reason: 'LinkedIn and job aggregators are discovery evidence only. Use the employer career site or its ATS posting.',
+    };
+  }
+
+  return { valid: true, canonicalUrl };
 }
 
 /**

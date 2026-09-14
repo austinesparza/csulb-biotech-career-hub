@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { resolveDiscoveryPromotion } from '../lib/discovery-promotion';
+import {
+  resolveDiscoveryPromotion,
+  validateEmployerControlledSourceUrl,
+} from '../lib/discovery-promotion';
 
 describe('resolveDiscoveryPromotion', () => {
   it('allows a resolved employer-controlled HTTPS source to become a private draft', () => {
@@ -47,5 +50,34 @@ describe('resolveDiscoveryPromotion', () => {
     });
     expect(result.ready).toBe(false);
     if (!result.ready) expect(result.reason).toMatch(/employer/i);
+  });
+});
+
+describe('validateEmployerControlledSourceUrl', () => {
+  it('accepts employer and recruiting-system HTTPS URLs', () => {
+    expect(validateEmployerControlledSourceUrl('https://company.example/careers/job/1')).toEqual({
+      valid: true,
+      canonicalUrl: 'https://company.example/careers/job/1',
+    });
+    expect(validateEmployerControlledSourceUrl('https://company.wd5.myworkdayjobs.com/job/role')).toEqual({
+      valid: true,
+      canonicalUrl: 'https://company.wd5.myworkdayjobs.com/job/role',
+    });
+  });
+
+  it('rejects LinkedIn and shortened LinkedIn URLs as publication provenance', () => {
+    const linkedIn = validateEmployerControlledSourceUrl('https://www.linkedin.com/jobs/view/123');
+    expect(linkedIn.valid).toBe(false);
+    if (!linkedIn.valid) expect(linkedIn.reason).toMatch(/discovery evidence/i);
+
+    const shortened = validateEmployerControlledSourceUrl('https://lnkd.in/example');
+    expect(shortened.valid).toBe(false);
+  });
+
+  it('rejects common job aggregators and non-HTTPS URLs', () => {
+    expect(validateEmployerControlledSourceUrl('https://www.indeed.com/viewjob?jk=123').valid).toBe(false);
+    const insecure = validateEmployerControlledSourceUrl('http://careers.example.com/job/123');
+    expect(insecure.valid).toBe(false);
+    if (!insecure.valid) expect(insecure.reason).toMatch(/https/i);
   });
 });

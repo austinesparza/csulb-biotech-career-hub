@@ -4,6 +4,7 @@ import { updateDiscoveryLeadStatus } from './actions';
 import {
   promoteAllVerifiedDiscoveryLeads,
   promoteDiscoveryLeadToDraft,
+  resolveEmployerSourceAndPromote,
 } from './discovery-promotion-actions';
 
 export interface DiscoveryLeadRow extends DiscoveryLead {
@@ -52,8 +53,8 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
         <div className="admin-page-eyebrow">Discovery handoff</div>
         <h2 id="discovery-promotion-title">Move verified leads into opportunity review</h2>
         <p>
-          Discovery is only the first stage. Leads with an employer-controlled source can now become private opportunity drafts in one step.
-          LinkedIn-only and unresolved leads remain here until provenance is resolved.
+          Discovery is only the first stage. Leads with an employer-controlled source can become private opportunity drafts in one step.
+          For a LinkedIn-only lead, paste the official employer or ATS posting directly on its card to resolve provenance and promote it without leaving this page.
         </p>
       </div>
       <div className="review-publish-stats" aria-label="Discovery promotion status">
@@ -133,11 +134,39 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
           </dl>
         </details> : null}
 
-        {!promotion.ready ? <p className="mt-3 text-xs font-semibold">
-          {row.route === 'linkedin_lead' || row.resolution === 'linkedin_only'
-            ? 'LinkedIn is discovery evidence only. Resolve an employer-controlled source before promotion.'
-            : promotion.reason}
-        </p> : <p className="mt-3 text-xs font-semibold" style={{ color: 'var(--teal-deep)' }}>
+        {!promotion.ready ? <>
+          <p className="mt-3 text-xs font-semibold">
+            {row.route === 'linkedin_lead' || row.resolution === 'linkedin_only'
+              ? 'LinkedIn is discovery evidence only. Resolve an employer-controlled source before promotion.'
+              : promotion.reason}
+          </p>
+          {row.employer_hint?.trim() && row.latest_title?.trim() ? <details className="mt-3 rounded-lg border p-3" style={{ borderColor: 'var(--line)', background: 'var(--paper-2)' }}>
+            <summary className="cursor-pointer text-sm font-semibold">I found the official employer posting</summary>
+            <form action={resolveEmployerSourceAndPromote} className="mt-3 grid gap-3">
+              <input type="hidden" name="id" value={row.id} />
+              <label className="grid gap-1 text-xs font-semibold">
+                Employer career or ATS URL
+                <input
+                  type="url"
+                  name="employer_url"
+                  required
+                  inputMode="url"
+                  placeholder="https://company.com/careers/job/..."
+                  className="rounded border bg-white px-3 py-2 text-sm font-normal"
+                  style={{ borderColor: 'var(--line-strong)' }}
+                />
+              </label>
+              <label className="flex items-start gap-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
+                <input type="checkbox" name="source_confirmed" required className="mt-0.5" />
+                <span>I verified this is an employer-controlled career page or an employer recruiting/ATS posting, not LinkedIn or a job aggregator.</span>
+              </label>
+              <button type="submit" className="primary-button justify-self-start">Save source + promote to Review Queue</button>
+              <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                This creates a private review draft only. It does not publish the opportunity.
+              </p>
+            </form>
+          </details> : null}
+        </> : <p className="mt-3 text-xs font-semibold" style={{ color: 'var(--teal-deep)' }}>
           Employer-controlled source resolved. This lead can move to the normal private opportunity-review queue.
         </p>}
 
