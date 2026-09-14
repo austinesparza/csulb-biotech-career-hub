@@ -112,6 +112,63 @@
   color: #8f2828;
 }
 
+.officer-content .review-groups {
+  display: grid;
+  gap: 22px;
+}
+
+.officer-content .review-group {
+  display: grid;
+  gap: 10px;
+}
+
+.officer-content .review-group-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 2px 8px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.officer-content .review-group-head h2 {
+  color: var(--navy);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.officer-content .review-group-head p {
+  margin-top: 3px;
+  max-width: 74ch;
+  color: var(--ink-soft);
+  font-size: .75rem;
+  line-height: 1.45;
+}
+
+.officer-content .review-group-head > span {
+  min-width: 30px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-2);
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: .68rem;
+  text-align: center;
+}
+
+.officer-content .review-group-decision-ready .review-group-head {
+  border-bottom-color: #9bcdbd;
+}
+
+.officer-content .review-group-needs-confirmation .review-group-head {
+  border-bottom-color: #d9c985;
+}
+
+.officer-content .review-group-outside-board .review-group-head {
+  border-bottom-color: #d7b3b3;
+}
+
 .officer-content .review-records {
   display: grid;
   gap: 12px;
@@ -239,6 +296,10 @@
   .officer-content .review-publish-action .primary-button {
     width: 100%;
     min-width: 0;
+  }
+
+  .officer-content .review-group-head {
+    gap: 10px;
   }
 
   .officer-content .review-record {
