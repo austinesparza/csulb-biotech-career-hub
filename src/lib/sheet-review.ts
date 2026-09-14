@@ -73,7 +73,13 @@ export function deriveSheetAudienceDefaults(input: {
   const hasUndergraduate = /\bundergraduate\b|\bbachelor(?:'s|s)?\b|\bpost[ -]?baccalaureate\b|\bpostbac\b/.test(combined);
 
   let audienceBucket: AudienceBucket = 'unknown';
-  if (hasMasters) audienceBucket = hasUndergraduate ? 'mixed' : 'graduate';
+  if (hasUndergraduate && (hasMasters || hasDoctoral)) {
+    audienceBucket = 'mixed';
+  } else if (hasMasters) {
+    audienceBucket = 'graduate';
+  } else if (hasUndergraduate) {
+    audienceBucket = 'undergraduate';
+  }
 
   let graduateStage: GraduateStage = 'unknown';
   if (hasMasters && (
@@ -92,6 +98,8 @@ export function deriveSheetAudienceDefaults(input: {
     graduateStage = 'graduate_unspecified';
   } else if (hasDoctoral) {
     graduateStage = 'doctoral_only';
+  } else if (hasUndergraduate) {
+    graduateStage = 'not_msc';
   }
 
   return {
