@@ -23,6 +23,25 @@ describe('employer logo presentation', () => {
     expect(companyLogoAsset('AbbVie')).toEqual({ src: '/brand/logos/abbvie.svg', fit: 'compact' });
   });
 
+  it('covers more high-value historical employers with traceable local marks', () => {
+    expect(companyLogoAsset('Fujifilm Diosynth Biotechnologies')).toEqual({
+      src: '/brand/logos/fujifilm.svg',
+      fit: 'compact',
+    });
+    expect(companyLogoAsset('Merck & Co.')).toEqual({
+      src: '/brand/logos/merck.svg',
+      fit: 'compact',
+    });
+    expect(companyLogoAsset('Genentech')).toEqual({
+      src: '/brand/logos/genentech.svg',
+      fit: 'wide',
+    });
+    expect(companyLogoAsset('Thermo Fisher Scientific')).toEqual({
+      src: '/brand/logos/thermo-fisher-scientific.svg',
+      fit: 'wide',
+    });
+  });
+
   it('recognizes the current Johnson & Johnson business name', () => {
     expect(companyLogoPath('Johnson & Johnson Innovative Medicine')).toBe(
       '/brand/logos/johnson-johnson.svg',
