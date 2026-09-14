@@ -47,6 +47,24 @@ describe('officer spreadsheet review handoff', () => {
     });
   });
 
+  it('preserves undergraduate-only Sheet decisions as a publishable undergraduate audience', () => {
+    expect(readSheetReviewIntent({
+      'Publish Decision': 'Approve',
+      'Public Safe?': true,
+      'Graduate Access': 'Undergraduate only',
+      'Year / Program Requirement': "Current bachelor's student in life sciences",
+      'Key Evidence': 'Official posting requires current undergraduate enrollment.',
+      Reviewer: 'Officer B',
+    })).toEqual({
+      decision: 'approve',
+      publicSafe: true,
+      audienceBucket: 'undergraduate',
+      audienceReason: 'Official posting requires current undergraduate enrollment.',
+      graduateStage: 'not_msc',
+      reviewer: 'Officer B',
+    });
+  });
+
   it('drops unused checkbox template rows but retains partial candidates', () => {
     const rows = [
       ['Candidate ID', 'Employer', 'Role Title', 'Source URL', 'Public Safe?'],
