@@ -2,7 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { quickAddOpportunity } from '@/app/admin/add/actions';
-import { resolveDiscoveryPromotion } from '@/lib/discovery-promotion';
+import {
+  resolveDiscoveryPromotion,
+  validateEmployerControlledSourceUrl,
+} from '@/lib/discovery-promotion';
 import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
 
 function requiredId(formData: FormData): string {
@@ -73,7 +76,7 @@ async function promoteDiscoveryLead(id: string): Promise<'created' | 'existing'>
   draft.set('private_notes', [
     `Promoted from verified discovery lead ${lead.id}.`,
     `Discovery source: ${lead.original_url}`,
-    'An employer-controlled source was resolved automatically. Officer review of the full posting is still required before publication.',
+    'An employer-controlled source was resolved. Officer review of the full posting is still required before publication.',
     lead.latest_snippet?.trim() ? `Discovery snippet: ${lead.latest_snippet.trim()}` : null,
   ].filter(Boolean).join('\n'));
 
@@ -85,6 +88,43 @@ async function promoteDiscoveryLead(id: string): Promise<'created' | 'existing'>
 /** Promote one verified discovery lead into the normal private opportunity queue. */
 export async function promoteDiscoveryLeadToDraft(formData: FormData): Promise<void> {
   const id = requiredId(formData);
+  await promoteDiscoveryLead(id);
+  revalidatePath('/admin');
+  revalidatePath('/admin/review');
+}
+
+/**
+ * Officer shortcut for the common LinkedIn/web-search handoff: paste the
+ * employer-controlled career/ATS URL, attest provenance, and create the same
+ * private review draft in one submission. It never publishes an opportunity.
+ */
+export async function resolveEmployerSourceAndPromote(formData: FormData): Promise<void> {
+  await requireOfficer();
+  const id = requiredId(formData);
+  if (String(formData.get('source_confirmed') ?? '') !== 'on') {
+    throw new Error('Confirm that the URL is controlled by the employer or its recruiting system');
+  }
+
+  const sourceResolution = validateEmployerControlledSourceUrl(
+    String(formData.get('employer_url') ?? ''),
+  );
+  if (!sourceResolution.valid) throw new Error(sourceResolution.reason);
+
+  const db = createServiceClient();
+  const now = new Date().toISOString();
+  const { data: updated, error } = await db.from('discovery_leads').update({
+    canonical_employer_url: sourceResolution.canonicalUrl,
+    resolution: 'official_source_found',
+    archive_reason: 'Officer resolved an employer-controlled source. Lead is eligible for private opportunity review handoff.',
+    updated_at: now,
+  })
+    .eq('id', id)
+    .in('officer_status', ['new', 'in_review'])
+    .select('id')
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!updated) throw new Error('Discovery lead is no longer active; refresh the queue before retrying');
+
   await promoteDiscoveryLead(id);
   revalidatePath('/admin');
   revalidatePath('/admin/review');
