@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { companyLogoPath } from '@/lib/companyLogos';
+import { companyLogoAsset } from '@/lib/companyLogos';
 
 export interface PublicCompany {
   id: string;
@@ -114,13 +114,13 @@ export function CompanyDirectory({
       ) : (
         <ul className="company-directory-grid">
           {filtered.map((company) => {
-            const logo = companyLogoPath(company.name);
+            const logo = companyLogoAsset(company.name);
             return (
               <li key={company.id} className="company-directory-card">
                 <div className="company-directory-topline">
-                  <div className={`company-directory-mark${logo ? ' has-logo' : ''}`}>
+                  <div className={`company-directory-mark${logo ? ` has-logo logo-${logo.fit}` : ''}`}>
                     {logo
-                      ? <Image src={logo} alt={`${company.name} logo`} width={150} height={58} />
+                      ? <Image src={logo.src} alt="" aria-hidden="true" width={180} height={64} />
                       : <span aria-hidden="true">{initials(company.name)}</span>}
                   </div>
                   <div className="company-record-badges">

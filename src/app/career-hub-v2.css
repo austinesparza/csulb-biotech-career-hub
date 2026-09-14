@@ -1010,3 +1010,115 @@ body {
   .deadline-export-actions button { width: 100%; }
   .company-status-tabs { overscroll-behavior-inline: contain; }
 }
+
+
+/* Authoritative employer-mark presentation.
+   Wide wordmarks and compact symbols need different frames; do not stretch either. */
+.featured-company {
+  display: flex;
+  min-width: 0;
+  min-height: 48px;
+  align-items: center;
+}
+.featured-company.has-logo {
+  width: min(180px, 100%);
+  height: 54px;
+}
+.featured-company.is-wordmark {
+  font-family: var(--sans);
+  font-size: .78rem;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.featured-company img,
+.company-directory-mark img,
+.company-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: left center;
+  padding: 0;
+  background: transparent;
+}
+.featured-company.logo-compact,
+.company-directory-mark.has-logo.logo-compact,
+.company-mark-logo.logo-compact {
+  width: 68px;
+}
+.featured-company.logo-compact img,
+.company-directory-mark.logo-compact img,
+.company-mark.logo-compact img {
+  object-position: center;
+}
+
+.company-directory-mark {
+  width: 56px;
+  height: 50px;
+  border-color: var(--line-strong);
+  border-radius: 2px;
+  background: var(--paper-2);
+  font-size: 1rem;
+}
+.company-directory-mark.has-logo {
+  width: min(180px, 58%);
+  height: 58px;
+  border: 0;
+  background: transparent;
+}
+.company-directory-card {
+  min-height: 0;
+}
+
+.company-mark-logo {
+  width: 124px;
+  height: 56px;
+  border: 0;
+  background: transparent;
+}
+
+@media (max-width: 700px) {
+  .featured-list a {
+    grid-template-columns: minmax(0, 1fr) 28px;
+    gap: 8px 14px;
+    padding-block: 20px;
+  }
+  .featured-company {
+    grid-column: 1 / -1;
+    margin-bottom: 2px;
+  }
+  .featured-role { grid-column: 1; }
+  .featured-list time { grid-column: 1; }
+  .featured-arrow {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    align-self: center;
+  }
+  .featured-company.has-logo {
+    width: min(184px, 72vw);
+    height: 52px;
+  }
+  .featured-company.logo-compact {
+    width: 68px;
+  }
+  .company-directory-card {
+    min-height: 0;
+    padding: 22px;
+  }
+  .company-directory-mark.has-logo {
+    width: min(180px, 62%);
+    height: 56px;
+  }
+  .company-directory-mark.has-logo.logo-compact {
+    width: 68px;
+  }
+  .company-mark-logo {
+    width: 116px;
+    height: 52px;
+  }
+  .company-mark-logo.logo-compact {
+    width: 68px;
+  }
+}

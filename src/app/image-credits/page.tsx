@@ -19,12 +19,15 @@ const MICROSCOPY = [
 ] as const;
 
 const LOGOS = [
+  ['3M', 'https://simpleicons.org/?q=3m'],
+  ['AbbVie', 'https://simpleicons.org/?q=abbvie'],
   ['Johnson & Johnson', 'https://commons.wikimedia.org/wiki/File:Johnson_and_Johnson_Logo.svg'],
   ['Amgen', 'https://commons.wikimedia.org/wiki/File:Amgen.svg'],
   ['Ginkgo Bioworks', 'https://commons.wikimedia.org/wiki/File:Ginkgo_Bioworks_logo.svg'],
   ['Sanofi', 'https://commons.wikimedia.org/wiki/File:Sanofi-2022.svg'],
   ['MD Anderson Cancer Center', 'https://www.mdanderson.org/'],
   ['CAS', 'https://www.cas.org/'],
+  ['Xaira Therapeutics', 'https://github.com/mlsbio/mlsbio.github.io/blob/main/public/img/sponsors/xaira_black.png'],
 ] as const;
 
 export default function ImageCreditsPage() {
