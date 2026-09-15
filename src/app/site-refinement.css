@@ -48,13 +48,10 @@
   }
 }
 
-/* Image workshop, round 1.
-   Candidate 4 becomes the intimate hero detail: Tom Deerinck / NCMIR epithelial
-   cells, with yellow-green Golgi, magenta actin and cyan DNA. Candidate 2 becomes
-   the global footer statement: Kevin Eliceiri's zebrafish vasculature image.
-   Both source images come from the NIGMS Image & Video Gallery and are credited
-   on /image-credits. The existing local images remain in the DOM as a fallback
-   while this visual direction is being evaluated in preview. */
+/* Image workshop.
+   Tom Deerinck / NCMIR epithelial cells remain the homepage hero detail.
+   The footer uses its self-hosted Purkinje-cell microscopy asset so the image
+   remains reliable under mobile privacy and content-blocking settings. */
 .science-image {
   background-color: #090b0d;
   background-image: url("https://nigms.nih.gov/sites/nigms/files/image-and-video-gallery/Epithelial%20cells%20stitched%20together.jpg");
@@ -69,14 +66,10 @@
 
 .footer-banner-media {
   background-color: #02070a;
-  background-image: url("https://www.nigms.nih.gov/sites/nigms/files/image-and-video-gallery/stiched_fish_blending_high_contrast.png");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
 }
 
 .footer-banner-image {
-  opacity: 0;
+  opacity: 1;
 }
 
 .footer-banner-media::after {
@@ -94,12 +87,88 @@
     height: 290px;
   }
 
-  .footer-banner-media {
-    background-size: 118% auto;
-    background-position: 58% 46%;
+  .footer-banner-image {
+    object-position: 58% 46%;
   }
 
   .footer-banner-media::after {
     background: linear-gradient(180deg, rgba(1, 9, 12, .08) 12%, rgba(1, 9, 12, .72) 100%);
+  }
+}
+
+
+/* Authoritative mobile footer layout.
+   Keep the scientific banner reliable, remove repeated identity text, and use
+   the available phone width instead of stacking every navigation group. */
+@media (max-width: 700px) {
+  .footer-brand-panel {
+    grid-template-columns: 38px minmax(0, 1fr);
+    column-gap: 16px;
+    min-height: 0;
+    padding: 28px 24px;
+  }
+
+  .footer-brand-mark {
+    grid-column: 1;
+    grid-row: 1;
+    width: 38px;
+    height: 38px;
+    margin: 0;
+    align-self: center;
+  }
+
+  .footer-brand-name {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .footer-brand-panel p {
+    grid-column: 1 / -1;
+    margin-top: 24px;
+  }
+
+  .site-footer .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 26px;
+    padding-block: 28px 36px;
+  }
+
+  .footer-identity {
+    display: block;
+  }
+
+  .footer-identity .footer-title {
+    display: none;
+  }
+
+  .site-footer .footer-identity p {
+    max-width: 35ch;
+    margin: 0;
+    font-size: .78rem;
+    line-height: 1.5;
+  }
+
+  .footer-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 20px;
+  }
+
+  .footer-links > div {
+    gap: 9px;
+  }
+
+  .footer-links > div:last-child {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .footer-links > div:last-child > span {
+    grid-column: 1 / -1;
+  }
+
+  .site-footer .footer-links a {
+    min-width: 0;
+    font-size: .8rem;
   }
 }
