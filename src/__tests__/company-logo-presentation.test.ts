@@ -23,6 +23,25 @@ describe('employer logo presentation', () => {
     expect(companyLogoAsset('AbbVie')).toEqual({ src: '/brand/logos/abbvie.svg', fit: 'compact' });
   });
 
+  it('renders the employers currently used by the featured opportunity ledger', () => {
+    expect(companyLogoAsset('Pfizer')).toEqual({
+      src: '/brand/logos/pfizer.svg',
+      fit: 'wide',
+    });
+    expect(companyLogoAsset('Pfizer Inc.')).toEqual({
+      src: '/brand/logos/pfizer.svg',
+      fit: 'wide',
+    });
+    expect(companyLogoAsset('Gilead Sciences, Inc.')).toEqual({
+      src: '/brand/logos/gilead-sciences.svg',
+      fit: 'wide',
+    });
+    expect(companyLogoAsset('Catalent Pharma Solutions')).toEqual({
+      src: '/brand/logos/catalent.svg',
+      fit: 'wide',
+    });
+  });
+
   it('covers more high-value historical employers with traceable local marks', () => {
     expect(companyLogoAsset('Fujifilm Diosynth Biotechnologies')).toEqual({
       src: '/brand/logos/fujifilm.svg',
