@@ -25,7 +25,7 @@ describe('editorial footer containment', () => {
   it('uses the local credited footer image instead of a remote CSS dependency', () => {
     expect(layout).toContain('alt="Cerebellar Purkinje cells expressing fluorescent red proteins"');
     expect(refinements).toContain('.footer-banner-image {\n  opacity: 1;');
-    expect(refinements).not.toContain('stitched_fish_blending_high_contrast.png');
+    expect(refinements).not.toContain('stiched_fish_blending_high_contrast.png');
   });
 
   it('compacts the mobile footer without repeating the product title', () => {
