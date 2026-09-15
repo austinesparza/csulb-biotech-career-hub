@@ -22,10 +22,10 @@ describe('editorial footer containment', () => {
     expect(styles).toContain('.footer-banner-image { display: block; width: 100%; height: 390px;');
   });
 
-  it('uses the local credited footer image instead of a remote CSS dependency', () => {
-    expect(layout).toContain('alt="Cerebellar Purkinje cells expressing fluorescent red proteins"');
-    expect(refinements).toContain('.footer-banner-image {\n  opacity: 1;');
-    expect(refinements).not.toContain('stiched_fish_blending_high_contrast.png');
+  it('preserves the selected blue-green zebrafish footer image', () => {
+    expect(layout).toContain('alt="Zebrafish embryo with cell bodies in blue and blood vessels in green"');
+    expect(refinements).toContain('stiched_fish_blending_high_contrast.png');
+    expect(refinements).toContain('.footer-banner-image {\n  opacity: 0;');
   });
 
   it('compacts the mobile footer without repeating the product title', () => {
