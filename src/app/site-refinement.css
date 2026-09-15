@@ -50,8 +50,8 @@
 
 /* Image workshop.
    Tom Deerinck / NCMIR epithelial cells remain the homepage hero detail.
-   The footer uses its self-hosted Purkinje-cell microscopy asset so the image
-   remains reliable under mobile privacy and content-blocking settings. */
+   Kevin Eliceiri's blue-green zebrafish vasculature image is the global footer
+   statement. Both are credited on /image-credits. */
 .science-image {
   background-color: #090b0d;
   background-image: url("https://nigms.nih.gov/sites/nigms/files/image-and-video-gallery/Epithelial%20cells%20stitched%20together.jpg");
@@ -66,10 +66,14 @@
 
 .footer-banner-media {
   background-color: #02070a;
+  background-image: url("https://www.nigms.nih.gov/sites/nigms/files/image-and-video-gallery/stiched_fish_blending_high_contrast.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 .footer-banner-image {
-  opacity: 1;
+  opacity: 0;
 }
 
 .footer-banner-media::after {
@@ -87,8 +91,9 @@
     height: 290px;
   }
 
-  .footer-banner-image {
-    object-position: 58% 46%;
+  .footer-banner-media {
+    background-size: 118% auto;
+    background-position: 58% 46%;
   }
 
   .footer-banner-media::after {

@@ -65,7 +65,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Image
                 className="footer-banner-image"
                 src="/brand/footer-purkinje-cells.webp"
-                alt="Cerebellar Purkinje cells expressing fluorescent red proteins"
+                alt="Zebrafish embryo with cell bodies in blue and blood vessels in green"
                 width={1200}
                 height={569}
                 sizes="(max-width: 720px) 100vw, 72vw"
