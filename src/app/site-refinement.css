@@ -48,13 +48,10 @@
   }
 }
 
-/* Image workshop, round 1.
-   Candidate 4 becomes the intimate hero detail: Tom Deerinck / NCMIR epithelial
-   cells, with yellow-green Golgi, magenta actin and cyan DNA. Candidate 2 becomes
-   the global footer statement: Kevin Eliceiri's zebrafish vasculature image.
-   Both source images come from the NIGMS Image & Video Gallery and are credited
-   on /image-credits. The existing local images remain in the DOM as a fallback
-   while this visual direction is being evaluated in preview. */
+/* Image workshop.
+   Tom Deerinck / NCMIR epithelial cells remain the homepage hero detail.
+   The footer uses its self-hosted Purkinje-cell microscopy asset so the image
+   remains reliable under mobile privacy and content-blocking settings. */
 .science-image {
   background-color: #090b0d;
   background-image: url("https://nigms.nih.gov/sites/nigms/files/image-and-video-gallery/Epithelial%20cells%20stitched%20together.jpg");
