@@ -1,0 +1,54 @@
+name: Graphify architecture check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/graphify.yml'
+      - 'AGENTS.md'
+      - 'config/ai-tooling.json'
+      - 'package.json'
+      - 'scripts/**'
+      - 'src/**'
+      - 'supabase/**'
+  pull_request:
+    paths:
+      - '.github/workflows/graphify.yml'
+      - 'AGENTS.md'
+      - 'config/ai-tooling.json'
+      - 'package.json'
+      - 'scripts/**'
+      - 'src/**'
+      - 'supabase/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: graphify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+        with:
+          persist-credentials: false
+      - name: Install the pinned local Graphify tool
+        shell: bash
+        run: |
+          python3 -m venv .tools/graphify
+          graphify_version="$(node -p "require('./config/ai-tooling.json').graphify.version")"
+          .tools/graphify/bin/python -m pip install --disable-pip-version-check "graphifyy[sql]==${graphify_version}"
+      - name: Build the deterministic code graph
+        run: npm run graphify:build
+      - name: Validate graph integrity
+        run: npm run graphify:check
+      - name: Require the documented outputs
+        shell: bash
+        run: |
+          test -s graphify-out/graph.json
+          test -s graphify-out/GRAPH_REPORT.md
+          test -s graphify-out/graph.html

@@ -1,6 +1,9 @@
 # Operations and search plan
 
-Status: reconciled with production after the governed ingestion rollout, September 10, 2026. For the concise current runbook, use `docs/15-operational-pipeline.md` and `HANDOFF.md`.
+Status: historical design and rollout record. It contains graduate-only and
+pre-activation assumptions that no longer describe production. For current
+truth, use `docs/16-current-system-status.md`, `docs/17-capability-roadmap.md`,
+`docs/15-operational-pipeline.md`, and `HANDOFF.md`.
 
 This document describes what the Graduate Internship Hub does today, where the current workflow stops, and how to build a reliable search and officer-review system without letting automation publish unverified claims.
 

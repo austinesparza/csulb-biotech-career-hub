@@ -39,6 +39,9 @@ account is exactly the handoff risk to avoid repeating.
 
 | Deliverable | Location |
 |---|---|
+| Documentation authority and history index | `docs/README.md` |
+| Current production status and capability matrix | `docs/16-current-system-status.md` |
+| Improvement and expansion roadmap | `docs/17-capability-roadmap.md` |
 | A. Product brief · S. Final recommendation | `docs/01-product-brief.md` |
 | B. MVP scope | `docs/02-mvp-scope.md` |
 | C. Architecture · N. Repo structure | `docs/03-architecture.md` |
@@ -83,7 +86,23 @@ path.
     workbook; browser input can never choose it or authorize publication.
 
 ## For future officers
-Start with `HANDOFF.md` (operational runbook), then `docs/01` and `docs/02`.
+Start with `docs/16-current-system-status.md`, then `HANDOFF.md` and
+`docs/15-operational-pipeline.md`. The earlier numbered design files preserve
+history and unbuilt options; they are not proof that a feature is active.
+
+## Maintainer knowledge graph
+
+Graphify is a local development aid and has no production authority or
+credentials. The official `graphifyy` package is pinned in
+`config/ai-tooling.json`. Generated output remains under ignored
+`graphify-out/`.
+
+```bash
+npm run tools:install
+npm run graphify:build
+npm run graphify:check
+npm run graphify:query -- "what connects ingestion to publication?"
+```
 
 
 ### Continuous discovery
