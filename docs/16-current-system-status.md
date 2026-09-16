@@ -46,8 +46,9 @@ The 19 public opportunities include undergraduate, graduate, and mixed-audience 
 | Greenhouse source automation | Active | Three enabled, healthy 24-hour sources |
 | Lever, Ashby, USAJOBS, static HTML, schema.org | Implemented, not production-proven | Code and tests exist; no enabled production examples |
 | RSS and generic API source kinds | Registered, not runnable | Canonical connector runner does not process them |
-| Brave search discovery | Implemented, currently off | 25 historical leads; recent cycles disabled |
-| LinkedIn direct scraping | Not implemented | LinkedIn is a private lead surface only |
+| Indexed-web agentic discovery | Implemented, currently off | Brave Search provider, rotating employer and scientific-lane plans, private lead archive, and 25 historical leads; recent cycles disabled |
+| Indexed LinkedIn discovery | Implemented, currently off | Every employer and scientific-lane plan includes LinkedIn job and hiring-post queries; activation requires a search plan with storage rights and production configuration |
+| Direct LinkedIn crawling | Not implemented, permission-gated | No automated worker logs in, reuses member sessions, bypasses controls, or requests LinkedIn pages directly |
 | ScrapeGraphAI fallback | Implemented, optional | Raw text fallback for approved static pages only |
 | Model extraction | Experimental, off | Zero production extraction records |
 | Automatic publication | Intentionally absent | Officer decision and public-view gate required |
