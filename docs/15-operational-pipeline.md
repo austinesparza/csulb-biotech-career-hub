@@ -66,14 +66,16 @@ Every discovery must end in one of these recorded states:
 
 ## LinkedIn discovery
 
-LinkedIn is valuable as a lead surface because employers and staff often announce roles there before search engines fully index an ATS. It is also a poor canonical source because availability, access, and descriptions can change by session.
+LinkedIn is a first-class discovery surface because employers and staff often announce roles there before search engines fully index an ATS. Systematic indexed-web search also reduces dependence on a student's personal network, paid LinkedIn products, and individually tuned feed. LinkedIn is still a weak canonical source because availability, access, and descriptions can change by session.
+
+The implementation is bounded agentic search, not direct LinkedIn crawling. Employer and scientific-lane plans generate searches for indexed LinkedIn job pages and hiring posts. A licensed search provider executes the queries against its web index. The production lane is currently disabled pending confirmed result-storage rights and production configuration.
 
 The system therefore uses this sequence:
 
 1. A public web search or officer submission captures the LinkedIn URL, visible snippet, query, and retrieval time.
 2. A resolver searches for the employer-owned careers or ATS URL.
 3. If found, that official URL becomes the source checked by extraction and officers. The LinkedIn URL remains attached as provenance.
-4. If not found, the lead remains `linkedin_only` or `unresolved`. It may be shown to officers, but cannot establish dates, eligibility, or open status for the public board.
+4. If not found, the lead remains `linkedin_only` or `unresolved`. It is shown privately to officers. An officer may use the verified first-party LinkedIn exception only when the employer published the role, no role-specific official page exists, and separate employer-controlled evidence is supplied. Normal review and publication gates still apply.
 
 The automated worker does not log into LinkedIn, reuse session cookies, solve challenges, rotate accounts, or evade quotas. Officers can still submit a valuable LinkedIn lead manually, and the system will preserve it.
 

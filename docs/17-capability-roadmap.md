@@ -16,14 +16,16 @@ The expansion must improve five outcomes:
 4. **Usability:** help undergraduate and graduate students identify roles they can actually pursue.
 5. **Continuity:** make the system operable after its current developer or officers leave.
 
+Coverage has an equity purpose. Students should not need the right LinkedIn network, a paid recruiting product, or advance knowledge of a particular employer to discover a relevant role. The system should search the public indexed web systematically, including indexed LinkedIn job and hiring-post results, and place the resulting leads into a shared officer-reviewed process.
+
 Feature count is not a success metric. A capability should ship only when its operating owner, evidence boundary, failure mode, and measurable benefit are defined.
 
 ## 2. Non-negotiable constraints
 
 1. Automation may retrieve, archive, normalize, classify, compare, and recommend. It may not approve or publish.
 2. Public pages read only restricted public views or narrowly scoped public functions.
-3. First-party employer or recognized ATS evidence is preferred over aggregators and social posts.
-4. LinkedIn remains a discovery lead unless written permission or an authorized retrieval interface is obtained.
+3. First-party employer or recognized ATS evidence is preferred over aggregators and social posts, but indexed LinkedIn results are a first-class discovery lane.
+4. Agentic search may query a licensed search index for public LinkedIn job and hiring-post results. Direct automated requests to LinkedIn require written permission or an authorized interface.
 5. Unsupported facts remain `Unknown`.
 6. Approved public records are immutable to imports and source refreshes unless an officer performs an audited correction.
 7. Private notes, submitter contact data, raw payloads, and model output do not enter public responses.
@@ -72,7 +74,7 @@ The index is a comparison aid, not an automatic decision. A security blocker or 
 | --- | --- | --- | --- |
 | 0. Control | Days 0 to 14 | Establish ownership, truthful status, and security baseline | No unexplained critical ownership or security blocker |
 | 1. Reliability | Days 15 to 45 | Make scheduling, review, duplicate handling, and imports observable and atomic | One complete cycle is traceable from trigger to public result |
-| 2. Coverage | Days 30 to 90 | Add first-party source classes with measured recall | Each connector has a live private corpus and failure playbook |
+| 2. Coverage | Days 30 to 90 | Add first-party source classes and equitable indexed-web discovery with measured recall | Each connector and search lane has a live private corpus and failure playbook |
 | 3. Student utility | Days 60 to 120 | Improve discovery, comparison, calendar, and local alerts | Usability tests show faster relevant-role discovery |
 | 4. Intelligence | Months 4 to 8 | Add evaluated extraction, ranking, and quality metrics | Real labelled evaluation meets predefined thresholds |
 | 5. Institutionalization | Months 6 to 12 | Add semester reporting, content systems, and succession controls | A new officer can operate and recover the system independently |
@@ -245,11 +247,35 @@ Build a monthly benchmark from known postings at priority employers. Measure:
 
 **Acceptance:** coverage claims use a documented denominator rather than raw posting counts.
 
-### 8.4 LinkedIn boundary
+### 8.4 LinkedIn agentic discovery
 
-Keep LinkedIn as a lead surface only. Do not add login automation, cookies, session reuse, CAPTCHA handling, proxy rotation, or stealth collection. Resolve public search hints or officer-submitted links to employer-controlled evidence.
+Treat indexed LinkedIn job pages and public hiring posts as a priority discovery surface. This is an equity capability: a shared, systematic search reduces dependence on personal connections, paid LinkedIn products, and individually tuned feeds.
 
-**Acceptance:** no automated LinkedIn page request occurs without written permission; no public fact depends solely on a LinkedIn snippet.
+The repository already implements the first bounded version:
+
+1. employer and scientific-lane plans generate `site:linkedin.com/jobs/view` and `site:linkedin.com/posts` queries;
+2. a licensed search API executes those queries against its own web index rather than requesting LinkedIn pages;
+3. every result is archived with the query, visible title, snippet, URL, retrieval time, and provider metadata;
+4. the resolver looks for an employer career page or recognized ATS record;
+5. resolved and unresolved leads enter the private officer queue;
+6. a verified first-party LinkedIn exception can create a review draft when the employer posted the role on LinkedIn, no role-specific employer or ATS page exists, and an officer supplies separate employer-controlled evidence;
+7. publication still requires the normal officer decision and public-safety gate.
+
+Activate this lane after confirming a search plan with result-storage rights. Set the server-only key, storage-rights confirmation, and discovery feature flag in the production runners. Do not add login automation, member cookies, browser-session reuse, CAPTCHA handling, proxy rotation, stealth collection, or direct LinkedIn crawling without written LinkedIn permission.
+
+After the deterministic search lane has a measured baseline, add bounded agentic query refinement. The agent may identify uncovered employers, scientific lanes, program names, locations, degree levels, and seasonal language, then propose or execute approved search-index queries. It may not sign into LinkedIn or fetch LinkedIn pages directly. Query templates, provider responses, refinements, and stop reasons must remain auditable.
+
+Measure this lane separately:
+
+- indexed LinkedIn leads found per completed employer and lane rotation;
+- roles found through LinkedIn-indexed results that other lanes missed;
+- proportion resolved to employer or ATS evidence;
+- verified first-party LinkedIn exceptions;
+- unresolved and dead-link rates;
+- duplicate and false-positive burden;
+- time from lead observation to officer decision.
+
+**Acceptance:** the rotation covers every enabled scientific lane and priority employer at least once every 14 days; every retained result has query and retrieval provenance; all LinkedIn-only leads remain private until officer review; no automated worker requests a LinkedIn page without written permission; and no public fact depends solely on a search snippet.
 
 ### 8.5 Google Sheet operating decision
 
@@ -485,6 +511,7 @@ Never optimize a single count such as “jobs scraped.” High volume can indica
 | U3.1 | Opportunity detail page | 5 | 2 | 4 | 3 | 3.7 | Public schema fields |
 | U3.5 | Accessibility and visual regression | 5 | 4 | 5 | 3 | 4.7 | Stable design baseline |
 | 8.3 | Discovery recall benchmark | 5 | 3 | 4 | 3 | 4.0 | Known-posting benchmark |
+| 8.4 | Activate LinkedIn agentic discovery | 5 | 3 | 5 | 2 | 6.5 | Search plan with storage rights and production configuration |
 | I4.1 | Real labelled corpus | 4 | 4 | 5 | 3 | 4.3 | Officer labeling time |
 | N5.1 | Semester impact reports | 4 | 2 | 3 | 4 | 2.3 | Metric definitions |
 | N5.3 | Mentorship directory | 3 | 1 | 2 | 5 | 1.2 | Consent governance |
@@ -500,6 +527,7 @@ The numeric order does not override dependencies. For example, source expansion 
 - Enable leaked-password protection.
 - Convert the current status and roadmap into the officer review agenda.
 - Replace remote hero/footer delivery with local licensed assets.
+- Confirm a licensed search plan with result-storage rights and document its retention terms.
 
 ### Week 2
 
@@ -515,13 +543,14 @@ The numeric order does not override dependencies. For example, source expansion 
 - Ship conditional-request fixes.
 - Add deadline-review candidate tasks.
 - Add task-age and service-level metrics.
+- Activate the existing LinkedIn job and hiring-post search lane privately, then inspect its first complete rotation before exposing any lead to publication review.
 - Run mobile accessibility and visual regression acceptance.
 
 ## 16. Days 31 to 90
 
 1. Validate one Lever source and one Ashby source privately.
 2. Expand governed Greenhouse coverage among priority employers.
-3. Build the monthly discovery recall benchmark.
+3. Build the monthly discovery recall benchmark, including roles uniquely found through indexed LinkedIn results.
 4. Decide and document the Google Sheet operating mode.
 5. Ship evidence-centered opportunity detail pages.
 6. Add saved local searches, comparison, and calendar-semantic improvements.
