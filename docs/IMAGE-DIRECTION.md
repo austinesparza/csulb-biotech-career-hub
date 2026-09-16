@@ -15,11 +15,22 @@ Use real scientific imagery that can function as art before it functions as expl
 
 ## Current replacement priorities
 
+The live September 15 deployment visibly uses the selected blue-green zebrafish
+artwork in both hero and footer areas, but it is painted through remote CSS
+background URLs. The local footer file remains the older yellow Purkinje-cell
+image and is hidden with zero opacity. The visual selection is no longer the
+problem; delivery, naming, accessibility, and mobile verification are.
+
 ### Homepage hero
-Replace `hero-cells.webp` with a cleaner, more graphic scientific image. Best direction: an isolated organism/cell field on black or a microscopy image with one dominant structure. The image should remain compelling inside the circular crop.
+Localize the selected visible zebrafish artwork and render it through
+`next/image` rather than a third-party CSS background. Preserve the current crop
+and overlay only after validating 390 px, 430 px, tablet, and desktop layouts.
 
 ### Global footer
-Replace `footer-purkinje-cells.webp`. The current yellow cast becomes muddy under the mobile text overlay and is visually heavier than the rest of the site. Prefer dark black/blue scientific imagery with luminous cyan, magenta, violet, or restrained green accents.
+Replace the obsolete hidden `footer-purkinje-cells.webp` file with an accurately
+named local zebrafish asset. Render that asset normally, remove the zero-opacity
+fallback and remote background, and make the alt text and credits describe the
+actual visible image.
 
 ### Homepage mission panel
 Reassess `mission-histology.webp`. Histology is scientifically relevant but should only stay if the crop has a clear visual rhythm and sufficient contrast next to the gold editorial panel.

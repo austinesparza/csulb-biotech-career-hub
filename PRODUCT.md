@@ -1,26 +1,27 @@
 ---
 name: CSULB Biotechnology Club Career Hub
 maintainer: A student club, not a university office
-status: Manual ingestion pilot, moving to reviewed automated discovery
+status: Live officer-reviewed undergraduate and graduate opportunity system
 ---
 
 # PRODUCT.md
 
 ## What this is
 
-A student-maintained, evidence-based record of graduate-level and
-graduate-accessible internships in genomics, cancer research, bioinformatics,
-diagnostics and biologically grounded data science.
+A student-maintained, evidence-based record of undergraduate, graduate, and
+mixed-audience internships and early-career opportunities in biotechnology,
+genomics, cancer research, bioinformatics, diagnostics, manufacturing, and
+related life-science fields.
 
-It is explicitly **not** a general undergraduate internship board, and not a
-commercial job board.
+It is not a general-purpose commercial job board. Its scope is the practical
+career needs of CSULB biotechnology students.
 
 ## Who uses it
 
-**Students — CSULB master's students in biotechnology and related programs.**
+**Students — CSULB undergraduate and graduate students in biotechnology and related programs.**
 They arrive with limited time and a specific question: can I actually apply to
-this, and by when. They are underserved by general job boards, which surface
-undergraduate roles and bury eligibility rules in paragraph six.
+this, and by when. They are underserved by general job boards that mix degree
+stages, hide eligibility rules, and provide little source context.
 
 **Officers — a handful of club members, changing every year.** They review
 submissions, verify postings against official sources, and publish. Their
@@ -55,12 +56,13 @@ Plain, precise, unhurried. The tone of a well-kept lab notebook.
   work-authorization information into any public surface
 - Present an unverified claim as verified
 - Imply official CSULB endorsement
-- Broaden itself into an undergraduate or general internship board
+- Broaden itself beyond biotechnology and adjacent life-science careers without an explicit scope decision
 
 ## Constraints that shape the interface
 
 Officers rotate annually, so anything that depends on institutional memory will
 break. Rules are enforced in code and tests, not by carefulness.
 
-The public site must work offline once installed, and on a five-year-old phone
-on campus wifi.
+The public site must remain usable on current and older phones, under constrained
+campus or mobile networks. Offline installation is not currently implemented
+and must not be promised without a tested service worker and update strategy.

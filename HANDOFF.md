@@ -1,6 +1,8 @@
 # HANDOFF.md — Officer Runbook
 
 > Resolve each **Not documented** item before treating this as a complete handoff.
+> Start with `docs/16-current-system-status.md` for the latest verified feature
+> state and production snapshot.
 
 ## Accounts & credentials
 - GitHub: `austinesparza/csulb-biotech-career-hub` — personal ownership is a
@@ -14,7 +16,9 @@
 1. If the spreadsheet changed: `/admin/import` → Sync from Google Sheet. If unavailable, export CSV → select the source → upload.
 2. Open `/admin/integrations` and confirm the import completed with the expected row and error counts.
 3. `/admin/review`: clear the queue. Open each posting link before approving. Move anything student-useful from private notes into public notes; everything else stays private.
-4. Click "expire past-deadline" sweep.
+4. Filter for past or near deadlines. Verify the official source, then correct,
+   unpublish, or archive the record through `/admin/manage`. An automatic
+   deadline sweep is not currently implemented.
 5. Check new submissions and any "import changed" tasks (a re-import found differences on an already-published listing — apply manually or dismiss).
 6. If a published listing is wrong, open `/admin/manage`, correct or remove it,
    record why, and use revision history if a change must be undone.
@@ -30,11 +34,13 @@
 ## Monthly
 - `/admin` → Export approved CSV → save to the club backup location.
   Backup owner and location: **Not documented — launch blocker.**
-- Review `open_unverified` older than 30 days: verify (Mark checked) or expire.
+- Review `open_unverified` older than 30 days: verify its source, correct it, or
+  remove it through the audited manage workflow.
 - Review open review_tasks older than 2 weeks.
 
 ## Each semester
-- Generate the Semester Impact Report (`/admin` → Reports) before finals.
+- Compile the semester operational summary from exports and integration data.
+  A dedicated Semester Impact Report screen is planned but not implemented.
 - Officer transition: add new officers (Supabase Auth invite + `officers` insert), deactivate departed (`is_active=false`), rotate shared credentials, walk through this file together.
 
 ## How things work (30-second version)

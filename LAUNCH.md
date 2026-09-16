@@ -35,7 +35,9 @@ Work top to bottom. Check each box. Details live in docs/07-deployment.md; this 
 
 ## Phase 3: Vercel (~15 min)
 
-- [x] Import the GitHub repo (club Vercel account)
+- [ ] Confirm the exact production Vercel project, club ownership, GitHub link,
+      production domain, and active cron entries. The live site works, but this
+      ownership state was not independently verified in the September audit.
 - [x] Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY`
 - [ ] Confirm `CRON_SECRET` is Production-only and at least 32 characters, then
       confirm `/admin/integrations` reports scheduled orchestration as Ready.
@@ -55,8 +57,9 @@ Work top to bottom. Check each box. Details live in docs/07-deployment.md; this 
 - [ ] `/admin/review` → work the queue: open each link, set notes, approve/reject
 - [ ] `/admin/manage` → open one published record, confirm the correction form and
       revision history are available, without saving a test change to production
-- [x] Confirm no demo row remains. The production public view currently contains
-      four reviewed opportunity records and no demo-titled record.
+- [x] Confirm no demo row remains. The September 15 production snapshot contained
+      19 reviewed public opportunities and no demo-titled record. Treat this as
+      a dated observation, not a fixed launch count.
 - [ ] Check `/internships` as a logged-out student on your phone
 
 ## Phase 5: Announce (~10 min)

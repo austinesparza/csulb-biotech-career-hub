@@ -1,8 +1,9 @@
 # Operational pipeline and rollout
 
-Status: production schema and schedules are active as of September 11, 2026.
-Xaira Therapeutics, Ginkgo Bioworks, and Flagship Pioneering co-op are configured,
-governance-reviewed, and disabled pending private persistence tests.
+Status: reconciled with the September 15, 2026 production snapshot. Xaira
+Therapeutics, Ginkgo Bioworks, and Flagship Pioneering co-op are enabled,
+governance-reviewed, healthy, and scheduled at 24-hour intervals. See
+`docs/16-current-system-status.md` for the full dated snapshot.
 
 ## The short answer
 
@@ -14,7 +15,8 @@ The database, not GitHub or the officer Sheet, is the publication boundary.
 4. An optional model extracts fields and exact source quotes into `pipeline_extractions`.
 5. An officer reviews and edits the private draft at `/admin/review`.
 6. `decide_opportunity_review` is the only automated-ingestion path that may approve it.
-7. `public_opportunities` exposes only approved and public-safe graduate records.
+7. `public_opportunities` exposes only approved and public-safe undergraduate,
+   graduate, or mixed-audience records that pass the eligibility gate.
 8. `/internships` reads that view on each request, so approval updates the website without a new Vercel deployment.
 
 ```mermaid
@@ -34,8 +36,8 @@ flowchart TD
 | --- | --- | --- |
 | Public suggestions | `user_submissions` and `/admin/review?tab=submissions` | Working |
 | Spreadsheet intake | One-click governed Sheet sync or CSV upload at `/admin/import`; original meaningful rows saved in `raw_import_rows` | Implemented, officer-triggered |
-| Official ATS and government feeds | Canonical Greenhouse, Ashby, Lever, and credentialed USAJOBS adapters in the persistence runner | Greenhouse live-read verified; three reviewed Greenhouse sources configured disabled; other kinds require source-level verification |
-| Public program pages | Conditional fetch with optional Scrapling and ScrapeGraphAI fallback | Implemented; no approved production source configured |
+| Official ATS and government feeds | Canonical Greenhouse, Ashby, Lever, and credentialed USAJOBS adapters in the persistence runner | Three Greenhouse sources enabled and healthy; other kinds require source-level verification |
+| Public program pages | Hardened direct fetch with optional Scrapling and ScrapeGraphAI fallback | Implemented; no approved production source configured; canonical conditional-request state still needs correction |
 | Raw archive | Private `source-payloads` storage plus `source_payloads` metadata and hashes | Implemented |
 | Search lead archive | Private `discovery_leads` plus immutable observations and bounded Brave adapter | Implemented; provider remains disabled until a key and storage rights are confirmed |
 | Posting history | `source_postings` plus immutable `source_posting_versions` | Implemented |
@@ -43,8 +45,8 @@ flowchart TD
 | Extraction | `scripts/run-extraction-worker.ts`, local OmniRoute adapter, quote binding, transit sentinel | Implemented, model disabled by default |
 | Officer decision | `/admin/review` plus atomic `decide_opportunity_review` | Working after migration 0011 |
 | Public board | `public_opportunities` read by the dynamic `/internships` route | Working after migration 0011 |
-| Source scheduling | Two authenticated Vercel cron routes plus idempotent queue RPCs | Deployed; safely processes zero sources until officers enable one |
-| Direct Google Sheet sync | Fixed queue/archive ranges, controlled field ownership, template-row filtering, existing CSV import path | Production configuration exists; two earlier runs exposed blank template rows, which this revision filters before import |
+| Source scheduling | Authenticated Vercel cron routes, GitHub recovery, and idempotent queue RPCs | Three sources run; GitHub recovery is proven, but Vercel project ownership and primary-cron execution still require verification |
+| Direct Google Sheet sync | Fixed queue/archive ranges, controlled field ownership, template-row filtering, existing CSV import path | Recent officer-triggered imports succeeded; Sheet sync was disabled in the audited automated cycles |
 | Integration status | `/admin/integrations` reports each durable handoff | Implemented |
 
 ## Receive and archive rules
@@ -58,7 +60,7 @@ Every discovery must end in one of these recorded states:
 | Official feed | `source_payloads` | `source_postings` and version history | None until approval |
 | Program page | `source_payloads` | One versioned page observation | None until approval |
 | LinkedIn or web lead | `discovery_leads` plus immutable `discovery_lead_observations` | Official source record when found | LinkedIn alone is not publication evidence |
-| Low relevance, adjacent, special, or ineligible | Same raw and normalized history | Archive reason and classification | Hidden from the graduate board, never erased |
+| Low relevance, adjacent, special, or ineligible | Same raw and normalized history | Archive reason and classification | Hidden from the public Career Hub, never erased |
 
 “Not on the graduate board” does not mean “deleted.” It means the record remains available for audits, future undergrad work, source evaluation, and taxonomy improvements.
 
@@ -91,7 +93,24 @@ The extraction adapter defaults to `http://127.0.0.1:20128/v1`. Remote gateways 
 
 ### Graphify
 
-Graphify is development-only. It indexes the repository to help maintainers trace dependencies and impact. It has no database credential, runtime role, or publication authority.
+Graphify is development-only. It indexes the repository to help maintainers
+trace dependencies and impact. It has no database credential, runtime role, or
+publication authority. The official `graphifyy` package is pinned to 0.9.62.
+Generated output is ignored by Git and contains code structure only.
+
+The first build performs deterministic local AST extraction, community
+detection, and a report/HTML export without an external model:
+
+```bash
+npm run graphify:build
+npm run graphify:check
+npm run graphify:query -- "what connects ingestion to publication?"
+npm run graphify:affected -- "runPipelineCycle()"
+```
+
+After code changes, run `npm run graphify:update` and repeat the diagnostic.
+Use the graph to scope investigation, then verify consequential claims in source
+and tests.
 
 ## Spreadsheet workflow
 
