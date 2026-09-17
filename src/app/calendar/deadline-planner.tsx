@@ -16,6 +16,14 @@ function dateParts(value: string) {
   return { year, month, day };
 }
 
+function formatDeadlineDate(value: string) {
+  const { year, month, day } = dateParts(value);
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 function downloadName(items: CalendarDeadline[]) {
   return items.length === 1
     ? `${items[0].company}-${items[0].deadline}.ics`.toLowerCase().replace(/[^a-z0-9.-]+/g, '-')
@@ -143,6 +151,43 @@ export function DeadlinePlanner({ deadlines }: { deadlines: CalendarDeadline[] }
             );
           })}
         </div>
+      </div>
+      <div className="deadline-agenda" aria-label="Deadlines by month">
+        {months.map(([key, monthDeadlines]) => {
+          const { year, month } = dateParts(`${key}-01`);
+          const monthLabel = new Date(year, month - 1, 1).toLocaleDateString('en-US', {
+            month: 'long',
+            year: 'numeric',
+          });
+
+          return (
+            <section className="deadline-agenda-month" key={key} aria-labelledby={`agenda-${key}`}>
+              <h3 id={`agenda-${key}`}>{monthLabel}</h3>
+              <ol>
+                {monthDeadlines.map((item) => (
+                  <li key={item.id}>
+                    <time dateTime={item.deadline}>{formatDeadlineDate(item.deadline)}</time>
+                    <label title={`Select ${item.title}`}>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(item.id)}
+                        onChange={(event) => toggle(item.id, event.target.checked)}
+                      />
+                      <span>{item.company}</span>
+                    </label>
+                    <strong>{item.title}</strong>
+                    {item.location && <p>{item.location}</p>}
+                    <div className="deadline-agenda-actions">
+                      <button type="button" onClick={() => download([item])}>Download .ics</button>
+                      <a href={buildGoogleCalendarUrl(item)} target="_blank" rel="noopener noreferrer">Google Calendar</a>
+                      {item.url && <a href={item.url} target="_blank" rel="noopener noreferrer nofollow">Official posting</a>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          );
+        })}
       </div>
       <p className="deadline-planner-note">Calendar files are generated in your browser. Nothing about your selections is sent to us. Confirm every deadline on the employer posting.</p>
     </div>
