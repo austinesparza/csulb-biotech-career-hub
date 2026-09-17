@@ -68,7 +68,6 @@ export default async function HomePage() {
     <div className="home-editorial">
       <section className="editorial-hero site-wrap">
         <div className="editorial-hero-copy">
-          <p className="home-attribution">Curated and reviewed by the CSULB Biotechnology Club</p>
           <h1>Opportunities for what comes next.</h1>
           <p className="editorial-intro">
             Biotechnology begins with the urge to look closer. Find internships,
@@ -210,7 +209,7 @@ export default async function HomePage() {
             sizes="100vw"
           />
           <div className="home-zebrafish-copy">
-            <h2 id="zebrafish-title">Find the work that draws you in.</h2>
+            <h2 id="zebrafish-title">The next question is yours.</h2>
             <Link href="/internships">Explore current opportunities <span aria-hidden="true">→</span></Link>
           </div>
         </div>

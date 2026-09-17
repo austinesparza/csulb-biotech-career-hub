@@ -83,15 +83,38 @@ export default async function CalendarPage() {
 
       <section className="calendar-pattern" aria-labelledby="pattern-title">
         <div className="calendar-pattern-summary">
-          <p className="calendar-pattern-eyebrow">Historical timing</p>
-          <h2 id="pattern-title">October and November carried most of the activity.</h2>
-          <div className="calendar-season-insight">
-            <strong>{autumnPeakShare}%</strong>
-            <span>of dated roles in the archive appeared in those two months.</span>
-          </div>
+          <p className="calendar-pattern-eyebrow">Fall 2025 through spring 2026</p>
+          <h2 id="pattern-title">
+            {HISTORICAL_ARCHIVE_SUMMARY.roles} roles across{' '}
+            {HISTORICAL_ARCHIVE_SUMMARY.normalizedEmployers} employers.
+          </h2>
+          <p className="calendar-collection-note">
+            Austin Esparza logged these roles by hand across LinkedIn, employer career
+            sites, program pages, and broader web searches.
+          </p>
+          <dl className="calendar-archive-metrics">
+            <div>
+              <dt>{HISTORICAL_ARCHIVE_SUMMARY.datedRoles}</dt>
+              <dd>roles with dated activity</dd>
+            </div>
+            <div>
+              <dt>{RECRUITING_MONTHS.length}</dt>
+              <dd>months observed</dd>
+            </div>
+            <div>
+              <dt>{HISTORICAL_ARCHIVE_SUMMARY.cycles}</dt>
+              <dd>search cycles</dd>
+            </div>
+          </dl>
         </div>
         <div className="calendar-season">
-          <p className="calendar-chart-label">Roles first seen by month</p>
+          <div className="calendar-chart-head">
+            <p className="calendar-chart-label">When dated roles first appeared</p>
+            <div className="calendar-season-insight">
+              <strong>{autumnPeakShare}%</strong>
+              <span>appeared in October or November.</span>
+            </div>
+          </div>
           <ol className="calendar-bars" aria-label="Historical recruiting activity by month">
             {activity.map((item, index) => (
               <li
@@ -113,9 +136,11 @@ export default async function CalendarPage() {
           </p>
         </div>
         <p className="calendar-pattern-source">
-          <span>{HISTORICAL_ARCHIVE_SUMMARY.roles} roles studied</span>
-          <span>{HISTORICAL_ARCHIVE_SUMMARY.cycles} archived cycles</span>
-          <span>{HISTORICAL_ARCHIVE_SUMMARY.datedRoles} roles with dated activity</span>
+          <span>Manually collected</span>
+          <span>LinkedIn</span>
+          <span>Employer career sites</span>
+          <span>Program pages</span>
+          <span>Web search</span>
         </p>
       </section>
 

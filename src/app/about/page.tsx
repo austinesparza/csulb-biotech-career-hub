@@ -1,9 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
+import aboutDnaAnalysts from '../../../public/brand/about-dna-analysts.webp';
 import aboutHela from '../../../public/brand/about-hela.webp';
 import footerLab from '../../../public/brand/footer-lab.webp';
-import prepareStudents from '../../../public/brand/prepare-students.webp';
 
 const DISCOVERY_PATHS = [
   ['Daily source checks', 'Approved employer and program sites'],
@@ -134,8 +134,8 @@ export default function AboutPage() {
       <section className="about-contribute site-wrap">
         <div className="about-contribute-image">
           <Image
-            src={prepareStudents}
-            alt="Biotechnology students working together in a teaching laboratory"
+            src={aboutDnaAnalysts}
+            alt="Three DNA analysts preparing samples at a sequencing laboratory bench"
             fill
             placeholder="blur"
             sizes="(max-width: 820px) 100vw, 60vw"
