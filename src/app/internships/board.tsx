@@ -129,7 +129,7 @@ export function Board({ opportunities, sorted, initialAudience, referenceTime }:
     groups = [
       { label: 'Closing soon', items: closing },
       { label: 'New this week', items: fresh },
-      { label: closing.length + fresh.length ? 'Everything else' : null, items: rest },
+      { label: closing.length + fresh.length ? 'More opportunities' : null, items: rest },
     ].filter((group) => group.items.length > 0);
   }
 
@@ -159,7 +159,7 @@ export function Board({ opportunities, sorted, initialAudience, referenceTime }:
           ))}
         </nav>
         <p className="board-result-count" aria-live="polite">
-          Showing {visibleOpportunities.length} of {opportunities.length} reviewed role{opportunities.length === 1 ? '' : 's'}
+          Showing {visibleOpportunities.length} of {opportunities.length} role{opportunities.length === 1 ? '' : 's'}
         </p>
         {audience && <input type="hidden" form="opportunity-filters" name="audience" value={audience} />}
       </div>
@@ -222,27 +222,19 @@ function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
   bonus: { pts: number; why: string[] };
   referenceTime: number;
 }) {
-  const urgent = !!o.deadline && daysUntil(o.deadline, referenceTime) >= 0 && daysUntil(o.deadline, referenceTime) <= 14;
   const deadlinePassed = !!o.deadline && daysUntil(o.deadline, referenceTime) < 0;
   const timing = o.deadline
     ? `${deadlinePassed ? 'Deadline passed' : 'Apply by'} ${formatDate(o.deadline + 'T00:00:00')}`
     : timingFallbackLabel(o.deadline_text);
   const eligibility = o.eligibility ?? 'Confirm the degree and enrollment requirements in the live posting.';
-  const tags = opportunityTags(o);
+  const tags = opportunityTags(o).slice(0, 2);
   const companyContext = companyContextLine(o);
-  const urgency = deadlinePassed
-    ? 'Deadline passed'
-    : urgent
-      ? 'Closing soon'
-      : isFresh(o, referenceTime)
-        ? 'New this week'
-        : null;
+  const checked = o.last_checked_at ? formatDate(o.last_checked_at) : null;
 
   return (
     <li className="opportunity-record">
       <div className="record-aside">
         <CompanyMark name={o.company_name} />
-        {urgency && <div className="record-urgency">{urgency}</div>}
       </div>
       <div className="record-main">
         <div className="record-company">
@@ -260,47 +252,58 @@ function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
         <div className="record-meta">
           {o.location && <span>{o.location}</span>}
           {o.start_date_text && <span>{o.start_date_text}</span>}
-          <span>{payLabel(o.paid_status)}</span>
         </div>
         <div className="record-actions">
           {o.posting_url
             ? <a className="primary-button" href={o.posting_url} target="_blank" rel="noopener noreferrer nofollow">{postingLinkLabel(o)}</a>
             : <span className="record-verified">Ask a club officer for the source.</span>}
-          {bonus.pts > 0 && <span className="pill pill-teal" title={bonus.why.join(', ')}>Match for you</span>}
-          {isFresh(o, referenceTime) && <span className="pill pill-gold">New</span>}
-          <span className={!deadlinePassed && o.status === 'open_verified' ? 'pill pill-green' : 'pill pill-gold'}>
-            {deadlinePassed ? 'Past deadline' : o.status === 'open_verified' ? 'Reviewed' : 'Check current status'}
-          </span>
+          {bonus.pts > 0 && <span className="preference-match" title={bonus.why.join(', ')}>Matches your saved preferences</span>}
         </div>
-        {o.public_notes && (
-          <div className="record-public-note">
-            <span>{noteLabel(o.public_notes)}</span>
-            <p>{o.public_notes}</p>
-          </div>
-        )}
-        {o.company_description && (
-          <details className="record-company-details">
-            <summary>About {o.company_name}</summary>
-            <p>{o.company_description}</p>
-            {o.company_location && <p className="record-company-location">Company locations: {o.company_location}</p>}
-            {o.company_website && (
-              <a href={o.company_website} target="_blank" rel="noopener noreferrer nofollow">Company website ↗</a>
-            )}
-          </details>
-        )}
       </div>
-      <dl className="annotation">
-        <dt>For</dt>
-        <dd className="eligible">{opportunityAudienceLabel(o)}</dd>
-        <dt style={{ marginTop: 12 }}>Requirements</dt>
-        <dd>{eligibility}</dd>
+      <dl className="record-summary">
+        <div>
+          <dt>For</dt>
+          <dd className="eligible">{opportunityAudienceLabel(o)}</dd>
+        </div>
+        <div>
+          <dt>Deadline</dt>
+          <dd className={deadlinePassed ? 'deadline-passed' : undefined}>{timing}</dd>
+        </div>
+        <div>
+          <dt>Pay</dt>
+          <dd>{payLabel(o.paid_status)}</dd>
+        </div>
       </dl>
-      <dl className="annotation">
-        <dt>Deadline or timing</dt>
-        <dd>{timing}</dd>
-        <dt style={{ marginTop: 12 }}>Evidence</dt>
-        <dd className="record-verified">{sourceEvidenceLabel(o)}</dd>
-      </dl>
+      <details className="record-details">
+        <summary>Eligibility, source, and role notes</summary>
+        <div className="record-details-grid">
+          <section>
+            <h4>Eligibility details</h4>
+            <p>{eligibility}</p>
+          </section>
+          <section>
+            <h4>Source check</h4>
+            <p>{sourceEvidenceLabel(o)}{checked ? ` · Checked ${checked}` : ''}</p>
+            {!checked && <p>Open the live posting to confirm the current status.</p>}
+          </section>
+          {o.public_notes && (
+            <section>
+              <h4>{noteLabel(o.public_notes)}</h4>
+              <p>{o.public_notes}</p>
+            </section>
+          )}
+          {o.company_description && (
+            <section>
+              <h4>About {o.company_name}</h4>
+              <p>{o.company_description}</p>
+              {o.company_location && <p>Company locations: {o.company_location}</p>}
+              {o.company_website && (
+                <a href={o.company_website} target="_blank" rel="noopener noreferrer nofollow">Company website ↗</a>
+              )}
+            </section>
+          )}
+        </div>
+      </details>
     </li>
   );
 }

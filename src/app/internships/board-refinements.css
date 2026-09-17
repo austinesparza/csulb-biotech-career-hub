@@ -135,3 +135,269 @@
   .annotation dt { font-size: .68rem; }
   .annotation dd { font-size: .8rem; line-height: 1.42; }
 }
+
+/* Product-first opportunity rows. Keep decision-critical facts visible and
+   move source notes and long requirements behind one disclosure. */
+.ledger {
+  margin-top: 20px;
+}
+
+.ledger-group-title {
+  padding: 18px 0 8px;
+  font-family: var(--sans);
+  font-size: .72rem;
+  letter-spacing: .05em;
+}
+
+.opportunity-record {
+  grid-template-columns: 108px minmax(0, 1fr) minmax(235px, 290px);
+  gap: 18px 24px;
+  padding: 22px 0 18px;
+  background: transparent;
+}
+
+.opportunity-record:hover {
+  background: var(--paper-2);
+}
+
+.record-aside {
+  align-content: start;
+}
+
+.company-mark-logo {
+  width: 104px;
+  height: 50px;
+}
+
+.record-company {
+  font-size: .78rem;
+}
+
+.record-company-context {
+  margin-top: 1px;
+  font-size: .66rem;
+}
+
+.record-title {
+  max-width: 46ch;
+  margin-top: 3px;
+  font-family: var(--sans);
+  font-size: 1.08rem;
+  font-weight: 750;
+  line-height: 1.3;
+  letter-spacing: -.008em;
+}
+
+.record-tags {
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.record-tags span,
+.record-tags span:nth-child(n) {
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: .64rem;
+}
+
+.record-meta {
+  margin-top: 8px;
+  font-size: .72rem;
+}
+
+.record-actions {
+  margin-top: 11px;
+  gap: 10px 14px;
+}
+
+.record-actions .primary-button {
+  min-height: 40px;
+  padding-inline: 13px;
+  font-size: .78rem;
+}
+
+.preference-match {
+  color: var(--eligible);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.record-summary {
+  display: grid;
+  align-content: start;
+  gap: 11px;
+  margin: 0;
+  padding: 0 0 0 20px;
+  border-left: 1px solid var(--line);
+}
+
+.record-summary > div {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.record-summary dt {
+  color: var(--ink-faint);
+  font-size: .67rem;
+}
+
+.record-summary dd {
+  margin: 0;
+  font-size: .78rem;
+  line-height: 1.4;
+}
+
+.record-summary .eligible {
+  color: var(--eligible);
+  font-weight: 700;
+}
+
+.deadline-passed {
+  color: var(--restricted);
+  font-weight: 700;
+}
+
+.record-details {
+  grid-column: 2 / -1;
+  margin-top: -2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: .76rem;
+}
+
+.record-details > summary {
+  width: max-content;
+  max-width: 100%;
+  cursor: pointer;
+  color: var(--teal-deep);
+  font-weight: 750;
+}
+
+.record-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 32px;
+  padding: 16px 0 7px;
+}
+
+.record-details-grid section {
+  min-width: 0;
+}
+
+.record-details-grid h4 {
+  font-family: var(--sans);
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.record-details-grid p {
+  max-width: 62ch;
+  margin: 5px 0 0;
+  line-height: 1.5;
+}
+
+.record-details-grid a {
+  display: inline-block;
+  margin-top: 6px;
+  font-weight: 750;
+}
+
+@media (max-width: 980px) {
+  .opportunity-record {
+    grid-template-columns: 92px minmax(0, 1fr);
+  }
+
+  .record-summary {
+    grid-column: 2;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 12px 0 0;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .record-summary > div {
+    display: block;
+  }
+
+  .record-summary dd {
+    margin-top: 3px;
+  }
+
+  .record-details {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .opportunity-record {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding-block: 19px;
+  }
+
+  .record-aside {
+    width: auto;
+  }
+
+  .company-mark-logo {
+    width: 96px;
+    height: 44px;
+  }
+
+  .record-title {
+    margin-top: 6px;
+    font-size: 1.12rem;
+    line-height: 1.3;
+  }
+
+  .record-meta {
+    display: flex;
+    gap: 0;
+  }
+
+  .record-meta span:first-child {
+    grid-column: auto;
+  }
+
+  .record-meta span:not(:last-child)::after {
+    display: inline-block;
+  }
+
+  .record-actions {
+    display: flex;
+  }
+
+  .record-actions .primary-button {
+    width: auto;
+    min-height: 44px;
+  }
+
+  .record-summary,
+  .record-details {
+    grid-column: auto;
+  }
+
+  .record-summary {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+
+  .record-summary > div {
+    display: grid;
+    grid-template-columns: 74px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .record-summary dd {
+    margin-top: 0;
+  }
+
+  .record-details-grid {
+    grid-template-columns: 1fr;
+  }
+}

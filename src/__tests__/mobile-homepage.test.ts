@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 const layout = readFileSync('src/app/layout.tsx', 'utf8');
 const home = readFileSync('src/app/page.tsx', 'utf8');
 const mobileStyles = readFileSync('src/app/mobile-polish.css', 'utf8');
+const reductionStyles = readFileSync('src/app/design-reduction.css', 'utf8');
 
 describe('mobile homepage finishing contract', () => {
   it('loads the narrow-screen polish after the core editorial stylesheet', () => {
@@ -14,19 +15,19 @@ describe('mobile homepage finishing contract', () => {
     expect(polishIndex).toBeGreaterThan(coreIndex);
   });
 
-  it('uses intentional hero line groups instead of allowing a word to split', () => {
-    expect(home).toContain('<span className="hero-line">Opportunities</span>');
-    expect(home).toContain('<span className="hero-line">for what</span>');
-    expect(home).toContain('<span className="hero-line">comes next.</span>');
+  it('uses a specific student-facing headline instead of stacked slogans', () => {
+    expect(home).toContain('Biotech internships and research opportunities for CSULB students.');
+    expect(home).not.toContain('Opportunities for what comes next.');
+    expect(home).not.toContain('What we learn about life can change how life is lived.');
     expect(mobileStyles).toContain('overflow-wrap: normal;');
     expect(mobileStyles).toContain('word-break: normal;');
     expect(mobileStyles).toContain('hyphens: none;');
-    expect(mobileStyles).toContain('white-space: nowrap;');
+    expect(reductionStyles).toContain('text-wrap: balance;');
   });
 
   it('keeps the phone hero compact enough to expose the scientific visual sooner', () => {
-    expect(mobileStyles).toContain('@media (max-width: 520px)');
-    expect(mobileStyles).toContain('padding-block: 34px 26px;');
-    expect(mobileStyles).toContain('min-height: 300px;');
+    expect(reductionStyles).toContain('@media (max-width: 700px)');
+    expect(reductionStyles).toContain('padding-block: 38px;');
+    expect(reductionStyles).toContain('aspect-ratio: 4 / 3;');
   });
 });

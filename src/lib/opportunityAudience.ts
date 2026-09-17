@@ -4,6 +4,8 @@ export type OpportunityAudienceFilter = 'undergraduate' | 'graduate';
 
 const UNDERGRAD_SIGNAL = /\bundergraduate\b|\bbachelor(?:'s|s)?\b|\bpost[ -]?baccalaureate\b|\bpostbac\b/i;
 const GRADUATE_SIGNAL = /\bgraduate\b|\bmaster(?:'s|s)?\b|\bmsc\b|\bph\.?d\.?\b|\bdoctoral\b/i;
+const MASTER_SIGNAL = /\bmaster(?:'s|s)?\b|\bm\.?s\.?\b|\bmsc\b/i;
+const DOCTORAL_SIGNAL = /\bph\.?d\.?\b|\bdoctoral\b/i;
 
 export function opportunityAudienceLabel(opportunity: PublicOpportunity): string {
   const evidence = `${opportunity.eligibility ?? ''} ${opportunity.audience_reason ?? ''}`;
@@ -19,6 +21,9 @@ export function opportunityAudienceLabel(opportunity: PublicOpportunity): string
   if (opportunity.audience_bucket === 'special') return 'Program-specific eligibility';
   if (opportunity.audience_bucket === 'adjacent') return 'Related student opportunity';
   if (opportunity.audience_bucket === 'ineligible') return 'Outside the current student audience';
+  if (MASTER_SIGNAL.test(evidence) && DOCTORAL_SIGNAL.test(evidence)) {
+    return 'Master\'s and doctoral students';
+  }
 
   const graduateStages: Partial<Record<PublicOpportunity['graduate_stage'], string>> = {
     msc_year_1: 'First-year master\'s students',

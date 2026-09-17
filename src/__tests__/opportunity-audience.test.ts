@@ -63,6 +63,14 @@ describe('public opportunity audience labels', () => {
     expect(opportunityAudienceLabel(opportunity({ audience_bucket: 'mixed' })))
       .toBe('Undergraduate and graduate students');
   });
+
+  it('does not hide doctoral eligibility behind a masters-only summary', () => {
+    expect(opportunityAudienceLabel(opportunity({
+      audience_bucket: 'graduate',
+      graduate_stage: 'msc_any',
+      eligibility: 'Currently pursuing an MS or PhD in a related technical field.',
+    }))).toBe("Master's and doctoral students");
+  });
 });
 
 describe('opportunity audience filters', () => {

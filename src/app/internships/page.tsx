@@ -87,17 +87,15 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
   return (
     <div className="site-wrap">
       <header className="page-head">
-        <h1>Opportunities</h1>
+        <h1>Biotech opportunities</h1>
         <p className="lede">
-          Biotechnology internships, co-ops, and research roles. Compare the work,
-          audience, timing, and source evidence before you apply.
+          Search internships, co-ops, and research roles. Compare eligibility,
+          timing, location, and pay, then confirm the details at the employer source.
         </p>
       </header>
 
       <section className="board-shell" aria-labelledby="board-title">
-        <div className="section-head">
-          <h2 id="board-title">Opportunity board</h2>
-        </div>
+        <h2 className="sr-only" id="board-title">Opportunity board</h2>
 
         <form className="filters" id="opportunity-filters" method="get">
           <label className="filter-field filter-search">
@@ -124,9 +122,9 @@ export default async function InternshipsPage({ searchParams }: { searchParams: 
               <option value="company">Company A to Z</option>
             </select>
           </label>
-          <button className="primary-button">Apply</button>
-          <label className="filter-field" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <input name="paid" type="checkbox" value="paid" defaultChecked={!!paid} style={{ width: 17, minHeight: 17 }} />
+          <button className="primary-button">Search</button>
+          <label className="filter-field paid-filter">
+            <input name="paid" type="checkbox" value="paid" defaultChecked={!!paid} />
             <span>Paid or stipend only</span>
           </label>
         </form>

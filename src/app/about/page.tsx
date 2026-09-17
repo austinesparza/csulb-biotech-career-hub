@@ -2,29 +2,28 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
 
-const SYSTEM_STEPS = [
-  ['Look in more places', 'Employer feeds, program pages, past club records, and student leads widen the search.'],
-  ['Save the evidence', 'Dates, degree language, pay, methods, and location stay connected to the source text.'],
-  ['Flag what is uncertain', 'A missing date or changed requirement becomes review work. It does not become a guess.'],
-  ['Check before publishing', 'A role reaches the board only after its employer page and important claims have been reviewed.'],
+const REVIEW_STEPS = [
+  ['1', 'Find the role', 'Employer sites, program pages, earlier club records, and student leads help widen the search.'],
+  ['2', 'Check the source', 'A club reviewer confirms the employer page and records the eligibility, timing, location, pay, and scientific focus it actually states.'],
+  ['3', 'Publish what is known', 'The role reaches the public board with its source attached. Missing or conflicting details remain clearly labeled.'],
 ] as const;
 
-const SYSTEM_MEMORY = [
-  ['Preserve the season', 'Employer, role family, month first seen, audience, deadline language, and review outcome become a record we can study.'],
-  ['Learn what repeats', 'Earlier cycles help us decide when to search, which programs tend to return, and what deserves another look.'],
-  ['Measure the model', 'Predictions are tested against later seasons. A current employer source still decides what is open and who can apply.'],
+const STUDENT_PROMISES = [
+  ['The source stays visible', 'Every current role links to the posting students should verify before applying.'],
+  ['Uncertainty is not filled with a guess', 'If a deadline, pay range, or eligibility rule is missing, the board says that directly.'],
+  ['Past listings remain separate', 'Earlier cycles help students anticipate recruiting seasons, but they are never presented as current openings.'],
 ] as const;
 
 export default function AboutPage() {
   return (
-    <div className="about-page">
+    <div className="about-page about-page-reduced">
       <header className="about-hero site-wrap">
         <div>
-          <h1>Talent is everywhere. Access is not.</h1>
+          <h1>A student-run search with the source attached.</h1>
           <p>
-            Biotech roles are scattered across career sites, short recruiting windows,
-            and programs students may never hear about. The Career Hub searches more
-            widely, shows its evidence, and preserves what each class learns for the next.
+            The CSULB Biotechnology Club maintains this hub so students can find
+            opportunities earlier, understand who can apply, and verify every important
+            detail at the employer&apos;s current posting.
           </p>
         </div>
         <figure>
@@ -35,75 +34,60 @@ export default function AboutPage() {
             preload
             sizes="(max-width: 820px) 100vw, 44vw"
           />
+          <figcaption>Fluorescence microscopy of living HeLa cells.</figcaption>
         </figure>
       </header>
+
+      <section className="about-maintainers site-wrap" aria-labelledby="maintainers-title">
+        <h2 id="maintainers-title">Who maintains the Career Hub</h2>
+        <div>
+          <p>
+            Club members collect possible roles, compare them with the employer source,
+            and review the information students need to make a decision. Automation helps
+            the team notice more leads. A student reviewer still decides what is published.
+          </p>
+          <p>
+            The board is an independent club resource. It is not an official CSULB job
+            board, and inclusion is not an endorsement by the university or the club.
+          </p>
+        </div>
+      </section>
 
       <section className="about-system" aria-labelledby="system-title">
         <div className="site-wrap">
           <header>
-            <h2 id="system-title">A search students can inspect.</h2>
+            <h2 id="system-title">How a role reaches the board</h2>
           </header>
-          <div className="about-system-grid">
-            {SYSTEM_STEPS.map(([title, body]) => (
-              <article key={title}><h3>{title}</h3><p>{body}</p></article>
+          <ol className="about-system-grid">
+            {REVIEW_STEPS.map(([number, title, body]) => (
+              <li key={number}>
+                <span>{number}</span>
+                <h3>{title}</h3>
+                <p>{body}</p>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       </section>
 
-      <section className="about-memory site-wrap" aria-labelledby="memory-title">
-        <div className="about-memory-visual">
-          <Image
-            src="/brand/discipline-data-science.webp"
-            alt="Published single-cell sequencing maps used to compare biological populations"
-            fill
-            sizes="(max-width: 820px) 100vw, 40vw"
-          />
-        </div>
-        <div className="about-memory-copy">
-          <h2 id="memory-title">Learning from our past.</h2>
-          {SYSTEM_MEMORY.map(([title, body]) => (
-            <article key={title}><h3>{title}</h3><p>{body}</p></article>
+      <section className="about-promises site-wrap" aria-labelledby="promises-title">
+        <h2 id="promises-title">What students can expect</h2>
+        <div>
+          {STUDENT_PROMISES.map(([title, body]) => (
+            <article key={title}>
+              <h3>{title}</h3>
+              <p>{body}</p>
+            </article>
           ))}
         </div>
       </section>
 
-      <section className="about-tools">
-        <div className="site-wrap about-tools-grid">
-          <div>
-            <h2>More reach without less care.</h2>
-            <p>
-              Automation helps a small student team watch many more employers. Evidence,
-              review, and an archive keep that scale accountable. The goal is simple:
-              fewer opportunities lost because a student lacked time, a connection, or
-              advance knowledge of the recruiting season.
-            </p>
-          </div>
-          <div className="about-tool-list" aria-label="Career Hub capabilities">
-            <span>Official ATS and employer feeds</span>
-            <span>Immutable source observations</span>
-            <span>Field-level evidence</span>
-            <span>Degree and enrollment checks</span>
-            <span>Deadline conflict detection</span>
-            <span>Duplicate and repost matching</span>
-            <span>Human publication gates</span>
-            <span>Audited, reversible corrections</span>
-          </div>
+      <section className="about-contribute about-contribute-plain site-wrap">
+        <div>
+          <h2>Help keep the board accurate.</h2>
         </div>
-      </section>
-
-      <section className="about-contribute site-wrap">
-        <div className="about-contribute-image">
-          <Image
-            src="/brand/discipline-immunology.webp"
-            alt="Fluorescence microscopy of parasites inside human fibroblast cells"
-            fill
-            sizes="(max-width: 820px) 100vw, 52vw"
-          />
-        </div>
-        <div className="about-contribute-copy">
-          <h2>What one student notices can open a door for many.</h2>
-          <p>Send a new role, a changed deadline, a broken link, or evidence that our record needs correction.</p>
+        <div>
+          <p>Send a new role, a changed deadline, a broken link, or evidence that a listing needs correction.</p>
           <div className="about-actions">
             <Link href="/submit" className="primary-button">Submit a role or correction</Link>
             <a href={mailto(CLUB_LINKS.emailSubjectReport)} className="secondary-button">Email the club</a>
@@ -112,9 +96,8 @@ export default function AboutPage() {
       </section>
 
       <p className="about-disclaimer site-wrap">
-        Listings are provided for information. Inclusion is not an endorsement by the
-        CSULB Biotechnology Club or California State University, Long Beach. Always
-        confirm details in the employer&apos;s current posting.
+        Always confirm deadlines, eligibility, compensation, and application instructions
+        in the employer&apos;s current posting before you apply.
       </p>
     </div>
   );
