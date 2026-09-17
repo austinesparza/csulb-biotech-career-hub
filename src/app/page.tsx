@@ -213,7 +213,6 @@ export default async function HomePage() {
             <Link href="/internships">Explore current opportunities <span aria-hidden="true">→</span></Link>
           </div>
         </div>
-        <div className="home-zebrafish-accent" aria-hidden="true" />
       </section>
     </div>
   );

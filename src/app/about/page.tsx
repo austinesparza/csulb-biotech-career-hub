@@ -1,9 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
+import aboutCollaboratingResearch from '../../../public/brand/about-collaborating-research.webp';
 import aboutDnaAnalysts from '../../../public/brand/about-dna-analysts.webp';
 import aboutHela from '../../../public/brand/about-hela.webp';
-import footerLab from '../../../public/brand/footer-lab.webp';
 
 const DISCOVERY_PATHS = [
   ['Daily source checks', 'Approved employer and program sites'],
@@ -41,6 +41,14 @@ export default function AboutPage() {
             This is an independent club resource, not an official CSULB job board.
             Inclusion does not mean the university or the club endorses an employer.
           </p>
+          <a
+            className="about-repository-link"
+            href="https://github.com/austinesparza/csulb-biotech-career-hub"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View the project on GitHub <span aria-hidden="true">↗</span>
+          </a>
         </div>
       </section>
 
@@ -109,8 +117,8 @@ export default function AboutPage() {
       <section className="about-memory site-wrap" aria-labelledby="memory-title">
         <div className="about-memory-visual">
           <Image
-            src={footerLab}
-            alt="A researcher pipetting samples at a laboratory bench while colleagues work nearby"
+            src={aboutCollaboratingResearch}
+            alt="Four biomedical researchers reviewing notes together in a laboratory"
             fill
             placeholder="blur"
             sizes="(max-width: 820px) 100vw, 58vw"

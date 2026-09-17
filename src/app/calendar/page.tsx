@@ -83,13 +83,13 @@ export default async function CalendarPage() {
 
       <section className="calendar-pattern" aria-labelledby="pattern-title">
         <div className="calendar-pattern-summary">
-          <p className="calendar-pattern-eyebrow">Fall 2025 through spring 2026</p>
+          <p className="calendar-pattern-eyebrow">From the club&apos;s historical record</p>
           <h2 id="pattern-title">
             {HISTORICAL_ARCHIVE_SUMMARY.roles} roles across{' '}
             {HISTORICAL_ARCHIVE_SUMMARY.normalizedEmployers} employers.
           </h2>
           <p className="calendar-collection-note">
-            Austin Esparza logged these roles by hand across LinkedIn, employer career
+            Collected from fall 2025 through spring 2026 using LinkedIn, employer career
             sites, program pages, and broader web searches.
           </p>
           <dl className="calendar-archive-metrics">
@@ -135,13 +135,6 @@ export default async function CalendarPage() {
             <span>Past timing is a clue, not a deadline.</span>
           </p>
         </div>
-        <p className="calendar-pattern-source">
-          <span>Manually collected</span>
-          <span>LinkedIn</span>
-          <span>Employer career sites</span>
-          <span>Program pages</span>
-          <span>Web search</span>
-        </p>
       </section>
 
       <section className="calendar-watch-section site-wrap">

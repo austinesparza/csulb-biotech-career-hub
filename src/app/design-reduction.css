@@ -263,8 +263,6 @@
 }
 
 .home-zebrafish-coda {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(96px, 12vw, 150px);
   background: #000;
 }
 
@@ -325,10 +323,6 @@
 
 .home-zebrafish-copy a:hover {
   color: #efc86f;
-}
-
-.home-zebrafish-accent {
-  background: #123f36;
 }
 
 /* Opportunity board shell */
@@ -434,6 +428,21 @@
 .about-maintainers p + p {
   margin-top: 18px;
   color: var(--ink-soft);
+}
+
+.about-repository-link {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  margin-top: 24px;
+  color: var(--teal-deep);
+  font-size: .78rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.about-repository-link:hover {
+  color: var(--gold-mark);
 }
 
 .about-page-reduced .about-system > div {
@@ -918,9 +927,7 @@
 .calendar-pattern {
   display: grid;
   grid-template-columns: minmax(270px, .8fr) minmax(0, 1.2fr);
-  grid-template-areas:
-    "summary chart"
-    "source source";
+  grid-template-areas: "summary chart";
   margin-block: 20px 54px;
   border: 1px solid var(--line-strong);
   background: #f4efe3;
@@ -1097,27 +1104,6 @@
   color: var(--teal-deep);
 }
 
-.calendar-pattern .calendar-pattern-source {
-  grid-area: source;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 0;
-  max-width: none;
-  margin: 0;
-  padding: 15px clamp(24px, 3vw, 44px);
-  border-top: 1px solid var(--line-strong);
-  color: var(--ink-soft);
-  font-family: var(--mono);
-  font-size: .62rem;
-  letter-spacing: .02em;
-}
-
-.calendar-pattern-source span + span::before {
-  content: "·";
-  margin-inline: 20px;
-  color: var(--gold-mark);
-}
-
 /* Restore image-led resource cards */
 .prepare-page-reduced .resource-image {
   background: #0a201f;
@@ -1227,8 +1213,7 @@
     grid-template-columns: 1fr;
     grid-template-areas:
       "summary"
-      "chart"
-      "source";
+      "chart";
   }
 
   .filters {
@@ -1351,8 +1336,7 @@
   }
 
   .home-zebrafish-coda {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 18px;
+    display: block;
   }
 
   .home-zebrafish-media {
@@ -1383,14 +1367,9 @@
     padding: 30px 22px;
   }
 
-  .calendar-pattern .calendar-pattern-caveat,
-  .calendar-pattern-source {
+  .calendar-pattern .calendar-pattern-caveat {
     display: grid;
     gap: 7px;
-  }
-
-  .calendar-pattern-source span + span::before {
-    content: none;
   }
 
   .calendar-chart-head {
