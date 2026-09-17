@@ -53,7 +53,7 @@ export function CompanyDirectory({
 }) {
   const [query, setQuery] = useState('');
   const [sector, setSector] = useState('');
-  const [status, setStatus] = useState<DirectoryFilter>('all');
+  const [status, setStatus] = useState<DirectoryFilter>('current');
   const sectors = useMemo(() => (
     [...new Set(companies.flatMap((company) => company.industry_tags ?? []))]
       .filter(Boolean)

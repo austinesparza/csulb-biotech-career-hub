@@ -35,6 +35,9 @@ const LOGOS = [
   ['MD Anderson Cancer Center', 'https://www.mdanderson.org/'],
   ['CAS', 'https://www.cas.org/'],
   ['Xaira Therapeutics', 'https://github.com/mlsbio/mlsbio.github.io/blob/main/public/img/sponsors/xaira_black.png'],
+  ['Fred Hutch Cancer Center', 'https://www.fredhutch.org/'],
+  ['Kite Pharma', 'https://www.kitepharma.com/'],
+  ['Roche', 'https://careers.roche.com/'],
 ] as const;
 
 export default function ImageCreditsPage() {

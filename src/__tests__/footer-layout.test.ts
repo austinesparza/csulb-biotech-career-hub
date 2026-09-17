@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const layout = readFileSync('src/app/layout.tsx', 'utf8');
+const home = readFileSync('src/app/page.tsx', 'utf8');
 const styles = readFileSync('src/app/design-reduction.css', 'utf8');
 
 describe('compact public footer', () => {
@@ -20,5 +21,11 @@ describe('compact public footer', () => {
   it('keeps the compact footer responsive', () => {
     expect(styles).toContain('.site-footer-compact .footer-grid');
     expect(styles).toContain('grid-template-columns: 1fr;');
+  });
+
+  it('restores the zebrafish story only on the homepage', () => {
+    expect(home).toContain('home-zebrafish-coda');
+    expect(home).toContain('/brand/zebrafish-vasculature.webp');
+    expect(styles).toContain('.home-zebrafish-coda');
   });
 });

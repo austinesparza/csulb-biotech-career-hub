@@ -13,27 +13,27 @@ Use real scientific imagery that can function as art before it functions as expl
 5. Use human/lab photography sparingly and only when it feels documentary rather than staged.
 6. Preserve provenance and licensing on the image-credits page.
 
-## Current replacement priorities
+## Current implementation
 
-The live September 15 deployment visibly uses the selected blue-green zebrafish
-artwork in both hero and footer areas, but it is painted through remote CSS
-background URLs. The local footer file remains the older yellow Purkinje-cell
-image and is hidden with zero opacity. The visual selection is no longer the
-problem; delivery, naming, accessibility, and mobile verification are.
+The homepage now keeps its two signature NIGMS images as named local assets.
+The hero uses the selected epithelial-cell microscopy, while the blue-green
+zebrafish vasculature returns as a homepage-only closing image. Both render
+through `next/image`, include useful alternative text, and retain their source
+and license details on the image-credits page.
 
 ### Homepage hero
-Localize the selected visible zebrafish artwork and render it through
-`next/image` rather than a third-party CSS background. Preserve the current crop
-and overlay only after validating 390 px, 430 px, tablet, and desktop layouts.
+Use `hero-epithelial-cells.webp` in the circular editorial crop. Preserve the
+cyan, magenta, and yellow-green focal cells and keep the orbit lines quiet enough
+that the real science remains the focus.
 
 ### Global footer
-Replace the obsolete hidden `footer-purkinje-cells.webp` file with an accurately
-named local zebrafish asset. Render that asset normally, remove the zero-opacity
-fallback and remote background, and make the alt text and credits describe the
-actual visible image.
+Keep `zebrafish-vasculature.webp` as a homepage coda rather than repeating it in
+the global footer. Task pages should retain the compact navigation footer.
 
 ### Homepage mission panel
-Reassess `mission-histology.webp`. Histology is scientifically relevant but should only stay if the crop has a clear visual rhythm and sufficient contrast next to the gold editorial panel.
+Keep `mission-histology.webp` beside the gold editorial statement. Its tissue
+detail creates a useful shift in scale between the cellular hero and the career
+pathway gallery.
 
 ### About and Prepare
 Use one striking real-science image and one strong documentary lab/student image rather than repeating generic microscopy everywhere.

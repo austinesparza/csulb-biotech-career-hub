@@ -67,6 +67,25 @@ describe('employer logo presentation', () => {
     );
   });
 
+  it('shows official marks for the remaining current employers', () => {
+    expect(companyLogoAsset('Fred Hutch')).toEqual({
+      src: '/brand/logos/fred-hutch.svg',
+      fit: 'wide',
+    });
+    expect(companyLogoAsset('Kite Pharma')).toEqual({
+      src: '/brand/logos/kite-pharma.png',
+      fit: 'wide',
+    });
+    expect(companyLogoAsset('Roche')).toEqual({
+      src: '/brand/logos/roche.png',
+      fit: 'wide',
+    });
+  });
+
+  it('opens the directory on current employers so the first view is actionable', () => {
+    expect(directory).toContain("useState<DirectoryFilter>('current')");
+  });
+
   it('uses fit metadata in every public employer-mark surface', () => {
     expect(home).toContain('companyLogoAsset(name)');
     expect(home).toContain('logo-${logo.fit}');

@@ -14,6 +14,12 @@ const STUDENT_PROMISES = [
   ['Past listings remain separate', 'Earlier cycles help students anticipate recruiting seasons, but they are never presented as current openings.'],
 ] as const;
 
+const SEARCH_MEMORY = [
+  ['Recruiting has a rhythm', 'Earlier listings show when recurring programs usually appear, so students can prepare before a short window opens.'],
+  ['Patterns still need a current source', 'The archive helps the club know where to look. The employer page still decides whether a role is open and who can apply.'],
+  ['One class helps the next', 'A clean record lets future students begin with more context, more time, and fewer closed doors.'],
+] as const;
+
 export default function AboutPage() {
   return (
     <div className="about-page about-page-reduced">
@@ -82,11 +88,55 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="about-contribute about-contribute-plain site-wrap">
-        <div>
-          <h2>Help keep the board accurate.</h2>
+      <section className="about-memory site-wrap" aria-labelledby="memory-title">
+        <div className="about-memory-visual">
+          <Image
+            src="/brand/discipline-data-science.webp"
+            alt="Published single-cell sequencing maps used to compare biological populations"
+            fill
+            sizes="(max-width: 820px) 100vw, 40vw"
+          />
         </div>
-        <div>
+        <div className="about-memory-copy">
+          <h2 id="memory-title">Learning from our past.</h2>
+          {SEARCH_MEMORY.map(([title, body]) => (
+            <article key={title}>
+              <h3>{title}</h3>
+              <p>{body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="about-tools">
+        <div className="site-wrap about-tools-grid">
+          <div>
+            <h2>More reach without less care.</h2>
+            <p>
+              Simple tools help a small student team notice more opportunities. Sources,
+              clear uncertainty, and student review keep that wider search accountable.
+            </p>
+          </div>
+          <div className="about-tool-list" aria-label="How the Career Hub stays useful">
+            <span>Watch employer sites</span>
+            <span>Keep source links</span>
+            <span>Flag changed details</span>
+            <span>Require student review</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="about-contribute site-wrap">
+        <div className="about-contribute-image">
+          <Image
+            src="/brand/discipline-immunology.webp"
+            alt="Fluorescence microscopy of parasites inside human fibroblast cells"
+            fill
+            sizes="(max-width: 820px) 100vw, 52vw"
+          />
+        </div>
+        <div className="about-contribute-copy">
+          <h2>What one student notices can open a door for many.</h2>
           <p>Send a new role, a changed deadline, a broken link, or evidence that a listing needs correction.</p>
           <div className="about-actions">
             <Link href="/submit" className="primary-button">Submit a role or correction</Link>

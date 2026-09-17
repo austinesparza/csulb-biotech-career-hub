@@ -18,7 +18,6 @@ describe('mobile homepage finishing contract', () => {
   it('uses a specific student-facing headline instead of stacked slogans', () => {
     expect(home).toContain('Biotech internships and research opportunities for CSULB students.');
     expect(home).not.toContain('Opportunities for what comes next.');
-    expect(home).not.toContain('What we learn about life can change how life is lived.');
     expect(mobileStyles).toContain('overflow-wrap: normal;');
     expect(mobileStyles).toContain('word-break: normal;');
     expect(mobileStyles).toContain('hyphens: none;');
@@ -28,6 +27,15 @@ describe('mobile homepage finishing contract', () => {
   it('keeps the phone hero compact enough to expose the scientific visual sooner', () => {
     expect(reductionStyles).toContain('@media (max-width: 700px)');
     expect(reductionStyles).toContain('padding-block: 38px;');
-    expect(reductionStyles).toContain('aspect-ratio: 4 / 3;');
+    expect(reductionStyles).toContain('width: min(82vw, 330px);');
+    expect(reductionStyles).toContain('aspect-ratio: 1;');
+  });
+
+  it('uses the selected scientific imagery to help students understand the fields', () => {
+    expect(home).toContain('/brand/hero-epithelial-cells.webp');
+    expect(home).toContain('/brand/discipline-cancer.webp');
+    expect(home).toContain('/brand/discipline-data-science.webp');
+    expect(home).toContain('/brand/zebrafish-vasculature.webp');
+    expect(home).toContain('See where the science can take you.');
   });
 });

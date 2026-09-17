@@ -21,12 +21,12 @@ function opportunityDetails(opportunity: PublicOpportunity) {
 }
 
 const DISCIPLINES = [
-  { label: 'Cancer & oncology', focus: 'Cancer and oncology', description: 'Tumor biology, biomarkers, therapeutics, and translational research.' },
-  { label: 'Genomics & genetics', focus: 'Genomics and genetics', description: 'Genome science, functional genetics, and variant-focused work.' },
-  { label: 'Bioinformatics', focus: 'Bioinformatics and computational biology', description: 'Computational biology, biological data science, and analysis.' },
-  { label: 'Bioprocess & manufacturing', focus: 'Bioprocess and manufacturing science', description: 'Process development, manufacturing science, and quality.' },
-  { label: 'Protein science & drug discovery', focus: 'Protein science and drug discovery', description: 'Protein engineering, assays, and therapeutic discovery.' },
-  { label: 'Immunology & infectious disease', focus: 'Immunology and infectious disease', description: 'Immune biology, host-pathogen research, and vaccines.' },
+  { label: 'Cancer & oncology', focus: 'Cancer and oncology', description: 'Tumor biology, biomarkers, therapeutics, and translational research.', image: '/brand/discipline-cancer.webp', alt: 'Fluorescence microscopy of DNA in oral cancer cells' },
+  { label: 'Genomics & genetics', focus: 'Genomics and genetics', description: 'Genome science, functional genetics, and variant-focused work.', image: '/brand/discipline-genomics.webp', alt: 'Fluorescence microscopy image from chromosome research' },
+  { label: 'Bioinformatics', focus: 'Bioinformatics and computational biology', description: 'Computational biology, biological data science, and analysis.', image: '/brand/discipline-data-science.webp', alt: 'Published single-cell sequencing maps and data visualizations', imageClass: 'pathway-data' },
+  { label: 'Bioprocess & manufacturing', focus: 'Bioprocess and manufacturing science', description: 'Process development, manufacturing science, and quality.', image: '/brand/discipline-bioprocess.webp', alt: 'Cell-culture bioreactors in a laboratory' },
+  { label: 'Protein science & drug discovery', focus: 'Protein science and drug discovery', description: 'Protein engineering, assays, and therapeutic discovery.', image: '/brand/discipline-protein.webp', alt: 'Protein crystals viewed through a microscope', imageClass: 'pathway-protein' },
+  { label: 'Immunology & infectious disease', focus: 'Immunology and infectious disease', description: 'Immune biology, host-pathogen research, and vaccines.', image: '/brand/discipline-immunology.webp', alt: 'Toxoplasma parasites inside a fibroblast host cell' },
 ] as const;
 
 function FeaturedCompany({ name }: { name: string }) {
@@ -72,9 +72,11 @@ export default async function HomePage() {
         </div>
 
         <figure className="science-collage">
+          <div className="science-orbit science-orbit-one" aria-hidden="true" />
+          <div className="science-orbit science-orbit-two" aria-hidden="true" />
           <div className="science-image">
             <Image
-              src="/brand/hero-cells.webp"
+              src="/brand/hero-epithelial-cells.webp"
               alt="Cultured epithelial cells with Golgi in yellow-green, actin in magenta, and DNA in cyan"
               fill
               preload
@@ -129,16 +131,26 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section className="home-club-note">
-        <div className="site-wrap home-club-note-grid">
-          <h2>Built for a search students can inspect.</h2>
-          <div>
+      <section className="mission-story" aria-labelledby="mission-title">
+        <div className="site-wrap mission-story-grid">
+          <figure className="mission-visual">
+            <Image
+              src="/brand/mission-histology.webp"
+              alt="Histology of basal-like breast cancer tissue"
+              fill
+              sizes="(max-width: 820px) 100vw, 40vw"
+            />
+          </figure>
+          <div className="mission-statement">
+            <h2 id="mission-title">What we learn about life can change how life is lived.</h2>
             <p>
-              Club members collect roles from employer sites and program pages, check
-              the important claims, and keep the source attached. If a deadline or
-              eligibility rule is unclear, the board says so.
+              Across laboratories, data, manufacturing, and medicine, biotechnology
+              carries discovery into the world. This hub helps CSULB students find
+              a place in that work.
             </p>
-            <Link href="/about">How the board is maintained <span aria-hidden="true">→</span></Link>
+            <div className="mission-links">
+              <Link href="/about">How the board is maintained <span aria-hidden="true">→</span></Link>
+            </div>
           </div>
         </div>
       </section>
@@ -146,8 +158,8 @@ export default async function HomePage() {
       <section className="biotech-pathways site-wrap" aria-labelledby="pathways-title">
         <header>
           <div>
-            <h2 id="pathways-title">Browse by scientific focus</h2>
-            <p>Start with the work you want to practice, then confirm the degree and enrollment requirements.</p>
+            <h2 id="pathways-title">See where the science can take you.</h2>
+            <p>Explore the questions, tools, and environments behind each field, then see where you might fit.</p>
           </div>
           <Link href="/internships">Explore every opportunity <span aria-hidden="true">→</span></Link>
         </header>
@@ -158,16 +170,43 @@ export default async function HomePage() {
               href={`/internships?focus=${encodeURIComponent(discipline.focus)}`}
               className="biotech-pathway"
             >
-              <span>
-                <strong>{discipline.label}</strong>
-                <small>{discipline.description}</small>
+              <Image
+                className={'imageClass' in discipline ? discipline.imageClass : undefined}
+                src={discipline.image}
+                alt={discipline.alt}
+                fill
+                sizes="(max-width: 700px) 100vw, 33vw"
+              />
+              <span className="biotech-pathway-copy">
+                <span>
+                  <strong>{discipline.label}</strong>
+                  <small>{discipline.description}</small>
+                </span>
+                <b aria-hidden="true">→</b>
               </span>
-              <b aria-hidden="true">→</b>
             </Link>
           ))}
         </div>
       </section>
 
+      <section className="home-zebrafish-coda" aria-labelledby="zebrafish-title">
+        <div className="home-zebrafish-media">
+          <Image
+            src="/brand/zebrafish-vasculature.webp"
+            alt="Fluorescently labeled blood vessels in a developing zebrafish embryo"
+            fill
+            sizes="(max-width: 700px) 100vw, 76vw"
+          />
+          <div className="home-zebrafish-copy">
+            <h2 id="zebrafish-title">The next question is yours.</h2>
+            <Link href="/internships">Find a place to investigate it <span aria-hidden="true">→</span></Link>
+          </div>
+        </div>
+        <div className="home-zebrafish-panel">
+          <span>CSULB Biotechnology Club</span>
+          <p>Built in Long Beach for students ready to look closer.</p>
+        </div>
+      </section>
     </div>
   );
 }

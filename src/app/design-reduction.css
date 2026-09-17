@@ -85,29 +85,51 @@
 
 .science-collage {
   position: relative;
-  min-height: 0;
+  min-height: 510px;
   margin: 0;
   align-self: center;
 }
 
 .science-image {
-  position: relative;
-  top: auto;
-  left: auto;
-  width: 100%;
-  aspect-ratio: 5 / 4;
-  border-radius: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  width: min(82%, 490px);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
   background: #090b0d;
-  box-shadow: none;
+  box-shadow: 0 24px 70px rgba(10, 24, 32, .16);
+  transform: translate(-50%, -52%);
 }
 
 .science-image > img {
   opacity: 1;
   object-fit: cover;
+  object-position: center 48%;
 }
 
 .science-orbit {
-  display: none;
+  position: absolute;
+  z-index: 1;
+  display: block;
+  aspect-ratio: 1;
+  border: 1px solid rgba(18, 63, 54, .22);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.science-orbit-one {
+  top: 2%;
+  right: -2%;
+  width: 62%;
+}
+
+.science-orbit-two {
+  bottom: 1%;
+  left: -3%;
+  width: 57%;
 }
 
 .science-collage figcaption,
@@ -117,6 +139,14 @@
   color: var(--ink-faint);
   font-size: .72rem;
   line-height: 1.4;
+}
+
+.science-collage figcaption {
+  position: absolute;
+  right: 0;
+  bottom: 2px;
+  left: 0;
+  text-align: center;
 }
 
 .about-hero figcaption,
@@ -158,56 +188,19 @@
   min-height: 76px;
 }
 
-.home-club-note {
-  width: 100% !important;
-  max-width: none !important;
-  padding: 0 !important;
-  background: #123f36;
-  color: white;
-}
-
-.home-club-note-grid {
-  display: grid;
-  grid-template-columns: minmax(250px, .8fr) minmax(0, 1.2fr);
-  gap: clamp(40px, 8vw, 110px);
-  align-items: start;
-  padding-block: 46px 50px;
-}
-
-.home-club-note h2 {
-  max-width: 15ch;
-  color: white;
-  font-size: clamp(2rem, 3.5vw, 3.25rem);
-  font-weight: 500;
-  line-height: 1;
-}
-
-.home-club-note p {
-  max-width: 58ch;
-  margin: 0;
-  color: #dbe5e1;
-}
-
-.home-club-note a {
-  display: inline-block;
-  margin-top: 20px;
-  color: #efc86f;
-  font-weight: 750;
-}
-
 .biotech-pathways {
-  padding-block: 54px 62px;
+  padding-block: 64px 72px;
 }
 
 .biotech-pathways > header {
   align-items: end;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .biotech-pathways > header h2 {
-  max-width: none;
-  font-size: clamp(2.25rem, 3.5vw, 3.5rem);
-  line-height: 1;
+  max-width: 15ch;
+  font-size: clamp(2.6rem, 4.2vw, 4.3rem);
+  line-height: .98;
 }
 
 .biotech-pathways > header p {
@@ -218,63 +211,164 @@
 
 .biotech-pathway-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-rows: auto;
-  gap: 0 32px;
-  border-top: 1px solid var(--ink);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 310px;
+  gap: 14px;
 }
 
 .biotech-pathway,
 .biotech-pathway:nth-child(n) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  position: relative;
+  display: block;
   grid-column: auto;
   grid-row: auto;
-  gap: 24px;
-  align-items: center;
-  min-height: 122px;
-  padding: 20px 0;
-  border-bottom: 1px solid var(--line);
-  color: var(--ink);
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  color: white;
+  background: #0b2f34;
 }
 
 .biotech-pathway::after {
-  display: none;
+  display: block;
+  inset: 18% 0 0;
+  background: linear-gradient(180deg, transparent, rgba(3, 18, 18, .94));
 }
 
-.biotech-pathway > span {
-  position: static;
+.biotech-pathway .biotech-pathway-copy {
+  position: absolute;
+  z-index: 2;
+  right: 22px;
+  bottom: 20px;
+  left: 22px;
+  display: flex;
+  gap: 18px;
+  align-items: end;
+  justify-content: space-between;
+  color: white;
+}
+
+.biotech-pathway .biotech-pathway-copy > span {
   display: grid;
   gap: 7px;
-  color: inherit;
 }
 
 .biotech-pathway strong {
-  max-width: none;
-  color: var(--teal-deep);
-  font-family: var(--sans);
-  font-size: 1rem;
-  font-weight: 750;
-  line-height: 1.3;
+  max-width: 17ch;
+  color: white;
+  font-family: var(--serif);
+  font-size: clamp(1.35rem, 2.1vw, 2rem);
+  font-weight: 500;
+  line-height: 1.03;
 }
 
 .biotech-pathway small {
-  max-width: 50ch;
-  color: var(--ink-faint);
-  font-size: .78rem;
-  line-height: 1.45;
+  max-width: 34ch;
+  color: rgba(255, 255, 255, .82);
+  font-size: .72rem;
+  line-height: 1.4;
 }
 
-.biotech-pathway > b {
-  color: var(--gold-mark);
+.biotech-pathway .biotech-pathway-copy > b {
+  flex: none;
+  color: #efc86f;
   font-family: var(--sans);
   font-size: 1.25rem;
   font-weight: 450;
 }
 
 .biotech-pathway:hover {
-  color: var(--ink);
-  background: var(--paper-2);
+  color: white;
+}
+
+.home-zebrafish-coda {
+  display: grid;
+  grid-template-columns: minmax(0, 2.45fr) minmax(270px, .8fr);
+  min-height: 390px;
+  background: #061f22;
+}
+
+.home-zebrafish-media {
+  position: relative;
+  min-width: 0;
+  min-height: 390px;
+  overflow: hidden;
+}
+
+.home-zebrafish-media::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(2, 18, 20, .06), rgba(2, 18, 20, .18) 48%, rgba(2, 18, 20, .82));
+}
+
+.home-zebrafish-media img {
+  object-fit: cover;
+  object-position: center 44%;
+  filter: saturate(.96) contrast(1.04);
+}
+
+.home-zebrafish-copy {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: clamp(30px, 5vw, 76px);
+  width: min(43%, 470px);
+  color: white;
+  transform: translateY(-50%);
+}
+
+.home-zebrafish-copy h2 {
+  max-width: 10ch;
+  color: white;
+  font-size: clamp(2.4rem, 4vw, 4.7rem);
+  font-weight: 500;
+  letter-spacing: -.04em;
+  line-height: .94;
+}
+
+.home-zebrafish-copy a {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 28px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(255, 255, 255, .6);
+  color: white;
+  font-size: .76rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.home-zebrafish-copy a:hover {
+  color: #efc86f;
+}
+
+.home-zebrafish-panel {
+  display: grid;
+  align-content: center;
+  padding: clamp(32px, 4vw, 60px);
+  background: #123f36;
+  color: white;
+}
+
+.home-zebrafish-panel span {
+  color: #efc86f;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.home-zebrafish-panel p {
+  max-width: 16ch;
+  margin-top: 34px;
+  color: #dbe5e1;
+  font-family: var(--serif);
+  font-size: clamp(1.45rem, 2.2vw, 2.2rem);
+  line-height: 1.08;
 }
 
 /* Opportunity board shell */
@@ -756,6 +850,14 @@
     width: min(100%, 720px);
   }
 
+  .science-collage {
+    min-height: 490px;
+  }
+
+  .home-zebrafish-coda {
+    grid-template-columns: minmax(0, 1.7fr) minmax(250px, .8fr);
+  }
+
   .filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -797,10 +899,23 @@
     min-height: 0;
   }
 
-  .science-image,
   .about-page-reduced .about-hero figure,
   .prepare-page-reduced .prepare-hero-image {
     aspect-ratio: 4 / 3;
+  }
+
+  .science-collage {
+    min-height: 360px;
+  }
+
+  .science-image {
+    top: 48%;
+    width: min(82vw, 330px);
+    aspect-ratio: 1;
+  }
+
+  .science-collage figcaption {
+    bottom: -2px;
   }
 
   .trust-metrics {
@@ -857,6 +972,40 @@
   .role-evaluation-grid,
   .about-page-reduced .about-system-grid {
     grid-template-columns: 1fr;
+  }
+
+  .biotech-pathway-grid {
+    grid-auto-rows: 285px;
+  }
+
+  .biotech-pathway strong {
+    font-size: 1.65rem;
+  }
+
+  .home-zebrafish-coda {
+    grid-template-columns: 1fr;
+  }
+
+  .home-zebrafish-media {
+    min-height: 390px;
+  }
+
+  .home-zebrafish-copy {
+    top: auto;
+    right: 24px;
+    bottom: 28px;
+    left: 24px;
+    width: auto;
+    transform: none;
+  }
+
+  .home-zebrafish-panel {
+    min-height: 230px;
+    padding: 34px 28px;
+  }
+
+  .home-zebrafish-panel p {
+    margin-top: 24px;
   }
 
   .about-page-reduced .about-system-grid li {
