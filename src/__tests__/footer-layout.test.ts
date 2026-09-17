@@ -14,8 +14,9 @@ describe('compact public footer', () => {
     expect(footer).not.toContain('The next question is yours');
   });
 
-  it('credits the club directly', () => {
-    expect(layout).toContain('Curated and reviewed by the CSULB Biotechnology Club.');
+  it('does not repeat the club-maintainer line', () => {
+    expect(layout).not.toContain('Curated and reviewed by the CSULB Biotechnology Club.');
+    expect(layout).toContain('<span>CSULB</span> Biotech Career Hub');
   });
 
   it('keeps the compact footer responsive', () => {

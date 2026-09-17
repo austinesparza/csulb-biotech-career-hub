@@ -65,7 +65,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <BrandMark className="footer-compact-mark" />
               <div>
                 <div className="footer-title"><span>CSULB</span> Biotech Career Hub</div>
-                <p>Curated and reviewed by the CSULB Biotechnology Club.</p>
               </div>
             </div>
             <div className="footer-links">
