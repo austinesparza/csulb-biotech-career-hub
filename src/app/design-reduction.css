@@ -278,6 +278,7 @@
   object-fit: cover;
   object-position: center;
   filter: saturate(1.04) contrast(1.05);
+  transform: scaleX(-1);
 }
 
 .home-zebrafish-media::after {

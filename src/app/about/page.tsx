@@ -2,8 +2,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
 import aboutCollaboratingResearch from '../../../public/brand/about-collaborating-research.webp';
-import aboutDnaAnalysts from '../../../public/brand/about-dna-analysts.webp';
 import aboutHela from '../../../public/brand/about-hela.webp';
+import aboutResearchTeamwork from '../../../public/brand/about-research-teamwork.webp';
 
 const DISCOVERY_PATHS = [
   ['Daily source checks', 'Approved employer and program sites'],
@@ -15,7 +15,7 @@ export default function AboutPage() {
     <div className="about-page about-page-reduced">
       <header className="about-hero site-wrap">
         <div>
-          <h1>How the Career Hub works.</h1>
+          <h1>Making scientific careers easier to see.</h1>
         </div>
         <figure>
           <Image
@@ -142,8 +142,8 @@ export default function AboutPage() {
       <section className="about-contribute site-wrap">
         <div className="about-contribute-image">
           <Image
-            src={aboutDnaAnalysts}
-            alt="Three DNA analysts preparing samples at a sequencing laboratory bench"
+            src={aboutResearchTeamwork}
+            alt="Two cancer researchers reviewing experimental data together on laboratory monitors"
             fill
             placeholder="blur"
             sizes="(max-width: 820px) 100vw, 60vw"
