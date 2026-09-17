@@ -569,6 +569,18 @@
   border-color: var(--line-dark);
 }
 
+.about-contribute:not(.about-contribute-plain) .primary-button {
+  border-color: #efc86f;
+  background: #efc86f;
+  color: #123f36;
+}
+
+.about-contribute:not(.about-contribute-plain) .primary-button:hover {
+  border-color: #f7d98d;
+  background: #f7d98d;
+  color: #092c26;
+}
+
 .about-page-reduced .about-disclaimer.site-wrap {
   padding-block: 24px 54px;
 }
