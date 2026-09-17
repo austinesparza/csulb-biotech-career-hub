@@ -1,11 +1,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
+import aboutHela from '../../../public/brand/about-hela.webp';
+import footerLab from '../../../public/brand/footer-lab.webp';
+import prepareStudents from '../../../public/brand/prepare-students.webp';
 
 const REVIEW_STEPS = [
-  ['1', 'Collect the lead', 'A role can come from an employer site, a program page, an earlier club search, or a student tip.'],
-  ['2', 'Read the live posting', 'A club member records the eligibility, dates, location, pay, and scientific focus stated by the employer.'],
-  ['3', 'Add it to the board', 'Another student checks the entry. Missing or conflicting details stay labeled instead of being guessed.'],
+  ['1', 'Find a lead', 'Employer sites, program pages, and student tips'],
+  ['2', 'Open the source', 'The employer\'s current posting'],
+  ['3', 'Student review', 'Dates, eligibility, pay, location, and scientific focus'],
+  ['4', 'Publish', 'The reviewed listing and its source appear together'],
 ] as const;
 
 export default function AboutPage() {
@@ -14,18 +18,14 @@ export default function AboutPage() {
       <header className="about-hero site-wrap">
         <div>
           <h1>How the Career Hub works.</h1>
-          <p>
-            Biotech opportunities are scattered across employer career sites, short
-            recruiting windows, and programs students may never hear about. The club
-            brings those leads together and shows where each detail came from.
-          </p>
         </div>
         <figure>
           <Image
-            src="/brand/about-hela.webp"
+            src={aboutHela}
             alt="Living HeLa cells with nuclei, microtubules, and mitochondria shown in blue, green, and red"
             fill
             preload
+            placeholder="blur"
             sizes="(max-width: 820px) 100vw, 44vw"
           />
         </figure>
@@ -50,8 +50,7 @@ export default function AboutPage() {
         <div className="site-wrap">
           <header>
             <p className="about-system-kicker">From lead to listing</p>
-            <h2 id="system-title">Every listing starts with the employer.</h2>
-            <p>A student reviewer reads the live posting before a role reaches the board.</p>
+            <h2 id="system-title">From employer source to public board.</h2>
           </header>
           <ol className="about-system-grid">
             {REVIEW_STEPS.map(([number, title, body]) => (
@@ -62,6 +61,12 @@ export default function AboutPage() {
               </li>
             ))}
           </ol>
+          <div className="about-system-archive" aria-label="How archived listings support future searches">
+            <span>Past listings</span>
+            <b aria-hidden="true">→</b>
+            <strong>Archive</strong>
+            <p>Helps time the next search. Never shown as a current opening.</p>
+          </div>
         </div>
       </section>
 
@@ -84,9 +89,10 @@ export default function AboutPage() {
       <section className="about-memory site-wrap" aria-labelledby="memory-title">
         <div className="about-memory-visual">
           <Image
-            src="/brand/footer-lab.webp"
+            src={footerLab}
             alt="A researcher pipetting samples at a laboratory bench while colleagues work nearby"
             fill
+            placeholder="blur"
             sizes="(max-width: 820px) 100vw, 58vw"
           />
         </div>
@@ -108,9 +114,10 @@ export default function AboutPage() {
       <section className="about-contribute site-wrap">
         <div className="about-contribute-image">
           <Image
-            src="/brand/prepare-students.webp"
+            src={prepareStudents}
             alt="Biotechnology students working together in a teaching laboratory"
             fill
+            placeholder="blur"
             sizes="(max-width: 820px) 100vw, 60vw"
           />
         </div>

@@ -86,8 +86,8 @@ export default async function CalendarPage() {
           <div className="calendar-pattern-intro">
             <h2 id="pattern-title">What past searches tell us.</h2>
             <p>
-              Two tracked cycles cannot predict the next one. They can tell us when to
-              begin looking and which employers deserve another look.
+              Two tracked cycles are not a forecast. They show when students should
+              start watching.
             </p>
             <dl className="calendar-history-metrics">
               <div><dt>Roles studied</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.roles}</dd></div>
@@ -112,29 +112,10 @@ export default async function CalendarPage() {
               ))}
             </ol>
             <p className="calendar-pattern-caveat">
-              <strong>Use the pattern as a head start.</strong> Begin active monitoring by
-              September. A past month is evidence, not a promise.
+              <strong>Start active monitoring by September.</strong> A past month is a clue,
+              not a deadline.
             </p>
           </div>
-        </div>
-      </section>
-
-      <section className="calendar-learning site-wrap" aria-labelledby="calendar-learning-title">
-        <div>
-          <span className="mono">A growing training record</span>
-          <h2 id="calendar-learning-title">Past listings teach the search where to look next.</h2>
-        </div>
-        <div>
-          <p>
-            We preserve employer, role family, month first seen, audience, deadline language,
-            location, source, and review outcome. Those labels can improve search ordering,
-            surface recurring programs, and flag unusual changes across cycles.
-          </p>
-          <p>
-            Two cycles are enough to guide attention, not enough for a confident forecast.
-            As reviewed seasons accumulate, we can evaluate models against what actually
-            appeared. Employer evidence still decides what reaches the public board.
-          </p>
         </div>
       </section>
 

@@ -3,6 +3,15 @@ import Link from 'next/link';
 import { companyLogoAsset } from '@/lib/companyLogos';
 import { createClient } from '@/lib/supabase/client';
 import type { PublicOpportunity } from '@/lib/types';
+import disciplineBioprocess from '../../public/brand/discipline-bioprocess.webp';
+import disciplineCancer from '../../public/brand/discipline-cancer.webp';
+import disciplineDataScience from '../../public/brand/discipline-data-science.webp';
+import disciplineGenomics from '../../public/brand/discipline-genomics.webp';
+import disciplineImmunology from '../../public/brand/discipline-immunology.webp';
+import disciplineProtein from '../../public/brand/discipline-protein.webp';
+import heroEpithelialCells from '../../public/brand/hero-epithelial-cells.webp';
+import missionHistology from '../../public/brand/mission-histology.webp';
+import zebrafishVasculature from '../../public/brand/zebrafish-vasculature.webp';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,12 +30,12 @@ function opportunityDetails(opportunity: PublicOpportunity) {
 }
 
 const DISCIPLINES = [
-  { label: 'Cancer & oncology', focus: 'Cancer and oncology', description: 'Tumor biology, biomarkers, therapeutics, and translational research.', image: '/brand/discipline-cancer.webp', alt: 'Fluorescence microscopy of DNA in oral cancer cells' },
-  { label: 'Genomics & genetics', focus: 'Genomics and genetics', description: 'Genome science, functional genetics, and variant-focused work.', image: '/brand/discipline-genomics.webp', alt: 'Fluorescence microscopy image from chromosome research' },
-  { label: 'Bioinformatics', focus: 'Bioinformatics and computational biology', description: 'Computational biology, biological data science, and analysis.', image: '/brand/discipline-data-science.webp', alt: 'Published single-cell sequencing maps and data visualizations', imageClass: 'pathway-data' },
-  { label: 'Bioprocess & manufacturing', focus: 'Bioprocess and manufacturing science', description: 'Process development, manufacturing science, and quality.', image: '/brand/discipline-bioprocess.webp', alt: 'Cell-culture bioreactors in a laboratory' },
-  { label: 'Protein science & drug discovery', focus: 'Protein science and drug discovery', description: 'Protein engineering, assays, and therapeutic discovery.', image: '/brand/discipline-protein.webp', alt: 'Protein crystals viewed through a microscope', imageClass: 'pathway-protein' },
-  { label: 'Immunology & infectious disease', focus: 'Immunology and infectious disease', description: 'Immune biology, host-pathogen research, and vaccines.', image: '/brand/discipline-immunology.webp', alt: 'Toxoplasma parasites inside a fibroblast host cell' },
+  { label: 'Cancer & oncology', focus: 'Cancer and oncology', description: 'Tumor biology, biomarkers, therapeutics, and translational research.', image: disciplineCancer, alt: 'Fluorescence microscopy of DNA in oral cancer cells' },
+  { label: 'Genomics & genetics', focus: 'Genomics and genetics', description: 'Genome science, functional genetics, and variant-focused work.', image: disciplineGenomics, alt: 'Fluorescence microscopy image from chromosome research' },
+  { label: 'Bioinformatics', focus: 'Bioinformatics and computational biology', description: 'Computational biology, biological data science, and analysis.', image: disciplineDataScience, alt: 'Published single-cell sequencing maps and data visualizations', imageClass: 'pathway-data' },
+  { label: 'Bioprocess & manufacturing', focus: 'Bioprocess and manufacturing science', description: 'Process development, manufacturing science, and quality.', image: disciplineBioprocess, alt: 'Cell-culture bioreactors in a laboratory' },
+  { label: 'Protein science & drug discovery', focus: 'Protein science and drug discovery', description: 'Protein engineering, assays, and therapeutic discovery.', image: disciplineProtein, alt: 'Protein crystals viewed through a microscope', imageClass: 'pathway-protein' },
+  { label: 'Immunology & infectious disease', focus: 'Immunology and infectious disease', description: 'Immune biology, host-pathogen research, and vaccines.', image: disciplineImmunology, alt: 'Toxoplasma parasites inside a fibroblast host cell' },
 ] as const;
 
 function FeaturedCompany({ name }: { name: string }) {
@@ -76,10 +85,11 @@ export default async function HomePage() {
           <div className="science-orbit science-orbit-two" aria-hidden="true" />
           <div className="science-image">
             <Image
-              src="/brand/hero-epithelial-cells.webp"
+              src={heroEpithelialCells}
               alt="Cultured epithelial cells with Golgi in yellow-green, actin in magenta, and DNA in cyan"
               fill
               preload
+              placeholder="blur"
               sizes="(max-width: 760px) 82vw, 42vw"
             />
           </div>
@@ -134,9 +144,10 @@ export default async function HomePage() {
         <div className="site-wrap mission-story-grid">
           <figure className="mission-visual">
             <Image
-              src="/brand/mission-histology.webp"
+              src={missionHistology}
               alt="Histology of basal-like breast cancer tissue"
               fill
+              placeholder="blur"
               sizes="(max-width: 820px) 100vw, 40vw"
             />
           </figure>
@@ -174,6 +185,7 @@ export default async function HomePage() {
                 src={discipline.image}
                 alt={discipline.alt}
                 fill
+                placeholder="blur"
                 sizes="(max-width: 700px) 100vw, 33vw"
               />
               <span className="biotech-pathway-copy">
@@ -191,17 +203,21 @@ export default async function HomePage() {
       <section className="home-zebrafish-coda" aria-labelledby="zebrafish-title">
         <div className="home-zebrafish-media">
           <Image
-            src="/brand/zebrafish-vasculature.webp"
+            src={zebrafishVasculature}
             alt="Fluorescently labeled blood vessels in a developing zebrafish embryo"
             fill
-            sizes="(max-width: 700px) 100vw, 76vw"
+            placeholder="blur"
+            sizes="(max-width: 700px) 100vw, 78vw"
           />
+          <div className="home-zebrafish-copy">
+            <h2 id="zebrafish-title">Find the work that draws you in.</h2>
+            <Link href="/internships">Explore current opportunities <span aria-hidden="true">→</span></Link>
+          </div>
         </div>
         <div className="home-zebrafish-panel">
-          <span>Start exploring</span>
-          <h2 id="zebrafish-title">Find the work that draws you in.</h2>
-          <p>Browse current internships, co-ops, and research roles across biotechnology.</p>
-          <Link href="/internships">Explore opportunities <span aria-hidden="true">→</span></Link>
+          <Image src="/icon.svg" alt="" width={48} height={48} aria-hidden="true" />
+          <span>CSULB</span>
+          <strong>Biotech<br />Career Hub</strong>
         </div>
       </section>
     </div>
