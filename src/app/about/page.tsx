@@ -5,11 +5,9 @@ import aboutHela from '../../../public/brand/about-hela.webp';
 import footerLab from '../../../public/brand/footer-lab.webp';
 import prepareStudents from '../../../public/brand/prepare-students.webp';
 
-const REVIEW_STEPS = [
-  ['1', 'Find a lead', 'Employer sites, program pages, and student tips'],
-  ['2', 'Open the source', 'The employer\'s current posting'],
-  ['3', 'Student review', 'Dates, eligibility, pay, location, and scientific focus'],
-  ['4', 'Publish', 'The reviewed listing and its source appear together'],
+const DISCOVERY_PATHS = [
+  ['Daily source checks', 'Approved employer and program sites'],
+  ['Broader discovery', 'Search results, older listings, and student tips'],
 ] as const;
 
 export default function AboutPage() {
@@ -49,23 +47,45 @@ export default function AboutPage() {
       <section className="about-system" aria-labelledby="system-title">
         <div className="site-wrap">
           <header>
-            <p className="about-system-kicker">From lead to listing</p>
-            <h2 id="system-title">From employer source to public board.</h2>
+            <p className="about-system-kicker">From search to review</p>
+            <h2 id="system-title">How a lead becomes a public listing.</h2>
           </header>
-          <ol className="about-system-grid">
-            {REVIEW_STEPS.map(([number, title, body]) => (
-              <li key={number}>
-                <span>{number}</span>
-                <h3>{title}</h3>
-                <p>{body}</p>
-              </li>
-            ))}
-          </ol>
-          <div className="about-system-archive" aria-label="How archived listings support future searches">
-            <span>Past listings</span>
-            <b aria-hidden="true">→</b>
-            <strong>Archive</strong>
-            <p>Helps time the next search. Never shown as a current opening.</p>
+          <div
+            className="about-workflow"
+            role="img"
+            aria-label="Daily source checks and broader discovery feed student review. Reviewed leads are either published to the public board or kept in the archive. The archive helps guide the next search."
+          >
+            <div className="about-workflow-group about-workflow-sources">
+              <span className="about-workflow-label">Find leads</span>
+              {DISCOVERY_PATHS.map(([title, body]) => (
+                <article key={title}>
+                  <h3>{title}</h3>
+                  <p>{body}</p>
+                </article>
+              ))}
+            </div>
+            <span className="about-workflow-arrow" aria-hidden="true">→</span>
+            <article className="about-workflow-review">
+              <span className="about-workflow-label">Check the source</span>
+              <h3>Student review</h3>
+              <p>Confirm the deadline, eligibility, pay, location, and scientific focus.</p>
+            </article>
+            <span className="about-workflow-arrow" aria-hidden="true">→</span>
+            <div className="about-workflow-group about-workflow-outcomes">
+              <span className="about-workflow-label">Decide</span>
+              <article className="is-public">
+                <h3>Public board</h3>
+                <p>Current listing and employer source</p>
+              </article>
+              <article className="is-archive">
+                <h3>Archive</h3>
+                <p>Past, changed, or rejected records</p>
+              </article>
+            </div>
+          </div>
+          <div className="about-workflow-loop">
+            <span aria-hidden="true">↺</span>
+            <p><strong>The archive supports the next search.</strong> Timing patterns and recurring employers feed back into discovery.</p>
           </div>
         </div>
       </section>

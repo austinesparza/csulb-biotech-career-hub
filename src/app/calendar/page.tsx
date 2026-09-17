@@ -82,41 +82,41 @@ export default async function CalendarPage() {
       </section>
 
       <section className="calendar-pattern" aria-labelledby="pattern-title">
-        <div className="site-wrap calendar-pattern-grid">
-          <div className="calendar-pattern-intro">
-            <h2 id="pattern-title">What past searches tell us.</h2>
-            <p>
-              Two tracked cycles are not a forecast. They show when students should
-              start watching.
-            </p>
-            <dl className="calendar-history-metrics">
-              <div><dt>Roles studied</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.roles}</dd></div>
-              <div><dt>Cycles</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.cycles}</dd></div>
-              <div><dt>Dated roles</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.datedRoles}</dd></div>
-            </dl>
-          </div>
-          <div className="calendar-season">
-            <div className="calendar-season-insight">
-              <strong>{autumnPeakShare}%</strong>
-              <span>of dated roles in the archive appeared in October or November.</span>
-            </div>
-            <ol className="calendar-bars" aria-label="Historical recruiting activity by month">
-              {activity.map((item) => (
-                <li key={item.month} aria-label={`${item.month}: ${item.count} roles`}>
-                  <span className="calendar-bar-count" aria-hidden="true">{item.count || ''}</span>
-                  <span className="calendar-bar-track" aria-hidden="true">
-                    <span style={{ height: `${item.count / maxActivity * 100}%` }} />
-                  </span>
-                  <span>{item.month}</span>
-                </li>
-              ))}
-            </ol>
-            <p className="calendar-pattern-caveat">
-              <strong>Start active monitoring by September.</strong> A past month is a clue,
-              not a deadline.
-            </p>
+        <div className="calendar-pattern-summary">
+          <p className="calendar-pattern-eyebrow">Historical timing</p>
+          <h2 id="pattern-title">October and November carried most of the activity.</h2>
+          <div className="calendar-season-insight">
+            <strong>{autumnPeakShare}%</strong>
+            <span>of dated roles in the archive appeared in those two months.</span>
           </div>
         </div>
+        <div className="calendar-season">
+          <p className="calendar-chart-label">Roles first seen by month</p>
+          <ol className="calendar-bars" aria-label="Historical recruiting activity by month">
+            {activity.map((item, index) => (
+              <li
+                key={item.month}
+                className={index === 2 || index === 3 ? 'is-peak' : item.count > 0 ? 'has-activity' : undefined}
+                aria-label={`${item.month}: ${item.count} roles`}
+              >
+                <span className="calendar-bar-count" aria-hidden="true">{item.count || ''}</span>
+                <span className="calendar-bar-track" aria-hidden="true">
+                  <span style={{ height: `${item.count / maxActivity * 100}%` }} />
+                </span>
+                <span>{item.month}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="calendar-pattern-caveat">
+            <strong>Start monitoring in September.</strong>
+            <span>Past timing is a clue, not a deadline.</span>
+          </p>
+        </div>
+        <p className="calendar-pattern-source">
+          <span>{HISTORICAL_ARCHIVE_SUMMARY.roles} roles studied</span>
+          <span>{HISTORICAL_ARCHIVE_SUMMARY.cycles} archived cycles</span>
+          <span>{HISTORICAL_ARCHIVE_SUMMARY.datedRoles} roles with dated activity</span>
+        </p>
       </section>
 
       <section className="calendar-watch-section site-wrap">

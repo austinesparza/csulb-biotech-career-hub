@@ -273,7 +273,7 @@
 
 .home-zebrafish-coda {
   display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(230px, 1fr);
+  grid-template-columns: minmax(0, 1fr) clamp(18px, 2.2vw, 36px);
   background: #000;
 }
 
@@ -336,34 +336,8 @@
   color: #efc86f;
 }
 
-.home-zebrafish-panel {
-  display: block;
-  padding: clamp(38px, 4vw, 66px);
+.home-zebrafish-accent {
   background: #123f36;
-  color: white;
-}
-
-.home-zebrafish-panel img {
-  display: block;
-  margin-bottom: 34px;
-}
-
-.home-zebrafish-panel span {
-  display: block;
-  color: #efc86f;
-  font-family: var(--serif);
-  font-size: clamp(1.65rem, 2.4vw, 2.4rem);
-  line-height: 1;
-}
-
-.home-zebrafish-panel strong {
-  display: block;
-  margin-top: 5px;
-  color: white;
-  font-family: var(--serif);
-  font-size: clamp(1.65rem, 2.4vw, 2.35rem);
-  font-weight: 500;
-  line-height: .98;
 }
 
 /* Opportunity board shell */
@@ -494,87 +468,115 @@
   text-transform: uppercase;
 }
 
-.about-page-reduced .about-system-grid {
+.about-workflow {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  margin: 42px 0 0;
-  padding: 0;
-  border: 0;
-  list-style: none;
+  grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1.12fr) 40px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin-top: 42px;
 }
 
-.about-page-reduced .about-system-grid li {
-  position: relative;
-  display: block;
-  min-height: 190px;
-  padding: 24px 22px;
-  border: 1px solid rgba(255,255,255,.28);
-  background: rgba(255,255,255,.035);
+.about-workflow-group {
+  display: grid;
+  gap: 10px;
 }
 
-.about-page-reduced .about-system-grid li:not(:last-child)::after {
-  content: "→";
-  position: absolute;
-  z-index: 2;
-  top: 50%;
-  right: -25px;
-  width: 34px;
-  color: #efc86f;
-  font-family: var(--sans);
-  font-size: 1.35rem;
-  text-align: center;
-  transform: translateY(-50%);
-}
-
-.about-page-reduced .about-system-grid li > span {
+.about-workflow-label {
   color: #efc86f;
   font-family: var(--mono);
-  font-size: .78rem;
+  font-size: .7rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
 }
 
-.about-page-reduced .about-system-grid h3 {
-  margin-top: 34px;
+.about-workflow article {
+  min-height: 118px;
+  padding: 22px;
+  border: 1px solid rgba(255,255,255,.28);
+  background: rgba(255,255,255,.045);
+}
+
+.about-workflow h3 {
   color: white;
   font-family: var(--sans);
   font-size: .94rem;
   font-weight: 750;
 }
 
-.about-page-reduced .about-system-grid p {
-  margin-top: 12px;
+.about-workflow p {
+  margin: 10px 0 0;
   color: #dbe5e1;
   font-family: var(--sans);
-  font-size: .88rem;
-  line-height: 1.55;
+  font-size: .8rem;
+  line-height: 1.5;
 }
 
-.about-system-archive {
-  display: grid;
-  grid-template-columns: auto 24px auto minmax(0, 1fr);
-  gap: 16px;
-  align-items: center;
-  margin-top: 18px;
-  padding: 16px 20px;
-  border-block: 1px solid rgba(255,255,255,.28);
-  color: #dbe5e1;
-  font-size: .78rem;
-}
-
-.about-system-archive span,
-.about-system-archive strong {
-  color: white;
-  font-size: .78rem;
-}
-
-.about-system-archive b {
+.about-workflow-arrow {
   color: #efc86f;
+  font-family: var(--sans);
+  font-size: 1.5rem;
+  text-align: center;
 }
 
-.about-system-archive p {
-  margin: 0;
+.about-workflow .about-workflow-review {
+  min-height: 220px;
+  padding: 28px;
+  border-color: #efc86f;
+  background: #efc86f;
+  color: #123f36;
+}
+
+.about-workflow-review .about-workflow-label,
+.about-workflow-review h3,
+.about-workflow-review p {
+  color: #123f36;
+}
+
+.about-workflow-review h3 {
+  margin-top: 46px;
+  font-family: var(--serif);
+  font-size: clamp(1.8rem, 2.5vw, 2.45rem);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.about-workflow-review p {
+  font-size: .86rem;
+}
+
+.about-workflow-outcomes .is-public {
+  border-color: rgba(239,200,111,.72);
+}
+
+.about-workflow-outcomes .is-archive {
+  background: transparent;
+}
+
+.about-workflow-loop {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255,255,255,.28);
   color: #dbe5e1;
-  text-align: right;
+}
+
+.about-workflow-loop > span {
+  color: #efc86f;
+  font-family: var(--sans);
+  font-size: 1.5rem;
+}
+
+.about-workflow-loop p {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: .78rem;
+}
+
+.about-workflow-loop strong {
+  color: white;
 }
 
 .about-before-apply > div {
@@ -921,59 +923,156 @@
   font-size: 1.1rem;
 }
 
-/* Calendar history: compact evidence panel */
+/* Calendar history: one finding, one chart */
 .calendar-pattern {
+  display: grid;
+  grid-template-columns: minmax(270px, .8fr) minmax(0, 1.2fr);
+  grid-template-areas:
+    "summary chart"
+    "source source";
   margin-block: 20px 54px;
-  background: transparent;
+  border: 1px solid var(--line-strong);
+  background: #f4efe3;
+  color: var(--ink);
 }
 
-.calendar-pattern-grid {
-  grid-template-columns: minmax(250px, .72fr) minmax(0, 1.28fr);
-  gap: clamp(34px, 5vw, 70px);
-  min-height: 0;
-  padding: clamp(34px, 4vw, 54px);
+.calendar-pattern-summary {
+  grid-area: summary;
+  padding: clamp(38px, 4.2vw, 62px);
   background: #123f36;
+  color: white;
+}
+
+.calendar-pattern .calendar-pattern-eyebrow {
+  margin: 0;
+  color: #efc86f;
+  font-family: var(--mono);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 
 .calendar-pattern h2 {
-  max-width: 10ch;
-  font-size: clamp(2.35rem, 3.6vw, 3.7rem);
+  max-width: 12ch;
+  margin-top: 18px;
+  color: white;
+  font-size: clamp(2.25rem, 3.6vw, 3.65rem);
+  line-height: .98;
 }
 
-.calendar-pattern p {
-  margin-top: 17px;
+.calendar-pattern-summary .calendar-season-insight {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: end;
+  margin-top: 38px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255,255,255,.24);
+}
+
+.calendar-pattern-summary .calendar-season-insight strong {
+  color: #efc86f;
+  font-family: var(--serif);
+  font-size: clamp(3rem, 5vw, 4.8rem);
+  font-weight: 500;
+  line-height: .78;
+}
+
+.calendar-pattern-summary .calendar-season-insight span {
+  max-width: 23ch;
+  color: #eef5f2;
   font-family: var(--sans);
-  font-size: .86rem;
-  line-height: 1.55;
-}
-
-.calendar-history-metrics {
-  margin-top: 24px;
-}
-
-.calendar-history-metrics div {
-  padding: 12px 10px 12px 0;
+  font-size: .78rem;
+  line-height: 1.4;
 }
 
 .calendar-season {
-  padding: 22px 24px 20px;
-  border-color: rgba(255,255,255,.18);
-  background: rgba(0,0,0,.08);
+  grid-area: chart;
+  min-width: 0;
+  padding: clamp(34px, 4vw, 56px);
+  border: 0;
+  background: #f4efe3;
 }
 
-.calendar-season-insight strong {
-  font-size: clamp(2.8rem, 4.5vw, 4.2rem);
+.calendar-pattern .calendar-chart-label {
+  margin: 0;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: .72rem;
+  font-weight: 750;
+  letter-spacing: .03em;
+  text-transform: uppercase;
 }
 
 .calendar-bars {
-  height: 145px;
-  margin-top: 20px;
+  height: 190px;
+  margin-top: 28px;
+}
+
+.calendar-bars li {
+  color: var(--ink-soft);
+}
+
+.calendar-bar-count {
+  color: var(--teal-deep);
+}
+
+.calendar-bar-track {
+  border-bottom-color: rgba(10, 35, 39, .45);
+  background: repeating-linear-gradient(to top, rgba(10,35,39,.09) 0 1px, transparent 1px 25%);
+}
+
+.calendar-bar-track > span {
+  background: #c3cbc3;
+}
+
+.calendar-bars li.has-activity .calendar-bar-track > span {
+  background: #00a98f;
+}
+
+.calendar-bars li.is-peak .calendar-bar-track > span {
+  background: #d4a83f;
+}
+
+.calendar-bars li.is-peak .calendar-bar-count {
+  color: #9b6500;
 }
 
 .calendar-pattern .calendar-pattern-caveat {
-  margin-top: 16px;
-  padding-top: 15px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  max-width: none;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-strong);
+  color: var(--ink-soft);
+  font-family: var(--sans);
   font-size: .78rem;
+}
+
+.calendar-pattern-caveat strong {
+  color: var(--teal-deep);
+}
+
+.calendar-pattern-source {
+  grid-area: source;
+  display: flex;
+  gap: 28px;
+  margin: 0;
+  padding: 15px clamp(24px, 3vw, 44px);
+  border-top: 1px solid var(--line-strong);
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: .65rem;
+  letter-spacing: .02em;
+}
+
+.calendar-pattern-source span + span::before {
+  content: "·";
+  margin-right: 28px;
+  color: var(--gold-mark);
 }
 
 /* Restore image-led resource cards */
@@ -1059,26 +1158,34 @@
     min-height: 490px;
   }
 
-  .home-zebrafish-coda {
-    grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr);
-  }
-
   .about-memory,
   .about-contribute {
     grid-template-columns: 1fr;
   }
 
-  .about-page-reduced .about-system-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .about-page-reduced .about-system-grid li:not(:last-child)::after {
-    display: none;
-  }
-
-  .calendar-pattern-grid {
+  .about-workflow {
     grid-template-columns: 1fr;
-    gap: 30px;
+    gap: 14px;
+  }
+
+  .about-workflow-arrow {
+    transform: rotate(90deg);
+  }
+
+  .about-workflow .about-workflow-review {
+    min-height: 0;
+  }
+
+  .about-workflow-review h3 {
+    margin-top: 28px;
+  }
+
+  .calendar-pattern {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "summary"
+      "chart"
+      "source";
   }
 
   .filters {
@@ -1188,8 +1295,7 @@
 
   .biotech-pathway-grid,
   .application-steps,
-  .role-evaluation-grid,
-  .about-page-reduced .about-system-grid {
+  .role-evaluation-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1203,6 +1309,7 @@
 
   .home-zebrafish-coda {
     grid-template-columns: 1fr;
+    grid-template-rows: auto 14px;
   }
 
   .home-zebrafish-media {
@@ -1224,62 +1331,23 @@
     font-size: .7rem;
   }
 
-  .home-zebrafish-panel {
-    display: grid;
-    grid-template-columns: 48px minmax(0, 1fr);
-    gap: 2px 18px;
-    min-height: 150px;
-    padding: 30px 28px;
-  }
-
-  .home-zebrafish-panel img {
-    grid-row: 1 / span 2;
-    margin: 0;
-  }
-
-  .home-zebrafish-panel span,
-  .home-zebrafish-panel strong {
-    grid-column: 2;
-    font-size: 1.55rem;
-  }
-
-  .about-page-reduced .about-system-grid li {
-    min-height: 0;
-    padding: 22px 20px;
-  }
-
-  .about-page-reduced .about-system-grid p {
-    margin-top: 10px;
-  }
-
-  .about-page-reduced .about-system-grid h3 {
-    margin-top: 22px;
-  }
-
-  .about-system-archive {
-    grid-template-columns: auto 20px auto;
-  }
-
-  .about-system-archive p {
-    grid-column: 1 / -1;
-    text-align: left;
-  }
-
   .calendar-pattern {
     margin-block: 12px 38px;
   }
 
-  .calendar-pattern-grid {
+  .calendar-pattern-summary,
+  .calendar-season {
     padding: 30px 22px;
   }
 
-  .calendar-history-metrics {
-    grid-template-columns: repeat(3, 1fr);
+  .calendar-pattern .calendar-pattern-caveat,
+  .calendar-pattern-source {
+    display: grid;
+    gap: 7px;
   }
 
-  .calendar-history-metrics div {
-    border-right: 1px solid rgba(255,255,255,.16);
-    border-bottom: 0;
+  .calendar-pattern-source span + span::before {
+    content: none;
   }
 
   .about-memory {

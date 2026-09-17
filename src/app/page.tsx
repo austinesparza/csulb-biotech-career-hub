@@ -207,18 +207,14 @@ export default async function HomePage() {
             alt="Fluorescently labeled blood vessels in a developing zebrafish embryo"
             fill
             placeholder="blur"
-            sizes="(max-width: 700px) 100vw, 78vw"
+            sizes="100vw"
           />
           <div className="home-zebrafish-copy">
             <h2 id="zebrafish-title">Find the work that draws you in.</h2>
             <Link href="/internships">Explore current opportunities <span aria-hidden="true">→</span></Link>
           </div>
         </div>
-        <div className="home-zebrafish-panel">
-          <Image src="/icon.svg" alt="" width={48} height={48} aria-hidden="true" />
-          <span>CSULB</span>
-          <strong>Biotech<br />Career Hub</strong>
-        </div>
+        <div className="home-zebrafish-accent" aria-hidden="true" />
       </section>
     </div>
   );
