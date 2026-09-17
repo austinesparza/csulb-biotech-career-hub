@@ -82,58 +82,57 @@ export default async function CalendarPage() {
       </section>
 
       <section className="calendar-pattern" aria-labelledby="pattern-title">
-        <div className="site-wrap calendar-pattern-grid">
-          <div className="calendar-pattern-intro">
-            <h2 id="pattern-title">What past searches tell us.</h2>
-            <p>
-              Two tracked cycles cannot predict the next one. They can tell us when to
-              begin looking and which employers deserve another look.
-            </p>
-            <dl className="calendar-history-metrics">
-              <div><dt>Roles studied</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.roles}</dd></div>
-              <div><dt>Cycles</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.cycles}</dd></div>
-              <div><dt>Dated roles</dt><dd>{HISTORICAL_ARCHIVE_SUMMARY.datedRoles}</dd></div>
-            </dl>
-          </div>
-          <div className="calendar-season">
+        <div className="calendar-pattern-summary">
+          <p className="calendar-pattern-eyebrow">From the club&apos;s historical record</p>
+          <h2 id="pattern-title">
+            {HISTORICAL_ARCHIVE_SUMMARY.roles} roles across{' '}
+            {HISTORICAL_ARCHIVE_SUMMARY.normalizedEmployers} employers.
+          </h2>
+          <p className="calendar-collection-note">
+            Collected from fall 2025 through spring 2026 using LinkedIn, employer career
+            sites, program pages, and broader web searches.
+          </p>
+          <dl className="calendar-archive-metrics">
+            <div>
+              <dt>{HISTORICAL_ARCHIVE_SUMMARY.datedRoles}</dt>
+              <dd>roles with dated activity</dd>
+            </div>
+            <div>
+              <dt>{RECRUITING_MONTHS.length}</dt>
+              <dd>months observed</dd>
+            </div>
+            <div>
+              <dt>{HISTORICAL_ARCHIVE_SUMMARY.cycles}</dt>
+              <dd>search cycles</dd>
+            </div>
+          </dl>
+        </div>
+        <div className="calendar-season">
+          <div className="calendar-chart-head">
+            <p className="calendar-chart-label">When dated roles first appeared</p>
             <div className="calendar-season-insight">
               <strong>{autumnPeakShare}%</strong>
-              <span>of dated roles in the archive appeared in October or November.</span>
+              <span>appeared in October or November.</span>
             </div>
-            <ol className="calendar-bars" aria-label="Historical recruiting activity by month">
-              {activity.map((item) => (
-                <li key={item.month} aria-label={`${item.month}: ${item.count} roles`}>
-                  <span className="calendar-bar-count" aria-hidden="true">{item.count || ''}</span>
-                  <span className="calendar-bar-track" aria-hidden="true">
-                    <span style={{ height: `${item.count / maxActivity * 100}%` }} />
-                  </span>
-                  <span>{item.month}</span>
-                </li>
-              ))}
-            </ol>
-            <p className="calendar-pattern-caveat">
-              <strong>Use the pattern as a head start.</strong> Begin active monitoring by
-              September. A past month is evidence, not a promise.
-            </p>
           </div>
-        </div>
-      </section>
-
-      <section className="calendar-learning site-wrap" aria-labelledby="calendar-learning-title">
-        <div>
-          <span className="mono">A growing training record</span>
-          <h2 id="calendar-learning-title">Past listings teach the search where to look next.</h2>
-        </div>
-        <div>
-          <p>
-            We preserve employer, role family, month first seen, audience, deadline language,
-            location, source, and review outcome. Those labels can improve search ordering,
-            surface recurring programs, and flag unusual changes across cycles.
-          </p>
-          <p>
-            Two cycles are enough to guide attention, not enough for a confident forecast.
-            As reviewed seasons accumulate, we can evaluate models against what actually
-            appeared. Employer evidence still decides what reaches the public board.
+          <ol className="calendar-bars" aria-label="Historical recruiting activity by month">
+            {activity.map((item, index) => (
+              <li
+                key={item.month}
+                className={index === 2 || index === 3 ? 'is-peak' : item.count > 0 ? 'has-activity' : undefined}
+                aria-label={`${item.month}: ${item.count} roles`}
+              >
+                <span className="calendar-bar-count" aria-hidden="true">{item.count || ''}</span>
+                <span className="calendar-bar-track" aria-hidden="true">
+                  <span style={{ height: `${item.count / maxActivity * 100}%` }} />
+                </span>
+                <span>{item.month}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="calendar-pattern-caveat">
+            <strong>Start monitoring in September.</strong>
+            <span>Past timing is a clue, not a deadline.</span>
           </p>
         </div>
       </section>

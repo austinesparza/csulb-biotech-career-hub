@@ -16,6 +16,8 @@ const MICROSCOPY = [
   ['Cerebellar Purkinje cells expressing tdTomato', 'BrainsRusDC, National Institute on Alcohol Abuse and Alcoholism, National Institutes of Health', 'https://commons.wikimedia.org/wiki/File:All_that_glitters_in_the_brain.jpg', 'CC BY 4.0', 'https://creativecommons.org/licenses/by/4.0/'],
   ['DNA identification laboratory', 'U.S. Air Force photo by Staff Sgt. Nicole Leidholm', 'https://commons.wikimedia.org/wiki/File:Armed_Forces_DNA_Identification_Laboratory_analysts_2018.jpg', 'Public domain', 'https://commons.wikimedia.org/wiki/Commons:Copyright_rules_by_territory/United_States'],
   ['Biotechnology students in a laboratory', 'Sunnykenny', 'https://commons.wikimedia.org/wiki/File:Sinh-vien-nganh-cong-nghe-sinh-hoc-trong-phong-thi-nghiem.jpg', 'CC BY-SA 4.0', 'https://creativecommons.org/licenses/by-sa/4.0/'],
+  ['Collaborating on research', 'Rhoda Baer Photography / National Eye Institute', 'https://commons.wikimedia.org/wiki/File:Collaborating_on_Research_(9955278615).jpg', 'CC BY 2.0', 'https://creativecommons.org/licenses/by/2.0/'],
+  ['Researchers review cancer data', 'Rhoda Baer / National Cancer Institute', 'https://commons.wikimedia.org/wiki/File:Researchers_review_cancer_data.jpg', 'Public domain', 'https://creativecommons.org/publicdomain/mark/1.0/'],
 ] as const;
 
 const LOGOS = [
@@ -35,6 +37,9 @@ const LOGOS = [
   ['MD Anderson Cancer Center', 'https://www.mdanderson.org/'],
   ['CAS', 'https://www.cas.org/'],
   ['Xaira Therapeutics', 'https://github.com/mlsbio/mlsbio.github.io/blob/main/public/img/sponsors/xaira_black.png'],
+  ['Fred Hutch Cancer Center', 'https://www.fredhutch.org/'],
+  ['Kite Pharma', 'https://www.kitepharma.com/'],
+  ['Roche', 'https://careers.roche.com/'],
 ] as const;
 
 export default function ImageCreditsPage() {

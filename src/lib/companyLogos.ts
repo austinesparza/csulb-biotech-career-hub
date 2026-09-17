@@ -22,6 +22,9 @@ const COMPANY_LOGOS: Array<[RegExp, CompanyLogoAsset]> = [
   [/md anderson/i, { src: '/brand/logos/md-anderson.png', fit: 'wide' }],
   [/^cas$/i, { src: '/brand/logos/cas.svg', fit: 'wide' }],
   [/^xaira(?:\s+therapeutics)?$/i, { src: '/brand/logos/xaira-therapeutics.svg', fit: 'wide' }],
+  [/^fred\s+hutch(?:inson\s+cancer\s+center)?$/i, { src: '/brand/logos/fred-hutch.svg', fit: 'wide' }],
+  [/^kite(?:\s+pharma)?$/i, { src: '/brand/logos/kite-pharma.png', fit: 'wide' }],
+  [/^roche$/i, { src: '/brand/logos/roche.png', fit: 'wide' }],
 ];
 
 export function companyLogoAsset(name: string): CompanyLogoAsset | null {

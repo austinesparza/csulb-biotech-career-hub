@@ -3,6 +3,15 @@ import Link from 'next/link';
 import { companyLogoAsset } from '@/lib/companyLogos';
 import { createClient } from '@/lib/supabase/client';
 import type { PublicOpportunity } from '@/lib/types';
+import disciplineBioprocess from '../../public/brand/discipline-bioprocess.webp';
+import disciplineCancer from '../../public/brand/discipline-cancer.webp';
+import disciplineDataScience from '../../public/brand/discipline-data-science.webp';
+import disciplineGenomics from '../../public/brand/discipline-genomics.webp';
+import disciplineImmunology from '../../public/brand/discipline-immunology.webp';
+import disciplineProtein from '../../public/brand/discipline-protein.webp';
+import heroEpithelialCells from '../../public/brand/hero-epithelial-cells.webp';
+import missionHistology from '../../public/brand/mission-histology.webp';
+import zebrafishVasculature from '../../public/brand/zebrafish-vasculature.webp';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,12 +30,12 @@ function opportunityDetails(opportunity: PublicOpportunity) {
 }
 
 const DISCIPLINES = [
-  { label: 'Cancer & oncology', focus: 'Cancer and oncology', image: '/brand/discipline-cancer.webp', alt: 'Fluorescence microscopy of DNA in oral cancer cells' },
-  { label: 'Genomics & genetics', focus: 'Genomics and genetics', image: '/brand/discipline-genomics.webp', alt: 'Fluorescence microscopy image from chromosome research' },
-  { label: 'Bioinformatics', focus: 'Bioinformatics and computational biology', image: '/brand/discipline-data-science.webp', alt: 'Published single-cell sequencing maps and data visualizations', imageClass: 'pathway-data' },
-  { label: 'Bioprocess & manufacturing', focus: 'Bioprocess and manufacturing science', image: '/brand/discipline-bioprocess.webp', alt: 'Cell-culture bioreactors in a laboratory' },
-  { label: 'Protein science & drug discovery', focus: 'Protein science and drug discovery', image: '/brand/discipline-protein.webp', alt: 'Protein crystals viewed through a microscope', imageClass: 'pathway-protein' },
-  { label: 'Immunology & infectious disease', focus: 'Immunology and infectious disease', image: '/brand/discipline-immunology.webp', alt: 'Toxoplasma parasites inside a fibroblast host cell' },
+  { label: 'Cancer & oncology', focus: 'Cancer and oncology', description: 'Tumor biology, biomarkers, therapeutics, and translational research.', image: disciplineCancer, alt: 'Fluorescence microscopy of DNA in oral cancer cells' },
+  { label: 'Genomics & genetics', focus: 'Genomics and genetics', description: 'Genome science, functional genetics, and variant-focused work.', image: disciplineGenomics, alt: 'Fluorescence microscopy image from chromosome research' },
+  { label: 'Bioinformatics', focus: 'Bioinformatics and computational biology', description: 'Computational biology, biological data science, and analysis.', image: disciplineDataScience, alt: 'Published single-cell sequencing maps and data visualizations', imageClass: 'pathway-data' },
+  { label: 'Bioprocess & manufacturing', focus: 'Bioprocess and manufacturing science', description: 'Process development, manufacturing science, and quality.', image: disciplineBioprocess, alt: 'Cell-culture bioreactors in a laboratory' },
+  { label: 'Protein science & drug discovery', focus: 'Protein science and drug discovery', description: 'Protein engineering, assays, and therapeutic discovery.', image: disciplineProtein, alt: 'Protein crystals viewed through a microscope', imageClass: 'pathway-protein' },
+  { label: 'Immunology & infectious disease', focus: 'Immunology and infectious disease', description: 'Immune biology, host-pathogen research, and vaccines.', image: disciplineImmunology, alt: 'Toxoplasma parasites inside a fibroblast host cell' },
 ] as const;
 
 function FeaturedCompany({ name }: { name: string }) {
@@ -59,34 +68,31 @@ export default async function HomePage() {
     <div className="home-editorial">
       <section className="editorial-hero site-wrap">
         <div className="editorial-hero-copy">
-          <h1>
-            <span className="hero-line">Opportunities</span>{' '}
-            <span className="hero-line">for what</span>{' '}
-            <span className="hero-line">comes next.</span>
-          </h1>
+          <h1>Opportunities for what comes next.</h1>
           <p className="editorial-intro">
             Biotechnology begins with the urge to look closer. Find internships,
-            research, and early career work that can turn that curiosity into practice.
+            research, and early-career work that can turn that curiosity into practice.
           </p>
           <div className="editorial-actions">
             <Link href="/internships" className="primary-button">Browse opportunities <span aria-hidden="true">→</span></Link>
-            <Link href="/about" className="secondary-button">Learn how it works</Link>
+            <Link href="/calendar" className="secondary-button">View deadlines</Link>
           </div>
         </div>
 
-        <div className="science-collage" aria-label="Fluorescence microscopy of cultured epithelial cells used as an editorial image for discovery in biotechnology">
+        <figure className="science-collage">
           <div className="science-orbit science-orbit-one" aria-hidden="true" />
           <div className="science-orbit science-orbit-two" aria-hidden="true" />
           <div className="science-image">
             <Image
-              src="/brand/hero-cells.webp"
+              src={heroEpithelialCells}
               alt="Cultured epithelial cells with Golgi in yellow-green, actin in magenta, and DNA in cyan"
               fill
               preload
+              placeholder="blur"
               sizes="(max-width: 760px) 82vw, 42vw"
             />
           </div>
-        </div>
+        </figure>
       </section>
 
       <section className="trust-ledger" aria-label="Current opportunity board counts">
@@ -101,7 +107,7 @@ export default async function HomePage() {
 
       <section className="featured-ledger site-wrap" aria-labelledby="featured-title">
         <header className="editorial-section-label">
-          <h2 id="featured-title">Featured opportunities</h2>
+          <h2 id="featured-title">Current opportunities</h2>
           <Link href="/internships">View all opportunities <span aria-hidden="true">→</span></Link>
         </header>
 
@@ -137,9 +143,10 @@ export default async function HomePage() {
         <div className="site-wrap mission-story-grid">
           <figure className="mission-visual">
             <Image
-              src="/brand/mission-histology.webp"
+              src={missionHistology}
               alt="Histology of basal-like breast cancer tissue"
               fill
+              placeholder="blur"
               sizes="(max-width: 820px) 100vw, 40vw"
             />
           </figure>
@@ -151,7 +158,7 @@ export default async function HomePage() {
               a place in that work.
             </p>
             <div className="mission-links">
-              <Link href="/about">Our story <span aria-hidden="true">→</span></Link>
+              <Link href="/about">How the board is maintained <span aria-hidden="true">→</span></Link>
             </div>
           </div>
         </div>
@@ -159,7 +166,10 @@ export default async function HomePage() {
 
       <section className="biotech-pathways site-wrap" aria-labelledby="pathways-title">
         <header>
-          <h2 id="pathways-title">See where the science can take you.</h2>
+          <div>
+            <h2 id="pathways-title">See where the science can take you.</h2>
+            <p>Explore the questions, tools, and environments behind each field, then see where you might fit.</p>
+          </div>
           <Link href="/internships">Explore every opportunity <span aria-hidden="true">→</span></Link>
         </header>
         <div className="biotech-pathway-grid">
@@ -169,13 +179,41 @@ export default async function HomePage() {
               href={`/internships?focus=${encodeURIComponent(discipline.focus)}`}
               className="biotech-pathway"
             >
-              <Image className={'imageClass' in discipline ? discipline.imageClass : undefined} src={discipline.image} alt={discipline.alt} fill sizes="(max-width: 700px) 100vw, 33vw" />
-              <span><strong>{discipline.label}</strong><b aria-hidden="true">→</b></span>
+              <Image
+                className={'imageClass' in discipline ? discipline.imageClass : undefined}
+                src={discipline.image}
+                alt={discipline.alt}
+                fill
+                placeholder="blur"
+                sizes="(max-width: 700px) 100vw, 33vw"
+              />
+              <span className="biotech-pathway-copy">
+                <span>
+                  <strong>{discipline.label}</strong>
+                  <small>{discipline.description}</small>
+                </span>
+                <b aria-hidden="true">→</b>
+              </span>
             </Link>
           ))}
         </div>
       </section>
 
+      <section className="home-zebrafish-coda" aria-labelledby="zebrafish-title">
+        <div className="home-zebrafish-media">
+          <Image
+            src={zebrafishVasculature}
+            alt="Fluorescently labeled blood vessels in a developing zebrafish embryo"
+            fill
+            placeholder="blur"
+            sizes="100vw"
+          />
+          <div className="home-zebrafish-copy">
+            <h2 id="zebrafish-title">The next question is yours.</h2>
+            <Link href="/internships">Explore current opportunities <span aria-hidden="true">→</span></Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -1,109 +1,157 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
+import aboutCollaboratingResearch from '../../../public/brand/about-collaborating-research.webp';
+import aboutHela from '../../../public/brand/about-hela.webp';
+import aboutResearchTeamwork from '../../../public/brand/about-research-teamwork.webp';
 
-const SYSTEM_STEPS = [
-  ['Look in more places', 'Employer feeds, program pages, past club records, and student leads widen the search.'],
-  ['Save the evidence', 'Dates, degree language, pay, methods, and location stay connected to the source text.'],
-  ['Flag what is uncertain', 'A missing date or changed requirement becomes review work. It does not become a guess.'],
-  ['Check before publishing', 'A role reaches the board only after its employer page and important claims have been reviewed.'],
-] as const;
-
-const SYSTEM_MEMORY = [
-  ['Preserve the season', 'Employer, role family, month first seen, audience, deadline language, and review outcome become a record we can study.'],
-  ['Learn what repeats', 'Earlier cycles help us decide when to search, which programs tend to return, and what deserves another look.'],
-  ['Measure the model', 'Predictions are tested against later seasons. A current employer source still decides what is open and who can apply.'],
+const DISCOVERY_PATHS = [
+  ['Daily source checks', 'Approved employer and program sites'],
+  ['Broader discovery', 'Search results, older listings, and student tips'],
 ] as const;
 
 export default function AboutPage() {
   return (
-    <div className="about-page">
+    <div className="about-page about-page-reduced">
       <header className="about-hero site-wrap">
         <div>
-          <h1>Talent is everywhere. Access is not.</h1>
-          <p>
-            Biotech roles are scattered across career sites, short recruiting windows,
-            and programs students may never hear about. The Career Hub searches more
-            widely, shows its evidence, and preserves what each class learns for the next.
-          </p>
+          <h1>Making scientific careers easier to see.</h1>
         </div>
         <figure>
           <Image
-            src="/brand/about-hela.webp"
+            src={aboutHela}
             alt="Living HeLa cells with nuclei, microtubules, and mitochondria shown in blue, green, and red"
             fill
             preload
+            placeholder="blur"
             sizes="(max-width: 820px) 100vw, 44vw"
           />
         </figure>
       </header>
 
+      <section className="about-maintainers site-wrap" aria-labelledby="maintainers-title">
+        <h2 id="maintainers-title">Who maintains the Career Hub</h2>
+        <div>
+          <p>
+            Club members look for roles on employer career sites and program pages, then
+            record the eligibility, dates, location, pay, and science described there.
+            Another student checks the entry before it reaches the public board.
+          </p>
+          <p>
+            This is an independent club resource, not an official CSULB job board.
+            Inclusion does not mean the university or the club endorses an employer.
+          </p>
+          <a
+            className="about-repository-link"
+            href="https://github.com/austinesparza/csulb-biotech-career-hub"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View the project on GitHub <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </section>
+
       <section className="about-system" aria-labelledby="system-title">
         <div className="site-wrap">
           <header>
-            <h2 id="system-title">A search students can inspect.</h2>
+            <p className="about-system-kicker">From search to review</p>
+            <h2 id="system-title">How a lead becomes a public listing.</h2>
           </header>
-          <div className="about-system-grid">
-            {SYSTEM_STEPS.map(([title, body]) => (
-              <article key={title}><h3>{title}</h3><p>{body}</p></article>
-            ))}
+          <div
+            className="about-workflow"
+            role="img"
+            aria-label="Daily source checks and broader discovery feed student review. Reviewed leads are either published to the public board or kept in the archive. The archive helps guide the next search."
+          >
+            <div className="about-workflow-group about-workflow-sources">
+              <span className="about-workflow-label">Find leads</span>
+              {DISCOVERY_PATHS.map(([title, body]) => (
+                <article key={title}>
+                  <h3>{title}</h3>
+                  <p>{body}</p>
+                </article>
+              ))}
+            </div>
+            <span className="about-workflow-arrow" aria-hidden="true">→</span>
+            <article className="about-workflow-review">
+              <span className="about-workflow-label">Check the source</span>
+              <h3>Student review</h3>
+              <p>Confirm the deadline, eligibility, pay, location, and scientific focus.</p>
+            </article>
+            <span className="about-workflow-arrow" aria-hidden="true">→</span>
+            <div className="about-workflow-group about-workflow-outcomes">
+              <span className="about-workflow-label">Decide</span>
+              <article className="is-public">
+                <h3>Public board</h3>
+                <p>Current listing and employer source</p>
+              </article>
+              <article className="is-archive">
+                <h3>Archive</h3>
+                <p>Past, changed, or rejected records</p>
+              </article>
+            </div>
           </div>
+          <div className="about-workflow-loop">
+            <span aria-hidden="true">↺</span>
+            <p><strong>The archive supports the next search.</strong> Timing patterns and recurring employers feed back into discovery.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="about-before-apply site-wrap" aria-labelledby="before-apply-title">
+        <h2 id="before-apply-title">Before you apply</h2>
+        <div>
+          <p>
+            Use the hub to compare openings and understand the basics. Then open the
+            attached employer page and confirm the deadline, eligibility, pay, and
+            application instructions for yourself.
+          </p>
+          <p>
+            Earlier listings stay in the archive. They can show when a program tends to
+            recruit, but they are never presented as current openings.
+          </p>
+          <Link href="/internships">Browse current opportunities <span aria-hidden="true">→</span></Link>
         </div>
       </section>
 
       <section className="about-memory site-wrap" aria-labelledby="memory-title">
         <div className="about-memory-visual">
           <Image
-            src="/brand/discipline-data-science.webp"
-            alt="Published single-cell sequencing maps used to compare biological populations"
+            src={aboutCollaboratingResearch}
+            alt="Four biomedical researchers reviewing notes together in a laboratory"
             fill
-            sizes="(max-width: 820px) 100vw, 40vw"
+            placeholder="blur"
+            sizes="(max-width: 820px) 100vw, 58vw"
           />
         </div>
         <div className="about-memory-copy">
-          <h2 id="memory-title">Learning from our past.</h2>
-          {SYSTEM_MEMORY.map(([title, body]) => (
-            <article key={title}><h3>{title}</h3><p>{body}</p></article>
-          ))}
-        </div>
-      </section>
-
-      <section className="about-tools">
-        <div className="site-wrap about-tools-grid">
-          <div>
-            <h2>More reach without less care.</h2>
-            <p>
-              Automation helps a small student team watch many more employers. Evidence,
-              review, and an archive keep that scale accountable. The goal is simple:
-              fewer opportunities lost because a student lacked time, a connection, or
-              advance knowledge of the recruiting season.
-            </p>
-          </div>
-          <div className="about-tool-list" aria-label="Career Hub capabilities">
-            <span>Official ATS and employer feeds</span>
-            <span>Immutable source observations</span>
-            <span>Field-level evidence</span>
-            <span>Degree and enrollment checks</span>
-            <span>Deadline conflict detection</span>
-            <span>Duplicate and repost matching</span>
-            <span>Human publication gates</span>
-            <span>Audited, reversible corrections</span>
-          </div>
+          <p className="about-memory-kicker">The archive</p>
+          <h2 id="memory-title">Past searches give students a head start.</h2>
+          <p>
+            Last year&apos;s listings show when recurring programs tend to open and which
+            employers are worth checking again. That can give the next group of students
+            more time to prepare.
+          </p>
+          <p>
+            The archive is a lead, not proof that a role is open. Current status and
+            eligibility always come from the employer&apos;s live page.
+          </p>
         </div>
       </section>
 
       <section className="about-contribute site-wrap">
         <div className="about-contribute-image">
           <Image
-            src="/brand/discipline-immunology.webp"
-            alt="Fluorescence microscopy of parasites inside human fibroblast cells"
+            src={aboutResearchTeamwork}
+            alt="Two cancer researchers reviewing experimental data together on laboratory monitors"
             fill
-            sizes="(max-width: 820px) 100vw, 52vw"
+            placeholder="blur"
+            sizes="(max-width: 820px) 100vw, 60vw"
           />
         </div>
         <div className="about-contribute-copy">
-          <h2>What one student notices can open a door for many.</h2>
-          <p>Send a new role, a changed deadline, a broken link, or evidence that our record needs correction.</p>
+          <h2>Help us keep the board useful.</h2>
+          <p>Found a role we missed, a changed deadline, or a broken link? Send it to the club with the employer source.</p>
           <div className="about-actions">
             <Link href="/submit" className="primary-button">Submit a role or correction</Link>
             <a href={mailto(CLUB_LINKS.emailSubjectReport)} className="secondary-button">Email the club</a>
@@ -112,9 +160,8 @@ export default function AboutPage() {
       </section>
 
       <p className="about-disclaimer site-wrap">
-        Listings are provided for information. Inclusion is not an endorsement by the
-        CSULB Biotechnology Club or California State University, Long Beach. Always
-        confirm details in the employer&apos;s current posting.
+        Always confirm deadlines, eligibility, compensation, and application instructions
+        in the employer&apos;s current posting before you apply.
       </p>
     </div>
   );
