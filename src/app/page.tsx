@@ -60,10 +60,10 @@ export default async function HomePage() {
       <section className="editorial-hero site-wrap">
         <div className="editorial-hero-copy">
           <p className="home-attribution">Curated and reviewed by the CSULB Biotechnology Club</p>
-          <h1>Biotech internships and research opportunities for CSULB students.</h1>
+          <h1>Opportunities for what comes next.</h1>
           <p className="editorial-intro">
-            Find current roles, compare eligibility and deadlines, and open the employer
-            source before you apply.
+            Biotechnology begins with the urge to look closer. Find internships,
+            research, and early-career work that can turn that curiosity into practice.
           </p>
           <div className="editorial-actions">
             <Link href="/internships" className="primary-button">Browse opportunities <span aria-hidden="true">→</span></Link>
@@ -83,7 +83,6 @@ export default async function HomePage() {
               sizes="(max-width: 760px) 82vw, 42vw"
             />
           </div>
-          <figcaption>Fluorescence microscopy of cultured epithelial cells.</figcaption>
         </figure>
       </section>
 
@@ -197,14 +196,12 @@ export default async function HomePage() {
             fill
             sizes="(max-width: 700px) 100vw, 76vw"
           />
-          <div className="home-zebrafish-copy">
-            <h2 id="zebrafish-title">The next question is yours.</h2>
-            <Link href="/internships">Find a place to investigate it <span aria-hidden="true">→</span></Link>
-          </div>
         </div>
         <div className="home-zebrafish-panel">
-          <span>CSULB Biotechnology Club</span>
-          <p>Built in Long Beach for students ready to look closer.</p>
+          <span>Start exploring</span>
+          <h2 id="zebrafish-title">Find the work that draws you in.</h2>
+          <p>Browse current internships, co-ops, and research roles across biotechnology.</p>
+          <Link href="/internships">Explore opportunities <span aria-hidden="true">→</span></Link>
         </div>
       </section>
     </div>

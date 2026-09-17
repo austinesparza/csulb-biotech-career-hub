@@ -15,9 +15,9 @@ describe('mobile homepage finishing contract', () => {
     expect(polishIndex).toBeGreaterThan(coreIndex);
   });
 
-  it('uses a specific student-facing headline instead of stacked slogans', () => {
-    expect(home).toContain('Biotech internships and research opportunities for CSULB students.');
-    expect(home).not.toContain('Opportunities for what comes next.');
+  it('uses the concise editorial headline without the rejected directory title', () => {
+    expect(home).toContain('Opportunities for what comes next.');
+    expect(home).not.toContain('Biotech internships and research opportunities for CSULB students.');
     expect(mobileStyles).toContain('overflow-wrap: normal;');
     expect(mobileStyles).toContain('word-break: normal;');
     expect(mobileStyles).toContain('hyphens: none;');

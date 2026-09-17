@@ -3,21 +3,9 @@ import Link from 'next/link';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
 
 const REVIEW_STEPS = [
-  ['1', 'Find the role', 'Employer sites, program pages, earlier club records, and student leads help widen the search.'],
-  ['2', 'Check the source', 'A club reviewer confirms the employer page and records the eligibility, timing, location, pay, and scientific focus it actually states.'],
-  ['3', 'Publish what is known', 'The role reaches the public board with its source attached. Missing or conflicting details remain clearly labeled.'],
-] as const;
-
-const STUDENT_PROMISES = [
-  ['The source stays visible', 'Every current role links to the posting students should verify before applying.'],
-  ['Uncertainty is not filled with a guess', 'If a deadline, pay range, or eligibility rule is missing, the board says that directly.'],
-  ['Past listings remain separate', 'Earlier cycles help students anticipate recruiting seasons, but they are never presented as current openings.'],
-] as const;
-
-const SEARCH_MEMORY = [
-  ['Recruiting has a rhythm', 'Earlier listings show when recurring programs usually appear, so students can prepare before a short window opens.'],
-  ['Patterns still need a current source', 'The archive helps the club know where to look. The employer page still decides whether a role is open and who can apply.'],
-  ['One class helps the next', 'A clean record lets future students begin with more context, more time, and fewer closed doors.'],
+  ['1', 'Collect the lead', 'A role can come from an employer site, a program page, an earlier club search, or a student tip.'],
+  ['2', 'Read the live posting', 'A club member records the eligibility, dates, location, pay, and scientific focus stated by the employer.'],
+  ['3', 'Add it to the board', 'Another student checks the entry. Missing or conflicting details stay labeled instead of being guessed.'],
 ] as const;
 
 export default function AboutPage() {
@@ -25,11 +13,11 @@ export default function AboutPage() {
     <div className="about-page about-page-reduced">
       <header className="about-hero site-wrap">
         <div>
-          <h1>A student-run search with the source attached.</h1>
+          <h1>How the Career Hub works.</h1>
           <p>
-            The CSULB Biotechnology Club maintains this hub so students can find
-            opportunities earlier, understand who can apply, and verify every important
-            detail at the employer&apos;s current posting.
+            Biotech opportunities are scattered across employer career sites, short
+            recruiting windows, and programs students may never hear about. The club
+            brings those leads together and shows where each detail came from.
           </p>
         </div>
         <figure>
@@ -40,7 +28,6 @@ export default function AboutPage() {
             preload
             sizes="(max-width: 820px) 100vw, 44vw"
           />
-          <figcaption>Fluorescence microscopy of living HeLa cells.</figcaption>
         </figure>
       </header>
 
@@ -48,13 +35,13 @@ export default function AboutPage() {
         <h2 id="maintainers-title">Who maintains the Career Hub</h2>
         <div>
           <p>
-            Club members collect possible roles, compare them with the employer source,
-            and review the information students need to make a decision. Automation helps
-            the team notice more leads. A student reviewer still decides what is published.
+            Club members look for roles on employer career sites and program pages, then
+            record the eligibility, dates, location, pay, and science described there.
+            Another student checks the entry before it reaches the public board.
           </p>
           <p>
-            The board is an independent club resource. It is not an official CSULB job
-            board, and inclusion is not an endorsement by the university or the club.
+            This is an independent club resource, not an official CSULB job board.
+            Inclusion does not mean the university or the club endorses an employer.
           </p>
         </div>
       </section>
@@ -62,7 +49,9 @@ export default function AboutPage() {
       <section className="about-system" aria-labelledby="system-title">
         <div className="site-wrap">
           <header>
-            <h2 id="system-title">How a role reaches the board</h2>
+            <p className="about-system-kicker">From lead to listing</p>
+            <h2 id="system-title">Every listing starts with the employer.</h2>
+            <p>A student reviewer reads the live posting before a role reaches the board.</p>
           </header>
           <ol className="about-system-grid">
             {REVIEW_STEPS.map(([number, title, body]) => (
@@ -76,68 +65,58 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="about-promises site-wrap" aria-labelledby="promises-title">
-        <h2 id="promises-title">What students can expect</h2>
+      <section className="about-before-apply site-wrap" aria-labelledby="before-apply-title">
+        <h2 id="before-apply-title">Before you apply</h2>
         <div>
-          {STUDENT_PROMISES.map(([title, body]) => (
-            <article key={title}>
-              <h3>{title}</h3>
-              <p>{body}</p>
-            </article>
-          ))}
+          <p>
+            Use the hub to compare openings and understand the basics. Then open the
+            attached employer page and confirm the deadline, eligibility, pay, and
+            application instructions for yourself.
+          </p>
+          <p>
+            Earlier listings stay in the archive. They can show when a program tends to
+            recruit, but they are never presented as current openings.
+          </p>
+          <Link href="/internships">Browse current opportunities <span aria-hidden="true">→</span></Link>
         </div>
       </section>
 
       <section className="about-memory site-wrap" aria-labelledby="memory-title">
         <div className="about-memory-visual">
           <Image
-            src="/brand/discipline-data-science.webp"
-            alt="Published single-cell sequencing maps used to compare biological populations"
+            src="/brand/footer-lab.webp"
+            alt="A researcher pipetting samples at a laboratory bench while colleagues work nearby"
             fill
-            sizes="(max-width: 820px) 100vw, 40vw"
+            sizes="(max-width: 820px) 100vw, 58vw"
           />
         </div>
         <div className="about-memory-copy">
-          <h2 id="memory-title">Learning from our past.</h2>
-          {SEARCH_MEMORY.map(([title, body]) => (
-            <article key={title}>
-              <h3>{title}</h3>
-              <p>{body}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="about-tools">
-        <div className="site-wrap about-tools-grid">
-          <div>
-            <h2>More reach without less care.</h2>
-            <p>
-              Simple tools help a small student team notice more opportunities. Sources,
-              clear uncertainty, and student review keep that wider search accountable.
-            </p>
-          </div>
-          <div className="about-tool-list" aria-label="How the Career Hub stays useful">
-            <span>Watch employer sites</span>
-            <span>Keep source links</span>
-            <span>Flag changed details</span>
-            <span>Require student review</span>
-          </div>
+          <p className="about-memory-kicker">The archive</p>
+          <h2 id="memory-title">Past searches give students a head start.</h2>
+          <p>
+            Last year&apos;s listings show when recurring programs tend to open and which
+            employers are worth checking again. That can give the next group of students
+            more time to prepare.
+          </p>
+          <p>
+            The archive is a lead, not proof that a role is open. Current status and
+            eligibility always come from the employer&apos;s live page.
+          </p>
         </div>
       </section>
 
       <section className="about-contribute site-wrap">
         <div className="about-contribute-image">
           <Image
-            src="/brand/discipline-immunology.webp"
-            alt="Fluorescence microscopy of parasites inside human fibroblast cells"
+            src="/brand/prepare-students.webp"
+            alt="Biotechnology students working together in a teaching laboratory"
             fill
-            sizes="(max-width: 820px) 100vw, 52vw"
+            sizes="(max-width: 820px) 100vw, 60vw"
           />
         </div>
         <div className="about-contribute-copy">
-          <h2>What one student notices can open a door for many.</h2>
-          <p>Send a new role, a changed deadline, a broken link, or evidence that a listing needs correction.</p>
+          <h2>Help us keep the board useful.</h2>
+          <p>Found a role we missed, a changed deadline, or a broken link? Send it to the club with the employer source.</p>
           <div className="about-actions">
             <Link href="/submit" className="primary-button">Submit a role or correction</Link>
             <a href={mailto(CLUB_LINKS.emailSubjectReport)} className="secondary-button">Email the club</a>
