@@ -1593,10 +1593,6 @@
 }
 
 @media (max-width: 520px) {
-  .brand-product {
-    display: none;
-  }
-
   .filters {
     grid-template-columns: 1fr;
   }
