@@ -31,6 +31,11 @@ describe('mobile homepage finishing contract', () => {
     expect(reductionStyles).toContain('aspect-ratio: 1;');
   });
 
+  it('keeps the full Career Hub name visible in the mobile masthead', () => {
+    expect(layout).toContain('<span className="brand-product">Biotech Career Hub</span>');
+    expect(reductionStyles).not.toMatch(/\.brand-product\s*\{\s*display:\s*none;/);
+  });
+
   it('uses the selected scientific imagery to help students understand the fields', () => {
     expect(home).toContain('/brand/hero-epithelial-cells.webp');
     expect(home).toContain('/brand/discipline-cancer.webp');
