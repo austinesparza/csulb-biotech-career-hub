@@ -6,6 +6,7 @@ import { companyLogoAsset } from '@/lib/companyLogos';
 import { allFocusAreas } from '@/lib/focusAreas';
 import {
   companyContextLine,
+  formatOpportunityDate,
   noteLabel,
   opportunityTags,
   postingLinkLabel,
@@ -50,10 +51,6 @@ function personalBonus(o: PublicOpportunity, p: Prefs): { pts: number; why: stri
   if (p.term && `${o.start_date_text ?? ''} ${o.title}`.toLowerCase().includes(p.term)) { pts += 8; why.push(`${p.term} term`); }
   return { pts, why };
 }
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
 function companyInitials(name: string): string {
   return name.split(/\s+/).slice(0, 2).map((word) => word[0]?.toUpperCase() ?? '').join('');
 }
@@ -224,12 +221,12 @@ function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
 }) {
   const deadlinePassed = !!o.deadline && daysUntil(o.deadline, referenceTime) < 0;
   const timing = o.deadline
-    ? `${deadlinePassed ? 'Deadline passed' : 'Apply by'} ${formatDate(o.deadline + 'T00:00:00')}`
+    ? `${deadlinePassed ? 'Deadline passed' : 'Apply by'} ${formatOpportunityDate(o.deadline + 'T00:00:00Z')}`
     : timingFallbackLabel(o.deadline_text);
   const eligibility = o.eligibility ?? 'Confirm the degree and enrollment requirements in the live posting.';
   const tags = opportunityTags(o).slice(0, 2);
   const companyContext = companyContextLine(o);
-  const checked = o.last_checked_at ? formatDate(o.last_checked_at) : null;
+  const checked = o.last_checked_at ? formatOpportunityDate(o.last_checked_at) : null;
 
   return (
     <li className="opportunity-record">
