@@ -4,16 +4,18 @@ concept: The annotated record
 surfaces:
   public: [/, /internships, /calendar, /eligibility, /companies, /about, /submit, /privacy]
   instrument: [/admin, /admin/review, /admin/import, /admin/duplicates, /admin/add]
-status: Derived from the shipped static hub design system. Token contrast and
-  dimension separation are automated; responsive reflow still requires visual QA.
+status: Current visual and accessibility contract. Token contrast, employer-mark
+  presentation, masthead presence, footer layout, and responsive regressions have
+  automated coverage; consequential responsive changes still require visual QA.
 ---
 
 # DESIGN.md
 
 ## North star
 
-This is a **research instrument maintained by students**, not a product landing
-page and not a job board. Two references, held together:
+This is a **career resource maintained with the care of a research instrument**,
+not a generic product landing page or commercial job board. Two references are
+held together:
 
 - the clarity of a carefully edited scientific publication
 - the utility of a modern research instrument
@@ -22,10 +24,10 @@ The interface should feel **composed, not populated**. Hierarchy, spacing, rules
 alignment, typography and restrained colour do the work. If a section could be
 a card or a ruled band, make it a ruled band.
 
-A visitor must understand within ten seconds that this covers **graduate-level
-and graduate-accessible** roles in genomics, cancer research, bioinformatics and
-diagnostics. Never broaden it visually or verbally into a general undergraduate
-board.
+A visitor must understand within ten seconds that this covers biotechnology and
+adjacent life-science opportunities for **undergraduate, graduate, and mixed
+student audiences**. Audience and eligibility must stay explicit; never flatten
+the resource into a generic jobs board.
 
 ## The idea that organises everything
 
@@ -115,8 +117,9 @@ serif element in the list so it is found first.
 rule in the margin, a rust status word with a slashed glyph, and the published
 restriction printed in the record itself.
 
-**The official source is the primary action everywhere.** Details and Save are
-text buttons beside it, never competing.
+**The official source is the primary evidence action.** Browsing, deadline, and
+application-help actions may lead at the page level, but a record must keep its
+official source obvious and directly reachable.
 
 **Evidence carries citations.** Where a value came from a source, show the quote.
 Where it did not, say so plainly — an uncited assertion must look different from
@@ -131,9 +134,15 @@ white surface. Focus ring is 2px paper + 2px navy offset; on navy surfaces it is
 `/admin/*` is a working instrument an officer uses for twenty minutes on a
 Monday. Optimise for scanning density, keyboard use, and verification speed.
 
-Public pages carry more editorial weight — a statement, a lede, breathing room —
-but never become marketing. No hero video, no gradient wash, no testimonial
-carousel.
+Public pages carry more editorial weight: a statement, a lede, scientific
+imagery, and breathing room. Imagery should create curiosity and communicate
+real scientific work rather than decorate empty space. No hero video, generic
+stock-lab photography, gradient wash, or testimonial carousel.
+
+The mobile masthead must always retain the visible `CSULB` wordmark and menu
+control. Navigation disclosures close after a destination is selected. At narrow
+widths, records and calendar controls reflow into a single readable column rather
+than preserving desktop columns or forcing horizontal scrolling.
 
 ## Do not
 
@@ -143,10 +152,10 @@ These are failure modes this project has already been briefed against:
 - Repetitive icon-plus-heading blocks
 - Generic three-column marketing sections
 - All-caps tracked eyebrow labels above every heading
-- Decorative DNA helices, molecule icons, microscope graphics, stock lab photos
+- Decorative DNA helices, molecule icons, microscope graphics, or generic stock lab photos
 - Neon gradients, glowing blobs, heavy glass effects
 - Oversized pill controls, excessive shadows, ornamental animation
-- Huge headlines followed by empty space
+- Huge headlines followed by purposeless empty space
 - Excessive badges
 - Default Tailwind blue `#3b82f6`, Inter as the interface face, or a 4-8-12-16
   spacing scale — the three tells of an unconsidered AI frontend
@@ -168,6 +177,7 @@ WCAG 2.2 AA is a requirement, not a goal.
 - Dialog moves focus to the title, restores to the trigger on close
 - Reflow at 320px and 200% zoom without horizontal scroll
 - Semantic HTML; tables reflow to records rather than scrolling sideways
+- Mobile navigation closes after an internal destination is selected
 
 ## Agent prompt guide
 

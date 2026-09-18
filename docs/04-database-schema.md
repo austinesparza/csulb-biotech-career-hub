@@ -1,5 +1,10 @@
 # D. Database Schema (design)
 
+> **Foundational design record.** This is a conceptual schema reference.
+> `supabase/migrations/` and database contract tests define the implemented
+> schema; [`16-current-system-status.md`](16-current-system-status.md) defines
+> production status.
+
 Implemented by the ordered files in `supabase/migrations/` (deliverable E).
 `0001_init.sql` is the bootstrap; later files are additive and must also be
 applied. Postgres, UUID primary keys, public views, and RLS form the data boundary.

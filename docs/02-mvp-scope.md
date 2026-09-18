@@ -1,5 +1,9 @@
 # B. MVP Scope
 
+> **Historical record.** This preserves the original MVP boundary. Several
+> deferred capabilities were later implemented. Start with [`docs/README.md`](README.md)
+> and [`16-current-system-status.md`](16-current-system-status.md).
+
 ## In scope (MVP = Milestone 1)
 1. **CSV import** of the existing internship spreadsheet (column aliases handled; raw rows preserved in `raw_import_rows`; each run logged in `import_runs`; a source record is **required** for every import).
 2. **Normalization** into `companies` + `opportunities` (dates strictly validated, paid status normalized, URLs canonicalized and restricted to http/https).

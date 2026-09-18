@@ -35,9 +35,9 @@ state something, the record says `Unknown` rather than guessing. A student can
 check any claim against the employer's own words in one click.
 
 Three questions are kept separate and never collapsed: is it open, is it
-scientifically relevant, are you eligible. Roles most CSULB graduate students
-cannot realistically take are kept as evidence in labelled buckets rather than
-deleted or mixed into the main board.
+scientifically relevant, and which student audiences are eligible. Roles outside
+the intended audience remain available as private evidence or labelled review
+records rather than being silently deleted or mixed into the public board.
 
 ## Voice
 

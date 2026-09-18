@@ -1,10 +1,15 @@
 # Current system status
 
-**Authoritative status date:** September 16, 2026  
+**Authoritative status date:** September 18, 2026
 **Production data snapshot:** September 15, 2026 at 07:39 UTC  
-**Audited repository baseline:** `6c4ad118a3a79ad7cb311e87a662bdd2425b6dda`
+**Audited production-code baseline:** `35c2b3e2d8bf600b27cd556ca67f8578b87f54de`
 
 This file is the current status authority for the Career Hub. Earlier design and launch documents explain how the project developed, but their counts, audience assumptions, and rollout states may be historical. When a historical document conflicts with this file, current code, migrations, production data, and live behavior take precedence.
+
+The production counts below remain the September 15 observation. The repository
+baseline was refreshed separately on September 18 after the approved design,
+mobile, employer-mark, and navigation releases. A newer code baseline does not
+silently turn an older data observation into a current count.
 
 ## Product definition
 
@@ -93,9 +98,13 @@ Automated source runs, search results, model output, public submissions, CSV row
 5. The canonical static-page fetch path does not currently preserve conditional-request validators and treats HTTP 304 as failure.
 6. CSV upload has no explicit byte or row ceiling.
 7. Public-submission retention is not defined as a fixed schedule.
-8. Visible hero and footer imagery relies on third-party CSS background URLs. The local footer asset is the older Purkinje-cell image and is hidden.
+8. Scientific hero, discipline, About, and footer imagery is now stored locally.
+   Future image changes must preserve credits, responsive crops, and optimized
+   formats so the page does not regress to delayed third-party loading.
 9. Pipeline cycle records do not distinguish Vercel from GitHub scheduler origin.
-10. Several older documents describe graduate-only scope, disabled sources, automatic expiration, offline installation, or reports that do not match production.
+10. Historical documents are now indexed and labeled separately, but their body
+    text intentionally preserves graduate-only scope, disabled-source assumptions,
+    automatic expiration, offline installation, and reports that may not match production.
 
 ## Graphify maintainer graph
 
@@ -103,10 +112,10 @@ Graphify is development-only and has no production credentials or publication au
 
 | Graph measure | Value |
 | --- | ---: |
-| Code files indexed | 312 |
-| Nodes | 2,049 |
-| Edges | 4,260 |
-| Communities | 144 |
+| Code files indexed | 315 |
+| Nodes | 2,077 |
+| Edges | 4,293 |
+| Communities | 138 |
 | Dangling endpoints | 0 |
 | Exact duplicate edges | 0 |
 

@@ -1,5 +1,9 @@
 # A. Product Brief — CSULB Biotech Career Hub
 
+> **Historical record.** This preserves the original product brief and minimum
+> recommendation. It is not current operating authority. Start with
+> [`docs/README.md`](README.md) and [`16-current-system-status.md`](16-current-system-status.md).
+
 **One line:** A student-maintained web app that turns the club's internship spreadsheet into a reviewed, searchable career board, plus directories for companies, mentors, speakers, career pathways, and resources.
 
 ## Problem

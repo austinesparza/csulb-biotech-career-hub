@@ -1,5 +1,9 @@
 # Discovery pipeline: historical design
 
+> **Historical record.** This document records the pipeline's iterative design
+> and validation history. Use [`pipeline-integration.md`](pipeline-integration.md)
+> and [`current-architecture.md`](current-architecture.md) for the current contract.
+
 > Do not implement the table names or deployment steps below. This file preserves
 > the original design and test findings only. The integrated contract is
 > `pipeline-integration.md`; it reuses migrations 0001-0007 and migration 0011.
