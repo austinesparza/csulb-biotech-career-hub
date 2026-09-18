@@ -136,3 +136,13 @@ export function timingFallbackLabel(value: string | null): string {
   if (/^not stated$/i.test(text)) return 'No deadline stated';
   return text;
 }
+
+/** Keep server and browser rendering identical even when their local timezones differ. */
+export function formatOpportunityDate(value: string): string {
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}

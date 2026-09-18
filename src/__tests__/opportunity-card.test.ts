@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   companyContextLine,
+  formatOpportunityDate,
   noteLabel,
   opportunityTags,
   postingLinkLabel,
@@ -110,6 +111,10 @@ describe('posting evidence and CTA labels', () => {
 });
 
 describe('small public-facing labels', () => {
+  it('formats opportunity dates in UTC for hydration-stable output', () => {
+    expect(formatOpportunityDate('2026-09-18T00:30:00.000Z')).toBe('Sep 18, 2026');
+  });
+
   it('does not expose internal officer language for ordinary notes', () => {
     expect(noteLabel('Confirm timing before applying.')).toBe('Context');
     expect(noteLabel('Expected monthly compensation: $10,000.')).toBe('Compensation');
