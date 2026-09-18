@@ -1,6 +1,8 @@
-# LAUNCH.md — from zip to live board (~90 minutes)
+# LAUNCH.md: production ownership and release checklist
 
-Work top to bottom. Check each box. Details live in docs/07-deployment.md; this is the day-of sequence.
+The application is already live. Use this checklist for a new production
+environment, ownership transfer, or migration-dependent release. Details live in
+`docs/07-deployment.md` and `docs/operations-reference.md`.
 
 ## Phase 1: Prove the build (~15 min)
 
@@ -17,8 +19,9 @@ Work top to bottom. Check each box. Details live in docs/07-deployment.md; this 
 
 - [ ] Confirm the existing Supabase project's club owner and shared password-manager
       entry. The production project exists, but ownership documentation is still missing.
-- [x] Apply executable migrations in numeric order. Do not run anything under
-      `supabase/proposals/`. Test new migrations against a preview database first.
+- [x] Apply the complete executable migration history with the Supabase migration
+      runner. Do not manually infer order from filenames and do not run anything
+      under `supabase/proposals/`.
 - [x] Confirm the pull request's **Database contracts** check passed against a
       disposable clean database before applying any migration to production.
 - [x] Do not run `supabase/seed.sql` in the populated production project. It is
@@ -62,7 +65,7 @@ Work top to bottom. Check each box. Details live in docs/07-deployment.md; this 
       a dated observation, not a fixed launch count.
 - [ ] Check `/internships` as a logged-out student on your phone
 
-## Phase 5: Announce (~10 min)
+## Phase 5: Release communication
 
 - [ ] Add a Career Hub link to the club website nav
 - [ ] Resolve every item marked **Not documented** in HANDOFF.md.
@@ -76,7 +79,8 @@ A student who has never seen the app finds a paid, currently-open internship in
 their focus area in under 30 seconds, and the source link works. Then re-import
 the same CSV and confirm zero approved listings changed.
 
-## After launch (in order, from docs/10-github-issues.md)
+## After release
 
-Keep the review queue staffed for three real weeks before enabling recurring
-source discovery. Model extraction remains advisory and may never publish.
+Keep the review queue staffed and review scheduled-source health. Model
+extraction remains advisory and may never publish. Future priorities and gates
+live in `docs/17-capability-roadmap.md`, not the historical issue list.

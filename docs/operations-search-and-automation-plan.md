@@ -1,5 +1,9 @@
 # Operations and search plan
 
+> **Historical record.** This plan predates the current production pipeline.
+> Use [`operations-reference.md`](operations-reference.md) for present operation
+> and [`17-capability-roadmap.md`](17-capability-roadmap.md) for future work.
+
 Status: historical design and rollout record. It contains graduate-only and
 pre-activation assumptions that no longer describe production. For current
 truth, use `docs/16-current-system-status.md`, `docs/17-capability-roadmap.md`,

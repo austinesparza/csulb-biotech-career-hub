@@ -1,5 +1,9 @@
 # Ingestion Core — Greenhouse Phase 2A
 
+> **Historical record.** This preserves the Phase 2A connector contract and test
+> results. Shared current requirements live in
+> [`connector-contracts.md`](connector-contracts.md) and executable code.
+
 This document describes the automated ingestion core and Greenhouse connector
 implemented in Phase 2A. The output of this phase is normalized ingestion
 candidates and decision metadata. **No database writes are performed in this

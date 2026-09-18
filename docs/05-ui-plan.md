@@ -1,5 +1,9 @@
 # K. Student-Facing UI Plan
 
+> **Historical record.** This preserves the original UI plan. The implemented
+> public routes are mapped in [`current-architecture.md`](current-architecture.md),
+> and [`../DESIGN.md`](../DESIGN.md) is the current visual contract.
+
 Design principle: boring, fast, readable. Tailwind, no component library, server components everywhere, zero client JS except search/filter inputs. Every page reads only `public_*` views; all user filter input is sanitized (`sanitizeSearchTerm`).
 
 ## Pages

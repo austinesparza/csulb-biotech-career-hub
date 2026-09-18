@@ -1,5 +1,9 @@
 # Automated Ingestion Schema — Phase 1
 
+> **Historical record.** This preserves the Phase 1 schema implementation and
+> validation results. Executable migrations and
+> [`current-architecture.md`](current-architecture.md) are current authority.
+
 This document describes the database schema introduced by migrations
 `0002_ingestion_task_types.sql`, `0003_automated_ingestion_schema.sql`, and
 `0004_source_payload_bucket.sql`.

@@ -46,7 +46,7 @@
 ## How things work (30-second version)
 Listings can enter through the spreadsheet, the public submission form, or an
 officer-approved automated source. Every fetch is retained as an immutable source
-version. The graduate classifier suggests scientific lanes, job functions,
+version. The student-audience classifier suggests scientific lanes, job functions,
 methods, degree stage, and access restrictions. Extraction may suggest facts only
 when each asserted value has a verbatim quote in the stored source text. Nothing
 becomes public until an officer opens the source, confirms the public-safe fields,
@@ -140,3 +140,18 @@ private record but is not required for a complete queue handoff.
 
 The primary officer sign-in uses Supabase's default hosted email link and does
 not require a custom email template or custom SMTP on the Free plan.
+
+## Officer transition acceptance
+
+Before removing a departing officer, the incoming maintainer must successfully:
+
+1. Sign in through the email-link flow.
+2. Open the review queue and inspect one source record without publishing it.
+3. Run an approved export and confirm its private storage location.
+4. Check source health and the most recent pipeline cycle.
+5. Locate the recovery workflow, Vercel project, Supabase project, Google service
+   account, and credential register.
+6. Review one correction and restoration path in `/admin/manage`.
+
+Record account owners and storage locations here, but never place credentials or
+recovery codes in the repository.

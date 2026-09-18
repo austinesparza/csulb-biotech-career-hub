@@ -1,5 +1,9 @@
 # Ingestion Persistence Bridge — Phase 2B
 
+> **Historical record.** This preserves the Phase 2B persistence milestone.
+> Current end-to-end ownership lives in
+> [`pipeline-integration.md`](pipeline-integration.md).
+
 ## Scope
 
 Phase 2B persistence now enforces transactional posting/version integrity, compare-and-set fetch-run finalization, replay-safe payload reconciliation, and review-only behavior for non-exact opportunity matches.

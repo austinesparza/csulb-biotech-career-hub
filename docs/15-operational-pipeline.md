@@ -62,7 +62,9 @@ Every discovery must end in one of these recorded states:
 | LinkedIn or web lead | `discovery_leads` plus immutable `discovery_lead_observations` | Official source record when found | LinkedIn alone is not publication evidence |
 | Low relevance, adjacent, special, or ineligible | Same raw and normalized history | Archive reason and classification | Hidden from the public Career Hub, never erased |
 
-“Not on the graduate board” does not mean “deleted.” It means the record remains available for audits, future undergrad work, source evaluation, and taxonomy improvements.
+“Not routed to the current student board” does not mean “deleted.” The record
+remains available for audits, future audience decisions, source evaluation, and
+taxonomy improvements.
 
 ## LinkedIn discovery
 

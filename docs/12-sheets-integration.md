@@ -19,7 +19,7 @@ The rule that resolves every case: **Sheet changes create review tasks. They nev
 | Archive | Database-finalized Review Queue rows | App; officers do not edit |
 | Approved export | App-generated, public-safe records only | App export only |
 
-## Intake flow (implemented, awaiting the first private production sync)
+## Intake flow
 
 ```
 Club Google Sheet (raw intake tab)
@@ -71,7 +71,7 @@ If direct sync is unavailable, export the tab as CSV and upload it at `/admin/im
 
 ## Machine discovery writeback
 
-The production integration is now two-way at the review boundary. Governed
+The production integration is two-way at the review boundary. Governed
 machine discoveries fill the first unused row inside the bounded `Review Queue`
 range or refresh an existing linked row. They never append beyond that configured
 range, and a full queue fails visibly. Only

@@ -1,5 +1,9 @@
 # P. First 20 GitHub Issues
 
+> **Historical record.** This is the original implementation backlog, not the
+> current roadmap or issue tracker. Use [`17-capability-roadmap.md`](17-capability-roadmap.md)
+> for forward-looking priorities.
+
 Labels: `m1-mvp`, `m2`, `m3`, `m4`, `infra`, `good-first-issue`. Order ≈ build order; Q (build plan) groups them into milestones.
 
 1. **Set up repo, Next.js scaffold, CI typecheck** `infra` — Commit provided scaffold; GitHub Action runs `npm run typecheck` + `next build` on PRs; protect `main`. *AC: green check on a trivial PR.*

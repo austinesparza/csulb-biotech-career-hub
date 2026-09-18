@@ -1,5 +1,9 @@
 # Q. MVP Build Plan · R. Risks & Edge Cases
 
+> **Historical record.** This preserves the MVP build sequence and original risk
+> assessment. Current risks are tracked in
+> [`16-current-system-status.md`](16-current-system-status.md).
+
 ## Q. Build plan (one developer, part-time; issues from docs/10)
 
 **M1 — MVP (weeks 1–4): Issues 1–13.**

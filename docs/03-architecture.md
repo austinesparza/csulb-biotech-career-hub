@@ -1,5 +1,9 @@
 # C. System Architecture
 
+> **Foundational design record.** This explains the original architecture and
+> remains useful vocabulary, but [`current-architecture.md`](current-architecture.md)
+> is the current system map and executable code is authoritative.
+
 ## Stack decision
 **Keep the requested stack: Next.js (App Router) + Supabase + Vercel + TypeScript.** It is the right call for student-officer maintainability:
 

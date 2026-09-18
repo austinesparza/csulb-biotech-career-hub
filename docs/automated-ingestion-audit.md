@@ -1,5 +1,10 @@
 # CSULB Biotechnology Club Career Hub Automated Ingestion Audit and Specification
 
+> **Historical record.** This is the research and recommendation that preceded
+> the implemented ingestion system. Citations and platform comparisons reflect
+> that audit date. Current operation is documented in
+> [`15-operational-pipeline.md`](15-operational-pipeline.md).
+
 ## Recommendation and repository audit
 
 **1. Executive recommendation**
