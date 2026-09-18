@@ -21,8 +21,11 @@ const MICROSCOPY = [
 ] as const;
 
 const LOGOS = [
+  ['Anto Biosciences', 'https://anto.bio/'],
   ['3M', 'https://simpleicons.org/?q=3m'],
   ['AbbVie', 'https://simpleicons.org/?q=abbvie'],
+  ['Cedars-Sinai', 'https://www.cedars-sinai.org/'],
+  ['Elanco', 'https://www.elanco.com/'],
   ['Pfizer', 'https://commons.wikimedia.org/wiki/File:Pfizer_(2021).svg'],
   ['Gilead Sciences', 'https://en.wikipedia.org/wiki/File:Gilead_Sciences_Logo.svg'],
   ['Catalent', 'https://commons.wikimedia.org/wiki/File:Catalent_logo.svg'],
@@ -40,6 +43,7 @@ const LOGOS = [
   ['Fred Hutch Cancer Center', 'https://www.fredhutch.org/'],
   ['Kite Pharma', 'https://www.kitepharma.com/'],
   ['Roche', 'https://careers.roche.com/'],
+  ['PBS Biotech', 'https://pbsbiotech.com/'],
 ] as const;
 
 export default function ImageCreditsPage() {

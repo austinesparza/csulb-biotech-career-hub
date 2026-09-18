@@ -80,6 +80,48 @@ describe('employer logo presentation', () => {
       src: '/brand/logos/roche.png',
       fit: 'wide',
     });
+    expect(companyLogoAsset('Anto Bio')).toEqual({
+      src: '/brand/logos/anto-bio.png',
+      fit: 'compact',
+    });
+    expect(companyLogoAsset('Cedars-Sinai')).toEqual({
+      src: '/brand/logos/cedars-sinai.png',
+      fit: 'wide',
+    });
+    expect(companyLogoAsset('Elanco')).toEqual({
+      src: '/brand/logos/elanco.svg',
+      fit: 'compact',
+    });
+    expect(companyLogoAsset('PBS Biotech')).toEqual({
+      src: '/brand/logos/pbs-biotech.png',
+      fit: 'wide',
+    });
+  });
+
+  it('covers every employer in the current public directory', () => {
+    const currentEmployers = [
+      'Amgen',
+      'Anto Bio',
+      'CAS',
+      'Catalent',
+      'Cedars-Sinai',
+      'Elanco',
+      'Fred Hutch',
+      'Genentech',
+      'Gilead Sciences',
+      'Ginkgo Bioworks',
+      'Johnson & Johnson',
+      'Kite Pharma',
+      'MD Anderson Cancer Center',
+      'Merck',
+      'PBS Biotech',
+      'Pfizer',
+      'Roche',
+      'Sanofi',
+      'Xaira Therapeutics',
+    ];
+
+    expect(currentEmployers.filter((name) => !companyLogoAsset(name))).toEqual([]);
   });
 
   it('opens the directory on current employers so the first view is actionable', () => {

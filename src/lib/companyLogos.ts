@@ -6,8 +6,11 @@ export interface CompanyLogoAsset {
 }
 
 const COMPANY_LOGOS: Array<[RegExp, CompanyLogoAsset]> = [
+  [/^anto(?:\s+bio(?:sciences)?)?$/i, { src: '/brand/logos/anto-bio.png', fit: 'compact' }],
   [/^3m$/i, { src: '/brand/logos/3m.svg', fit: 'compact' }],
   [/^abbvie$/i, { src: '/brand/logos/abbvie.svg', fit: 'compact' }],
+  [/^cedars[-\s]sinai$/i, { src: '/brand/logos/cedars-sinai.png', fit: 'wide' }],
+  [/^elanco(?:\s+animal\s+health)?$/i, { src: '/brand/logos/elanco.svg', fit: 'compact' }],
   [/^pfizer(?:\s+(?:inc\.?|futures))?$/i, { src: '/brand/logos/pfizer.svg', fit: 'wide' }],
   [/^gilead\s+sciences(?:,?\s+inc\.?)?$/i, { src: '/brand/logos/gilead-sciences.svg', fit: 'wide' }],
   [/^catalent(?:\s+(?:inc\.?|pharma\s+solutions))?$/i, { src: '/brand/logos/catalent.svg', fit: 'wide' }],
@@ -25,6 +28,7 @@ const COMPANY_LOGOS: Array<[RegExp, CompanyLogoAsset]> = [
   [/^fred\s+hutch(?:inson\s+cancer\s+center)?$/i, { src: '/brand/logos/fred-hutch.svg', fit: 'wide' }],
   [/^kite(?:\s+pharma)?$/i, { src: '/brand/logos/kite-pharma.png', fit: 'wide' }],
   [/^roche$/i, { src: '/brand/logos/roche.png', fit: 'wide' }],
+  [/^pbs\s+biotech(?:,?\s+inc\.?)?$/i, { src: '/brand/logos/pbs-biotech.png', fit: 'wide' }],
 ];
 
 export function companyLogoAsset(name: string): CompanyLogoAsset | null {
