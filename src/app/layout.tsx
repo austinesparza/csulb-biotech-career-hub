@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { connection } from 'next/server';
 import { BrandMark } from '@/components/brand-mark';
+import { MobileNavigation } from '@/components/mobile-navigation';
 import { PrivacyAnalytics } from '@/components/privacy-analytics';
 import { CLUB_LINKS, mailto } from '@/lib/clubLinks';
 import './career-hub-v2.css';
@@ -40,22 +41,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/submit">Submit a role</Link>
             </nav>
             <Link href="/internships" className="masthead-action">Browse roles</Link>
-            <details className="mobile-nav">
-              <summary aria-label="Open navigation">
-                <span aria-hidden="true" />
-                <span aria-hidden="true" />
-                <span aria-hidden="true" />
-                <span className="mobile-nav-label">Menu</span>
-              </summary>
-              <nav aria-label="Mobile navigation">
-                <Link href="/internships">Opportunities</Link>
-                <Link href="/calendar">Calendar</Link>
-                <Link href="/eligibility">Application help</Link>
-                <Link href="/companies">Employers</Link>
-                <Link href="/about">About</Link>
-                <Link href="/submit">Submit a role</Link>
-              </nav>
-            </details>
+            <MobileNavigation />
           </div>
         </header>
         <main className="site-main" id="main-content">{children}</main>
