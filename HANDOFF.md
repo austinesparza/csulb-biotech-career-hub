@@ -26,7 +26,10 @@
    During development, this must be one officer's personal address, not the club mailbox.
 8. `/admin/sources`: leave new sources disabled, record terms and robots review,
    then use **Test privately**. Inspect the marked run and evidence before enabling scheduling.
-9. Check Vercel Web Analytics for public route usage. Officer, authentication,
+9. In `/admin/review?tab=leads`, label useful and irrelevant leads explicitly.
+   Add any role you found manually through **Add a role discovery missed**. Do
+   not treat duplicate, closed, or unverifiable leads as irrelevant training examples.
+10. Check Vercel Web Analytics for public route usage. Officer, authentication,
    API routes, query parameters, and URL fragments are excluded by the application.
    Confirm the Vercel dashboard says Web Analytics is enabled; installing the
    application component does not replace that project setting.
@@ -71,6 +74,11 @@ npm run test:publish-data
 npm run test:schema
 npm run build
 ```
+
+After at least 20 new relevant or irrelevant discovery labels, run
+`npm run discovery:train` in a private worker environment and review the shadow
+metrics. Never activate model ordering or search allocation from the command line;
+that requires a reviewed code change. See `docs/discovery-learning.md`.
 
 If a skill installed with `npx skills add` is present under `.agents/skills/` but
 Claude Code cannot see it, link that skill into `.claude/skills/`. Do not copy a

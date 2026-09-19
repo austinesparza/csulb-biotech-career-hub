@@ -55,12 +55,21 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     const leads = (data ?? []) as DiscoveryLead[];
     const ids = leads.map((lead) => lead.id);
     const latestObservationByLead = new Map<string, DiscoveryLeadObservationRow>();
+    const predictionByLead = new Map<string, { probability: number; modelStatus: 'shadow' | 'eligible' }>();
     if (ids.length > 0) {
-      const observationResult = await db.from('discovery_lead_observations')
-        .select('lead_id, run_id, query, retrieved_at, raw_metadata')
-        .in('lead_id', ids)
-        .order('retrieved_at', { ascending: false })
-        .limit(500);
+      const [observationResult, modelResult] = await Promise.all([
+        db.from('discovery_lead_observations')
+          .select('lead_id, run_id, query, retrieved_at, raw_metadata')
+          .in('lead_id', ids)
+          .order('retrieved_at', { ascending: false })
+          .limit(500),
+        db.from('discovery_model_versions')
+          .select('id, status')
+          .in('status', ['shadow', 'eligible'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
       if (observationResult.error) {
         return <div className="admin-page-flow">
           <ReviewHeader
@@ -76,10 +85,26 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
           latestObservationByLead.set(observation.lead_id, observation);
         }
       }
+
+      if (modelResult.data) {
+        const predictionResult = await db.from('discovery_lead_predictions')
+          .select('lead_id, probability')
+          .eq('model_id', modelResult.data.id)
+          .in('lead_id', ids);
+        if (!predictionResult.error) {
+          for (const prediction of predictionResult.data ?? []) {
+            predictionByLead.set(prediction.lead_id, {
+              probability: prediction.probability,
+              modelStatus: modelResult.data.status as 'shadow' | 'eligible',
+            });
+          }
+        }
+      }
     }
     const rows: DiscoveryLeadRow[] = leads.map((lead) => ({
       ...lead,
       latest_observation: latestObservationByLead.get(lead.id) ?? null,
+      shadow_prediction: predictionByLead.get(lead.id) ?? null,
     }));
     return <div className="admin-page-flow">
       <ReviewHeader
