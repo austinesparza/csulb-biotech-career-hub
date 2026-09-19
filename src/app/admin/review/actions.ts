@@ -12,6 +12,7 @@ import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
 import type { AudienceBucket, GraduateStage } from '@/lib/types';
 import { quickAddOpportunity } from '@/app/admin/add/actions';
 import { isPublishableAudienceStage } from '@/lib/opportunityAudience';
+import { assertClassificationFeedbackReady } from '@/lib/classification-feedback';
 
 const PUBLISHABLE_AUDIENCES: AudienceBucket[] = ['undergraduate', 'graduate', 'mixed'];
 
@@ -33,6 +34,7 @@ function safeReviewActionError(error: unknown): string {
     'Add a concise evidence-based audience reason',
     'Opportunity not found',
     'Invalid archive audience',
+    'Classification feedback is not available until its database migration is deployed',
   ];
   if (allowed.includes(message)) return message;
   if (message === 'Not signed in') return 'Your officer session expired. Refresh and sign in again.';
@@ -326,6 +328,7 @@ async function approveOpportunityUnsafe(input: {
     throw new Error('Add a concise evidence-based audience reason');
   }
   const db = createServiceClient();
+  await assertClassificationFeedbackReady(db);
 
   const { data: opp } = await db
     .from('opportunities')
@@ -367,6 +370,7 @@ async function archiveForAudienceUnsafe(input: {
   audienceBucket: Extract<AudienceBucket, 'ineligible' | 'adjacent' | 'special'>;
   audienceReason: string;
   graduateStage: GraduateStage;
+  finalFields: ReviewFinalFields;
   sourceConfirmed: boolean;
   publicSafeConfirmed: boolean;
 }): Promise<void> {
@@ -380,9 +384,10 @@ async function archiveForAudienceUnsafe(input: {
   }
 
   const db = createServiceClient();
+  await assertClassificationFeedbackReady(db);
   const { data: opp } = await db
     .from('opportunities')
-    .select('scientific_lanes, job_functions, methods')
+    .select('id')
     .eq('id', input.id)
     .single();
   if (!opp) throw new Error('Opportunity not found');
@@ -398,9 +403,9 @@ async function archiveForAudienceUnsafe(input: {
     p_audience_reason: audienceReason,
     p_graduate_stage: input.graduateStage,
     p_final_fields: {
-      scientific_lanes: opp.scientific_lanes ?? [],
-      job_functions: opp.job_functions ?? [],
-      methods: opp.methods ?? [],
+      scientific_lanes: cleanControlledValues(input.finalFields.scientificLanes),
+      job_functions: cleanControlledValues(input.finalFields.jobFunctions),
+      methods: cleanControlledValues(input.finalFields.methods),
     },
     p_source_confirmed: input.sourceConfirmed,
     p_public_safe_confirmed: input.publicSafeConfirmed,

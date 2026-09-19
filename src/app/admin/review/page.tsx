@@ -8,6 +8,7 @@ import { ReviewList, type ReviewRow } from './review-list';
 import { SubmissionList } from './submission-list';
 import { TaskList } from './task-list';
 import { DiscoveryLeadList, type DiscoveryLeadRow } from './discovery-lead-list';
+import { loadTaxonomy } from '@/lib/pipeline/classify';
 
 export const dynamic = 'force-dynamic';
 
@@ -173,7 +174,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
         .order('created_at', { ascending: false }),
       db.from('pipeline_extractions')
         .select(
-          'id, opportunity_id, created_at, evidence_ok, binding_failures, injection_flags, classification, ' +
+          'id, opportunity_id, created_at, taxonomy_version, evidence_ok, binding_failures, injection_flags, classification, ' +
           'fields, bindings, source_posting_versions(normalized_json)',
         )
         .in('opportunity_id', ids)
@@ -203,6 +204,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
       latestByOpportunity.set(opportunityId, {
         id: item.id as string,
         created_at: item.created_at as string,
+        taxonomy_version: Number(item.taxonomy_version),
         evidence_ok: Boolean(item.evidence_ok),
         binding_failures: (item.binding_failures as string[]) ?? [],
         injection_flags: (item.injection_flags as string[]) ?? [],
@@ -219,6 +221,12 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     extraction: latestByOpportunity.get(row.id) ?? null,
     sheet_review: sheetReviewByOpportunity.get(row.id) ?? null,
   }));
+  const taxonomy = loadTaxonomy();
+  const taxonomyOptions = {
+    scientificLanes: taxonomy.lanes.map((lane) => lane.label),
+    jobFunctions: taxonomy.functions.map((jobFunction) => jobFunction.label),
+    methods: [...new Set(Object.values(taxonomy.methods).flat())].sort((a, b) => a.localeCompare(b)),
+  };
 
   return (
     <div className="admin-page-flow">
@@ -228,7 +236,9 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
         badge={`${rows.length} pending`}
       />
       <TabNav selected={selected} />
-      {error ? <p role="alert">Could not load opportunities: {error.message}</p> : <ReviewList rows={rows} />}
+      {error ? <p role="alert">Could not load opportunities: {error.message}</p> : (
+        <ReviewList rows={rows} taxonomy={taxonomyOptions} />
+      )}
     </div>
   );
 }

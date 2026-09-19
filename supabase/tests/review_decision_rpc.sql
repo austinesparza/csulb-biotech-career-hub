@@ -3,6 +3,28 @@
 begin;
 
 do $$
+begin
+  if not exists (
+    select 1
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public'
+      and c.relname = 'opportunity_classification_feedback'
+      and c.relrowsecurity
+  ) then
+    raise exception 'classification feedback RLS is not enabled';
+  end if;
+  if has_table_privilege('anon', 'public.opportunity_classification_feedback', 'SELECT')
+     or has_table_privilege('anon', 'public.opportunity_classification_feedback', 'INSERT')
+     or has_table_privilege('authenticated', 'public.opportunity_classification_feedback', 'INSERT')
+     or has_table_privilege('authenticated', 'public.opportunity_classification_feedback', 'UPDATE')
+     or has_table_privilege('authenticated', 'public.opportunity_classification_feedback', 'DELETE') then
+    raise exception 'classification feedback write boundary is too broad';
+  end if;
+end
+$$;
+
+do $$
 declare
   v_user uuid := gen_random_uuid();
   v_company uuid;
@@ -44,7 +66,13 @@ begin
   perform public.decide_opportunity_review(
     v_opportunity, v_user, 'approve', 'open_verified', '', true,
     'graduate', 'Posting explicitly accepts graduate students.',
-    'graduate_unspecified', '{}'::jsonb, true, true
+    'graduate_unspecified',
+    '{
+      "scientific_lanes": ["Genomics and genetics"],
+      "job_functions": ["Research and discovery"],
+      "methods": ["python"]
+    }'::jsonb,
+    true, true
   );
 
   if not exists (
@@ -61,6 +89,18 @@ begin
   ) then
     raise exception 'review RPC did not close the associated enum-status task';
   end if;
+  if not exists (
+    select 1 from public.opportunity_classification_feedback
+    where opportunity_id = v_opportunity
+      and proposal_source = 'legacy_draft'
+      and decision = 'approve'
+      and final_tags->'scientific_lanes' = '["Genomics and genetics"]'::jsonb
+      and final_tags->'job_functions' = '["Research and discovery"]'::jsonb
+      and final_tags->'methods' = '["python"]'::jsonb
+      and decided_by = v_user
+  ) then
+    raise exception 'review RPC did not atomically capture final classification tags';
+  end if;
 
   if has_function_privilege(
     'authenticated',
@@ -69,6 +109,26 @@ begin
   ) then
     raise exception 'review RPC is exposed to an authenticated browser role';
   end if;
+end
+$$;
+
+do $$
+declare
+  v_feedback uuid;
+begin
+  select id into v_feedback
+  from public.opportunity_classification_feedback
+  order by created_at desc
+  limit 1;
+
+  begin
+    update public.opportunity_classification_feedback
+    set final_tags = '{}'::jsonb
+    where id = v_feedback;
+    raise exception 'classification feedback update was accepted';
+  exception when others then
+    if sqlerrm = 'classification feedback update was accepted' then raise; end if;
+  end;
 end
 $$;
 

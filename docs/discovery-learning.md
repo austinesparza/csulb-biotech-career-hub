@@ -4,6 +4,10 @@ The discovery learning loop measures which private leads officers find useful an
 which search families recover them. It is a ranking and evaluation system. It is
 not a publication system.
 
+This loop does not learn scientific lanes, job functions, or methods. Those use
+the separate [classification learning loop](classification-learning.md), because
+multi-label tag correction has different labels, metrics, and safety rules.
+
 ## Objective
 
 Two separate outcomes are measured:

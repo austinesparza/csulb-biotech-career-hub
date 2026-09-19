@@ -62,6 +62,14 @@ if (!/create\s+or\s+replace\s+function\s+public\.record_discovery_feedback/i.tes
     || !/trg_discovery_feedback_append_only/i.test(sql)) {
   failures.push('audited discovery feedback contract is missing');
 }
+if (!/create\s+table(?:\s+if\s+not\s+exists)?\s+public\.opportunity_classification_feedback\b/i.test(sql)
+    || !/trg_opportunity_classification_feedback_append_only/i.test(sql)) {
+  failures.push('append-only opportunity classification feedback is missing');
+}
+if (!/proposal_source\s+text[\s\S]+deterministic_taxonomy/i.test(sql)
+    || !/excluded_from_tag_training/i.test(sql)) {
+  failures.push('classification learning must separate reproducible proposals from context decisions');
+}
 if (!/set\s+graduate_stage\s*=\s*'graduate_unspecified'/i.test(sql)) {
   failures.push('graduate-stage backfill is missing');
 }

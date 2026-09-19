@@ -17,6 +17,7 @@ Read these in order:
 7. [scheduled-sheet-ingestion.md](scheduled-sheet-ingestion.md)
 8. [weekly-review-notifications.md](weekly-review-notifications.md)
 9. [discovery-learning.md](discovery-learning.md)
+10. [classification-learning.md](classification-learning.md)
 
 Executable migrations, current code, tests, verified production state, and live
 behavior take precedence over prose.

@@ -38,7 +38,8 @@
     "discovery:plan": "node --conditions=react-server --import tsx scripts/plan-employer-discovery.ts",
     "discovery:worker": "node --conditions=react-server --import tsx scripts/run-discovery-worker.ts",
     "discovery:recall": "node --conditions=react-server --import tsx scripts/report-discovery-recall.ts",
-    "discovery:train": "node --conditions=react-server --import tsx scripts/train-discovery-model.ts"
+    "discovery:train": "node --conditions=react-server --import tsx scripts/train-discovery-model.ts",
+    "classification:report": "node --conditions=react-server --import tsx scripts/report-classification-learning.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",

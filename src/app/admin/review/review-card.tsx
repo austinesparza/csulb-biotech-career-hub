@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useId, useMemo, useState, useTransition } from 'react';
 import type { Classification } from '@/lib/pipeline/classify';
 import { PRIORITY_FIELDS } from '@/lib/pipeline/extraction-schema';
 import { segment, type Span } from '@/lib/pipeline/highlight';
@@ -24,6 +24,7 @@ interface BoundField extends ExtractedField {
 export interface ReviewExtraction {
   id: string;
   created_at: string;
+  taxonomy_version: number;
   evidence_ok: boolean;
   binding_failures: string[];
   injection_flags: string[];
@@ -31,6 +32,12 @@ export interface ReviewExtraction {
   fields: Record<string, ExtractedField>;
   bindings: Record<string, BoundField>;
   raw_text: string | null;
+}
+
+export interface ReviewTaxonomyOptions {
+  scientificLanes: string[];
+  jobFunctions: string[];
+  methods: string[];
 }
 
 export interface ReviewRow {
@@ -173,7 +180,73 @@ function EvidencePanel({ extraction }: { extraction: ReviewExtraction }) {
   );
 }
 
-export function ReviewCard({ row }: { row: ReviewRow }) {
+function TagPicker({
+  label,
+  description,
+  selected,
+  options,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  selected: string[];
+  options: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const selectId = useId();
+  const available = options.filter((option) => !selected.includes(option));
+  return (
+    <div className="classification-axis">
+      <div>
+        <strong>{label}</strong>
+        <span>{description}</span>
+      </div>
+      {selected.length > 0 ? (
+        <ul className="classification-tags" aria-label={`${label} selected tags`}>
+          {selected.map((tag) => (
+            <li key={tag}>
+              <span>{tag}</span>
+              <button type="button" onClick={() => onChange(selected.filter((item) => item !== tag))}
+                aria-label={`Remove ${tag} from ${label}`}>×</button>
+            </li>
+          ))}
+        </ul>
+      ) : <p className="review-muted">No tag selected. Leaving an axis empty is allowed when the source is ambiguous.</p>}
+      <label className="classification-add" htmlFor={selectId}>
+        Add a controlled tag
+        <select id={selectId} value="" onChange={(event) => {
+          if (event.target.value) onChange([...selected, event.target.value]);
+        }}>
+          <option value="">Choose…</option>
+          {available.map((option) => <option key={option} value={option}>{option}</option>)}
+        </select>
+      </label>
+    </div>
+  );
+}
+
+function initialClassificationFields(row: ReviewRow) {
+  const classification = row.extraction?.classification;
+  const scientificLanes = (classification?.lanes ?? [])
+    .map((lane) => lane.label.trim())
+    .filter(Boolean);
+  const jobFunctions = (classification?.functions ?? [])
+    .map((jobFunction) => jobFunction.label.trim())
+    .filter(Boolean);
+  const methods = Object.values(classification?.methods ?? {})
+    .flat()
+    .map((method) => method.trim())
+    .filter(Boolean);
+  const unique = (values: string[]) => [...new Set(values)];
+
+  return {
+    scientificLanes: unique(scientificLanes.length > 0 ? scientificLanes : row.scientific_lanes),
+    jobFunctions: unique(jobFunctions.length > 0 ? jobFunctions : row.job_functions),
+    methods: unique(methods.length > 0 ? methods : row.methods),
+  };
+}
+
+export function ReviewCard({ row, taxonomy }: { row: ReviewRow; taxonomy: ReviewTaxonomyOptions }) {
   const sheetApproval = row.sheet_review?.decision === 'approve'
     && row.sheet_review.publicSafe
     && Boolean(row.posting_url);
@@ -193,30 +266,10 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
   const [audienceBucket, setAudienceBucket] = useState<AudienceBucket>(initialAudience);
   const [audienceReason, setAudienceReason] = useState(initialReason);
   const [graduateStage, setGraduateStage] = useState<GraduateStage>(initialStage);
+  const [finalFields, setFinalFields] = useState(() => initialClassificationFields(row));
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-
-  const finalFields = useMemo(() => {
-    const classification = row.extraction?.classification;
-    const scientificLanes = (classification?.lanes ?? [])
-      .map((lane) => lane.label.trim())
-      .filter(Boolean);
-    const jobFunctions = (classification?.functions ?? [])
-      .map((jobFunction) => jobFunction.label.trim())
-      .filter(Boolean);
-    const methods = Object.values(classification?.methods ?? {})
-      .flat()
-      .map((method) => method.trim())
-      .filter(Boolean);
-    const unique = (values: string[]) => [...new Set(values)];
-
-    return {
-      scientificLanes: unique(scientificLanes.length > 0 ? scientificLanes : row.scientific_lanes),
-      jobFunctions: unique(jobFunctions.length > 0 ? jobFunctions : row.job_functions),
-      methods: unique(methods.length > 0 ? methods : row.methods),
-    };
-  }, [row]);
 
   const audienceReady = audienceBucket !== 'unknown' && audienceReason.trim().length >= 8;
   const canApprove = sourceConfirmed && publicSafeConfirmed && audienceReady
@@ -291,6 +344,25 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
             placeholder="Example: Posting accepts students currently enrolled in a master's program." />
         </label>
 
+        <details className="classification-review" open>
+          <summary>Review classification tags</summary>
+          <p className="review-muted">
+            {row.extraction
+              ? `Taxonomy version ${row.extraction.taxonomy_version} proposed these tags. Correct them before deciding; the comparison is saved for evaluation.`
+              : 'This older draft has no reproducible taxonomy proposal. Its final tags are saved for audit but excluded from machine metrics.'}
+            {' '}Audience and eligibility decisions are never learned as tags.
+          </p>
+          <TagPicker label="Scientific focus" description="What science the role is about."
+            selected={finalFields.scientificLanes} options={taxonomy.scientificLanes}
+            onChange={(scientificLanes) => setFinalFields((current) => ({ ...current, scientificLanes }))} />
+          <TagPicker label="Job function" description="What the student would do."
+            selected={finalFields.jobFunctions} options={taxonomy.jobFunctions}
+            onChange={(jobFunctions) => setFinalFields((current) => ({ ...current, jobFunctions }))} />
+          <TagPicker label="Methods and skills" description="Named techniques or tools supported by the posting."
+            selected={finalFields.methods} options={taxonomy.methods}
+            onChange={(methods) => setFinalFields((current) => ({ ...current, methods }))} />
+        </details>
+
         <div className="review-checks">
           <label>
             <input type="checkbox" checked={sourceConfirmed} onChange={(event) => setSourceConfirmed(event.target.checked)} />
@@ -326,7 +398,7 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
           try {
             const result = await archiveForAudience({
               id: row.id, audienceBucket: audienceBucket as 'ineligible' | 'adjacent' | 'special',
-              audienceReason, graduateStage, sourceConfirmed, publicSafeConfirmed,
+              audienceReason, graduateStage, finalFields, sourceConfirmed, publicSafeConfirmed,
             });
             if (!result.ok) { setError(result.error); return; }
             setDone('kept outside the public board');
