@@ -8,6 +8,14 @@ import {
 
 export type DiscoveryFeedbackSource = 'officer' | 'promotion' | 'missed_role';
 
+/** Stop before any related mutation when the learning migration is not deployed. */
+export async function assertDiscoveryLearningReady(db: SupabaseClient): Promise<void> {
+  const { error } = await db.from('discovery_feedback').select('id').limit(1);
+  if (error) {
+    throw new Error('Discovery learning is not available until its database migration is deployed');
+  }
+}
+
 export async function recordDiscoveryFeedback(
   db: SupabaseClient,
   input: {

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
-import { recordDiscoveryFeedback } from '../lib/discovery-feedback';
+import { assertDiscoveryLearningReady, recordDiscoveryFeedback } from '../lib/discovery-feedback';
 
 function mockDatabase() {
   let rpcArgs: Record<string, unknown> | null = null;
@@ -78,5 +78,15 @@ describe('recordDiscoveryFeedback', () => {
       archiveLead: true,
     })).rejects.toThrow(/cannot archive/i);
     expect(mock.getRpcArgs()).toBeNull();
+  });
+});
+
+describe('assertDiscoveryLearningReady', () => {
+  it('stops a workflow before mutation when the migration is missing', async () => {
+    const chain: Record<string, unknown> = {};
+    chain.select = () => chain;
+    chain.limit = async () => ({ data: null, error: { message: 'relation does not exist' } });
+    const db = { from: () => chain } as unknown as SupabaseClient;
+    await expect(assertDiscoveryLearningReady(db)).rejects.toThrow(/migration is deployed/i);
   });
 });

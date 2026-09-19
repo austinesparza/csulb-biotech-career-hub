@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { quickAddOpportunity } from '@/app/admin/add/actions';
-import { recordDiscoveryFeedback } from '@/lib/discovery-feedback';
+import { assertDiscoveryLearningReady, recordDiscoveryFeedback } from '@/lib/discovery-feedback';
 import {
   resolveDiscoveryPromotion,
   resolveVerifiedLinkedInPromotion,
@@ -67,6 +67,7 @@ async function closeLeadWorkflow(
 async function promoteDiscoveryLead(id: string): Promise<'created' | 'existing'> {
   const { user } = await requireOfficer();
   const db = createServiceClient();
+  await assertDiscoveryLearningReady(db);
   const { data: lead, error: leadError } = await db.from('discovery_leads')
     .select('id, resolution, canonical_employer_url, employer_hint, latest_title, original_url, latest_snippet, officer_status')
     .eq('id', id)
@@ -163,6 +164,7 @@ export async function resolveEmployerSourceAndPromote(formData: FormData): Promi
   if (!sourceResolution.valid) throw new Error(sourceResolution.reason);
 
   const db = createServiceClient();
+  await assertDiscoveryLearningReady(db);
   const now = new Date().toISOString();
   const { data: updated, error } = await db.from('discovery_leads').update({
     canonical_employer_url: sourceResolution.canonicalUrl,
@@ -196,6 +198,7 @@ export async function promoteVerifiedLinkedInLead(formData: FormData): Promise<v
   }
 
   const db = createServiceClient();
+  await assertDiscoveryLearningReady(db);
   const { data: lead, error: leadError } = await db.from('discovery_leads')
     .select('id, resolution, employer_hint, latest_title, original_url, latest_snippet, officer_status')
     .eq('id', id)

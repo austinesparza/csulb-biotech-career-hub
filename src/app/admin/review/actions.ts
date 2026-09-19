@@ -3,7 +3,7 @@
 // the service client (repo invariant #7).
 import { randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
-import { recordDiscoveryFeedback } from '@/lib/discovery-feedback';
+import { assertDiscoveryLearningReady, recordDiscoveryFeedback } from '@/lib/discovery-feedback';
 import { validateEmployerControlledSourceUrl } from '@/lib/discovery-promotion';
 import { canonicalizeUrl } from '@/lib/ingestion/normalize';
 import { archiveDiscoveryLead } from '@/lib/pipeline/lead-store-supabase';
@@ -256,6 +256,7 @@ export async function addMissedDiscoveryRole(formData: FormData): Promise<void> 
   });
   const now = new Date();
   const db = createServiceClient();
+  await assertDiscoveryLearningReady(db);
   const leadId = await archiveDiscoveryLead(db, {
     runId: `officer-missed:${now.toISOString().slice(0, 10)}:${randomUUID()}`,
     route,
