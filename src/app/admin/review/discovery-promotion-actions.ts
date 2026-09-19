@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { quickAddOpportunity } from '@/app/admin/add/actions';
+import { assertDiscoveryLearningReady, recordDiscoveryFeedback } from '@/lib/discovery-feedback';
 import {
   resolveDiscoveryPromotion,
   resolveVerifiedLinkedInPromotion,
@@ -64,8 +65,9 @@ async function closeLeadWorkflow(
 }
 
 async function promoteDiscoveryLead(id: string): Promise<'created' | 'existing'> {
-  await requireOfficer();
+  const { user } = await requireOfficer();
   const db = createServiceClient();
+  await assertDiscoveryLearningReady(db);
   const { data: lead, error: leadError } = await db.from('discovery_leads')
     .select('id, resolution, canonical_employer_url, employer_hint, latest_title, original_url, latest_snippet, officer_status')
     .eq('id', id)
@@ -88,6 +90,13 @@ async function promoteDiscoveryLead(id: string): Promise<'created' | 'existing'>
     .maybeSingle();
   if (existingError) throw new Error(existingError.message);
   if (existing) {
+    await recordDiscoveryFeedback(db, {
+      leadId: id,
+      decidedBy: user.id,
+      label: 'relevant',
+      reason: 'Officer confirmed this lead matches an opportunity already in review.',
+      source: 'promotion',
+    });
     await closeLeadWorkflow(db, id);
     return 'existing';
   }
@@ -118,6 +127,13 @@ async function promoteDiscoveryLead(id: string): Promise<'created' | 'existing'>
     created.id,
     'Promoted from a verified discovery lead with an employer-controlled posting; officer review required.',
   );
+  await recordDiscoveryFeedback(db, {
+    leadId: id,
+    decidedBy: user.id,
+    label: 'relevant',
+    reason: 'Officer promoted this verified lead into the private opportunity review queue.',
+    source: 'promotion',
+  });
   await closeLeadWorkflow(db, id);
   return 'created';
 }
@@ -148,6 +164,7 @@ export async function resolveEmployerSourceAndPromote(formData: FormData): Promi
   if (!sourceResolution.valid) throw new Error(sourceResolution.reason);
 
   const db = createServiceClient();
+  await assertDiscoveryLearningReady(db);
   const now = new Date().toISOString();
   const { data: updated, error } = await db.from('discovery_leads').update({
     canonical_employer_url: sourceResolution.canonicalUrl,
@@ -174,13 +191,14 @@ export async function resolveEmployerSourceAndPromote(formData: FormData): Promi
  * The result is still a private opportunity draft.
  */
 export async function promoteVerifiedLinkedInLead(formData: FormData): Promise<void> {
-  await requireOfficer();
+  const { user } = await requireOfficer();
   const id = requiredId(formData);
   if (String(formData.get('linkedin_confirmed') ?? '') !== 'on') {
     throw new Error('Confirm the first-party LinkedIn posting and employer-site evidence before promotion');
   }
 
   const db = createServiceClient();
+  await assertDiscoveryLearningReady(db);
   const { data: lead, error: leadError } = await db.from('discovery_leads')
     .select('id, resolution, employer_hint, latest_title, original_url, latest_snippet, officer_status')
     .eq('id', id)
@@ -204,6 +222,13 @@ export async function promoteVerifiedLinkedInLead(formData: FormData): Promise<v
     .maybeSingle();
   if (existingError) throw new Error(existingError.message);
   if (existing) {
+    await recordDiscoveryFeedback(db, {
+      leadId: id,
+      decidedBy: user.id,
+      label: 'relevant',
+      reason: 'Officer confirmed this first-party LinkedIn lead matches an existing opportunity.',
+      source: 'promotion',
+    });
     await closeLeadWorkflow(
       db,
       id,
@@ -239,6 +264,13 @@ export async function promoteVerifiedLinkedInLead(formData: FormData): Promise<v
     created.id,
     'Promoted through the verified first-party LinkedIn exception; officer review of eligibility and public fields required.',
   );
+  await recordDiscoveryFeedback(db, {
+    leadId: id,
+    decidedBy: user.id,
+    label: 'relevant',
+    reason: 'Officer promoted a verified first-party LinkedIn lead into private review.',
+    source: 'promotion',
+  });
   await closeLeadWorkflow(
     db,
     id,

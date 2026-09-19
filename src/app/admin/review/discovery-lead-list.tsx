@@ -1,6 +1,10 @@
 import type { DiscoveryLead, DiscoveryLeadObservationRow } from '@/lib/types';
 import { resolveDiscoveryPromotion } from '@/lib/discovery-promotion';
-import { updateDiscoveryLeadStatus } from './actions';
+import {
+  addMissedDiscoveryRole,
+  recordDiscoveryLeadDecision,
+  updateDiscoveryLeadStatus,
+} from './actions';
 import {
   promoteAllVerifiedDiscoveryLeads,
   promoteDiscoveryLeadToDraft,
@@ -10,6 +14,7 @@ import {
 
 export interface DiscoveryLeadRow extends DiscoveryLead {
   latest_observation: DiscoveryLeadObservationRow | null;
+  shadow_prediction: { probability: number; modelStatus: 'shadow' | 'eligible' } | null;
 }
 
 function safeHttpsUrl(value: string | null): string | null {
@@ -88,6 +93,40 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
       </div>
     </section>
 
+    <section className="review-publish-console" aria-labelledby="missed-role-title">
+      <div className="review-publish-copy">
+        <div className="admin-page-eyebrow">Recall training</div>
+        <h2 id="missed-role-title">Add a role discovery missed</h2>
+        <p>
+          Paste a role you found manually, including on LinkedIn. This creates a private positive training example and a discovery lead.
+          It does not scrape the page, copy the description, or publish anything.
+        </p>
+      </div>
+      <form action={addMissedDiscoveryRole} className="grid gap-3 md:grid-cols-2">
+        <label className="grid gap-1 text-xs font-semibold">
+          Employer
+          <input name="employer" required maxLength={500} className="rounded border bg-white px-3 py-2 text-sm font-normal" style={{ borderColor: 'var(--line-strong)' }} />
+        </label>
+        <label className="grid gap-1 text-xs font-semibold">
+          Role title
+          <input name="title" required maxLength={500} className="rounded border bg-white px-3 py-2 text-sm font-normal" style={{ borderColor: 'var(--line-strong)' }} />
+        </label>
+        <label className="grid gap-1 text-xs font-semibold md:col-span-2">
+          Role URL
+          <input name="url" type="url" inputMode="url" required placeholder="https://www.linkedin.com/jobs/view/..." className="rounded border bg-white px-3 py-2 text-sm font-normal" style={{ borderColor: 'var(--line-strong)' }} />
+        </label>
+        <label className="grid gap-1 text-xs font-semibold md:col-span-2">
+          Employer or ATS URL, if available
+          <input name="employer_url" type="url" inputMode="url" placeholder="https://company.com/careers/job/..." className="rounded border bg-white px-3 py-2 text-sm font-normal" style={{ borderColor: 'var(--line-strong)' }} />
+        </label>
+        <label className="grid gap-1 text-xs font-semibold md:col-span-2">
+          Why this belongs in the Career Hub
+          <textarea name="reason" required minLength={8} maxLength={1000} rows={3} className="rounded border bg-white px-3 py-2 text-sm font-normal" style={{ borderColor: 'var(--line-strong)' }} />
+        </label>
+        <button type="submit" className="primary-button justify-self-start md:col-span-2">Save missed role</button>
+      </form>
+    </section>
+
     <ul className="review-records">{rows.map((row) => {
       const originalUrl = safeHttpsUrl(row.original_url);
       const canonicalUrl = safeHttpsUrl(row.canonical_employer_url);
@@ -125,6 +164,9 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
           {row.lane ? <span>lane: {row.lane}</span> : null}
           <span>{row.occurrence_count} observation{row.occurrence_count === 1 ? '' : 's'}</span>
           <span>last seen {new Date(row.last_seen_at).toLocaleDateString()}</span>
+          {row.shadow_prediction ? <span>
+            shadow relevance {Math.round(row.shadow_prediction.probability * 100)}% · not used for filtering
+          </span> : null}
         </div>
 
         {row.latest_snippet ? <p className="mt-3 whitespace-pre-wrap text-sm">{row.latest_snippet}</p> : null}
@@ -220,18 +262,39 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
             <input type="hidden" name="id" value={row.id} />
             <button className="primary-button">Promote to Review Queue</button>
           </form> : null}
-          {row.officer_status === 'new' ? <form action={updateDiscoveryLeadStatus}>
+          {row.officer_status === 'new' ? <form action={recordDiscoveryLeadDecision}>
             <input type="hidden" name="id" value={row.id} />
-            <button className="secondary-button" name="status" value="in_review">Start review</button>
+            <input type="hidden" name="label" value="relevant" />
+            <input type="hidden" name="reason" value="Officer marked this lead relevant for further review." />
+            <button className="secondary-button">Relevant, continue review</button>
           </form> : <form action={updateDiscoveryLeadStatus}>
             <input type="hidden" name="id" value={row.id} />
             <button className="secondary-button" name="status" value="new">Return to new</button>
           </form>}
-          <form action={updateDiscoveryLeadStatus}>
-            <input type="hidden" name="id" value={row.id} />
-            <button className="secondary-button" name="status" value="archived">Archive lead</button>
-          </form>
         </div>
+        <details className="mt-3 rounded-lg border p-3" style={{ borderColor: 'var(--line)', background: 'var(--paper-2)' }}>
+          <summary className="cursor-pointer text-sm font-semibold">Close this lead with a reason</summary>
+          <form action={recordDiscoveryLeadDecision} className="mt-3 grid gap-3">
+            <input type="hidden" name="id" value={row.id} />
+            <label className="grid gap-1 text-xs font-semibold">
+              Outcome
+              <select name="label" required className="rounded border bg-white px-3 py-2 text-sm font-normal" style={{ borderColor: 'var(--line-strong)' }}>
+                <option value="irrelevant">Irrelevant to students</option>
+                <option value="duplicate">Duplicate of another lead</option>
+                <option value="closed">Role already closed</option>
+                <option value="unverifiable">Could not verify the source</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-xs font-semibold">
+              Evidence-based reason
+              <textarea name="reason" required minLength={8} maxLength={1000} rows={2} className="rounded border bg-white px-3 py-2 text-sm font-normal" style={{ borderColor: 'var(--line-strong)' }} />
+            </label>
+            <button className="secondary-button justify-self-start">Save outcome + archive</button>
+            <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+              Only “irrelevant” trains the negative class. Duplicate, closed, and unverifiable leads are excluded from model fitting.
+            </p>
+          </form>
+        </details>
       </li>;
     })}</ul>
   </>;

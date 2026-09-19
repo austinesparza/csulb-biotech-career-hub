@@ -81,6 +81,7 @@ A source run can be `completed`, `partial`, or `failed`. Partial is not counted 
 - `scripts/run-ingestion-worker.ts` remains useful for direct worker operations, but it is not a second scheduler.
 - `scripts/run-extraction-worker.ts` remains useful for direct extraction operations, but normal configured extraction is orchestrated by the shared cycle.
 - Governed discovery requires the search provider configuration and explicit result-storage-rights confirmation. Search results remain private leads until they enter officer review.
+- Discovery feedback, shadow ranking, and query-family yield follow `docs/discovery-learning.md`. Learned estimates are advisory and never filter, approve, or publish a record.
 - Google Sheets is a review surface, not a publication authority. The normal bidirectional sync pulls officer edits before pushing the refreshed queue.
 - See `docs/scheduled-sheet-ingestion.md` for the operational sequence and failure behavior.
 
@@ -94,3 +95,4 @@ Before changing retrieval, model, or publication behavior, preserve these gates:
 4. Model extraction should remain optional until a real officer-labelled evaluation set meets the agreed precision, recall, fabrication, budget, and failure-policy thresholds.
 5. Classification-only experiments should use private or disabled-source snapshots before recurring source coverage is expanded.
 6. Publication remains a separate authenticated officer decision regardless of retrieval or model quality.
+7. A learned discovery ranker cannot influence ordering or search allocation until its time-ordered holdout passes the documented sample, discrimination, and calibration gates in a separately reviewed change.

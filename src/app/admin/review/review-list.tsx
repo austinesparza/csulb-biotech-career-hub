@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { resolveSheetPublishCandidate } from '@/lib/review-publish';
 import { reviewReadinessBucket } from '@/lib/review-readiness';
-import { ReviewCard, type ReviewRow } from './review-card';
+import { ReviewCard, type ReviewRow, type ReviewTaxonomyOptions } from './review-card';
 import {
   syncAndPublishReviewedOpportunities,
   type ReviewedPublishSummary,
@@ -28,7 +28,7 @@ function bucketFor(row: ReviewRow) {
   });
 }
 
-export function ReviewList({ rows }: { rows: ReviewRow[] }) {
+export function ReviewList({ rows, taxonomy }: { rows: ReviewRow[]; taxonomy: ReviewTaxonomyOptions }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [summary, setSummary] = useState<ReviewedPublishSummary | null>(null);
@@ -196,7 +196,7 @@ export function ReviewList({ rows }: { rows: ReviewRow[] }) {
                 <span>{group.rows.length}</span>
               </header>
               <ul className="review-records">
-                {group.rows.map((row) => <ReviewCard key={row.id} row={row} />)}
+                {group.rows.map((row) => <ReviewCard key={row.id} row={row} taxonomy={taxonomy} />)}
               </ul>
             </section>
           ))}

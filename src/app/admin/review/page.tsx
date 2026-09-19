@@ -8,6 +8,7 @@ import { ReviewList, type ReviewRow } from './review-list';
 import { SubmissionList } from './submission-list';
 import { TaskList } from './task-list';
 import { DiscoveryLeadList, type DiscoveryLeadRow } from './discovery-lead-list';
+import { loadTaxonomy } from '@/lib/pipeline/classify';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,12 +56,21 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     const leads = (data ?? []) as DiscoveryLead[];
     const ids = leads.map((lead) => lead.id);
     const latestObservationByLead = new Map<string, DiscoveryLeadObservationRow>();
+    const predictionByLead = new Map<string, { probability: number; modelStatus: 'shadow' | 'eligible' }>();
     if (ids.length > 0) {
-      const observationResult = await db.from('discovery_lead_observations')
-        .select('lead_id, run_id, query, retrieved_at, raw_metadata')
-        .in('lead_id', ids)
-        .order('retrieved_at', { ascending: false })
-        .limit(500);
+      const [observationResult, modelResult] = await Promise.all([
+        db.from('discovery_lead_observations')
+          .select('lead_id, run_id, query, retrieved_at, raw_metadata')
+          .in('lead_id', ids)
+          .order('retrieved_at', { ascending: false })
+          .limit(500),
+        db.from('discovery_model_versions')
+          .select('id, status')
+          .in('status', ['shadow', 'eligible'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
       if (observationResult.error) {
         return <div className="admin-page-flow">
           <ReviewHeader
@@ -76,10 +86,26 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
           latestObservationByLead.set(observation.lead_id, observation);
         }
       }
+
+      if (modelResult.data) {
+        const predictionResult = await db.from('discovery_lead_predictions')
+          .select('lead_id, probability')
+          .eq('model_id', modelResult.data.id)
+          .in('lead_id', ids);
+        if (!predictionResult.error) {
+          for (const prediction of predictionResult.data ?? []) {
+            predictionByLead.set(prediction.lead_id, {
+              probability: prediction.probability,
+              modelStatus: modelResult.data.status as 'shadow' | 'eligible',
+            });
+          }
+        }
+      }
     }
     const rows: DiscoveryLeadRow[] = leads.map((lead) => ({
       ...lead,
       latest_observation: latestObservationByLead.get(lead.id) ?? null,
+      shadow_prediction: predictionByLead.get(lead.id) ?? null,
     }));
     return <div className="admin-page-flow">
       <ReviewHeader
@@ -148,7 +174,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
         .order('created_at', { ascending: false }),
       db.from('pipeline_extractions')
         .select(
-          'id, opportunity_id, created_at, evidence_ok, binding_failures, injection_flags, classification, ' +
+          'id, opportunity_id, created_at, taxonomy_version, evidence_ok, binding_failures, injection_flags, classification, ' +
           'fields, bindings, source_posting_versions(normalized_json)',
         )
         .in('opportunity_id', ids)
@@ -178,6 +204,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
       latestByOpportunity.set(opportunityId, {
         id: item.id as string,
         created_at: item.created_at as string,
+        taxonomy_version: Number(item.taxonomy_version),
         evidence_ok: Boolean(item.evidence_ok),
         binding_failures: (item.binding_failures as string[]) ?? [],
         injection_flags: (item.injection_flags as string[]) ?? [],
@@ -194,6 +221,12 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     extraction: latestByOpportunity.get(row.id) ?? null,
     sheet_review: sheetReviewByOpportunity.get(row.id) ?? null,
   }));
+  const taxonomy = loadTaxonomy();
+  const taxonomyOptions = {
+    scientificLanes: taxonomy.lanes.map((lane) => lane.label),
+    jobFunctions: taxonomy.functions.map((jobFunction) => jobFunction.label),
+    methods: [...new Set(Object.values(taxonomy.methods).flat())].sort((a, b) => a.localeCompare(b)),
+  };
 
   return (
     <div className="admin-page-flow">
@@ -203,7 +236,9 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
         badge={`${rows.length} pending`}
       />
       <TabNav selected={selected} />
-      {error ? <p role="alert">Could not load opportunities: {error.message}</p> : <ReviewList rows={rows} />}
+      {error ? <p role="alert">Could not load opportunities: {error.message}</p> : (
+        <ReviewList rows={rows} taxonomy={taxonomyOptions} />
+      )}
     </div>
   );
 }

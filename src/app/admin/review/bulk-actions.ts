@@ -7,6 +7,7 @@ import { readSheetReviewIntent, type SheetReviewIntent } from '@/lib/sheet-revie
 import { resolveSheetPublishCandidate } from '@/lib/review-publish';
 import { syncReviewWorkflow, type ReviewWorkflowSyncSummary } from '@/app/admin/import/review-workflow-actions';
 import { reconcileAndSyncMachineReviewQueueToSheet } from '@/app/admin/import/sheet-reconcile-actions';
+import { assertClassificationFeedbackReady } from '@/lib/classification-feedback';
 
 interface PublishCandidateRow {
   id: string;
@@ -66,7 +67,9 @@ function revalidatePublicationViews() {
  */
 export async function syncAndPublishReviewedOpportunities(): Promise<ReviewedPublishResult> {
   try {
-    await requireOfficer();
+    const { user } = await requireOfficer();
+    const db = createServiceClient();
+    await assertClassificationFeedbackReady(db);
 
     const sync = await syncReviewWorkflow();
     if (!sync.ok) {
@@ -76,8 +79,6 @@ export async function syncAndPublishReviewedOpportunities(): Promise<ReviewedPub
       };
     }
 
-    const { user } = await requireOfficer();
-    const db = createServiceClient();
     const { data: pending, error: pendingError } = await db
       .from('opportunities')
       .select(
