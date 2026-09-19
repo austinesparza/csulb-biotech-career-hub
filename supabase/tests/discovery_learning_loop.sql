@@ -87,7 +87,7 @@ begin
   select public.record_discovery_feedback(
     v_lead, v_user, 'relevant',
     'Officer found this missed role through a manual search.',
-    'missed_role', false, 1,
+    'missed_role', false, 1::smallint,
     '{
       "triage_score": 0,
       "triage_keep": 0,
