@@ -7,6 +7,8 @@ import { segment, type Span } from '@/lib/pipeline/highlight';
 import type { AudienceBucket, GraduateStage, PaidStatus } from '@/lib/types';
 import type { SheetReviewIntent } from '@/lib/sheet-review';
 import { isPublishableAudienceStage } from '@/lib/opportunityAudience';
+import { hasRecentOpenSource } from '@/lib/review-source';
+import { validateEmployerControlledSourceUrl } from '@/lib/discovery-promotion';
 import { approveOpportunity, archiveForAudience, rejectOpportunity } from './actions';
 
 interface ExtractedField {
@@ -59,6 +61,8 @@ export interface ReviewRow {
   companies: { name: string; public_safe: boolean } | null;
   extraction: ReviewExtraction | null;
   sheet_review: SheetReviewIntent | null;
+  source_check_result: string | null;
+  last_checked_at: string | null;
 }
 
 const AUDIENCE_OPTIONS: Array<{ value: AudienceBucket; label: string }> = [
@@ -174,6 +178,8 @@ function EvidencePanel({ extraction }: { extraction: ReviewExtraction }) {
 }
 
 export function ReviewCard({ row }: { row: ReviewRow }) {
+  const sourceRecentlyChecked = hasRecentOpenSource(row.source_check_result, row.last_checked_at);
+  const employerUrl = validateEmployerControlledSourceUrl(row.posting_url ?? '');
   const sheetApproval = row.sheet_review?.decision === 'approve'
     && row.sheet_review.publicSafe
     && Boolean(row.posting_url);
@@ -186,9 +192,8 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
   const initialReason = row.audience_reason?.trim()
     ? row.audience_reason
     : row.sheet_review?.audienceReason ?? '';
-  const [sourceConfirmed, setSourceConfirmed] = useState(sheetApproval);
+  const [sourceConfirmed, setSourceConfirmed] = useState(sheetApproval && sourceRecentlyChecked);
   const [publicSafeConfirmed, setPublicSafeConfirmed] = useState(sheetApproval);
-  const [status, setStatus] = useState<'open_verified' | 'open_unverified'>('open_verified');
   const [publicNotes, setPublicNotes] = useState(row.public_notes ?? '');
   const [audienceBucket, setAudienceBucket] = useState<AudienceBucket>(initialAudience);
   const [audienceReason, setAudienceReason] = useState(initialReason);
@@ -219,11 +224,12 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
   }, [row]);
 
   const audienceReady = audienceBucket !== 'unknown' && audienceReason.trim().length >= 8;
-  const canApprove = sourceConfirmed && publicSafeConfirmed && audienceReady
+  const canApprove = employerUrl.valid && sourceConfirmed && publicSafeConfirmed && audienceReady
     && isPublishableAudienceStage(audienceBucket, graduateStage) && !pending;
   const canArchive = sourceConfirmed && publicSafeConfirmed && audienceReady
     && ['ineligible', 'adjacent', 'special'].includes(audienceBucket) && !pending;
   const sheetApprovalReady = sheetApproval
+    && sourceRecentlyChecked
     && isPublishableAudienceStage(initialAudience, initialStage)
     && initialReason.trim().length >= 8;
 
@@ -245,6 +251,8 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
       </header>
 
       <p className="review-muted">{meta}</p>
+      {!employerUrl.valid && <p className="review-muted">An individual employer or ATS posting is required before this record can publish. {employerUrl.reason}</p>}
+      {!sourceRecentlyChecked && <p className="review-muted">Current opening unconfirmed in the review record. Check the employer posting and its application link before publishing.</p>}
       {row.extraction && <EvidencePanel extraction={row.extraction} />}
 
       {row.sheet_review?.decision && (
@@ -295,7 +303,7 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
           <label>
             <input type="checkbox" checked={sourceConfirmed} onChange={(event) => setSourceConfirmed(event.target.checked)} />
             <span>I checked {row.posting_url ? (
-              <a href={row.posting_url} target="_blank" rel="noopener noreferrer nofollow" onClick={() => setSourceConfirmed(true)}>the official posting</a>
+              <a href={row.posting_url} target="_blank" rel="noopener noreferrer nofollow">the official posting</a>
             ) : 'an official source'} and it matches this record</span>
           </label>
           <label>
@@ -306,15 +314,11 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
       </details>
 
       <div className="review-actions">
-        <select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}>
-          <option value="open_verified">Publish as verified</option>
-          <option value="open_unverified">Publish as not yet re-verified</option>
-        </select>
         <button disabled={!canApprove} onClick={() => startTransition(async () => {
           setError(null);
           try {
             const result = await approveOpportunity({
-              id: row.id, status, publicNotes, makeCompanyPublic: !(row.companies?.public_safe ?? false),
+              id: row.id, status: 'open_verified', publicNotes, makeCompanyPublic: !(row.companies?.public_safe ?? false),
               audienceBucket, audienceReason, graduateStage, finalFields, sourceConfirmed, publicSafeConfirmed,
             });
             if (!result.ok) { setError(result.error); return; }

@@ -42,7 +42,7 @@ function SubmissionCard({ row, research }: { row: UserSubmission; research: bool
     {suppliedUrl ? <p className="mt-2 text-sm"><a href={suppliedUrl} target="_blank" rel="noopener noreferrer">Open submitted link ↗</a></p> : <p className="mt-2 text-sm">No confirmed individual posting link. Find and verify the employer role before creating a draft.</p>}
     {research && candidateUrl && <p className="mt-2 text-sm"><a href={candidateUrl} target="_blank" rel="noopener noreferrer">Investigate possible employer requisition ↗</a> ({payloadText(row, 'role_url_status').replaceAll('_', ' ')})</p>}
     {(row.submitter_name || row.submitter_email) && <p className="mt-2 text-sm">Private contact: {row.submitter_name ?? 'Name not provided'}{row.submitter_email ? ' · ' + row.submitter_email : ''}</p>}
-    {research && <p className="mt-2 text-sm">Opening: unknown · MSc eligibility: unknown · Officer decision: pending. <a href="https://github.com/austinesparza/csulb-biotech-career-hub/blob/research/2026-09-24-internship-gaps/docs/research/2026-09-24-linkedin-screenshot-audit.md" target="_blank" rel="noopener noreferrer">Screenshot audit ↗</a></p>}
+    {research && <p className="mt-2 text-sm">Opening: unknown · MSc eligibility: unknown · Officer decision: pending. <a href="https://github.com/austinesparza/csulb-biotech-career-hub/blob/main/docs/research/2026-09-24-linkedin-screenshot-audit.md" target="_blank" rel="noopener noreferrer">Screenshot audit ↗</a></p>}
     {research && <p className="mt-2 text-sm"><strong>Next check:</strong> {payloadText(row, 'next_step')}</p>}
     {row.submission_type === 'opportunity' ? (
       <form action={convertSubmissionToDraft} className="mt-4 grid gap-3 sm:grid-cols-2">

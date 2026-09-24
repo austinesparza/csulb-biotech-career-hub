@@ -15,6 +15,7 @@ const SUMMARY_FIELDS = [
 interface OpportunityQueryRow {
   id: string;
   updated_at: string;
+  last_checked_at: string | null;
   title: string;
   posting_url: string | null;
   location: string | null;
@@ -49,7 +50,7 @@ export default async function ManageOpportunitiesPage() {
   await requireOfficer();
   const db = createServiceClient();
   const { data, error } = await db.from('opportunities').select(
-    'id, updated_at, title, posting_url, location, eligibility, focus_area, deadline, deadline_text, ' +
+    'id, updated_at, last_checked_at, title, posting_url, location, eligibility, focus_area, deadline, deadline_text, ' +
     'start_date_text, paid_status, application_type, status, public_notes, audience_bucket, audience_reason, ' +
     'graduate_stage, eligibility_evidence, work_authorization, public_safe, companies(name)',
   ).eq('review_status', 'approved')
@@ -95,6 +96,7 @@ export default async function ManageOpportunitiesPage() {
     id: row.id,
     companyName: relationName(row.companies),
     updatedAt: row.updated_at,
+    lastCheckedAt: row.last_checked_at,
     live: row.public_safe && ['open_verified', 'open_unverified'].includes(row.status),
     draft: {
       title: row.title,

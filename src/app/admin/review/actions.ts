@@ -27,6 +27,7 @@ function safeReviewActionError(error: unknown): string {
     'Confirm the source and public-safe fields before approval',
     'Add a concise evidence-based audience reason',
     'Opportunity not found',
+    'An employer or ATS posting is required before publication',
     'Invalid archive audience',
   ];
   if (allowed.includes(message)) return message;
@@ -149,6 +150,12 @@ export async function resolveReviewTask(formData: FormData): Promise<void> {
   const status = requiredFormText(formData, 'status');
   if (!['done', 'dismissed'].includes(status)) throw new Error('Invalid task decision');
   const db = createServiceClient();
+  const { data: task, error: taskError } = await db.from('review_tasks')
+    .select('task_type').eq('id', id).single();
+  if (taskError || !task) throw new Error('Task not found');
+  if (task.task_type === 'stale_record') {
+    throw new Error('Recheck or remove the published record in Manage; that action closes this task.');
+  }
   const { data, error } = await db.from('review_tasks').update({
     status,
     resolved_at: new Date().toISOString(),
@@ -203,7 +210,7 @@ export async function updateDiscoveryLeadStatus(formData: FormData): Promise<voi
  */
 async function approveOpportunityUnsafe(input: {
   id: string;
-  status: 'open_verified' | 'open_unverified';
+  status: 'open_verified';
   publicNotes: string;
   makeCompanyPublic: boolean;
   audienceBucket: AudienceBucket;
@@ -214,7 +221,7 @@ async function approveOpportunityUnsafe(input: {
   publicSafeConfirmed: boolean;
 }): Promise<void> {
   const { user } = await requireOfficer();
-  if (!['open_verified', 'open_unverified'].includes(input.status)) {
+  if (input.status !== 'open_verified') {
     throw new Error('Invalid target status');
   }
   if (!PUBLISHABLE_AUDIENCES.includes(input.audienceBucket)) {
@@ -234,10 +241,13 @@ async function approveOpportunityUnsafe(input: {
 
   const { data: opp } = await db
     .from('opportunities')
-    .select('id')
+    .select('id, posting_url')
     .eq('id', input.id)
     .single();
   if (!opp) throw new Error('Opportunity not found');
+  if (!validateEmployerControlledSourceUrl(opp.posting_url ?? '').valid) {
+    throw new Error('An employer or ATS posting is required before publication');
+  }
 
   const { error } = await db.rpc('decide_opportunity_review', {
     p_opportunity_id: input.id,

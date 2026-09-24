@@ -7,6 +7,16 @@ import {
   validateRevisionReason,
 } from '@/lib/opportunity-corrections';
 import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
+import { validateEmployerControlledSourceUrl } from '@/lib/discovery-promotion';
+
+async function closeStaleTasks(db: ReturnType<typeof createServiceClient>, id: string, userId: string): Promise<boolean> {
+  const { error } = await db.from('review_tasks').update({
+    status: 'done', resolved_at: new Date().toISOString(), decided_by: userId,
+  }).eq('task_type', 'stale_record').eq('entity_table', 'opportunities')
+    .eq('entity_id', id).in('status', ['open', 'in_progress']);
+  revalidatePath('/admin/review');
+  return !error;
+}
 
 export interface SaveCorrectionInput {
   id: string;
@@ -15,6 +25,42 @@ export interface SaveCorrectionInput {
   sourceConfirmed: boolean;
   publicSafeConfirmed: boolean;
   draft: OpportunityCorrectionDraft;
+}
+
+/** Record an officer's fresh employer check even when the posting details have not changed. */
+export async function verifyPublishedOpportunity(input: Omit<SaveCorrectionInput, 'draft'>): Promise<{ message: string }> {
+  const { user } = await requireOfficer();
+  requireConfirmations(input.sourceConfirmed, input.publicSafeConfirmed);
+  const reason = validateRevisionReason(input.reason);
+  const db = createServiceClient();
+  const { data: current, error: loadError } = await db.from('opportunities')
+    .select('id, review_status, public_safe, status, posting_url')
+    .eq('id', input.id).single();
+  if (loadError || !current) throw new Error(loadError?.message ?? 'Opportunity not found');
+  if (current.review_status !== 'approved' || !current.public_safe || current.status !== 'open_verified' || !current.posting_url) {
+    throw new Error('Only a published, verified posting with an employer link can be rechecked');
+  }
+  if (!validateEmployerControlledSourceUrl(current.posting_url).valid) {
+    throw new Error('Find an individual employer or ATS posting before confirming this record is still open');
+  }
+  const { error } = await db.rpc('revise_published_opportunity', {
+    p_opportunity_id: input.id,
+    p_changed_by: user.id,
+    p_expected_updated_at: input.expectedUpdatedAt,
+    p_action: 'correction',
+    p_reason: reason,
+    p_changes: {},
+    p_source_confirmed: true,
+    p_public_safe_confirmed: true,
+    p_restore_revision_id: null,
+  });
+  if (error) throw new Error(error.message);
+  const tasksClosed = await closeStaleTasks(db, input.id, user.id);
+  revalidateCorrectionViews();
+  revalidatePath('/admin/review');
+  return { message: !tasksClosed
+    ? 'Source recheck saved, but its review task could not be closed. Please resolve the task separately.'
+    : 'Source recheck recorded and stale review task closed.' };
 }
 
 interface CurrentPublishedOpportunity {
@@ -120,7 +166,8 @@ export async function saveOpportunityCorrection(input: SaveCorrectionInput): Pro
   });
   if (error) throw new Error(error.message);
   revalidateCorrectionViews();
-  return { message: 'Correction saved and published' };
+  const tasksClosed = await closeStaleTasks(db, input.id, user.id);
+  return { message: tasksClosed ? 'Correction saved and published' : 'Correction saved, but its stale review task could not be closed.' };
 }
 
 export async function unpublishOpportunity(input: {
@@ -143,7 +190,8 @@ export async function unpublishOpportunity(input: {
   });
   if (error) throw new Error(error.message);
   revalidateCorrectionViews();
-  return { message: 'Removed from the public website. The prior version can be restored.' };
+  const tasksClosed = await closeStaleTasks(db, input.id, user.id);
+  return { message: tasksClosed ? 'Removed from the public website. The prior version can be restored.' : 'Removed from the public website, but its stale review task could not be closed.' };
 }
 
 export async function restoreOpportunityRevision(input: {
@@ -170,5 +218,6 @@ export async function restoreOpportunityRevision(input: {
   });
   if (error) throw new Error(error.message);
   revalidateCorrectionViews();
-  return { message: 'Earlier version restored and recorded as a new revision' };
+  const tasksClosed = await closeStaleTasks(db, input.id, user.id);
+  return { message: tasksClosed ? 'Earlier version restored and recorded as a new revision' : 'Earlier version restored, but its stale review task could not be closed.' };
 }

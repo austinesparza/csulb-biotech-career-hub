@@ -4,7 +4,8 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { OpportunityCorrectionDraft } from '@/lib/opportunity-corrections';
 import type { AudienceBucket, GraduateStage, PaidStatus } from '@/lib/types';
-import { restoreOpportunityRevision, saveOpportunityCorrection, unpublishOpportunity } from './actions';
+import { validateEmployerControlledSourceUrl } from '@/lib/discovery-promotion';
+import { restoreOpportunityRevision, saveOpportunityCorrection, unpublishOpportunity, verifyPublishedOpportunity } from './actions';
 
 export interface RevisionSummary {
   id: string;
@@ -20,6 +21,7 @@ export interface ManagedOpportunity {
   id: string;
   companyName: string;
   updatedAt: string;
+  lastCheckedAt: string | null;
   live: boolean;
   draft: OpportunityCorrectionDraft;
   revisions: RevisionSummary[];
@@ -54,6 +56,7 @@ function ManagedCard({ row }: { row: ManagedOpportunity }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const ready = reason.trim().length >= 8 && sourceConfirmed && publicSafeConfirmed && !pending;
+  const employerUrl = validateEmployerControlledSourceUrl(row.draft.postingUrl);
 
   const update = <K extends keyof OpportunityCorrectionDraft>(key: K, value: OpportunityCorrectionDraft[K]) => {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -75,7 +78,7 @@ function ManagedCard({ row }: { row: ManagedOpportunity }) {
   });
 
   return (
-    <li className="manage-record">
+    <li className="manage-record" id={`opportunity-${row.id}`}>
       <header className="manage-record-header">
         <div>
           <p className="manage-company">{row.companyName}</p>
@@ -86,7 +89,7 @@ function ManagedCard({ row }: { row: ManagedOpportunity }) {
         </span>
       </header>
       <p className="review-muted">
-        Updated {new Date(row.updatedAt).toLocaleString()} · {row.revisions.length} recorded change{row.revisions.length === 1 ? '' : 's'}
+        Last employer check {row.lastCheckedAt ? new Date(row.lastCheckedAt).toLocaleDateString() : 'unknown'} · {row.revisions.length} recorded change{row.revisions.length === 1 ? '' : 's'}
       </p>
 
       <details className="manage-editor" open={!row.live}>
@@ -168,6 +171,10 @@ function ManagedCard({ row }: { row: ManagedOpportunity }) {
           {row.live && <button className="primary-button" disabled={!ready} onClick={() => run(() => saveOpportunityCorrection({
             id: row.id, expectedUpdatedAt: row.updatedAt, reason, sourceConfirmed, publicSafeConfirmed, draft,
           }))}>{pending ? 'Saving…' : 'Save correction'}</button>}
+          {row.live && <button className="secondary-button" disabled={!ready || !employerUrl.valid} onClick={() => run(() => verifyPublishedOpportunity({
+            id: row.id, expectedUpdatedAt: row.updatedAt, reason, sourceConfirmed, publicSafeConfirmed,
+          }))}>Confirm source still open</button>}
+          {row.live && !employerUrl.valid && <span className="review-muted">Find the individual employer posting and save the corrected URL, or remove the record.</span>}
           {row.live && <button className="danger-button" disabled={reason.trim().length < 8 || pending} onClick={() => {
             if (window.confirm('Remove this opportunity from the public website now? You can restore it from history.')) {
               run(() => unpublishOpportunity({ id: row.id, expectedUpdatedAt: row.updatedAt, reason }));
