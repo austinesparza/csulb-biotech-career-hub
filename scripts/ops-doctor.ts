@@ -60,6 +60,42 @@ async function checkDatabase(): Promise<void> {
   report('PASS', 'database schema', 'ingestion, review, archive, and public-view relations are reachable');
 }
 
+async function checkDiscovery(): Promise<void> {
+  if (process.env.DISCOVERY_SEARCH_ENABLED !== 'true') {
+    report('FAIL', 'search discovery', 'disabled; automated searches are not running');
+    return;
+  }
+  const missing = ['BRAVE_SEARCH_API_KEY', 'BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED']
+    .filter((name) => name === 'BRAVE_SEARCH_STORAGE_RIGHTS_CONFIRMED'
+      ? process.env[name] !== 'true'
+      : !present(name));
+  if (missing.length) {
+    report('FAIL', 'search discovery', `missing required provider configuration: ${missing.join(', ')}`);
+    return;
+  }
+  const db = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+  const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const { data, error } = await db.from('pipeline_cycles')
+    .select('discovery_json')
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error) {
+    report('FAIL', 'search discovery', 'could not verify recent discovery cycles');
+    return;
+  }
+  const completed = (data ?? []).filter((row) => row.discovery_json?.status === 'completed');
+  if (completed.length === 0) {
+    report('FAIL', 'search discovery', 'no completed discovery cycle in the last seven days');
+    return;
+  }
+  report('PASS', 'search discovery', `${completed.length} completed cycle(s) in the last seven days`);
+}
+
 async function checkSheet(): Promise<void> {
   if (!googleSheetsConfigured()) {
     report('FAIL', 'Google Sheet', 'read-only Sheet configuration is incomplete');
@@ -108,6 +144,11 @@ async function main(): Promise<void> {
       await checkDatabase();
     } catch {
       report('FAIL', 'database connection', 'could not reach the configured project');
+    }
+    try {
+      await checkDiscovery();
+    } catch {
+      report('FAIL', 'search discovery', 'could not check discovery readiness');
     }
     try {
       await checkSheet();
