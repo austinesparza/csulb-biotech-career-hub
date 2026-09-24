@@ -31,6 +31,7 @@ function SubmissionCard({ row, research }: { row: UserSubmission; research: bool
     {payloadText(row, 'url') ? <p className="mt-2 text-sm"><a href={payloadText(row, 'url')} target="_blank" rel="noopener noreferrer">Open submitted link ↗</a></p> : <p className="mt-2 text-sm">No role-specific link supplied. Find the employer posting before creating a draft.</p>}
     {(row.submitter_name || row.submitter_email) && <p className="mt-2 text-sm">Private contact: {row.submitter_name ?? 'Name not provided'}{row.submitter_email ? ' · ' + row.submitter_email : ''}</p>}
     {research && <p className="mt-2 text-sm">Opening: unknown · MSc eligibility: unknown · Officer decision: pending. <a href="https://github.com/austinesparza/csulb-biotech-career-hub/blob/research/2026-09-24-internship-gaps/docs/research/2026-09-24-linkedin-screenshot-audit.md" target="_blank" rel="noopener noreferrer">Screenshot audit ↗</a></p>}
+    {research && <p className="mt-2 text-sm"><strong>Next check:</strong> {payloadText(row, 'next_step')}</p>}
     {row.submission_type === 'opportunity' ? (
       <form action={convertSubmissionToDraft} className="mt-4 grid gap-3 sm:grid-cols-2">
         <input type="hidden" name="id" value={row.id} />
