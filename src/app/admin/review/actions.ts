@@ -6,6 +6,7 @@ import { createServiceClient, requireOfficer } from '@/lib/supabase/server';
 import type { AudienceBucket, GraduateStage } from '@/lib/types';
 import { quickAddOpportunity } from '@/app/admin/add/actions';
 import { isPublishableAudienceStage } from '@/lib/opportunityAudience';
+import { validateEmployerControlledSourceUrl } from '@/lib/discovery-promotion';
 
 const PUBLISHABLE_AUDIENCES: AudienceBucket[] = ['undergraduate', 'graduate', 'mixed'];
 
@@ -95,13 +96,23 @@ export async function convertSubmissionToDraft(formData: FormData): Promise<void
   const db = createServiceClient();
   const { data: submission, error: loadError } = await db
     .from('user_submissions')
-    .select('id, submission_type, status, created_opportunity_id')
+    .select('id, submission_type, status, created_opportunity_id, payload')
     .eq('id', id)
     .single();
   if (loadError || !submission) throw new Error(loadError?.message ?? 'Submission not found');
   if (submission.submission_type !== 'opportunity') throw new Error('Only opportunity suggestions can become drafts');
   if (submission.created_opportunity_id) throw new Error('This submission already has a review draft');
   if (!['new', 'in_review'].includes(submission.status)) throw new Error('This submission is already resolved');
+  const isResearch = submission.payload?.intake_stage === 'source_research';
+  let postingUrl = requiredFormText(formData, 'posting_url');
+  if (isResearch) {
+    if (String(formData.get('source_confirmed') ?? '') !== 'on') {
+      throw new Error('Check the individual employer posting before creating a private review draft');
+    }
+    const verified = validateEmployerControlledSourceUrl(postingUrl);
+    if (!verified.valid) throw new Error(verified.reason);
+    postingUrl = verified.canonicalUrl;
+  }
 
   const { data: source, error: sourceError } = await db
     .from('source_records')
@@ -114,7 +125,7 @@ export async function convertSubmissionToDraft(formData: FormData): Promise<void
   const draft = new FormData();
   draft.set('company', requiredFormText(formData, 'company'));
   draft.set('title', requiredFormText(formData, 'title'));
-  draft.set('posting_url', requiredFormText(formData, 'posting_url'));
+  draft.set('posting_url', postingUrl);
   draft.set('private_notes', String(formData.get('details') ?? '').trim());
   draft.set('source_record_id', source.id);
   const created = await quickAddOpportunity(draft);
