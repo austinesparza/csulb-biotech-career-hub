@@ -15,6 +15,15 @@ function payloadText(row: UserSubmission, key: string): string {
   return typeof value === 'string' ? value : '';
 }
 
+function safeHttpsUrl(value: string): string | null {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:' ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 function isSourceResearch(row: UserSubmission): boolean {
   return payloadText(row, 'intake_stage') === 'source_research';
 }
@@ -27,8 +36,11 @@ function priority(row: UserSubmission): number {
 function SubmissionCard({ row, research }: { row: UserSubmission; research: boolean }) {
   const group = researchLabels[payloadText(row, 'research_group')] || 'Find employer posting';
   const label = research ? group : row.submission_type === 'opportunity' ? 'Opportunity suggestion' : row.submission_type;
+  const suppliedUrl = safeHttpsUrl(payloadText(row, 'url'));
+  const candidateUrl = safeHttpsUrl(payloadText(row, 'candidate_employer_url'));
   const body = <>
-    {payloadText(row, 'url') ? <p className="mt-2 text-sm"><a href={payloadText(row, 'url')} target="_blank" rel="noopener noreferrer">Open submitted link ↗</a></p> : <p className="mt-2 text-sm">No role-specific link supplied. Find the employer posting before creating a draft.</p>}
+    {suppliedUrl ? <p className="mt-2 text-sm"><a href={suppliedUrl} target="_blank" rel="noopener noreferrer">Open submitted link ↗</a></p> : <p className="mt-2 text-sm">No confirmed individual posting link. Find and verify the employer role before creating a draft.</p>}
+    {research && candidateUrl && <p className="mt-2 text-sm"><a href={candidateUrl} target="_blank" rel="noopener noreferrer">Investigate possible employer requisition ↗</a> ({payloadText(row, 'role_url_status').replaceAll('_', ' ')})</p>}
     {(row.submitter_name || row.submitter_email) && <p className="mt-2 text-sm">Private contact: {row.submitter_name ?? 'Name not provided'}{row.submitter_email ? ' · ' + row.submitter_email : ''}</p>}
     {research && <p className="mt-2 text-sm">Opening: unknown · MSc eligibility: unknown · Officer decision: pending. <a href="https://github.com/austinesparza/csulb-biotech-career-hub/blob/research/2026-09-24-internship-gaps/docs/research/2026-09-24-linkedin-screenshot-audit.md" target="_blank" rel="noopener noreferrer">Screenshot audit ↗</a></p>}
     {research && <p className="mt-2 text-sm"><strong>Next check:</strong> {payloadText(row, 'next_step')}</p>}
