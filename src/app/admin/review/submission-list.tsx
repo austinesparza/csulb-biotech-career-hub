@@ -54,7 +54,7 @@ function SubmissionCard({ row, research }: { row: UserSubmission; research: bool
     </form>
   </>;
 
-  return <li className="review-record" key={row.id}>
+  return <li id={"submission-" + row.id} className="review-record" key={row.id}>
     {research ? <details>
       <summary className="cursor-pointer"><strong>{payloadText(row, 'company') || 'Employer unknown'}: {payloadText(row, 'title') || 'Untitled role'}</strong><span className="ml-2 text-sm">#{payloadText(row, 'catalog_id')} · {label} · missing role link</span></summary>
       {body}
