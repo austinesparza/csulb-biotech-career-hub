@@ -125,6 +125,9 @@ async function promoteDiscoveryLead(id: string): Promise<'created' | 'existing'>
 /** Promote one verified discovery lead into the normal private opportunity queue. */
 export async function promoteDiscoveryLeadToDraft(formData: FormData): Promise<void> {
   const id = requiredId(formData);
+  if (String(formData.get('posting_confirmed') ?? '') !== 'on') {
+    throw new Error('Confirm current Apply and the term and degree gates before creating a private draft');
+  }
   await promoteDiscoveryLead(id);
   revalidatePath('/admin');
   revalidatePath('/admin/review');
@@ -250,37 +253,10 @@ export async function promoteVerifiedLinkedInLead(formData: FormData): Promise<v
 }
 
 /**
- * Promote every unresolved discovery lead that already has an employer-controlled
- * source. LinkedIn-only and unresolved leads remain private discovery records.
+ * Bulk promotion is disabled. An employer URL alone cannot establish current
+ * availability or graduate access. Each lead requires an individual check.
  */
 export async function promoteAllVerifiedDiscoveryLeads(): Promise<void> {
   await requireOfficer();
-  const db = createServiceClient();
-  const { data, error } = await db.from('discovery_leads')
-    .select('id')
-    .eq('resolution', 'official_source_found')
-    .in('officer_status', ['new', 'in_review'])
-    .not('canonical_employer_url', 'is', null)
-    .order('last_seen_at', { ascending: false })
-    .limit(100);
-  if (error) throw new Error(error.message);
-
-  const failures: string[] = [];
-  for (const row of data ?? []) {
-    try {
-      await promoteDiscoveryLead(row.id);
-    } catch (error) {
-      console.error('[discovery-promotion] lead failed', {
-        leadId: row.id,
-        error: error instanceof Error ? error.message : 'unknown error',
-      });
-      failures.push(row.id);
-    }
-  }
-
-  revalidatePath('/admin');
-  revalidatePath('/admin/review');
-  if (failures.length > 0) {
-    throw new Error(`${failures.length} verified discovery lead(s) could not be promoted; the remaining leads stayed private.`);
-  }
+  throw new Error('Bulk promotion is disabled. Review each live employer posting and its gates individually.');
 }

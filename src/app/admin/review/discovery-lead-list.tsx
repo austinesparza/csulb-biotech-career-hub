@@ -2,7 +2,6 @@ import type { DiscoveryLead, DiscoveryLeadObservationRow } from '@/lib/types';
 import { resolveDiscoveryPromotion } from '@/lib/discovery-promotion';
 import { updateDiscoveryLeadStatus } from './actions';
 import {
-  promoteAllVerifiedDiscoveryLeads,
   promoteDiscoveryLeadToDraft,
   promoteVerifiedLinkedInLead,
   resolveEmployerSourceAndPromote,
@@ -49,43 +48,25 @@ function triageSummary(metadata: Record<string, unknown>): string | null {
 export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
   if (!rows.length) return <p>No new or in-review discovery leads.</p>;
 
-  const promotable = rows.filter((row) => resolveDiscoveryPromotion({
-    resolution: row.resolution,
-    canonicalEmployerUrl: row.canonical_employer_url,
-    employerHint: row.employer_hint,
-    title: row.latest_title,
-  }).ready).length;
-  const unresolved = rows.length - promotable;
+  const sourceRecorded = rows.filter((row) => !!safeHttpsUrl(row.canonical_employer_url)).length;
+  const unresolved = rows.length - sourceRecorded;
 
   return <>
     <section className="review-publish-console" aria-labelledby="discovery-promotion-title">
       <div className="review-publish-copy">
         <div className="admin-page-eyebrow">Discovery handoff</div>
-        <h2 id="discovery-promotion-title">Move verified leads into opportunity review</h2>
+        <h2 id="discovery-promotion-title">Check sources before opportunity review</h2>
         <p>
-          Discovery is only the first stage. Leads with an employer-controlled source can become private opportunity drafts in one step.
-          If the employer only published a role directly on LinkedIn, use the verified first-party exception with separate employer-site evidence.
+          A saved employer URL is only a lead. Check the live posting, Apply link, term and degree gates before creating a private opportunity draft. Known closed, off-cycle and undergraduate-only roles must remain out of the graduate review queue.
         </p>
       </div>
       <div className="review-publish-stats" aria-label="Discovery promotion status">
         <div><strong>{rows.length}</strong><span>active leads</span></div>
-        <div><strong>{promotable}</strong><span>verified source</span></div>
-        <div><strong>{unresolved}</strong><span>need source resolution</span></div>
+        <div><strong>{sourceRecorded}</strong><span>employer URL recorded</span></div>
+        <div><strong>{unresolved}</strong><span>need employer URL</span></div>
         <div><strong>0</strong><span>auto-published</span></div>
       </div>
-      <div className="review-publish-action">
-        <div>
-          <strong>Safe bulk handoff</strong>
-          <p>
-            Creates private <code>needs_review</code> opportunities only. Nothing becomes public until an officer reviews and approves the posting.
-          </p>
-        </div>
-        <form action={promoteAllVerifiedDiscoveryLeads}>
-          <button type="submit" className="primary-button" disabled={promotable === 0}>
-            Promote {promotable} verified lead{promotable === 1 ? '' : 's'}
-          </button>
-        </form>
-      </div>
+      <p className="mt-3 text-sm">Work through individual leads. A URL alone does not establish that the role is open or belongs on the graduate board.</p>
     </section>
 
     <ul className="review-records">{rows.map((row) => {
@@ -115,7 +96,7 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
             </p>
           </div>
           <span className="rounded-full px-2 py-1 text-xs font-semibold" style={{ background: promotion.ready ? '#eef8f2' : 'var(--brand-soft)' }}>
-            {promotion.ready ? 'verified source' : row.officer_status.replaceAll('_', ' ')}
+            {promotion.ready ? 'employer URL recorded' : row.officer_status.replaceAll('_', ' ')}
           </span>
         </div>
 
@@ -172,7 +153,7 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
               </label>
               <label className="flex items-start gap-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
                 <input type="checkbox" name="source_confirmed" required className="mt-0.5" />
-                <span>I verified this is an employer-controlled career page or an employer recruiting/ATS posting, not LinkedIn or a job aggregator.</span>
+                <span>I verified this individual role is on the employer career site or its ATS, checked live Apply and read the degree, term and enrollment gates.</span>
               </label>
               <button type="submit" className="primary-button justify-self-start">Save source + promote to Review Queue</button>
               <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
@@ -212,13 +193,14 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
             </form>
           </details> : null}
         </> : <p className="mt-3 text-xs font-semibold" style={{ color: 'var(--teal-deep)' }}>
-          Employer-controlled source resolved. This lead can move to the normal private opportunity-review queue.
+          Employer URL recorded. Verify the current Apply link and all structural gates before private promotion.
         </p>}
 
         <div className="mt-4 flex flex-wrap gap-2">
           {promotion.ready ? <form action={promoteDiscoveryLeadToDraft}>
             <input type="hidden" name="id" value={row.id} />
-            <button className="primary-button">Promote to Review Queue</button>
+            <label className="mb-2 flex items-start gap-2 text-xs"><input type="checkbox" name="posting_confirmed" required className="mt-0.5" />I checked live Apply, term, degree and enrollment requirements on this exact posting.</label>
+            <button className="primary-button">Create private review draft</button>
           </form> : null}
           {row.officer_status === 'new' ? <form action={updateDiscoveryLeadStatus}>
             <input type="hidden" name="id" value={row.id} />

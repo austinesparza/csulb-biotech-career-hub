@@ -96,11 +96,12 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     const { data, error } = await db.from('user_submissions').select('*')
       .in('status', ['new', 'in_review']).order('created_at', { ascending: true }).limit(100);
     const rows = (data ?? []) as UserSubmission[];
+    const researchCount = rows.filter((row) => row.payload?.intake_stage === 'source_research').length;
     return <div className="admin-page-flow">
       <ReviewHeader
-        title="Student submissions"
-        deck="Suggestions stay private here. Creating a draft routes an opportunity through normal officer review and never publishes it directly."
-        badge={`${rows.length} pending`}
+        title="Submissions and source research"
+        deck="Student suggestions and screenshot leads stay private. Source-research leads need an individual employer posting before a review draft can be created."
+        badge={`${rows.length - researchCount} submissions · ${researchCount} source leads`}
       />
       <TabNav selected={selected} />
       {error ? <p role="alert">Could not load submissions: {error.message}</p> : <SubmissionList rows={rows} />}
