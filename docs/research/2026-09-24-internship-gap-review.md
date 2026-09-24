@@ -4,7 +4,7 @@ Private research handoff for officers. This file does **not** publish an opportu
 
 ## Candidates absent from the public board
 
-The public /internships page was checked on 2026-09-24. These exact requisitions were not shown. An employer page (or employer-hosted indexed Workday result where noted) supplied the evidence below; unknown means the posting did not supply a dependable value.
+The public /internships page was checked on 2026-09-24. These specific roles were not shown. An employer page (or employer-hosted indexed Workday result where noted) supplied the evidence below; unknown means the posting did not supply a dependable value.
 
 | Priority | Employer role / requisition | Evidence and rationale | Master's and other hard gates | Deadline / status at check | Officer action |
 | --- | --- | --- | --- | --- | --- |
@@ -17,6 +17,8 @@ The public /internships page was checked on 2026-09-24. These exact requisitions
 | 7, adjacent | [Gilead Intern, Research, Protein Therapeutics / Computational Biologics Engineering](https://gilead.yello.co/jobs/WESVgfHuL6ncXDJ6CGFXkA?locale=en) | Employer page has Apply; generative protein design, Python and antibody engineering; biologically grounded computation but outside core genomics lanes. Foster City, CA, summer 10–12 weeks. | Master's allowed, graduate/PhD preferred; full-time US-accredited enrollment incl. fall; GPA >=2.8; independent US authorization; hybrid on site. | Fixed closing date unknown from this page; confirm 2027 requisition and deadline. | Keep adjacent or separate lane, verify current cycle and official apply route. |
 
 “Employer page shows Apply now” records what was visible on the official site on the check date; it is not a promise it will still accept applications. No individualized score or interview probability has been assigned.
+
+| 8 | [BillionToOne Research Associate Intern](https://job-boards.greenhouse.io/billiontoone/jobs/4733845005) | Employer Greenhouse page shows Apply; on-site Menlo Park, CA; molecular oncology and prenatal diagnostics, NGS assays and quantitative analysis. $25/hour. Summer/year label and closing date not explicitly stated; confirm intended internship dates. | Explicitly enrolled in undergraduate **or master's** program during Fall 2027; anticipated BS/MS in related molecular biology, bioengineering or biochemistry; independent research experience. No GPA, citizenship, or sponsorship gate stated on the page; leave unknown. | Apply visible Sep 24, 2026; deadline unknown. | Verify internship dates and graduate project scope; review as graduate-accessible / diagnostics, sequencing, wet lab. |
 
 ## Upcoming programs — do not label open
 
