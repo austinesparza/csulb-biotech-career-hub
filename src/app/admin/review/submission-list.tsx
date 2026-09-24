@@ -16,7 +16,7 @@ export function SubmissionList({ rows }: { rows: UserSubmission[] }) {
         <h2 className="text-lg font-semibold">{row.submission_type === 'opportunity' ? 'Opportunity suggestion' : row.submission_type}</h2>
         <span className="text-sm">{new Date(row.created_at).toLocaleString()}</span>
       </div>
-      <p className="mt-2 text-sm"><a href={payloadText(row, 'url')} target="_blank" rel="noopener noreferrer">Open submitted link ↗</a></p>
+      {payloadText(row, 'url') ? <p className="mt-2 text-sm"><a href={payloadText(row, 'url')} target="_blank" rel="noopener noreferrer">Open submitted link ↗</a></p> : <p className="mt-2 text-sm">No role-specific link supplied. Find the employer posting before creating a draft.</p>}
       {(row.submitter_name || row.submitter_email) && <p className="mt-2 text-sm">Private contact: {row.submitter_name ?? 'Name not provided'}{row.submitter_email ? ` · ${row.submitter_email}` : ''}</p>}
       {row.submission_type === 'opportunity' ? (
         <form action={convertSubmissionToDraft} className="mt-4 grid gap-3 sm:grid-cols-2">
