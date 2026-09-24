@@ -25,6 +25,8 @@ function bucketFor(row: ReviewRow) {
     audienceBucket: row.audience_bucket,
     audienceReason: row.audience_reason,
     graduateStage: row.graduate_stage,
+    sourceCheckResult: row.source_check_result,
+    lastCheckedAt: row.last_checked_at,
   });
 }
 
@@ -42,6 +44,8 @@ export function ReviewList({ rows }: { rows: ReviewRow[] }) {
       audienceReason: row.audience_reason,
       graduateStage: row.graduate_stage,
       sheetReview: row.sheet_review,
+      sourceCheckResult: row.source_check_result,
+      lastCheckedAt: row.last_checked_at,
     }),
   })), [rows]);
 
@@ -63,13 +67,13 @@ export function ReviewList({ rows }: { rows: ReviewRow[] }) {
     {
       key: 'decision-ready',
       title: 'Ready for officer decision',
-      description: 'Official source and student-audience fields are structured. Review the posting, then approve or reject.',
+      description: 'A recent open-source check and student-audience fields are recorded. Recheck the employer posting before deciding.',
       rows: decisionReady,
     },
     {
       key: 'needs-confirmation',
-      title: 'Needs eligibility confirmation',
-      description: 'These records still need an audience, degree-level, or evidence decision before they can publish.',
+      title: 'Needs source or eligibility confirmation',
+      description: 'Confirm the current employer posting and any missing audience, degree-level, or evidence details before deciding.',
       rows: needsConfirmation,
     },
     {

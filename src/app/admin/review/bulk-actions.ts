@@ -19,6 +19,8 @@ interface PublishCandidateRow {
   scientific_lanes: string[] | null;
   job_functions: string[] | null;
   methods: string[] | null;
+  source_check_result: string | null;
+  last_checked_at: string | null;
   companies: { public_safe: boolean } | Array<{ public_safe: boolean }> | null;
 }
 
@@ -82,7 +84,7 @@ export async function syncAndPublishReviewedOpportunities(): Promise<ReviewedPub
       .from('opportunities')
       .select(
         'id, title, posting_url, public_notes, audience_bucket, audience_reason, graduate_stage, ' +
-        'scientific_lanes, job_functions, methods, companies(public_safe)',
+        'scientific_lanes, job_functions, methods, source_check_result, last_checked_at, companies(public_safe)',
       )
       .eq('status', 'needs_review')
       .eq('review_status', 'pending')
@@ -127,6 +129,8 @@ export async function syncAndPublishReviewedOpportunities(): Promise<ReviewedPub
         audienceReason: candidate.audience_reason,
         graduateStage: candidate.graduate_stage,
         sheetReview,
+        sourceCheckResult: candidate.source_check_result,
+        lastCheckedAt: candidate.last_checked_at,
       });
       if (!resolution.ready) {
         blocked.push({ id: candidate.id, title: candidate.title, reason: resolution.reason });
