@@ -18,6 +18,7 @@ export function TaskList({ rows }: { rows: ReviewTask[] }) {
       {sourceUrl ? <p className="mt-2 text-sm">
         <a href={sourceUrl} target="_blank" rel="noreferrer">Open captured source</a>
       </p> : null}
+      {row.entity_table === 'user_submissions' ? <p className="mt-2 text-sm"><a href={'/admin/review?tab=submissions#submission-' + row.entity_id}>Open research record</a></p> : null}
       <p className="mt-2 text-xs">{row.entity_table} · {row.entity_id}</p>
       <form action={resolveReviewTask} className="mt-3 flex gap-2">
         <input type="hidden" name="id" value={row.id} />
