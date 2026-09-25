@@ -39,12 +39,21 @@ function SubmissionCard({ row, research }: { row: UserSubmission; research: bool
   const suppliedUrl = safeHttpsUrl(payloadText(row, 'url'));
   const candidateUrl = safeHttpsUrl(payloadText(row, 'candidate_employer_url'));
   const employerClosed = research && payloadText(row, 'role_url_status') === 'employer_page_closed';
+  const gateNotes = payloadText(row, 'employer_gate_notes');
+  const nextCheck = employerClosed
+    ? 'Record the closed employer page for historical tracking.'
+    : candidateUrl
+      ? payloadText(row, 'role_url_status') === 'indexed_employer_url_unrendered'
+        ? 'Open the employer page and confirm that Apply is active, then check the degree, term and authorization requirements.'
+        : 'Check the full degree, term and authorization requirements before making a private draft.'
+      : payloadText(row, 'next_step');
   const body = <>
     {suppliedUrl ? <p className="mt-2 text-sm"><a href={suppliedUrl} target="_blank" rel="noopener noreferrer">Open submitted link ↗</a></p> : !candidateUrl ? <p className="mt-2 text-sm">No individual employer posting link found yet.</p> : null}
     {research && candidateUrl && <p className="mt-2 text-sm"><a href={candidateUrl} target="_blank" rel="noopener noreferrer">Investigate possible employer requisition ↗</a> ({payloadText(row, 'role_url_status').replaceAll('_', ' ')})</p>}
     {(row.submitter_name || row.submitter_email) && <p className="mt-2 text-sm">Private contact: {row.submitter_name ?? 'Name not provided'}{row.submitter_email ? ' · ' + row.submitter_email : ''}</p>}
     {research && <p className="mt-2 text-sm">Opening: {payloadText(row, 'posting_status') || 'unknown'} · MSc eligibility: {payloadText(row, 'msc_eligibility') || 'unknown'} · Officer decision: pending. <a href="https://github.com/austinesparza/csulb-biotech-career-hub/blob/main/docs/research/2026-09-24-linkedin-screenshot-audit.md" target="_blank" rel="noopener noreferrer">Screenshot audit ↗</a></p>}
-    {research && <p className="mt-2 text-sm"><strong>Next check:</strong> {payloadText(row, 'next_step')}</p>}
+    {research && gateNotes && <p className="mt-2 text-sm"><strong>Employer research:</strong> {gateNotes}</p>}
+    {research && <p className="mt-2 text-sm"><strong>Next check:</strong> {nextCheck}</p>}
     {employerClosed && <p className="mt-2 text-sm">The employer page says this role is closed. Keep the source for historical tracking; do not draft it as a current opening.</p>}
     {row.submission_type === 'opportunity' && !employerClosed ? (
       <form action={convertSubmissionToDraft} className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -52,7 +61,7 @@ function SubmissionCard({ row, research }: { row: UserSubmission; research: bool
         <label>Company<input className={inputClass} name="company" required defaultValue={payloadText(row, 'company')} /></label>
         <label>Role title<input className={inputClass} name="title" required defaultValue={payloadText(row, 'title')} /></label>
         <label className="sm:col-span-2">{research ? 'Individual employer or ATS posting' : 'Official link'}<input className={inputClass} name="posting_url" type="url" required defaultValue={candidateUrl ?? suppliedUrl ?? ''} /></label>
-        <label className="sm:col-span-2">Private review notes<textarea className={inputClass} name="details" defaultValue={payloadText(row, 'details')} /></label>
+        <label className="sm:col-span-2">Private review notes<textarea className={inputClass} name="details" defaultValue={gateNotes || payloadText(row, 'details')} /></label>
         {research && <label className="sm:col-span-2 flex items-start gap-2 text-sm"><input type="checkbox" name="source_confirmed" required className="mt-1" /><span>I checked this individual posting on the employer site or its ATS. I will confirm the full gates before publishing.</span></label>}
         <button className="primary-button justify-self-start">Create private review draft</button>
       </form>
