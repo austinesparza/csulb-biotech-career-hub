@@ -61,13 +61,12 @@ The 19 public opportunities include undergraduate, graduate, and mixed-audience 
 
 ## Active automated sources
 
-The three enabled sources use the public Greenhouse Job Board API:
+As of September 25, the two enabled sources use the public Greenhouse Job Board API:
 
-- Flagship Pioneering Co-Op Program
 - Ginkgo Bioworks
 - Xaira Therapeutics
 
-Each has a 24-hour interval, recorded policy review, a successful HTTP 200 result on the latest audited cycle, zero consecutive failures, and no degraded or paused state.
+Flagship Pioneering Co-Op Program is disabled and paused because its entire board is restricted to Northeastern University students. Earlier reviews and source observations remain private for the audit trail; its seven pending drafts and 23 tasks are archived or resolved by the source-policy cleanup.
 
 ## Publication boundary
 

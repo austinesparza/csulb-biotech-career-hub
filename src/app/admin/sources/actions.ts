@@ -7,6 +7,7 @@ import { googleSheetsConfigured } from "@/lib/google-sheets";
 import { resolveSourceIdentifier } from "@/lib/ingestion/source-identifiers";
 import { runClaimedFetch } from "@/lib/ingestion/source-runner";
 import { governedStarterSource, GREENHOUSE_POLICY_LINKS } from "@/lib/ingestion/starter-sources";
+import { sourceInstitutionRestriction } from "@/lib/ingestion/source-eligibility";
 import { assertSafePublicUrl } from "@/lib/pipeline/safe-fetch";
 import { syncReviewQueueToGoogleSheet } from "@/lib/review-sheet-sync";
 import { createBraveSearchProvider } from "@/lib/pipeline/brave-search";
@@ -155,6 +156,14 @@ export async function updateSourceGovernance(formData: FormData): Promise<void> 
   if (!id) throw new Error("Source ID is required.");
   if (enabled && (!termsReviewed || !robotsReviewed)) {
     throw new Error("Record both terms and robots review before enabling a source.");
+  }
+  if (enabled) {
+    const { data: source, error: sourceError } = await db.from("job_sources")
+      .select("source_kind, source_identifier, config_json")
+      .eq("id", id).maybeSingle();
+    if (sourceError || !source) throw new Error("Source not found.");
+    const restriction = sourceInstitutionRestriction(source);
+    if (restriction) throw new Error(restriction);
   }
   const { error } = await db.from("job_sources").update({
     terms_reviewed: termsReviewed,
