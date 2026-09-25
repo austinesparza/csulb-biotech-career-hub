@@ -315,7 +315,7 @@
 
 .admin-metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -344,6 +344,7 @@
 .admin-metric-card:nth-child(2)::before { background: var(--gold-mark); }
 .admin-metric-card:nth-child(3)::before { background: var(--navy); }
 .admin-metric-card:nth-child(4)::before { background: var(--restricted); }
+.admin-metric-card:nth-child(5)::before { background: var(--gold-mark); }
 
 .admin-metric-card:hover {
   color: var(--ink);
