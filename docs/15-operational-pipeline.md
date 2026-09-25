@@ -1,9 +1,10 @@
 # Operational pipeline and rollout
 
-Status: reconciled with the September 15, 2026 production snapshot. Xaira
-Therapeutics, Ginkgo Bioworks, and Flagship Pioneering co-op are enabled,
-governance-reviewed, healthy, and scheduled at 24-hour intervals. See
-`docs/16-current-system-status.md` for the full dated snapshot.
+Status: updated September 25, 2026. Xaira Therapeutics and Ginkgo Bioworks
+remain enabled. Flagship Pioneering's co-op board was paused and disabled after
+its official page confirmed that all roles are restricted to Northeastern
+University students. See `docs/16-current-system-status.md` for the older
+September 15 snapshot.
 
 ## The short answer
 
@@ -36,7 +37,7 @@ flowchart TD
 | --- | --- | --- |
 | Public suggestions | `user_submissions` and `/admin/review?tab=submissions` | Working |
 | Spreadsheet intake | One-click governed Sheet sync or CSV upload at `/admin/import`; original meaningful rows saved in `raw_import_rows` | Implemented, officer-triggered |
-| Official ATS and government feeds | Canonical Greenhouse, Ashby, Lever, and credentialed USAJOBS adapters in the persistence runner | Three Greenhouse sources enabled and healthy; other kinds require source-level verification |
+| Official ATS and government feeds | Canonical Greenhouse, Ashby, Lever, and credentialed USAJOBS adapters in the persistence runner | Two Greenhouse sources enabled; Flagship paused for an institution-only gate; other kinds require source-level verification |
 | Public program pages | Hardened direct fetch with optional Scrapling and ScrapeGraphAI fallback | Implemented; no approved production source configured; canonical conditional-request state still needs correction |
 | Raw archive | Private `source-payloads` storage plus `source_payloads` metadata and hashes | Implemented |
 | Search lead archive | Private `discovery_leads` plus immutable observations and bounded Brave adapter | Implemented; provider remains disabled until a key and storage rights are confirmed |
@@ -45,7 +46,7 @@ flowchart TD
 | Extraction | `scripts/run-extraction-worker.ts`, local OmniRoute adapter, quote binding, transit sentinel | Implemented, model disabled by default |
 | Officer decision | `/admin/review` plus atomic `decide_opportunity_review` | Working after migration 0011 |
 | Public board | `public_opportunities` read by the dynamic `/internships` route | Working after migration 0011 |
-| Source scheduling | Authenticated Vercel cron routes, GitHub recovery, and idempotent queue RPCs | Three sources run; GitHub recovery is proven, but Vercel project ownership and primary-cron execution still require verification |
+| Source scheduling | Authenticated Vercel cron routes, GitHub recovery, and idempotent queue RPCs | Two sources enabled as of September 25; recent Flagship fetch failures made the prior cycles partial; confirm a later two-source cycle completes before calling the pipeline healthy |
 | Direct Google Sheet sync | Fixed queue/archive ranges, controlled field ownership, template-row filtering, existing CSV import path | Recent officer-triggered imports succeeded; Sheet sync was disabled in the audited automated cycles |
 | Integration status | `/admin/integrations` reports each durable handoff | Implemented |
 
@@ -188,6 +189,8 @@ Recommended activation sequence:
 9. Configure direct Sheet sync only after the app review queue has become the officers' normal workspace. Then run one bounded, officer-triggered production sync and inspect the private archive and review queue before making it routine. Keep privileged secrets out of Preview.
 
 The initial starter cohort, verified against live public Greenhouse GET feeds on September 11, 2026, is Xaira Therapeutics, Ginkgo Bioworks, and Flagship Pioneering's co-op program. A live connector check observed 52 records and retained all 52 for private archival. Score version 3 routed 11 scientifically relevant internships and co-ops toward review and held unrelated or full-time roles below the review threshold. This check did not write to production.
+
+On September 25, the official [Flagship co-op board](https://job-boards.greenhouse.io/fspco-op012325) still stated that every co-op is available only to Northeastern University students. Production had incorrectly re-enabled the feed despite a September 12 source note recording that gate. Its latest five runs also failed while persisting an existing source posting whose renamed title shared a URL with another rejected opportunity, violating the one-opportunity-per-source-posting constraint. The source was disabled and paused, the reason was appended to its operational notes, and its two source-health tasks were resolved with the decision recorded. No linked Flagship opportunity was publicly approved; the prior source observations remain in the private archive. The bridge now selects the existing source-posting link ahead of URL/title matching, so the persistence bug will not affect another valid feed. Historic partial cycles remain in telemetry; only a later completed cycle can clear the last-cycle warning.
 
 Maintainers can repeat the read-only live check with `npm run sources:verify`. The command prints only source names, counts, candidate titles, scores, classifications, and canonical URLs. It never prints raw descriptions and has no database client.
 

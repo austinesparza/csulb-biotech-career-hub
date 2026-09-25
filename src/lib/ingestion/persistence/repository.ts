@@ -336,6 +336,7 @@ export interface IngestionRepository {
     observedAtIso: string;
   }): Promise<OpportunityRow>;
   getLink(opportunityId: string, sourcePostingId: string): Promise<OpportunitySourceLinkRow | null>;
+  getLinkForSourcePosting(sourcePostingId: string): Promise<OpportunitySourceLinkRow | null>;
   getPrimaryLink(opportunityId: string): Promise<OpportunitySourceLinkRow | null>;
   insertLink(input: {
     opportunityId: string;
@@ -726,6 +727,15 @@ export function createSupabaseIngestionRepository(params: {
         .eq('source_posting_id', sourcePostingId)
         .maybeSingle();
 
+      if (error) throw new Error(error.message);
+      return data ?? null;
+    },
+
+    async getLinkForSourcePosting(sourcePostingId) {
+      const { data, error } = await db.from('opportunity_source_links')
+        .select('id, opportunity_id, source_posting_id, match_type, is_primary')
+        .eq('source_posting_id', sourcePostingId)
+        .maybeSingle();
       if (error) throw new Error(error.message);
       return data ?? null;
     },

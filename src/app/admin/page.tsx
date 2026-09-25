@@ -22,7 +22,7 @@ function errorCount(value: unknown): number {
   return Array.isArray(value) ? value.length : 0;
 }
 
-function sheetStatus(value: unknown): string {
+function cycleStageStatus(value: unknown): string {
   if (!value || typeof value !== 'object') return 'unknown';
   const status = (value as Record<string, unknown>).status;
   return typeof status === 'string' ? status : 'unknown';
@@ -55,6 +55,7 @@ export default async function AdminHome() {
     expiring,
     openTasks,
     newSubmissions,
+    sourceResearch,
     cyclesResult,
     sourceHealthResult,
     activeRunsResult,
@@ -66,8 +67,10 @@ export default async function AdminHome() {
       .gte('deadline', today).lte('deadline', in14),
     db.from('review_tasks').select('*', { count: 'exact', head: true }).eq('status', 'open'),
     db.from('user_submissions').select('*', { count: 'exact', head: true }).eq('status', 'new'),
+    db.from('user_submissions').select('*', { count: 'exact', head: true })
+      .eq('status', 'new').eq('payload->>intake_stage', 'source_research'),
     db.from('pipeline_cycles')
-      .select('id, trigger_kind, status, started_at, finished_at, scheduled_count, recovered_count, claimed_count, completed_count, partial_count, failed_count, records_seen, review_tasks_created, sheet_sync_json, errors_json')
+      .select('id, trigger_kind, status, started_at, finished_at, scheduled_count, recovered_count, claimed_count, completed_count, partial_count, failed_count, records_seen, review_tasks_created, discovery_json, sheet_sync_json, errors_json')
       .order('started_at', { ascending: false })
       .limit(6),
     db.from('job_sources')
@@ -85,11 +88,21 @@ export default async function AdminHome() {
     { href: '/admin/review', label: 'Needing review', count: needsReview.count ?? 0 },
     { href: '/admin/review', label: 'Expiring in 14 days', count: expiring.count ?? 0 },
     { href: '/admin/review?tab=tasks', label: 'Open review tasks', count: openTasks.count ?? 0 },
-    { href: '/admin/review?tab=submissions', label: 'New submissions', count: newSubmissions.count ?? 0 },
+    {
+      href: '/admin/review?tab=submissions',
+      label: 'New student submissions',
+      count: newSubmissions.error || sourceResearch.error ? '—' : Math.max(0, (newSubmissions.count ?? 0) - (sourceResearch.count ?? 0)),
+    },
+    {
+      href: '/admin/review?tab=submissions',
+      label: 'Source leads to research',
+      count: sourceResearch.error ? '—' : sourceResearch.count ?? 0,
+    },
   ];
 
   const recentCycles = cyclesResult.data ?? [];
   const lastCycle = recentCycles[0] ?? null;
+  const discoveryDisabled = cycleStageStatus(lastCycle?.discovery_json) === 'disabled';
   const enabledSources = (sourceHealthResult.data ?? []).filter((source) => source.enabled && !source.automatic_scheduling_paused_at);
   const degradedSources = enabledSources.filter((source) => Boolean(source.degraded_at) || (source.consecutive_failures ?? 0) >= 3);
   const activeRuns = activeRunsResult.data ?? [];
@@ -117,7 +130,7 @@ export default async function AdminHome() {
           : 'neutral';
   const queueTone: HealthTone = activeRunsResult.error ? 'watch' : staleQueue ? 'bad' : activeRuns.length > 0 ? 'neutral' : 'good';
   const sourceTone: HealthTone = sourceHealthResult.error ? 'watch' : degradedSources.length > 0 ? 'bad' : 'good';
-  const operationsNeedAttention = schemaTone !== 'good' || pipelineTone === 'bad' || pipelineTone === 'watch' || queueTone === 'bad' || sourceTone === 'bad';
+  const operationsNeedAttention = schemaTone !== 'good' || pipelineTone === 'bad' || pipelineTone === 'watch' || queueTone === 'bad' || sourceTone === 'bad' || discoveryDisabled;
 
   const healthCards = [
     {
@@ -210,6 +223,11 @@ export default async function AdminHome() {
             Degraded sources: {degradedSources.map((source) => source.source_name).join(', ')}. Open Sources to inspect or pause them.
           </p>
         ) : null}
+        {discoveryDisabled ? (
+          <p className="admin-health-footnote" style={{ color: 'var(--restricted)' }}>
+            Broad employer and scientific-lane discovery did not run in the latest cycle. The enabled sources cover only their own feeds. Check <Link href="/admin/integrations">integration status</Link> before relying on automated search coverage.
+          </p>
+        ) : null}
         {databaseRelease.status !== 'current' ? (
           <p className="admin-health-footnote" style={{ color: 'var(--restricted)' }}>
             Application code expects database migration <code>{databaseRelease.expectedMigration}</code>. This warning never applies migrations automatically.
@@ -257,7 +275,7 @@ export default async function AdminHome() {
                       <td>{cycle.completed_count ?? 0} ok · {cycle.partial_count ?? 0} partial · {cycle.failed_count ?? 0} failed</td>
                       <td>{cycle.records_seen ?? 0}</td>
                       <td>{cycle.review_tasks_created ?? 0}</td>
-                      <td>{sheetStatus(cycle.sheet_sync_json)}</td>
+                      <td>{cycleStageStatus(cycle.sheet_sync_json)}</td>
                     </tr>
                   );
                 })}

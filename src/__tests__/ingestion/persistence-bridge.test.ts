@@ -351,9 +351,16 @@ class FakeRepository implements IngestionRepository {
     return this.links.find((l) => l.opportunity_id === opportunityId && l.source_posting_id === sourcePostingId) ?? null;
   }
 
+  async getLinkForSourcePosting(sourcePostingId: string) {
+    return this.links.find((l) => l.source_posting_id === sourcePostingId) ?? null;
+  }
+
   async insertLink(input: any) {
     const existing = await this.getLink(input.opportunityId, input.sourcePostingId);
     if (existing) return existing;
+    if (await this.getLinkForSourcePosting(input.sourcePostingId)) {
+      throw new Error('duplicate key value violates unique constraint "uq_opportunity_source_links_source_posting"');
+    }
     const row: OpportunitySourceLinkRow = {
       id: this.id('link'),
       opportunity_id: input.opportunityId,
@@ -1282,6 +1289,53 @@ describe('ingestion persistence bridge', () => {
       fetchResult: successResult([posting({ fetchedAt: '2026-07-14T00:00:00.000Z' })]),
     });
     expect(repo.opportunities.length).toBe(1);
+  });
+
+  it('retains an officer-rejected source link after a posting title changes and another row shares its URL', async () => {
+    const repo = new FakeRepository();
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-1',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting()]),
+    });
+    const original = repo.opportunities[0];
+    const originalLink = repo.links[0];
+    original.review_status = 'rejected';
+    original.status = 'not_relevant';
+
+    // A prior failed run may have created this second row before the link
+    // insert failed. URL matching alone would select it and retry the same
+    // unique-constraint violation on every subsequent run.
+    repo.opportunities.unshift({
+      ...original,
+      id: 'opp-unlinked',
+      title: 'Genomics Co-Op',
+      dedupe_key: 'changed-title-and-same-url',
+    });
+    repo.fetchRuns.push({
+      id: 'run-2', job_source_id: 'source-1', status: 'running',
+      started_at: new Date().toISOString(), finished_at: null,
+    });
+
+    await persistFetchResult({
+      repository: repo,
+      fetchRunId: 'run-2',
+      expectedJobSourceId: 'source-1',
+      fetchResult: successResult([posting({
+        titleRaw: 'Genomics Co-Op',
+        titleNormalized: 'genomics co-op',
+        materialHash: 'b'.repeat(64),
+        fetchedAt: '2026-07-14T00:00:00.000Z',
+      })]),
+    });
+
+    expect(repo.links).toHaveLength(1);
+    expect(repo.links[0]).toEqual(originalLink);
+    expect(original.review_status).toBe('rejected');
+    expect(original.title).toBe('Research Intern');
+    expect(repo.opportunities).toHaveLength(2);
+    expect(repo.tasks.some((task) => task.task_type === 'source_changed' && task.entity_id === original.id)).toBe(true);
   });
 
   it('failed-run resume recreates missing source_new task', async () => {

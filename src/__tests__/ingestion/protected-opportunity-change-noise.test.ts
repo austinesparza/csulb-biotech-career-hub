@@ -125,6 +125,13 @@ describe('protected opportunity source-change reviews', () => {
         match_type: 'exact' as const,
         is_primary: true,
       }),
+      getLinkForSourcePosting: async () => ({
+        id: 'link-1',
+        opportunity_id: opportunity.id,
+        source_posting_id: sourcePosting.id,
+        match_type: 'exact' as const,
+        is_primary: true,
+      }),
     } as unknown as IngestionRepository;
 
     const result = await bridgeOpportunityForSourcePosting({

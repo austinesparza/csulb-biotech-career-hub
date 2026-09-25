@@ -265,8 +265,15 @@ export async function bridgeOpportunityForSourcePosting(params: {
   const companyResolution = await repository.resolveCompanyId(jobSource, posting.employerNameRaw, posting.employerNameNormalized);
   const draft = postingToDraft(posting, companyResolution.companyId);
 
+  // The immutable source-posting identity is stronger than a mutable title or
+  // URL. An officer may have rejected its original opportunity, and a changed
+  // title can also leave a second, unlinked row with the same URL. Never try
+  // to attach one source posting to that second row.
+  const existingLink = await repository.getLinkForSourcePosting(sourcePosting.id);
   const existingOpportunities = await repository.listMatchableOpportunities();
-  const match = matchOpportunity(draft, existingOpportunities.map(toExistingOpportunity));
+  const match = existingLink
+    ? { kind: 'same_url' as const, opportunityId: existingLink.opportunity_id }
+    : matchOpportunity(draft, existingOpportunities.map(toExistingOpportunity));
 
   let linkedOpportunity: OpportunityRow | null = null;
   let matchType: PersistedLinkMatchType | null = null;
@@ -281,6 +288,9 @@ export async function bridgeOpportunityForSourcePosting(params: {
     possibleMatch = { opportunityId: match.opportunityId, kind: match.kind };
   } else if (match.kind === 'same_url' || match.kind === 'strict_key') {
     linkedOpportunity = await repository.findOpportunityById(match.opportunityId);
+    if (existingLink && !linkedOpportunity) {
+      throw new Error(`Source posting ${sourcePosting.id} has a link to a missing opportunity`);
+    }
     if (linkedOpportunity) {
       const policy = decideUpdatePolicy(linkedOpportunity);
       const mayMutate = canAutoMutateDraft(linkedOpportunity) && policy.mode === 'update_fields';
