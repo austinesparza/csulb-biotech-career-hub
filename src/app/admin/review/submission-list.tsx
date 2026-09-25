@@ -38,25 +38,27 @@ function SubmissionCard({ row, research }: { row: UserSubmission; research: bool
   const label = research ? group : row.submission_type === 'opportunity' ? 'Opportunity suggestion' : row.submission_type;
   const suppliedUrl = safeHttpsUrl(payloadText(row, 'url'));
   const candidateUrl = safeHttpsUrl(payloadText(row, 'candidate_employer_url'));
+  const employerClosed = research && payloadText(row, 'role_url_status') === 'employer_page_closed';
   const body = <>
-    {suppliedUrl ? <p className="mt-2 text-sm"><a href={suppliedUrl} target="_blank" rel="noopener noreferrer">Open submitted link ↗</a></p> : <p className="mt-2 text-sm">No confirmed individual posting link. Find and verify the employer role before creating a draft.</p>}
+    {suppliedUrl ? <p className="mt-2 text-sm"><a href={suppliedUrl} target="_blank" rel="noopener noreferrer">Open submitted link ↗</a></p> : !candidateUrl ? <p className="mt-2 text-sm">No individual employer posting link found yet.</p> : null}
     {research && candidateUrl && <p className="mt-2 text-sm"><a href={candidateUrl} target="_blank" rel="noopener noreferrer">Investigate possible employer requisition ↗</a> ({payloadText(row, 'role_url_status').replaceAll('_', ' ')})</p>}
     {(row.submitter_name || row.submitter_email) && <p className="mt-2 text-sm">Private contact: {row.submitter_name ?? 'Name not provided'}{row.submitter_email ? ' · ' + row.submitter_email : ''}</p>}
-    {research && <p className="mt-2 text-sm">Opening: unknown · MSc eligibility: unknown · Officer decision: pending. <a href="https://github.com/austinesparza/csulb-biotech-career-hub/blob/main/docs/research/2026-09-24-linkedin-screenshot-audit.md" target="_blank" rel="noopener noreferrer">Screenshot audit ↗</a></p>}
+    {research && <p className="mt-2 text-sm">Opening: {payloadText(row, 'posting_status') || 'unknown'} · MSc eligibility: {payloadText(row, 'msc_eligibility') || 'unknown'} · Officer decision: pending. <a href="https://github.com/austinesparza/csulb-biotech-career-hub/blob/main/docs/research/2026-09-24-linkedin-screenshot-audit.md" target="_blank" rel="noopener noreferrer">Screenshot audit ↗</a></p>}
     {research && <p className="mt-2 text-sm"><strong>Next check:</strong> {payloadText(row, 'next_step')}</p>}
-    {row.submission_type === 'opportunity' ? (
+    {employerClosed && <p className="mt-2 text-sm">The employer page says this role is closed. Keep the source for historical tracking; do not draft it as a current opening.</p>}
+    {row.submission_type === 'opportunity' && !employerClosed ? (
       <form action={convertSubmissionToDraft} className="mt-4 grid gap-3 sm:grid-cols-2">
         <input type="hidden" name="id" value={row.id} />
         <label>Company<input className={inputClass} name="company" required defaultValue={payloadText(row, 'company')} /></label>
         <label>Role title<input className={inputClass} name="title" required defaultValue={payloadText(row, 'title')} /></label>
-        <label className="sm:col-span-2">{research ? 'Individual employer or ATS posting' : 'Official link'}<input className={inputClass} name="posting_url" type="url" required defaultValue={payloadText(row, 'url')} /></label>
+        <label className="sm:col-span-2">{research ? 'Individual employer or ATS posting' : 'Official link'}<input className={inputClass} name="posting_url" type="url" required defaultValue={candidateUrl ?? suppliedUrl ?? ''} /></label>
         <label className="sm:col-span-2">Private review notes<textarea className={inputClass} name="details" defaultValue={payloadText(row, 'details')} /></label>
         {research && <label className="sm:col-span-2 flex items-start gap-2 text-sm"><input type="checkbox" name="source_confirmed" required className="mt-1" /><span>I checked this individual posting on the employer site or its ATS. I will confirm the full gates before publishing.</span></label>}
         <button className="primary-button justify-self-start">Create private review draft</button>
       </form>
-    ) : (
+    ) : !employerClosed ? (
       <p className="mt-3 whitespace-pre-wrap text-sm">{payloadText(row, 'details') || 'No additional details.'}</p>
-    )}
+    ) : null}
     <form action={resolveSubmission} className="mt-4 flex flex-wrap items-end gap-2">
       <input type="hidden" name="id" value={row.id} />
       <input className="rounded-md border bg-white px-3 py-2" name="notes" placeholder="Officer note (optional)" />
@@ -68,7 +70,7 @@ function SubmissionCard({ row, research }: { row: UserSubmission; research: bool
 
   return <li id={"submission-" + row.id} className="review-record" key={row.id}>
     {research ? <details>
-      <summary className="cursor-pointer"><strong>{payloadText(row, 'company') || 'Employer unknown'}: {payloadText(row, 'title') || 'Untitled role'}</strong><span className="ml-2 text-sm">#{payloadText(row, 'catalog_id')} · {label} · missing role link</span></summary>
+      <summary className="cursor-pointer"><strong>{payloadText(row, 'company') || 'Employer unknown'}: {payloadText(row, 'title') || 'Untitled role'}</strong><span className="ml-2 text-sm">#{payloadText(row, 'catalog_id')} · {label} · {employerClosed ? 'employer page closed' : candidateUrl ? 'employer link found; verify gates' : 'missing role link'}</span></summary>
       {body}
     </details> : <>
       <div className="flex flex-wrap items-baseline justify-between gap-2"><h2 className="text-lg font-semibold">{label}</h2><span className="text-sm">{new Date(row.created_at).toLocaleString()}</span></div>
@@ -81,14 +83,15 @@ export function SubmissionList({ rows }: { rows: UserSubmission[] }) {
   if (!rows.length) return <p>No new submissions.</p>;
   const research = rows.filter(isSourceResearch).sort((a, b) => priority(a) - priority(b) || payloadText(a, 'catalog_id').localeCompare(payloadText(b, 'catalog_id')));
   const suggestions = rows.filter((row) => !isSourceResearch(row));
+  const linkedResearch = research.filter((row) => safeHttpsUrl(payloadText(row, 'candidate_employer_url'))).length;
   return <div className="grid gap-8">
     <section aria-label="Student submissions">
       <h2 className="text-lg font-semibold">Student submissions ({suggestions.length})</h2>
       {suggestions.length ? <ul className="review-records">{suggestions.map((row) => <SubmissionCard key={row.id} row={row} research={false} />)}</ul> : <p>No student submissions waiting.</p>}
     </section>
     {research.length > 0 && <section aria-label="Source research">
-      <h2 className="text-lg font-semibold">Source research ({research.length})</h2>
-      <p className="mt-2 text-sm">These screenshot leads lack individual employer postings. They are organized for research, not ready for a publication decision. Open a row to see its notes and add the exact posting.</p>
+      <h2 className="text-lg font-semibold">Source research ({research.length}; {linkedResearch} employer links found)</h2>
+      <p className="mt-2 text-sm">Some screenshot leads now have individual employer links; others remain unresolved or closed. Check the employer page, degree and timing before making a private draft. Publication still requires a separate officer decision.</p>
       <ul className="review-records">{research.map((row) => <SubmissionCard key={row.id} row={row} research />)}</ul>
     </section>}
   </div>;
