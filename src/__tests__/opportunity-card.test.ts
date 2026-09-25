@@ -5,6 +5,7 @@ import {
   noteLabel,
   opportunityTags,
   postingLinkLabel,
+  relatedPostingIds,
   sourceEvidenceLabel,
   timingFallbackLabel,
 } from '../lib/opportunityCard';
@@ -74,6 +75,16 @@ describe('opportunity card tags', () => {
 describe('company context', () => {
   it('skips generic industry labels and uses the first specific descriptor', () => {
     expect(companyContextLine(opportunity())).toBe('protein design');
+  });
+});
+
+describe('separate employer postings', () => {
+  it('shows distinct graduate and general application tracks without merging their requisitions', () => {
+    const graduate = opportunity({ id: 'grad', company_name: 'Ginkgo Bioworks', title: 'Software Graduate Intern, Autonomous Lab', location: 'Emeryville, California', posting_url: 'https://job-boards.greenhouse.io/ginkgobioworks/jobs/5033171007' });
+    const general = opportunity({ id: 'general', company_name: 'Ginkgo Bioworks', title: 'Software Intern, Autonomous Lab', location: 'Emeryville, California', posting_url: 'https://job-boards.greenhouse.io/ginkgobioworks/jobs/5033167007' });
+    expect(relatedPostingIds([graduate, general])).toEqual(new Set(['grad', 'general']));
+    expect(relatedPostingIds([graduate, { ...general, posting_url: graduate.posting_url }])).toEqual(new Set());
+    expect(relatedPostingIds([graduate, { ...general, company_name: 'Another employer' }])).toEqual(new Set());
   });
 });
 

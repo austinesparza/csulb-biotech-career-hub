@@ -8,6 +8,7 @@ declare
   v_company uuid;
   v_source uuid;
   v_opportunity uuid;
+  v_second uuid;
 begin
   insert into auth.users (
     instance_id, id, aud, role, email, encrypted_password,
@@ -60,6 +61,30 @@ begin
       and status = 'done' and resolved_at is not null and decided_by = v_user
   ) then
     raise exception 'review RPC did not close the associated enum-status task';
+  end if;
+
+  insert into public.opportunities (
+    company_id, source_record_id, title, posting_url,
+    status, review_status, public_safe, audience_bucket, audience_reason,
+    graduate_stage
+  ) values (
+    v_company, v_source, 'Another role at the same URL', 'https://example.edu/jobs/review-rpc/',
+    'needs_review', 'pending', false, 'graduate', 'Posting explicitly accepts graduate students.',
+    'graduate_unspecified'
+  ) returning id into v_second;
+
+  begin
+    perform public.decide_opportunity_review(
+      v_second, v_user, 'approve', 'open_verified', '', false,
+      'graduate', 'Posting explicitly accepts graduate students.',
+      'graduate_unspecified', '{}'::jsonb, true, true
+    );
+    raise exception 'duplicate public application URL was accepted';
+  exception when unique_violation then
+    null;
+  end;
+  if exists (select 1 from public.opportunities where id = v_second and public_safe) then
+    raise exception 'failed duplicate approval changed the candidate';
   end if;
 
   if has_function_privilege(

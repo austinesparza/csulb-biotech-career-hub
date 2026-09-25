@@ -72,6 +72,26 @@ export function companyContextLine(opportunity: PublicOpportunity): string | nul
   return industry || null;
 }
 
+/** Similar titles can be separate employer requisitions with different gates. */
+export function relatedPostingIds(opportunities: PublicOpportunity[]): Set<string> {
+  const groups = new Map<string, PublicOpportunity[]>();
+  for (const opportunity of opportunities) {
+    if (!opportunity.posting_url || !opportunity.location) continue;
+    const title = opportunity.title.toLowerCase()
+      .replace(/\b(?:grad|graduate)\b/g, '')
+      .replace(/[^a-z0-9]+/g, ' ').trim();
+    if (!title) continue;
+    const key = `${opportunity.company_name.toLowerCase().trim()}|${opportunity.location.toLowerCase().trim()}|${title}`;
+    groups.set(key, [...(groups.get(key) ?? []), opportunity]);
+  }
+  const ids = new Set<string>();
+  for (const group of groups.values()) {
+    if (new Set(group.map((opportunity) => opportunity.posting_url)).size < 2) continue;
+    for (const opportunity of group) ids.add(opportunity.id);
+  }
+  return ids;
+}
+
 function hostname(value: string | null): string | null {
   if (!value) return null;
   try {

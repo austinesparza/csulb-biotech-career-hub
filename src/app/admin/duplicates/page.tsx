@@ -11,6 +11,7 @@ interface Row {
   id: string;
   title: string;
   posting_url: string | null;
+  eligibility: string | null;
   dedupe_key: string | null;
   family_key: string | null;
   status: string;
@@ -25,8 +26,8 @@ export default async function DuplicatesPage() {
   const db = createServiceClient();
   const { data } = await db
     .from('opportunities')
-    .select('id, title, posting_url, dedupe_key, family_key, status, review_status, public_safe, last_seen_at, companies(name)')
-    .neq('status', 'duplicate')
+    .select('id, title, posting_url, eligibility, dedupe_key, family_key, status, review_status, public_safe, last_seen_at, companies(name)')
+    .not('status', 'in', '(duplicate,archive_only,not_relevant,hidden)')
     .limit(2000);
   const rows = (data ?? []) as unknown as Row[];
 
@@ -35,6 +36,7 @@ export default async function DuplicatesPage() {
     title: r.title,
     company: r.companies?.name ?? 'Unknown company',
     posting_url: r.posting_url,
+    eligibility: r.eligibility,
     status: r.status,
     isPublic: r.public_safe && r.review_status === 'approved',
     last_seen_at: r.last_seen_at,
@@ -99,7 +101,7 @@ export default async function DuplicatesPage() {
         </span>
       </header>
       <p className="max-w-3xl text-sm" style={{ color: 'var(--ink-soft)' }}>
-        {rows.length} records scanned. Pick the record to keep in each cluster; the others are marked as duplicates pointing at it. Posting-family matches are usually legitimate new cycles, so keeping both is often correct.
+        {rows.length} active records scanned. Private historical archives are excluded. Similar titles can be separate requisitions with different requirements; compare both employer links before marking a duplicate.
       </p>
       <DuplicateList clusters={clusters} />
     </div>
