@@ -10,6 +10,7 @@ import {
   noteLabel,
   opportunityTags,
   postingLinkLabel,
+  relatedPostingIds,
   sourceEvidenceLabel,
   timingFallbackLabel,
 } from '@/lib/opportunityCard';
@@ -101,6 +102,7 @@ export function Board({ opportunities, sorted, initialAudience, referenceTime }:
     () => opportunities.filter((opportunity) => opportunityMatchesAudience(opportunity, audience)),
     [audience, opportunities],
   );
+  const relatedIds = useMemo(() => relatedPostingIds(visibleOpportunities), [visibleOpportunities]);
   const audienceCounts = useMemo(() => ({
     all: opportunities.length,
     undergraduate: opportunities.filter((opportunity) => opportunityMatchesAudience(opportunity, 'undergraduate')).length,
@@ -202,6 +204,7 @@ export function Board({ opportunities, sorted, initialAudience, referenceTime }:
                 <OpportunityRecord
                   key={opportunity.id}
                   opportunity={opportunity}
+                  relatedPosting={relatedIds.has(opportunity.id)}
                   bonus={active ? personalBonus(opportunity, prefs) : { pts: 0, why: [] }}
                   referenceTime={referenceTimeMs}
                 />
@@ -214,10 +217,11 @@ export function Board({ opportunities, sorted, initialAudience, referenceTime }:
   );
 }
 
-function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
+function OpportunityRecord({ opportunity: o, bonus, referenceTime, relatedPosting }: {
   opportunity: PublicOpportunity;
   bonus: { pts: number; why: string[] };
   referenceTime: number;
+  relatedPosting: boolean;
 }) {
   const deadlinePassed = !!o.deadline && daysUntil(o.deadline, referenceTime) < 0;
   const timing = o.deadline
@@ -241,6 +245,9 @@ function OpportunityRecord({ opportunity: o, bonus, referenceTime }: {
         </div>
         {companyContext && <div className="record-company-context">{companyContext}</div>}
         <h3 className="record-title">{o.title}</h3>
+        {relatedPosting && (
+          <p className="record-variant-note"><strong>Separate application.</strong> {eligibility}</p>
+        )}
         {tags.length > 0 && (
           <div className="record-tags" aria-label="Disciplines and methods">
             {tags.map((tag) => <span key={tag}>{tag}</span>)}

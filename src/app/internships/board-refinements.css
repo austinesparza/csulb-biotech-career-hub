@@ -1,4 +1,6 @@
 .record-main { min-width: 0; }
+.record-variant-note { margin: 6px 0 0; color: var(--ink-faint); font-size: .78rem; line-height: 1.5; }
+.record-variant-note strong { color: var(--ink); }
 .record-company a { color: inherit; text-decoration: none; }
 .record-company a:hover { color: var(--teal-deep); text-decoration: underline; text-underline-offset: 3px; }
 .record-company-context {

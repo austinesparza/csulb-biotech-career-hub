@@ -10,6 +10,7 @@ export interface DupItem {
   title: string;
   company: string;
   posting_url: string | null;
+  eligibility: string | null;
   status: string;
   isPublic: boolean;
   last_seen_at: string;
@@ -70,6 +71,7 @@ function Cluster({ cluster }: { cluster: DupCluster }) {
               <span className="ml-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
                 {item.isPublic ? 'public' : item.status} · last seen {new Date(item.last_seen_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </span>
+              {item.eligibility && <span className="block text-xs" style={{ color: 'var(--ink-soft)' }}>Entry requirements: {item.eligibility}</span>}
               {item.posting_url && (
                 <a href={item.posting_url} target="_blank" rel="noopener noreferrer nofollow"
                   className="ml-2 text-xs underline" style={{ color: 'var(--brand-deep)' }}>
@@ -80,6 +82,8 @@ function Cluster({ cluster }: { cluster: DupCluster }) {
             <button
               disabled={pending}
               onClick={() => {
+                if (new Set(cluster.items.map((record) => record.posting_url)).size > 1
+                  && !window.confirm('These records have different application links. Confirm you compared the employer requisitions and verified they are the same role before marking any duplicate.')) return;
                 setError(null);
                 startTransition(async () => {
                   try {
