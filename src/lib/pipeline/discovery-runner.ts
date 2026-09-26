@@ -191,7 +191,9 @@ export async function runEmployerDiscoveryBatch(params: {
           originalReachable: false,
           resolution: resolution.resolution,
           canonicalEmployerUrl: resolution.canonicalEmployerUrl,
-          archiveReason: resolution.archiveReason,
+          archiveReason: indexedEmployerUrl
+            ? 'Indexed employer or ATS URL only. The individual page, Apply state and eligibility are unverified.'
+            : resolution.archiveReason,
           rawMetadata: {
             provider: params.provider.name,
             rank: result.rank,
@@ -310,7 +312,9 @@ export async function runLaneDiscoveryBatch(params: {
           originalReachable: false,
           resolution: resolution.resolution,
           canonicalEmployerUrl: resolution.canonicalEmployerUrl,
-          archiveReason: resolution.archiveReason,
+          archiveReason: indexedEmployerUrl
+            ? 'Indexed ATS URL only. Employer identity, individual page and eligibility are unverified.'
+            : resolution.archiveReason,
           rawMetadata: {
             provider: params.provider.name,
             rank: result.rank,

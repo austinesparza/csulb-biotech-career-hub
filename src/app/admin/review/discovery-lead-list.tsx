@@ -73,6 +73,7 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
       const originalUrl = safeHttpsUrl(row.original_url);
       const canonicalUrl = safeHttpsUrl(row.canonical_employer_url);
       const observation = row.latest_observation;
+      const indexedOnly = observation?.raw_metadata?.evidenceLevel === 'search_index_only';
       const provider = observation ? metadataText(observation.raw_metadata, 'provider') : null;
       const discoveryBasis = observation ? metadataText(observation.raw_metadata, 'discoveryBasis') : null;
       const triage = observation ? triageSummary(observation.raw_metadata) : null;
@@ -101,7 +102,7 @@ export function DiscoveryLeadList({ rows }: { rows: DiscoveryLeadRow[] }) {
         </div>
 
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs" style={{ color: 'var(--ink-soft)' }}>
-          <span>{row.route.replaceAll('_', ' ')}</span>
+          <span>{indexedOnly && row.route === 'official_feed' ? 'indexed ATS candidate' : row.route.replaceAll('_', ' ')}</span>
           <span>{row.resolution.replaceAll('_', ' ')}</span>
           {row.lane ? <span>lane: {row.lane}</span> : null}
           <span>{row.occurrence_count} observation{row.occurrence_count === 1 ? '' : 's'}</span>
