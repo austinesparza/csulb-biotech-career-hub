@@ -30,6 +30,7 @@ import { assessFetchedPage, unknownGates, pageText, type FetchedPage, type PageA
 import { isEmployerRequisitionUrl, resolvePostingIdentity, type PostingIdentity } from "./posting-identity";
 import { decideVerification, type ExistingRecord, type VerificationDecision, type VerificationLead } from "./posting-verification";
 import { safeFetch, type SafeFetchResponse } from "./safe-fetch";
+import type { RenderedRequisition } from "./scraping-clients";
 
 export interface VerificationCandidate extends VerificationLead {
   discoveryLeadId: string | null;
@@ -294,30 +295,40 @@ function redactGates(gates: VerificationDecision["gates"]): VerificationDecision
   }])) as VerificationDecision["gates"];
 }
 
-async function fetchPage(url: string, fetcher: PageFetcher, scrapling: ((url: string) => Promise<string>) | null): Promise<FetchedPage & { tier: 0 | 1; tierNote: string | null }> {
+async function fetchPage(url: string, fetcher: PageFetcher, scrapling: ((url: string) => Promise<string | RenderedRequisition>) | null): Promise<FetchedPage & { tier: 0 | 1; tierNote: string | null; attested: boolean }> {
   const retrievedAt = new Date().toISOString();
   try {
     const response = await fetcher(url);
     if (!("body" in response)) {
-      return { requestedUrl: url, finalUrl: response.finalUrl, status: 304, body: null, redirects: response.redirects ?? [], retrievedAt, tier: 0, tierNote: null };
+      return { requestedUrl: url, finalUrl: response.finalUrl, status: 304, body: null, redirects: response.redirects ?? [], retrievedAt, tier: 0, tierNote: null, attested: true };
     }
-    const page: FetchedPage & { tier: 0 | 1; tierNote: string | null } = {
+    const page: FetchedPage & { tier: 0 | 1; tierNote: string | null; attested: boolean } = {
       requestedUrl: url, finalUrl: response.finalUrl, status: response.status, contentType: response.contentType ?? null,
-      body: response.body, redirects: response.redirects ?? [], retrievedAt, tier: 0, tierNote: null,
+      body: response.body, redirects: response.redirects ?? [], retrievedAt, tier: 0, tierNote: null, attested: true,
     };
     // Rendering is a fetch tier, not a bypass: it runs only for a governed
     // source, only when the operator enabled Scrapling, and only on a 200 shell.
     if (scrapling && response.status === 200 && looksUnusable(response.body)) {
       try {
         const rendered = await scrapling(response.finalUrl);
-        return { ...page, body: rendered, contentType: "text/html", tier: 1, tierNote: "tier 0 returned a script shell; rendered with Scrapling" };
+        if (typeof rendered === "string") {
+          return { ...page, body: rendered, contentType: "text/html", tier: 1, attested: false,
+            tierNote: "renderer returned HTML without final URL metadata" };
+        }
+        const hops = rendered.history.map((item, index) => ({
+          url: item.url, status: item.status,
+          location: rendered.history[index + 1]?.url ?? rendered.finalUrl,
+        }));
+        return { ...page, body: rendered.html, finalUrl: rendered.finalUrl, status: rendered.status,
+          redirects: [...(response.redirects ?? []), ...hops], contentType: "text/html", tier: 1, attested: true,
+          tierNote: "tier 0 returned a script shell; rendered with attested URL metadata" };
       } catch (error) {
         return { ...page, tierNote: `Scrapling failed: ${error instanceof Error ? error.message : String(error)}` };
       }
     }
     return page;
   } catch (error) {
-    return { requestedUrl: url, finalUrl: null, status: 0, body: null, redirects: [], retrievedAt, tier: 0,
+    return { requestedUrl: url, finalUrl: null, status: 0, body: null, redirects: [], retrievedAt, tier: 0, attested: false,
       tierNote: error instanceof Error ? error.message.slice(0, 300) : String(error) };
   }
 }
@@ -330,7 +341,7 @@ export async function runPostingVerificationBatch(params: {
   runId?: string;
   dryRun?: boolean;
   fetcher?: PageFetcher;
-  scrapling?: ((url: string) => Promise<string>) | null;
+  scrapling?: ((url: string) => Promise<string | RenderedRequisition>) | null;
   hostSpacingMs?: number;
   sleep?: (ms: number) => Promise<void>;
 }): Promise<VerificationRunReport> {
@@ -374,7 +385,7 @@ export async function runPostingVerificationBatch(params: {
         ? governVerification(identity, sources)
         : { mode: "blocked" as const, status: "no_governed_source" as const, reason: "Not an individual employer requisition URL", source: null };
       let assessment: PageAssessment | null = null;
-      let fetched: (FetchedPage & { tier: 0 | 1; tierNote: string | null }) | null = null;
+      let fetched: (FetchedPage & { tier: 0 | 1; tierNote: string | null; attested: boolean }) | null = null;
       let snapshotPath: string | null = null;
       let contentHash: string | null = null;
       let sourcePostingId: string | null = null;
@@ -425,18 +436,26 @@ export async function runPostingVerificationBatch(params: {
           // host: nothing from the foreign page is stored or assessed.
           const scopeHosts = verificationScope(governance.source)?.hosts ?? [];
           let finalHost: string | null = null;
-          try { finalHost = fetched.finalUrl ? new URL(fetched.finalUrl).hostname.toLowerCase() : null; } catch { finalHost = null; }
-          if (fetched.body && finalHost && !scopeHosts.includes(finalHost)) {
+          try {
+            const final = fetched.finalUrl ? new URL(fetched.finalUrl) : null;
+            finalHost = final?.protocol === "https:" ? final.hostname.toLowerCase() : null;
+          } catch { finalHost = null; }
+          const outsideScope = (value: string) => {
+            try {
+              const target = new URL(value);
+              return target.protocol !== "https:" || !scopeHosts.includes(target.hostname.toLowerCase());
+            } catch { return true; }
+          };
+          const leftScope = fetched.redirects?.some((hop) => outsideScope(hop.url) || outsideScope(hop.location));
+          if (fetched.body && (!finalHost || !scopeHosts.includes(finalHost) || leftScope)) {
             fetched = { ...fetched, body: null };
             assessment = { state: "redirected_away", text: null, pageTitle: null, finalIdentity: resolvePostingIdentity(fetched.finalUrl), requisitionIdsOnPage: [],
-              gates: unknownGates(), reason: `Redirected off the reviewed host to ${finalHost}; the foreign page was not stored` };
+              gates: unknownGates(), reason: `Renderer or redirect left the reviewed host; the foreign page was not stored` };
           } else {
             assessment = assessFetchedPage({ page: fetched, expected: identity });
-            // The current Scrapling adapter returns HTML but not its final URL
-            // or redirect chain. Archive its text for investigation, but do
-            // not treat an Apply control as verified employer evidence until
-            // the renderer can attest the final requisition URL.
-            if (fetched.tier === 1 && assessment.state === "apply_visible") {
+            // A legacy renderer may return only HTML. Archive its text for
+            // investigation; only structured URL metadata can support review.
+            if (fetched.tier === 1 && !fetched.attested && assessment.state === "apply_visible") {
               assessment = { ...assessment, state: "ambiguous", gates: unknownGates(),
                 reason: "Rendered page has no attested final URL; confirm the requisition and Apply flow manually" };
             }

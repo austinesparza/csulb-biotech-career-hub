@@ -335,6 +335,39 @@ console.log('=== Runner boundary ===');
     !rendered.outcomes.review_candidate && rendered.reviewTasks === 0
       && calls.rpc.some((row) => row.page_state === 'ambiguous' && row.outcome === 'unresolved_page'), rendered);
 
+  calls.rpc.length = 0; calls.uploads.length = 0;
+  const structured = await runPostingVerificationBatch({ db: db as never, storage, fetcher: shellFetch,
+    scrapling: async () => ({ html: jnjBody, finalUrl: JNJ, status: 200, history: [] }),
+    now: new Date(AT), limit: 5, hostSpacingMs: 0, runId: 'structured-render' });
+  ok('rendered HTML with a matching final requisition reaches private review',
+    structured.outcomes.review_candidate === 1 && structured.reviewTasks === 1
+      && calls.rpc.some((row) => row.outcome === 'review_candidate' && row.final_url === JNJ), structured);
+
+  calls.rpc.length = 0; calls.uploads.length = 0;
+  const switched = await runPostingVerificationBatch({ db: db as never, storage, fetcher: shellFetch,
+    scrapling: async () => ({ html: jnjBody, finalUrl: JNJ.replace('r-099898', 'r-099899'), status: 200, history: [] }),
+    now: new Date(AT), limit: 5, hostSpacingMs: 0, runId: 'requisition-switch' });
+  ok('a rendered redirect to a different requisition cannot enter review',
+    switched.reviewTasks === 0 && switched.outcomes.unresolved_conflict === 1, switched);
+
+  calls.rpc.length = 0; calls.uploads.length = 0;
+  const foreign = await runPostingVerificationBatch({ db: db as never, storage, fetcher: shellFetch,
+    scrapling: async () => ({ html: jnjBody, finalUrl: 'https://tracker.example.net/landing', status: 200,
+      history: [{ url: JNJ, status: 302 }] }),
+    now: new Date(AT), limit: 5, hostSpacingMs: 0, runId: 'renderer-off-host' });
+  ok('rendered off-host HTML is discarded without a snapshot or review task',
+    foreign.reviewTasks === 0 && calls.uploads.length === 0
+      && calls.rpc.some((row) => row.page_state === 'redirected_away' && row.content_sha256 === null), foreign);
+
+  calls.rpc.length = 0; calls.uploads.length = 0;
+  const roundTrip = await runPostingVerificationBatch({ db: db as never, storage, fetcher: shellFetch,
+    scrapling: async () => ({ html: jnjBody, finalUrl: JNJ, status: 200,
+      history: [{ url: JNJ, status: 302 }, { url: 'https://tracker.example.net/landing', status: 302 }] }),
+    now: new Date(AT), limit: 5, hostSpacingMs: 0, runId: 'renderer-round-trip' });
+  ok('an off-host intermediate redirect invalidates a final page that returned to the employer',
+    roundTrip.reviewTasks === 0 && calls.uploads.length === 0
+      && calls.rpc.some((row) => row.page_state === 'redirected_away'), roundTrip);
+
   const blocked = async (url: string) => { calls.fetches.push(url); return { finalUrl: url, status: 429, etag: null, lastModified: null, body: 'Too many requests', contentType: 'text/plain', redirects: [] }; };
   calls.fetches.length = 0;
   submissions.push({ id: 'sub-jnj-2', created_at: '2026-09-24T00:00:00Z', payload: { intake_stage: 'source_research', company: 'Johnson & Johnson',

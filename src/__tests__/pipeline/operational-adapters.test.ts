@@ -1,5 +1,5 @@
 import { createOpenAiCompatibleExtractionModel } from "../../lib/pipeline/model-openai";
-import { createScrapeGraphClient, createScraplingClient } from "../../lib/pipeline/scraping-clients";
+import { createScrapeGraphClient, createScraplingClient, createScraplingVerificationClient } from "../../lib/pipeline/scraping-clients";
 import { runExtractionBatch } from "../../lib/pipeline/extraction-runner";
 import { EXTRACTION_FIELDS } from "../../lib/pipeline/extraction-schema";
 import type { ExtractionModel } from "../../lib/pipeline/worker";
@@ -26,6 +26,25 @@ console.log("=== Scrapling process boundary ===\n");
   ok("returns renderer output", body.startsWith("Rendered public"));
   ok("passes URL as one fixed argv value", invocation.current !== null && invocation.current.args.length === 2 && invocation.current.args[1] === "https://8.8.8.8/jobs/123");
   ok("does not expose shell, cookie, proxy, or stealth flags", invocation.current !== null && !JSON.stringify(invocation.current).match(/shell|cookie|proxy|stealth/i));
+
+  const verification = createScraplingVerificationClient({
+    cwd: "/repo",
+    execFile: async (_file, args) => {
+      invocation.current = { file: _file, args, options: null };
+      return { stdout: JSON.stringify({ html: '<h1>Intern</h1>', finalUrl: args[2], status: 200, history: [] }) };
+    },
+  });
+  const rendered = await verification("https://8.8.8.8/jobs/123");
+  ok("verification receives final URL metadata from the renderer", rendered.finalUrl === "https://8.8.8.8/jobs/123"
+    && invocation.current !== null && JSON.stringify(invocation.current.args) === JSON.stringify([
+      "/repo/scripts/tools/scrapling-fetch.py", "--metadata", "https://8.8.8.8/jobs/123",
+    ]));
+  const invalid = createScraplingVerificationClient({ cwd: "/repo", execFile: async () => ({
+    stdout: JSON.stringify({ html: '<h1>Intern</h1>', finalUrl: 'javascript:alert(1)', status: 200, history: [] }),
+  }) });
+  let rejected = false;
+  try { await invalid("https://8.8.8.8/jobs/123"); } catch { rejected = true; }
+  ok("verification refuses an unsafe final URL", rejected);
 }
 
 console.log("\n=== ScrapeGraph fetch-only boundary ===\n");

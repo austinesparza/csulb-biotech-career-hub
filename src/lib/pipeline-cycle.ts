@@ -11,7 +11,7 @@ import { createBraveSearchProvider } from './pipeline/brave-search';
 import { runEmployerDiscoveryBatch, runLaneDiscoveryBatch } from './pipeline/discovery-runner';
 import { runSourceResearchDiscoveryBatch } from './pipeline/source-research-discovery';
 import { runPostingVerificationBatch } from './pipeline/verification-runner';
-import { createScraplingClient } from './pipeline/scraping-clients';
+import { createScraplingVerificationClient } from './pipeline/scraping-clients';
 import { runExtractionBatch } from './pipeline/extraction-runner';
 import { createOpenAiCompatibleExtractionModel } from './pipeline/model-openai';
 import { SupabaseExtractionStore } from './pipeline/store-supabase';
@@ -288,7 +288,7 @@ export async function runPipelineCycle(options: RunPipelineCycleOptions): Promis
         storage: options.storage,
         limit: Math.max(1, Math.min(Number(process.env.POSTING_VERIFICATION_BATCH_SIZE ?? 5) || 5, 20)),
         runId: `${workerId}:verification`,
-        scrapling: process.env.PIPELINE_SCRAPLING_ENABLED === 'true' ? createScraplingClient() : null,
+        scrapling: process.env.PIPELINE_SCRAPLING_ENABLED === 'true' ? createScraplingVerificationClient() : null,
       });
       verification = {
         status: 'completed',

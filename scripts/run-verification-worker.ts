@@ -1,5 +1,5 @@
 import { runPostingVerificationBatch } from '../src/lib/pipeline/verification-runner';
-import { createScraplingClient } from '../src/lib/pipeline/scraping-clients';
+import { createScraplingVerificationClient } from '../src/lib/pipeline/scraping-clients';
 import { createPipelineServiceClient } from '../src/lib/pipeline/store-supabase';
 
 // Bounded manual run of the official-posting verification loop.
@@ -18,7 +18,7 @@ const report = await runPostingVerificationBatch({
   storage: db.storage,
   limit: positiveInteger('POSTING_VERIFICATION_BATCH_SIZE', 5, 20),
   dryRun: process.env.VERIFICATION_DRY_RUN === 'true',
-  scrapling: process.env.PIPELINE_SCRAPLING_ENABLED === 'true' ? createScraplingClient() : null,
+  scrapling: process.env.PIPELINE_SCRAPLING_ENABLED === 'true' ? createScraplingVerificationClient() : null,
 });
 console.log(JSON.stringify(report, null, 2));
 if (report.errors.length > 0) process.exitCode = 1;
