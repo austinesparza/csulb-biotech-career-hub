@@ -76,14 +76,15 @@ const employerReport = await runEmployerDiscoveryBatch({
   runId: 'fixture-run',
 });
 ok('employer discovery archives every returned result without publishing',
-  employerReport.employers === 1 && employerReport.lanes === 0 && employerReport.archived === 5
+  employerReport.employers === 1 && employerReport.lanes === 0 && employerReport.archived === employerReport.queries
+    && employerReport.queries >= 4 && employerReport.queries <= 8
     && employerRpcCalls.every((call) => !('p_public_safe' in call) && !('p_review_status' in call)));
 ok('observed URLs have stable cross-query lead identities',
   new Set(employerRpcCalls
     .filter((call) => call.p_original_url === 'https://jobs.ashbyhq.com/example/123')
     .map((call) => call.p_lead_key)).size === 1);
 ok('search snippets receive advisory classification without being filtered',
-  employerRpcCalls.length === 5 && employerRpcCalls.every((call) => {
+  employerRpcCalls.length === employerReport.queries && employerRpcCalls.every((call) => {
     const metadata = call.p_raw_metadata as Record<string, unknown>;
     const triage = metadata.snippetTriage as Record<string, unknown>;
     return triage?.advisoryOnly === true && typeof triage.score === 'number';
@@ -117,7 +118,7 @@ await runEmployerDiscoveryBatch({
   runId: 'workday-fixture',
 });
 ok('indexed Workday results are candidates, not verified employer postings',
-  workdayCalls.length === 5 && workdayCalls.every((call) => call.p_resolution === 'unresolved'
+  workdayCalls.length >= 4 && workdayCalls.every((call) => call.p_resolution === 'unresolved'
     && call.p_original_reachable === false
     && (call.p_raw_metadata as Record<string, unknown>).indexedEmployerUrl ===
       'https://gilead.wd1.myworkdayjobs.com/gileadcareers/job/Intern-R-D_R0050000'));
@@ -150,8 +151,8 @@ const laneReport = await runLaneDiscoveryBatch({
   offset: 0,
   runId: 'lane-fixture',
 });
-ok('bounded lane discovery executes one lane and its five query families',
-  laneReport.lanes === 1 && laneReport.queries === 5 && laneReport.archived === 5);
+ok('bounded lane discovery executes one lane and its bounded method families',
+  laneReport.lanes === 1 && laneReport.queries >= 3 && laneReport.queries <= 10 && laneReport.archived === laneReport.queries);
 ok('lane discovery retains lane and indexed ATS provenance',
   laneCalls.every((call) => call.p_lane === 'genomics'
     && call.p_route === 'official_feed'

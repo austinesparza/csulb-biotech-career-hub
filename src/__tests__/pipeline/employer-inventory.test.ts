@@ -33,7 +33,10 @@ const regional = selectEmployerDiscoveryCohort({ limit: 10, regions: ["Orange Co
 ok("region filter is exact and case-insensitive", regional.length > 0 && regional.every((employer) => employer.regions.includes("Orange County")));
 
 const plans = buildEmployerInventoryDiscoveryPlans({ cycleYear: 2027, limit: 3 });
-ok("each employer receives five bounded queries", plans.length === 3 && plans.every((candidate) => candidate.plan.queries.length === 5));
+ok("each employer receives a bounded set of short queries", plans.length === 3 && plans.every((candidate) => (
+  candidate.plan.queries.length >= 4 && candidate.plan.queries.length <= 8
+  && candidate.plan.queries.every((query) => query.query.length <= 380 && !query.query.includes("("))
+)));
 ok("official-site search uses the sanitized company website host", plans.every((candidate) => candidate.plan.careersDomain));
 
 let rejectedOversize = false;

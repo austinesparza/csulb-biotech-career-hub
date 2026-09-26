@@ -1,0 +1,3280 @@
+{
+ "_meta": {
+  "description": "Fixed evaluation set for official-posting discovery and verification. Rows come from the September 24 screenshot audit (73 leads), the September 24 graduate gap review, and the September 25 catalog's additional discovery, plus two labelled synthetic pattern cases. Page bodies are SYNTHETIC reconstructions of the dated officer notes (not captured pages); script_shell marks a client-rendered ATS page as observed in research. The set tests mechanisms offline; it is not evidence of live coverage.",
+  "observedAt": "2026-09-25",
+  "sources": [
+   "docs/research/2026-09-24-linkedin-screenshot-audit.md",
+   "docs/research/2026-09-25-employer-requisition-catalog.json",
+   "docs/research/2026-09-24-internship-gap-review.md"
+  ]
+ },
+ "cases": [
+  {
+   "id": "S01",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Gilead Sciences",
+   "leadTitle": "Development, Clinical Operations intern",
+   "officialTitle": "Intern - Development - Clinical Operations",
+   "officialUrl": "https://gilead.yello.co/jobs/mdZLjZVROrcvT2H_pim1Uw?locale=en",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "not_stated",
+    "institution": "not_stated",
+    "workAuthorization": "independent_authorization",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "clinical"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Intern - Development - Clinical Operations",
+    "paragraphs": [
+     "Gilead Sciences is hiring a Development Clinical Operations intern in Foster City for Summer 2027.",
+     "Candidates must be enrolled full-time at a U.S. accredited institution now and enrolled in the following fall semester, with a GPA of 2.8 or higher.",
+     "Candidates must have independent U.S. work authorization.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S02",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Gilead Sciences",
+   "leadTitle": "Development, Medical Affairs / Medical Excellence Learning & Development intern",
+   "officialTitle": "Intern - Development - Medical Affairs, Medical Excellence Learning & Development",
+   "officialUrl": "https://gilead.wd1.myworkdayjobs.com/en-US/gileadcareers/job/Intern---Development---Medical-Affairs--Medical-Excellence-Learning---Development_R0054533",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R0054533",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "medical_affairs"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S03",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Gilead Sciences",
+   "leadTitle": "PDM Global External Quality (Global Supplier Quality) intern",
+   "officialTitle": "Intern - PDM - Global External Quality",
+   "officialUrl": "https://gilead.wd1.myworkdayjobs.com/gileadcareers/job/united-states---california---foster-city/intern---pdm---global-external-quality--global-supplier-quality-_r0054881",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R0054881",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "quality"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S04",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Kite Pharma",
+   "leadTitle": "Development Tech Ops (Quality) intern",
+   "officialTitle": "Intern - Kite Development - Tech Ops (Quality)",
+   "officialUrl": "https://gilead.yello.co/jobs/72ifvtdX7Ynsb7dDjvEncg?job_board_id=v42vD4vKxb3AkKvV93YsrQ",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "not_stated",
+    "institution": "not_stated",
+    "workAuthorization": "independent_authorization",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "quality"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Intern - Kite Development - Tech Ops (Quality)",
+    "paragraphs": [
+     "Kite Pharma, a Gilead company, seeks a Tech Ops Quality intern for Summer 2027.",
+     "Candidates must be enrolled full-time at a U.S. accredited institution now and enrolled in the following fall semester, with a GPA of 2.8 or higher.",
+     "Candidates must have independent U.S. work authorization.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S05",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Gilead",
+   "leadTitle": "PDM CMC Regulatory Affairs Strategy and Operations intern",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S06",
+   "origin": "screenshot_2026-09-24",
+   "employer": "STAQ Pharma",
+   "leadTitle": "Laboratory Intern",
+   "officialTitle": "Laboratory Intern",
+   "officialUrl": "https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html?ccId=19000101_000001&cid=9acbf878-718b-4e5c-bdb5-7cbb9133c786&jobId=955860",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "955860",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": true,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "lab"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S07",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Cedars-Sinai",
+   "leadTitle": "Quality Assurance Internship (Academic Credit)",
+   "officialTitle": "Quality Assurance Internship (Academic Credit)",
+   "officialUrl": "https://careers.cshs.org/job/los-angeles/quality-assurance-internship-academic-credit/252/100807056784",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "100807056784",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "not_stated",
+    "institution": "regional_affiliation",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "required",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "quality"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Quality Assurance Internship (Academic Credit)",
+    "paragraphs": [
+     "Cedars-Sinai offers an unpaid Spring 2027 quality assurance internship for academic credit.",
+     "Applicants must reside in the greater Los Angeles area during the internship.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S08",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Merck",
+   "leadTitle": "2027 Future Talent Vivarium Intern",
+   "officialTitle": "2027 Future Talent Program Vivarium Co-op",
+   "officialUrl": "https://jobs.merck.com/us/en/job/R412853/2027-Future-Talent-Program-Vivarium-Co-Op",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R412853",
+    "closed": true,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "closed",
+    "title": "2027 Future Talent Program Vivarium Co-Op",
+    "paragraphs": [
+     "Merck six-month vivarium co-op for 2027.",
+     "This job is no longer available."
+    ]
+   }
+  },
+  {
+   "id": "S09",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Kite Pharma",
+   "leadTitle": "Development Quality Systems Compliance & Audits and Vendor Quality intern",
+   "officialTitle": "Intern - Kite Development - Quality Systems, Compliance & Audits and Vendor Quality",
+   "officialUrl": "https://gilead.yello.co/jobs/99CKmU7rhmwn76fuhPScPg?locale=en",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "not_stated",
+    "institution": "not_stated",
+    "workAuthorization": "independent_authorization",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "quality"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Intern - Kite Development - Quality Systems, Compliance & Audits and Vendor Quality",
+    "paragraphs": [
+     "Kite Pharma intern based in Santa Monica for Summer 2027.",
+     "Candidates must be enrolled full-time at a U.S. accredited institution now and enrolled in the following fall semester, with a GPA of 2.8 or higher.",
+     "Candidates must have independent U.S. work authorization.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S10",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Sanofi",
+   "leadTitle": "2027 Spring Co-op Neuroscience Research Cambridge",
+   "officialTitle": "2027 Spring Co-op Neuroscience Research",
+   "officialUrl": "https://jobs.sanofi.com/en/job/cambridge/2027-spring-co-op-neuroscience-research-cambridge-ma/2649/45067191168",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "45067191168",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "permanent_no_sponsorship",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "neuro"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "2027 Spring Co-op Neuroscience Research",
+    "paragraphs": [
+     "Sanofi six-month onsite co-op in Cambridge, MA for Spring 2027.",
+     "Candidates must be pursuing a master's or PhD degree and graduate no earlier than Fall 2028.",
+     "Candidates must be permanently authorized to work in the United States without sponsorship now or in the future.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S11",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Merck",
+   "leadTitle": "2027 Future Talent Global Development Quality (GDQ) Intern",
+   "officialTitle": null,
+   "officialUrl": "https://jobs.merck.com/us/en/job/R413669/2027-Future-Talent-Program-Global-Development-Quality-GDQ-Intern",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R413669",
+    "closed": true,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "closed",
+    "title": "2027 Future Talent Program Global Development Quality (GDQ) Intern",
+    "paragraphs": [
+     "Merck quality intern for 2027.",
+     "This job is no longer available."
+    ]
+   }
+  },
+  {
+   "id": "S12",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Fred Hutch",
+   "leadTitle": "Research Intern, Temporary",
+   "officialTitle": null,
+   "officialUrl": "https://careers-fhcrc.icims.com/jobs/31842/research-intern---temporary/job",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "31842",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "undergraduate_only",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": true,
+    "unexpectedTitle": true,
+    "offCycle": false,
+    "lanes": [
+     "single_cell",
+     "genomics"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Research Intern - Temporary",
+    "paragraphs": [
+     "Fred Hutch Srivatsan Lab temporary research intern supporting single-cell genomics method development.",
+     "Applicants must be currently enrolled in an undergraduate degree program.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S13",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Arthrex",
+   "leadTitle": "Research Co-op Orthobiologics/Vet",
+   "officialTitle": "Research Co-op - Orthobiologics/Vet",
+   "officialUrl": "https://careers.arthrex.com/NorthAmerica/job/Naples-Research-Co-op-OrthobiologicsVet-FL-34108/1372769157/",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "1372769157",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "undergraduate_only",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "research"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Research Co-op - Orthobiologics/Vet",
+    "paragraphs": [
+     "Arthrex research co-op in Naples, FL.",
+     "Candidates must be pursuing a bachelor's degree or have graduated within six months.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S14",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Sanofi",
+   "leadTitle": "2027 Spring Co-op Opportunities Waltham",
+   "officialTitle": "2027 Spring Co-Op Opportunities, Waltham, MA",
+   "officialUrl": "https://jobs.sanofi.com/en/job/waltham/2027-spring-co-op-opportunities-waltham-ma/2649/41259827840",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "41259827840",
+    "closed": false,
+    "existingRecord": true,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": []
+   },
+   "page": {
+    "kind": "readable",
+    "title": "2027 Spring Co-Op Opportunities, Waltham, MA",
+    "paragraphs": [
+     "Sanofi Spring 2027 co-op pool in Waltham.",
+     "Open to undergraduate or graduate students with continuous enrollment.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S15",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Roche",
+   "leadTitle": "2027 Summer Quality Regulatory and External Affairs (QR&E) Intern: Indianapolis, Tucson, Branchburg, Pleasanton",
+   "officialTitle": null,
+   "officialUrl": "https://roche.wd3.myworkdayjobs.com/roche-ext/job/Indianapolis/XMLNAME-2027-Summer-Intern----Quality--Regulatory--and-External-Affairs--QR-E-_202608-121913",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "202608-121913",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "undergraduate_only",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "regulatory"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "2027 Summer Intern - Quality, Regulatory, and External Affairs (QR&E)",
+    "paragraphs": [
+     "Roche Diagnostics Summer 2027 internship based in Indianapolis, Branchburg, Santa Clara, Pleasanton, Carlsbad or Tucson.",
+     "Candidates must be currently enrolled in an undergraduate degree program with at least two years remaining after the internship.",
+     "Application deadline: September 30, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S16",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Boehringer Ingelheim",
+   "leadTitle": "Spring MSAT Co-op",
+   "officialTitle": "Spring MSAT Co-op",
+   "officialUrl": "https://jobs.boehringer-ingelheim.com/job/Saint-Joseph-Spring-MSAT-Co-Op-Unit/1439164733/",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "1439164733",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "bioprocess"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Spring MSAT Co-op",
+    "paragraphs": [
+     "Boehringer Ingelheim Spring 2027 MSAT co-op in Saint Joseph, MO.",
+     "Graduate students must have completed at least 9 graduate credits at their current institution.",
+     "Candidates must maintain continued enrollment at an accredited institution throughout the co-op.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S17",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Cedars-Sinai",
+   "leadTitle": "MAST Department of Medicine Research Intern, Academic Credit",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S18",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Johnson & Johnson",
+   "leadTitle": "PALM and Artificial Intelligence Co-op",
+   "officialTitle": null,
+   "officialUrl": "https://www.careers.jnj.com/en/jobs/r-099389/palm-and-artificial-intelligence-co-op/",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R-099389",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "bachelor_or_higher",
+    "institution": "not_stated",
+    "workAuthorization": "permanent_no_sponsorship",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": true,
+    "offCycle": true,
+    "lanes": [
+     "cancer",
+     "data_science"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "PALM and Artificial Intelligence Co-op",
+    "paragraphs": [
+     "Johnson & Johnson co-op supporting oncology clinical operations with AI tools for up to six months full time in Titusville, NJ.",
+     "Candidates must hold or be pursuing a bachelor's degree or higher.",
+     "Candidates must be permanently authorized to work in the United States and must not require sponsorship now or in the future.",
+     "This job posting is anticipated to close on September 25, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S19",
+   "origin": "screenshot_2026-09-24",
+   "employer": "PSC Biotech",
+   "leadTitle": "Manufacturing Intern, York PA",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S20",
+   "origin": "screenshot_2026-09-24",
+   "employer": "United Therapeutics",
+   "leadTitle": "Co-op Regenerative Medicine Lab, Spring 2027",
+   "officialTitle": null,
+   "officialUrl": "https://vhr-unither.wd5.myworkdayjobs.com/en-US/External/job/Coop-Regenerative-Medicine-Lab--Spring-27-_R05235",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R05235",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "research"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S21",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Johnson & Johnson",
+   "leadTitle": "Global Regulatory Affairs Intern",
+   "officialTitle": "Global Reg Affairs Intern",
+   "officialUrl": "https://www.careers.jnj.com/en/jobs/r-098485/global-reg-affairs-intern/",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R-098485",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "permanent_no_sponsorship",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "regulatory"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Global Reg Affairs Intern",
+    "paragraphs": [
+     "Johnson & Johnson Innovative Medicine regulatory affairs intern for Summer 2027, 40 hours per week.",
+     "Candidates must be enrolled in a graduate program pursuing an advanced scientific or technical degree.",
+     "Candidates must be permanently authorized to work in the United States without sponsorship now or in the future.",
+     "This job posting is anticipated to close on October 3, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S22",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Elanco",
+   "leadTitle": "Manufacturing Scientist / Quality Control Chemist Intern, Clinton, Summer 2027",
+   "officialTitle": "Manufacturing Scientist/Quality Control Chemist Intern",
+   "officialUrl": "https://elanco.wd5.myworkdayjobs.com/en-US/External_Career/job/Clinton-IN/Manufacturing-Scientist-Quality-Control-Chemist-Intern---Clinton--Indiana--Summer-2027-_R0026870",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R0026870",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "quality"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S23",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Boehringer Ingelheim",
+   "leadTitle": "Spring Co-op Vaccine Production",
+   "officialTitle": "Spring Co-op Vaccine Production",
+   "officialUrl": "https://jobs.boehringer-ingelheim.com/job/Saint-Joseph-Spring-Co-Op-Vaccine-Production-Unit/1440652933/",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "1440652933",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "immunology",
+     "bioprocess"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Spring Co-op Vaccine Production",
+    "paragraphs": [
+     "Boehringer Ingelheim Spring 2027 vaccine production co-op in Saint Joseph, MO.",
+     "Graduate students must have completed at least 9 graduate credits at their current institution.",
+     "Candidates must maintain continued enrollment at an accredited institution throughout the co-op.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S24",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Nanopath",
+   "leadTitle": "Research Associate Co-op, January 2027 start",
+   "officialTitle": null,
+   "officialUrl": "https://job-boards.greenhouse.io/nanopathinc/jobs/4605514005",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "4605514005",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "diagnostics",
+     "bioinformatics"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Research Associate Co-op",
+    "paragraphs": [
+     "Nanopath co-op beginning January 2027 start for at least five months, full time onsite in Cambridge, MA, spanning assay development and bioinformatics.",
+     "Open to enrolled undergraduate or graduate students.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S25",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Elanco",
+   "leadTitle": "Manufacturing Scientist / Technical Services Intern, Indianapolis Technology Center, Summer 2027",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S26",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Johnson & Johnson",
+   "leadTitle": "Oncology Discovery Scientist Intern",
+   "officialTitle": null,
+   "officialUrl": "https://www.careers.jnj.com/en/jobs/r-099898/oncology-discovery-scientist-intern/",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R-099898",
+    "closed": false,
+    "existingRecord": true,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "permanent_no_sponsorship",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "cancer",
+     "genomics",
+     "single_cell"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Oncology Discovery Scientist Intern",
+    "paragraphs": [
+     "Johnson & Johnson Innovative Medicine Summer 2027 intern in Spring House, PA supporting cancer discovery, DNA sequencing and single-cell RNA-seq analysis.",
+     "Candidates must be enrolled in a Master's or PhD program and remain enrolled throughout the internship.",
+     "Candidates must be permanently authorized to work in the United States and must not require sponsorship now or in the future.",
+     "This job posting is anticipated to close on November 3, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S27",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Genentech",
+   "leadTitle": "2027 Spring Pharmaceutical Technical Development Bioassay Intern",
+   "officialTitle": "2027 Spring Intern - Pharmaceutical Technical Development - Bioassay",
+   "officialUrl": "https://roche.wd3.myworkdayjobs.com/rog-a2o-gene/job/Intern_202609-124125",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "202609-124125",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": true,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "bioprocess"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S28",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Beck's Hybrids",
+   "leadTitle": "Biotech Research Intern, Atlanta IN",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S29",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Elanco",
+   "leadTitle": "Quality Assurance Intern, Clinton, Summer 2027",
+   "officialTitle": "Quality Assurance Intern",
+   "officialUrl": "https://elanco.wd5.myworkdayjobs.com/en-US/External_Career/job/Clinton-IN/Quality-Assurance-Intern---Clinton--Indiana--Summer-2027-_R0026895",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R0026895",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "quality"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S30",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Indiana Biosciences Research Institute",
+   "leadTitle": "Biology Research Intern 2027",
+   "officialTitle": null,
+   "officialUrl": "https://indiana-biosciences-research-institute-inc.prismhr-hire.com/job/1053098/biology-research-intern-2027",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "1053098",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "regional_affiliation",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "research"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Biology Research Intern 2027",
+    "paragraphs": [
+     "Indiana Biosciences Research Institute internship from May 17 to August 6, Summer 2027.",
+     "Open to undergraduate or graduate students enrolled at an Indiana college or university, or graduates of an Indiana high school.",
+     "Application deadline: November 30, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S31",
+   "origin": "screenshot_2026-09-24",
+   "employer": "BeOne Medicines",
+   "leadTitle": "Regulatory Affairs CMC Intern, year-round remote",
+   "officialTitle": "Intern - Regulatory Affairs, CMC (year-round)",
+   "officialUrl": "https://beigene.wd5.myworkdayjobs.com/en-US/BeiGene/job/Intern---Regulatory-Affairs--CMC--year-round-_R34553",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R34553",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "regulatory"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S32",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Bayer",
+   "leadTitle": "Biotech Sustainability Intern Berkeley",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S33",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Agilent",
+   "leadTitle": "Life Sciences Technical Sales Internship, Cellular and Molecular Research, Boston / Montpelier remote",
+   "officialTitle": "Life Sciences Technical Sales Internship",
+   "officialUrl": "https://agilent.wd5.myworkdayjobs.com/agilent_student_careers/job/us-vt-remote-location/life-sciences-technical-sales-internship---cellular-and-molecular-research_4039469",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "4039469",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "sales"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S34",
+   "origin": "screenshot_2026-09-24",
+   "employer": "MD Anderson",
+   "leadTitle": "Research Intern, Cell Therapy Institute",
+   "officialTitle": null,
+   "officialUrl": "https://jobs.mdanderson.org/search/jobdetails/research-intern---cell-therapy-institute/070247fa-3c1b-4b36-8ede-cdaf1dfc7c82",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "recent_graduate_only",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "must_not_be_enrolled",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "cancer"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Research Intern - Cell Therapy Institute",
+    "paragraphs": [
+     "MD Anderson research intern appointment in Houston.",
+     "Applicants must have received a bachelor's or master's degree within the past one year and must not be currently enrolled in a degree program.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S35",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Libris Innovations",
+   "leadTitle": "Biology Research Intern 2027 Indianapolis",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": "S30",
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S36",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Johnson & Johnson",
+   "leadTitle": "Oncology Clinical Scientist Intern",
+   "officialTitle": null,
+   "officialUrl": "https://www.careers.jnj.com/en/jobs/r-099892/oncology-clinical-scientist-intern/",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R-099892",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "permanent_no_sponsorship",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "cancer",
+     "single_cell"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Oncology Clinical Scientist Intern",
+    "paragraphs": [
+     "Johnson & Johnson Innovative Medicine Summer 2027 intern in Spring House, PA. The Oncology Discovery Scientist intern will analyze single-cell RNA-seq data.",
+     "Candidates must be enrolled in a Master's or PhD program and remain enrolled throughout the internship.",
+     "Candidates must be permanently authorized to work in the United States and must not require sponsorship now or in the future.",
+     "This job posting is anticipated to close on November 3, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S37",
+   "origin": "screenshot_2026-09-24",
+   "employer": "FDA",
+   "leadTitle": "Viral Vaccine Potency and Reactogenicity Research Opportunity, FDA-CBER-2026-0082",
+   "officialTitle": null,
+   "officialUrl": "https://www.zintellect.com/Opportunity/Details/FDA-CBER-2026-0082",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "FDA-CBER-2026-0082",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "not_stated",
+    "institution": "not_stated",
+    "workAuthorization": "citizenship_or_permanent_residence",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": true
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "immunology"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Viral Vaccine Potency and Reactogenicity Research Opportunity",
+    "paragraphs": [
+     "ORISE appointment at the U.S. Food and Drug Administration beginning Fall 2026 for one year.",
+     "A bachelor's degree in a relevant field is required.",
+     "Applicants must be U.S. citizens or lawful permanent residents.",
+     "Application deadline: September 25, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S38",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Keros Therapeutics",
+   "leadTitle": "Research Associate Co-op, In Vitro Pharmacology",
+   "officialTitle": "Research Associate Co-op, In Vitro Pharmacology",
+   "officialUrl": "https://kerostx.com/current-opportunities/?gh_jid=4728738005",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "4728738005",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "protein_drug"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S39",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Kyowa Kirin",
+   "leadTitle": "2027 Summer Cell & Gene Therapy Intern, part-time La Jolla",
+   "officialTitle": null,
+   "officialUrl": "https://job-boards.greenhouse.io/kyowakirinusa90/jobs/7996048003",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "7996048003",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "undergraduate_only",
+    "institution": "not_stated",
+    "workAuthorization": "permanent_no_sponsorship",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "genomics"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "2027 Summer Cell & Gene Therapy Intern",
+    "paragraphs": [
+     "Kyowa Kirin part-time Summer 2027 intern in La Jolla from May 25 to August 20.",
+     "We are seeking rising sophomores, juniors or seniors with a GPA of 3.0.",
+     "Candidates must be permanently authorized to work in the United States without sponsorship.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S40",
+   "origin": "screenshot_2026-09-24",
+   "employer": "ORISE",
+   "leadTitle": "Biomedical Research Internship Opportunity, Silver Spring",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S41",
+   "origin": "screenshot_2026-09-24",
+   "employer": "University of Pikeville",
+   "leadTitle": "KYCOM NIH Immunology Fellow",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S42",
+   "origin": "screenshot_2026-09-24",
+   "employer": "HonorHealth",
+   "leadTitle": "Intern, Research in Translational Science, Phoenix",
+   "officialTitle": "Intern - Research in Translational Science",
+   "officialUrl": "https://honorhealth.wd12.myworkdayjobs.com/en-US/HonorHealth_careers/job/Intern---Research-in-Translational-Science_JR11460",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "JR11460",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "cancer",
+     "research"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S43",
+   "origin": "screenshot_2026-09-24",
+   "employer": "MD Anderson",
+   "leadTitle": "Research Intern, Experimental Radiation Oncology",
+   "officialTitle": null,
+   "officialUrl": "https://jobs.mdanderson.org/search/jobdetails/research-intern---experimental--radiation-oncology/9a354196-c69b-41ad-9429-255339dd18c6",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "recent_graduate_only",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "must_not_be_enrolled",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "cancer"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Research Intern - Experimental Radiation Oncology",
+    "paragraphs": [
+     "MD Anderson research intern appointment in Houston.",
+     "Applicants must have received a bachelor's or master's degree within the past one year and must not be currently enrolled in a degree program.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S44",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Penn State",
+   "leadTitle": "Translational Research Lab, Hershey",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S45",
+   "origin": "screenshot_2026-09-24",
+   "employer": "MD Anderson",
+   "leadTitle": "Summer 2026 Intern, Pediatric Oncology",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": false,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": true
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S46",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Sanofi",
+   "leadTitle": "2027 Spring Co-op Immunology Cambridge",
+   "officialTitle": "2027 Spring Co-op Immunology",
+   "officialUrl": "https://sanofi.wd3.myworkdayjobs.com/en-US/SanofiCareers/job/XMLNAME-2027-Spring-Co-op-Immunology-Cambridge-MA_R2854773",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R2854773",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "immunology"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S47",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Medpace",
+   "leadTitle": "Patient Recruitment Intern, Fall 2026",
+   "officialTitle": "Patient Recruitment Intern, Fall 2026",
+   "officialUrl": "https://careers.medpace.com/jobs/12862?lang=en-us",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "12862",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": true
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "clinical"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S48",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Sanofi",
+   "leadTitle": "2027 Spring Co-op Gene Therapy Rare Disease, Waltham",
+   "officialTitle": null,
+   "officialUrl": "https://jobs.sanofi.com/en/job/waltham/2027-spring-co-op-gene-therapy-rare-disease-waltham-ma/2649/45033996480",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "45033996480",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "genomics"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "2027 Spring Co-op Gene Therapy Rare Disease",
+    "paragraphs": [
+     "Sanofi Spring 2027 co-op in Waltham, MA.",
+     "Candidates must be enrolled in a graduate program in a relevant scientific field.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S49",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Elanco",
+   "leadTitle": "Manufacturing Scientist / Technical Services Intern, Clinton, Summer 2027",
+   "officialTitle": "Manufacturing Scientist/Technical Services Intern",
+   "officialUrl": "https://elanco.wd5.myworkdayjobs.com/External_Career/job/Clinton-IN/Manufacturing-Scientist-Technical-Services-Intern---Clinton--Indiana--Summer-2027-_R0026869-1",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R0026869",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "bioprocess"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S50",
+   "origin": "screenshot_2026-09-24",
+   "employer": "MTF Biologics",
+   "leadTitle": "Co-op Research and Development, Edison",
+   "officialTitle": "Co-op Research and Development",
+   "officialUrl": "https://careers-mtfbiologics.icims.com/jobs/8022/co-op-research-and-development/job",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "8022",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "not_stated",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "required",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": true,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "research"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Co-op Research and Development",
+    "paragraphs": [
+     "MTF Biologics co-op in Edison, NJ from January to June 2027.",
+     "Students must be eligible to receive college credit toward a science or engineering degree.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S51",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Stryker",
+   "leadTitle": "R&D Lab Analyst, Tennessee",
+   "officialTitle": "R&D Lab Analyst",
+   "officialUrl": "https://careers.stryker.com/r-d-lab-analyst/job/D89AF5375229546374260D600799E5A7",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "permanent_no_sponsorship",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": true,
+    "unexpectedTitle": true,
+    "offCycle": false,
+    "lanes": [
+     "research"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "R&D Lab Analyst",
+    "paragraphs": [
+     "Stryker internship in Tennessee.",
+     "Candidates must be pursuing a bachelor's or master's degree and maintain continued enrollment after the internship, with a GPA of 3.0.",
+     "Candidates must be permanently authorized to work in the United States without sponsorship.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S52",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Unknown",
+   "leadTitle": "Biomanufacturing of Biopharmaceuticals (truncated)",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": false,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S53",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Sanford Burnham Prebys",
+   "leadTitle": "UCSD BISP197 Intern, Tian Lab",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S54",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Sanofi",
+   "leadTitle": "2027 Summer Internship Opportunities, Washington DC",
+   "officialTitle": "2027 Summer Internship Opportunities, Washington, DC",
+   "officialUrl": "https://jobs.sanofi.com/en/job/washington-d-c/2027-summer-internship-opportunities-washington-dc/2649/44498274624",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "44498274624",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "not_stated",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "policy"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "2027 Summer Internship Opportunities, Washington, DC",
+    "paragraphs": [
+     "Sanofi Summer 2027 government affairs and policy internship pool in Washington, DC.",
+     "Application deadline: December 11, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S55",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Sanofi",
+   "leadTitle": "2027 Summer Co-op Opportunities, Cambridge",
+   "officialTitle": "2027 Summer Co-op Opportunities, Cambridge, MA",
+   "officialUrl": "https://jobs.sanofi.com/en/job/cambridge/2027-summer-co-op-opportunities-cambridge-ma/2649/44498275328",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "44498275328",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "research"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "2027 Summer Co-op Opportunities, Cambridge, MA",
+    "paragraphs": [
+     "Sanofi Summer 2027 co-op pool in Cambridge, MA for four to six months onsite.",
+     "Candidates must be enrolled in a relevant master's program with continuous enrollment.",
+     "Application deadline: December 11, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S56",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Beckman Coulter Diagnostics",
+   "leadTitle": "R&D Science Intern, Immunoassay Development, Chaska",
+   "officialTitle": null,
+   "officialUrl": "https://jobs.danaher.com/global/en/job/R1316769/R-D-Science-Intern-Immunoassay-Development",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R1316769",
+    "closed": true,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "closed",
+    "title": "R&D Science Intern - Immunoassay Development",
+    "paragraphs": [
+     "Beckman Coulter Diagnostics intern in Chaska, MN.",
+     "This position has been filled."
+    ]
+   }
+  },
+  {
+   "id": "S57",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Vertex",
+   "leadTitle": "Spring Co-op 2027, Long Read Sequencing, Boston",
+   "officialTitle": null,
+   "officialUrl": "https://vrtx.wd501.myworkdayjobs.com/en-US/vertex_careers/job/Boston-MA/Vertex-Spring-Co-Op-2027--Long-Read-Sequencing_REQ-30507-1",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "REQ-30507",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "genomics"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S58",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Corteva Agriscience",
+   "leadTitle": "R&D Intern, Biology Indianapolis",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S59",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Unknown",
+   "leadTitle": "Molecular Biology Intern (truncated)",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": false,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S60",
+   "origin": "screenshot_2026-09-24",
+   "employer": "MD Anderson",
+   "leadTitle": "Research Intern, Gynecologic Oncology & Reproductive Medicine",
+   "officialTitle": null,
+   "officialUrl": "https://jobs.mdanderson.org/search/jobdetails/research-intern---gynecologic-oncology--reproductive-medicine-research/658951fc-d600-4d4b-901b-6baad44ef620",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "recent_graduate_only",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "must_not_be_enrolled",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "cancer"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Research Intern - Gynecologic Oncology & Reproductive Medicine Research",
+    "paragraphs": [
+     "MD Anderson research intern appointment in Houston posted September 18, 2026.",
+     "Applicants must have received a bachelor's or master's degree within the past one year and must not be currently enrolled in a degree program.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S61",
+   "origin": "screenshot_2026-09-24",
+   "employer": "MD Anderson",
+   "leadTitle": "Research Intern, Radiation Oncology Research",
+   "officialTitle": null,
+   "officialUrl": "https://jobs.mdanderson.org/search/jobdetails/research-intern---radiation-oncology---research/8b80a581-61de-4c88-bf0a-c2567c2c0327",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "recent_graduate_only",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "must_not_be_enrolled",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "cancer"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Research Intern - Radiation Oncology - Research",
+    "paragraphs": [
+     "MD Anderson research intern appointment in Houston.",
+     "Applicants must have received a bachelor's or master's degree within the past one year and must not be currently enrolled in a degree program.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S62",
+   "origin": "screenshot_2026-09-24",
+   "employer": "US Army Institute of Surgical Research",
+   "leadTitle": "Biological Science Laboratory Internship, San Antonio",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S63",
+   "origin": "screenshot_2026-09-24",
+   "employer": "FDA",
+   "leadTitle": "Biofilm Associated Medical Device Related Infections Internship, FDA-CDRH-2026-0008",
+   "officialTitle": null,
+   "officialUrl": "https://www.zintellect.com/Opportunity/Details/FDA-CDRH-2026-0008",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "FDA-CDRH-2026-0008",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": true
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "immunology"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Biofilm Associated Medical Device Related Infections Internship",
+    "paragraphs": [
+     "ORISE appointment at the U.S. Food and Drug Administration beginning in 2026 for one year.",
+     "Applicants must have received or be pursuing a bachelor's or master's degree by May 31, 2026.",
+     "Application deadline: September 30, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S64",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Genentech",
+   "leadTitle": "2027 Spring Cell Line Development Automation Intern",
+   "officialTitle": "2027 Spring Intern - Cell Line Development Automation",
+   "officialUrl": "https://roche.wd3.myworkdayjobs.com/en-US/ROG-A2O-GENE/job/XMLNAME-2027-Spring-Intern---Cell-Line-Development-Automation_202609-123461",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "202609-123461",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "bioprocess",
+     "lab_automation"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "S65",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Keros Therapeutics",
+   "leadTitle": "Research Associate Co-op, Protein Biochemistry",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S66",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Keros Therapeutics",
+   "leadTitle": "Research Associate Co-op, In Vivo Pharmacology Muscle and Metabolism",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S67",
+   "origin": "screenshot_2026-09-24",
+   "employer": "MD Anderson",
+   "leadTitle": "Research Intern, Hematopathology Research",
+   "officialTitle": null,
+   "officialUrl": "https://jobs.mdanderson.org/search/jobdetails/research-intern---hematopathology---research/0ceef19b-67a4-4e7c-a6ff-a0e96fa64740",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "recent_graduate_only",
+    "institution": "home_institution_excluded",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "must_not_be_enrolled",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "cancer",
+     "data_science"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Research Intern - Hematopathology - Research",
+    "paragraphs": [
+     "MD Anderson research intern supporting AI classification of leukemia cells, posted September 21, 2026.",
+     "Applicants must have received a bachelor's or master's degree within the past one year and must not be currently enrolled in a degree program.",
+     "Applicants currently associated with a home institution are not eligible.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S68",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Sanofi",
+   "leadTitle": "2027 Summer Internship Opportunities Cambridge",
+   "officialTitle": "2027 Summer Internship Opportunities, Cambridge, MA",
+   "officialUrl": "https://jobs.sanofi.com/en/job/cambridge/2027-summer-internship-opportunities-cambridge-ma/2649/44484657408",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "44484657408",
+    "closed": false,
+    "existingRecord": true,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "readable",
+    "title": "2027 Summer Internship Opportunities, Cambridge, MA",
+    "paragraphs": [
+     "Sanofi Summer 2027 internship pool in Cambridge, MA.",
+     "Open to undergraduate or graduate students with continuous enrollment.",
+     "Application deadline: December 11, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "S69",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Waypoint Bio",
+   "leadTitle": "Molecular Biology Intern, weekend, New York",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S70",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Waypoint Bio",
+   "leadTitle": "Research Intern, Cell Biology, New York",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "none"
+   }
+  },
+  {
+   "id": "S71",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Thermo Fisher Scientific",
+   "leadTitle": "Vaccine Sciences Intern Richmond",
+   "officialTitle": "Vaccine Sciences Intern",
+   "officialUrl": "https://jobs.thermofisher.com/de/de/job/R-01366575/Vaccine-Sciences-Intern",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R-01366575",
+    "closed": true,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "closed",
+    "title": "Vaccine Sciences Intern",
+    "paragraphs": [
+     "Thermo Fisher Scientific intern in Richmond, VA.",
+     "This position has been filled."
+    ]
+   }
+  },
+  {
+   "id": "S72",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Labcorp",
+   "leadTitle": "Intern, Molecular-Micro Infectious Disease Burlington",
+   "officialTitle": "Intern-Molecular-Micro-Infectious-Disease",
+   "officialUrl": "https://careers.labcorp.com/global/en/job/COVAGLOBAL2630917EXTERNALENGLOBAL/Intern-Molecular-Micro-Infectious-Disease",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": true,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": []
+   },
+   "page": {
+    "kind": "closed",
+    "title": "Intern-Molecular-Micro-Infectious-Disease",
+    "paragraphs": [
+     "Labcorp intern in Burlington, NC.",
+     "This job is no longer available."
+    ]
+   }
+  },
+  {
+   "id": "S73",
+   "origin": "screenshot_2026-09-24",
+   "employer": "Aldevron",
+   "leadTitle": "Research & Development Graduate Intern Waltham",
+   "officialTitle": null,
+   "officialUrl": "https://danaher.wd1.myworkdayjobs.com/en-US/DanaherJobs/job/Research---Development-Graduate-Intern_R1316744",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R1316744",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "research"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "G1",
+   "origin": "gap_review_2026-09-24",
+   "employer": "Johnson & Johnson",
+   "leadTitle": "Oncology Translational Research Scientist Intern",
+   "officialTitle": null,
+   "officialUrl": "https://www.careers.jnj.com/en/jobs/r-099901/oncology-tr-scientist-intern/",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R-099901",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "permanent_no_sponsorship",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "cancer",
+     "genomics",
+     "bioinformatics"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Oncology TR Scientist Intern",
+    "paragraphs": [
+     "Johnson & Johnson Innovative Medicine Summer 2027 intern in Spring House, PA for oncology biomarkers, precision medicine and omics analysis.",
+     "Master's or PhD students are eligible and must remain enrolled in an accredited program throughout the internship.",
+     "Candidates must be permanently authorized to work in the United States without sponsorship now or in the future.",
+     "This job posting is anticipated to close on November 3, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "G2",
+   "origin": "gap_review_2026-09-24",
+   "employer": "Gilead Sciences",
+   "leadTitle": "Intern - Research - Data Sciences",
+   "officialTitle": null,
+   "officialUrl": "https://gilead.wd1.myworkdayjobs.com/en-US/gileadcareers/job/Intern---Research---Data-Sciences_R0054572",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R0054572",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "data_science",
+     "genomics",
+     "cancer"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "G3",
+   "origin": "gap_review_2026-09-24",
+   "employer": "Gilead Sciences",
+   "leadTitle": "Intern - Research - Oncology Biomarker",
+   "officialTitle": null,
+   "officialUrl": "https://gilead.wd1.myworkdayjobs.com/en-US/gileadcareers/job/Intern---Research---Oncology-Biomarker_R0054587",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R0054587",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "cancer",
+     "diagnostics"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "G4",
+   "origin": "gap_review_2026-09-24",
+   "employer": "Johnson & Johnson",
+   "leadTitle": "Clinical Pharmacology and Pharmacometrics Intern",
+   "officialTitle": null,
+   "officialUrl": "https://www.careers.jnj.com/en/jobs/r-098266/clinical-pharmacology-and-pharmacometrics-intern-summer-2027/",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R-098266",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "data_science",
+     "protein_drug"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Clinical Pharmacology and Pharmacometrics Intern - Summer 2027",
+    "paragraphs": [
+     "Johnson & Johnson intern working with biomarker data and PK/PD models across oncology.",
+     "Candidates must be enrolled in an MS or PhD program, continued enrollment required.",
+     "This job posting is anticipated to close on November 20, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "G5",
+   "origin": "gap_review_2026-09-24",
+   "employer": "Gilead Sciences",
+   "leadTitle": "Intern - Research - Protein Therapeutics / Computational Biologics Engineering",
+   "officialTitle": null,
+   "officialUrl": "https://gilead.yello.co/jobs/WESVgfHuL6ncXDJ6CGFXkA?locale=en",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "independent_authorization",
+    "continuedEnrollment": "required",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "protein_drug",
+     "data_science"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Intern - Research - Protein Therapeutics / Computational Biologics Engineering",
+    "paragraphs": [
+     "Gilead Sciences Summer 2027 intern in Foster City for generative protein design.",
+     "Graduate students are preferred; candidates must be enrolled full-time at a U.S. accredited institution now and enrolled in the following fall semester.",
+     "Candidates must have independent U.S. work authorization.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "G6",
+   "origin": "gap_review_2026-09-24",
+   "employer": "BillionToOne",
+   "leadTitle": "Research Associate Intern",
+   "officialTitle": null,
+   "officialUrl": "https://job-boards.greenhouse.io/billiontoone/jobs/4733845005",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "4733845005",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "diagnostics",
+     "genomics",
+     "cancer"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Research Associate Intern",
+    "paragraphs": [
+     "BillionToOne on-site internship in Menlo Park, CA for molecular oncology and prenatal diagnostics NGS assays.",
+     "Candidates must be enrolled in an undergraduate or master's program during Fall 2027.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "G7",
+   "origin": "gap_review_2026-09-24",
+   "employer": "Gilead Sciences",
+   "leadTitle": "Intern - Research - Discovery Sciences and Technologies",
+   "officialTitle": null,
+   "officialUrl": "https://gilead.wd1.myworkdayjobs.com/en-US/gileadcareers/job/Intern---Research---Discovery-Sciences-and-Technologies_R0054545",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R0054545",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "genomics",
+     "cancer"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "G8",
+   "origin": "gap_review_2026-09-24",
+   "employer": "Gilead Sciences",
+   "leadTitle": "Intern - Research - Pathobiology",
+   "officialTitle": null,
+   "officialUrl": "https://gilead.wd1.myworkdayjobs.com/en-US/gileadcareers/job/Intern---Research---Pathobiology_R0054579",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R0054579",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "cancer"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "G9",
+   "origin": "gap_review_2026-09-24",
+   "employer": "Merck",
+   "leadTitle": "2027 Future Talent Program Translational Medicine Intern",
+   "officialTitle": null,
+   "officialUrl": "https://jobs.merck.com/us/en/job/R413602/2027-Future-Talent-Program-Translational-Medicine-Intern",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R413602",
+    "closed": true,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "cancer"
+    ]
+   },
+   "page": {
+    "kind": "closed",
+    "title": "2027 Future Talent Program Translational Medicine Intern",
+    "paragraphs": [
+     "Merck translational medicine intern.",
+     "This job is no longer available."
+    ]
+   }
+  },
+  {
+   "id": "G10",
+   "origin": "gap_review_2026-09-24",
+   "employer": "Merck",
+   "leadTitle": "2027 Future Talent Program Spatial Biology & Multiplex Imaging Intern",
+   "officialTitle": null,
+   "officialUrl": "https://jobs.merck.com/us/en/job/R413365",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R413365",
+    "closed": true,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "single_cell"
+    ]
+   },
+   "page": {
+    "kind": "closed",
+    "title": "2027 Future Talent Program Spatial Biology & Multiplex Imaging Intern",
+    "paragraphs": [
+     "Merck spatial biology intern.",
+     "This job is no longer available."
+    ]
+   }
+  },
+  {
+   "id": "C1",
+   "origin": "catalog_additional_2026-09-25",
+   "employer": "Alcon",
+   "leadTitle": "2027 Chemistry, Materials & Life Sciences Interns",
+   "officialTitle": null,
+   "officialUrl": "https://alcon.wd5.myworkdayjobs.com/en-US/careers_alcon/job/XMLNAME-2027-Chemistry--Materials---Life-Sciences-Interns_R-2026-49482",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "R-2026-49482",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": true,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "research"
+    ]
+   },
+   "page": {
+    "kind": "script_shell"
+   }
+  },
+  {
+   "id": "C2",
+   "origin": "catalog_additional_2026-09-25",
+   "employer": "Indiana Biosciences Research Institute",
+   "leadTitle": "Computational Research Intern 2027",
+   "officialTitle": null,
+   "officialUrl": "https://indiana-biosciences-research-institute-inc.prismhr-hire.com/job/1053093/computational-research-intern-2027",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "1053093",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "regional_affiliation",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "bioinformatics",
+     "data_science"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Computational Research Intern 2027",
+    "paragraphs": [
+     "Indiana Biosciences Research Institute Summer 2027 internship with genomic data and machine learning.",
+     "Open to undergraduate or graduate students enrolled at an Indiana college or university, or graduates of an Indiana high school.",
+     "Application deadline: November 30, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "C3",
+   "origin": "catalog_additional_2026-09-25",
+   "employer": "Indiana Biosciences Research Institute",
+   "leadTitle": "Bioinformatic Intern 2027",
+   "officialTitle": null,
+   "officialUrl": "https://indiana-biosciences-research-institute-inc.prismhr-hire.com/job/1053094/bioinformatic-intern-2027",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "1053094",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "undergraduate_only",
+    "institution": "regional_affiliation",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "bioinformatics"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Bioinformatic Intern 2027",
+    "paragraphs": [
+     "Indiana Biosciences Research Institute Summer 2027 bioinformatics internship.",
+     "Applicants must be currently enrolled in a bachelor's degree program at an Indiana college or university.",
+     "Application deadline: November 30, 2026.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "C4",
+   "origin": "catalog_additional_2026-09-25",
+   "employer": "US Army Institute of Surgical Research",
+   "leadTitle": "Biomedical Research Internship USAISR-2026-0001",
+   "officialTitle": null,
+   "officialUrl": "https://www.zintellect.com/Opportunity/Details/USAISR-2026-0001",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "USAISR-2026-0001",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "graduate_accepted",
+    "institution": "not_stated",
+    "workAuthorization": "citizenship_or_permanent_residence",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": false,
+    "lanes": [
+     "research"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Biomedical Research Internship",
+    "paragraphs": [
+     "ORISE appointment with the US Army Institute of Surgical Research in San Antonio for a 12-month term.",
+     "Current master's students are eligible.",
+     "Applicants must be U.S. citizens or lawful permanent residents.",
+     "Apply now"
+    ]
+   }
+  },
+  {
+   "id": "P1",
+   "origin": "pattern_synthetic",
+   "employer": "Johnson & Johnson",
+   "leadTitle": "Technology Co-op - 2027 Spring JJT Co-op",
+   "officialTitle": null,
+   "officialUrl": null,
+   "identifiable": true,
+   "expected": {
+    "requisitionId": null,
+    "closed": false,
+    "existingRecord": false,
+    "degree": "unknown",
+    "institution": "unknown",
+    "workAuthorization": "unknown",
+    "continuedEnrollment": "unknown",
+    "academicCredit": "unknown",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": true,
+    "unexpectedTitle": true,
+    "offCycle": true,
+    "lanes": [
+     "data_science",
+     "bioinformatics"
+    ]
+   },
+   "page": {
+    "kind": "none"
+   },
+   "note": "Synthetic pattern case modelled on historical J&J Technology co-op titles; tests whether a generic technology title is reachable without science terms. Not an observed 2027 requisition."
+  },
+  {
+   "id": "P2",
+   "origin": "pattern_synthetic",
+   "employer": "Flagship Pioneering",
+   "leadTitle": "Co-Op, Platform Biology",
+   "officialTitle": null,
+   "officialUrl": "https://job-boards.greenhouse.io/fspco-op012325/jobs/4600000001",
+   "identifiable": true,
+   "expected": {
+    "requisitionId": "4600000001",
+    "closed": false,
+    "existingRecord": false,
+    "degree": "not_stated",
+    "institution": "not_stated",
+    "workAuthorization": "not_stated",
+    "continuedEnrollment": "not_stated",
+    "academicCredit": "not_stated",
+    "lookalikeOf": null,
+    "outOfCycle": false
+   },
+   "traits": {
+    "genericTitle": false,
+    "unexpectedTitle": false,
+    "offCycle": true,
+    "lanes": [
+     "research"
+    ]
+   },
+   "page": {
+    "kind": "readable",
+    "title": "Co-Op, Platform Biology",
+    "paragraphs": [
+     "Flagship Pioneering spring 2027 co-op in Cambridge.",
+     "Apply now"
+    ]
+   },
+   "note": "Synthetic requisition on the real Northeastern-only board token; tests institution-only exclusion from source policy."
+  }
+ ],
+ "duplicatePairs": [
+  {
+   "a": "https://www.careers.jnj.com/en/jobs/r-099389/palm-and-artificial-intelligence-co-op/",
+   "b": "https://www.careers.jnj.com/es-la/jobs/r-099389/palm-and-artificial-intelligence-co-op",
+   "same": true,
+   "why": "locale and trailing slash"
+  },
+  {
+   "a": "https://roche.wd3.myworkdayjobs.com/roche-ext/job/Indianapolis/XMLNAME-2027-Summer-Intern----Quality--Regulatory--and-External-Affairs--QR-E-_202608-121913",
+   "b": "https://roche.wd3.myworkdayjobs.com/en-US/roche-ext/job/Tucson/XMLNAME-2027-Summer-Intern----Quality--Regulatory--and-External-Affairs--QR-E-_202608-121913",
+   "same": true,
+   "why": "one multi-location requisition"
+  },
+  {
+   "a": "https://vrtx.wd501.myworkdayjobs.com/en-US/vertex_careers/job/Boston-MA/Vertex-Spring-Co-Op-2027--Long-Read-Sequencing_REQ-30507-1",
+   "b": "https://vrtx.wd501.myworkdayjobs.com/en-US/Vertex_Careers/job/Vertex-Spring-Co-Op-2027--Long-Read-Sequencing_REQ-30507-1",
+   "same": true,
+   "why": "Workday site case and location path"
+  },
+  {
+   "a": "https://job-boards.greenhouse.io/nanopathinc/jobs/4605514005",
+   "b": "https://boards.greenhouse.io/nanopathinc/jobs/4605514005?gh_src=linkedin",
+   "same": true,
+   "why": "Greenhouse host alias and tracking parameter"
+  },
+  {
+   "a": "https://gilead.wd1.myworkdayjobs.com/en-US/gileadcareers/job/Intern---Development---Medical-Affairs--Medical-Excellence-Learning---Development_R0054533",
+   "b": "https://gilead.wd1.myworkdayjobs.com/gileadcareers/job/Foster-City/Intern---Development---Medical-Affairs_R0054533",
+   "same": true,
+   "why": "locale and slug variation"
+  },
+  {
+   "a": "https://danaher.wd1.myworkdayjobs.com/en-US/DanaherJobs/job/Research---Development-Graduate-Intern_R1316744",
+   "b": "https://danaher.wd1.myworkdayjobs.com/en-US/DanaherJobs/job/Research---Development-Graduate-Intern_R1316741",
+   "same": false,
+   "why": "similar title, PhD-only sibling requisition"
+  },
+  {
+   "a": "https://elanco.wd5.myworkdayjobs.com/External_Career/job/Clinton-IN/Manufacturing-Scientist-Technical-Services-Intern---Clinton--Indiana--Summer-2027-_R0026869-1",
+   "b": "https://elanco.wd5.myworkdayjobs.com/External_Career/job/Indianapolis-IN/Manufacturing-Scientist-Technical-Services-Intern---Indianapolis--Indiana--Summer-2027-_R0026897",
+   "same": false,
+   "why": "different location requisitions"
+  },
+  {
+   "a": "https://indiana-biosciences-research-institute-inc.prismhr-hire.com/job/1053098/biology-research-intern-2027",
+   "b": "https://indiana-biosciences-research-institute-inc.prismhr-hire.com/job/1053094/bioinformatic-intern-2027",
+   "same": false,
+   "why": "sibling roles with different gates"
+  },
+  {
+   "a": "https://job-boards.greenhouse.io/ginkgobioworks/jobs/5033171007",
+   "b": "https://job-boards.greenhouse.io/ginkgobioworks/jobs/5033167007",
+   "same": false,
+   "why": "graduate and general versions of a similar role"
+  },
+  {
+   "a": "https://www.zintellect.com/Opportunity/Details/FDA-CDRH-2026-0008",
+   "b": "https://www.zintellect.com/Opportunity/Details/FDA-CDRH-2026-0014",
+   "same": false,
+   "why": "internship vs postdoctoral fellowship"
+  },
+  {
+   "a": "https://www.zintellect.com/Opportunity/Details/USAISR-2026-0001",
+   "b": "https://www.zintellect.com/Opportunity/Details/USAISR-2026-0011",
+   "same": false,
+   "why": "distinct program codes"
+  },
+  {
+   "a": "https://www.careers.jnj.com/en/jobs/r-099898/oncology-discovery-scientist-intern/",
+   "b": "https://www.careers.jnj.com/en/jobs/r-099892/oncology-clinical-scientist-intern/",
+   "same": false,
+   "why": "separate requisitions despite shared body text"
+  },
+  {
+   "a": "https://jobs.sanofi.com/en/job/cambridge/2027-spring-co-op-immunology-cambridge-ma/2649/45033996481",
+   "b": "https://sanofi.wd3.myworkdayjobs.com/en-US/SanofiCareers/job/XMLNAME-2027-Spring-Co-op-Immunology-Cambridge-MA_R2854773",
+   "same": false,
+   "why": "different systems; relationship unproven so never merged automatically"
+  },
+  {
+   "a": "https://gilead.yello.co/jobs/BIpPgM7maJP9OdrL8OjG4Q?locale=en",
+   "b": "https://gilead.wd1.myworkdayjobs.com/en-US/gileadcareers/job/Intern---Research---Oncology-Biomarker_R0054587",
+   "same": false,
+   "why": "Yello and Workday copies: possible same role, unprovable from URLs; must not auto-merge"
+  }
+ ],
+ "existingRecords": [
+  {
+   "table": "opportunities",
+   "id": "approved-sanofi-waltham-spring",
+   "url": "https://jobs.sanofi.com/en/job/waltham/2027-spring-co-op-opportunities-waltham-ma/2649/41259827840",
+   "status": "approved"
+  },
+  {
+   "table": "opportunities",
+   "id": "approved-sanofi-cambridge-summer",
+   "url": "https://jobs.sanofi.com/en/job/cambridge/2027-summer-internship-opportunities-cambridge-ma/2649/44484657408/",
+   "status": "approved"
+  },
+  {
+   "table": "opportunities",
+   "id": "approved-jnj-r099898",
+   "url": "https://www.careers.jnj.com/en/jobs/r-099898/oncology-discovery-scientist-intern/",
+   "status": "approved"
+  }
+ ],
+ "attributionTraps": [
+  {
+   "leadEmployer": "Libris Innovations",
+   "leadTitle": "Biology Research Intern 2027",
+   "url": "https://indiana-biosciences-research-institute-inc.prismhr-hire.com/job/1053098/biology-research-intern-2027",
+   "truth": "mismatch",
+   "why": "same title at a different employer (screenshot 35 vs 30)"
+  },
+  {
+   "leadEmployer": "Genentech",
+   "leadTitle": "2027 Summer Intern",
+   "url": "https://roche.wd3.myworkdayjobs.com/roche-ext/job/Indianapolis/XMLNAME-2027-Summer-Intern_202608-121913",
+   "truth": "mismatch",
+   "why": "Roche Diagnostics site on the shared Roche Workday host is not Genentech"
+  },
+  {
+   "leadEmployer": "Aldevron",
+   "leadTitle": "Research & Development Graduate Intern",
+   "url": "https://danaher.wd1.myworkdayjobs.com/en-US/DanaherJobs/job/Research---Development-Graduate-Intern_R1316741",
+   "truth": "needs_page",
+   "why": "Danaher parent tenant; operating company only provable from the page"
+  },
+  {
+   "leadEmployer": "FDA",
+   "leadTitle": "Biofilm Internship",
+   "url": "https://www.zintellect.com/Opportunity/Details/FDA-CDRH-2026-0008",
+   "truth": "needs_page",
+   "why": "ORISE program host serves many agencies"
+  },
+  {
+   "leadEmployer": "Kite Pharma",
+   "leadTitle": "Intern - Kite Development - Tech Ops (Quality)",
+   "url": "https://gilead.yello.co/jobs/72ifvtdX7Ynsb7dDjvEncg",
+   "truth": "needs_page",
+   "why": "Gilead Yello tenant hosts Kite; page must name Kite"
+  },
+  {
+   "leadEmployer": "Keros Therapeutics",
+   "leadTitle": "Research Associate Co-op",
+   "url": "https://job-boards.greenhouse.io/someotherboard/jobs/4728738005",
+   "truth": "needs_page",
+   "why": "unregistered Greenhouse board; hostname proves nothing"
+  }
+ ]
+}

@@ -16,6 +16,7 @@ Read these in order:
 6. [connector-contracts.md](connector-contracts.md)
 7. [scheduled-sheet-ingestion.md](scheduled-sheet-ingestion.md)
 8. [weekly-review-notifications.md](weekly-review-notifications.md)
+9. [18-official-posting-verification-runbook.md](18-official-posting-verification-runbook.md) (implemented, inactive until its activation steps are complete)
 
 Executable migrations, current code, tests, verified production state, and live
 behavior take precedence over prose.

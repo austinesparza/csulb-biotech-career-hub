@@ -5,6 +5,8 @@ import type { SearchProvider, SearchProviderResult } from './brave-search';
 import { archiveDiscoveryLead } from './lead-store-supabase';
 import { buildHistoricalWatchPlans } from './historical-watch';
 import { buildEmployerInventoryDiscoveryPlans } from './employer-inventory';
+import { attributeEmployer, isEmployerRequisitionUrl, resolvePostingIdentity } from './posting-identity';
+import { tenantHostsFor } from './query-families';
 
 interface ResearchSubmission {
   id: string;
@@ -28,13 +30,18 @@ function value(payload: Record<string, unknown>, key: string): string {
 function exactRoleQueries(company: string, title: string, domain: string | null): string[] {
   const quotedCompany = company.replaceAll('"', '').slice(0, 100);
   const quotedTitle = title.replaceAll('"', '').slice(0, 140);
+  // No parentheses: the provider documents OR but not grouping.
   return [
-    `"${quotedCompany}" "${quotedTitle}" (intern OR co-op OR fellowship)`,
+    `"${quotedCompany}" "${quotedTitle}" intern OR co-op OR fellowship`,
     `${domain ? `site:${domain} ` : ''}"${quotedTitle}" "${quotedCompany}"`,
   ];
 }
 
 function knownDomain(company: string, cycleYear: number, month: number): string | null {
+  // A recruiting tenant (e.g. gilead.wd1.myworkdayjobs.com) finds requisitions;
+  // a marketing domain (www.gilead.com) usually does not.
+  const tenantHost = tenantHostsFor(company)[0];
+  if (tenantHost) return tenantHost;
   const key = company.toLowerCase();
   const historical = buildHistoricalWatchPlans({ cycleYear, month })
     .find((entry) => entry.company.toLowerCase() === key)?.careersDomain;
@@ -58,6 +65,10 @@ function roleDetailPath(host: string, pathname: string): boolean {
 export function postingRequisitionId(rawUrl: string): string | null {
   const canonical = canonicalizeUrl(rawUrl);
   if (!canonical) return null;
+  // Tenant-aware parsing handles Workday IDs such as 202608-121913,
+  // REQ-30507-1 and R-2026-49482 that the earlier patterns missed.
+  const identity = resolvePostingIdentity(canonical);
+  if (identity.detailPage && identity.requisitionId && identity.system !== 'yello') return identity.requisitionId;
   const parsed = new URL(canonical);
   const path = parsed.pathname;
   if (/greenhouse\.io$/.test(parsed.hostname)) return path.match(/\/jobs\/(\d{5,})(?:\/|$)/)?.[1] ?? null;
@@ -67,7 +78,10 @@ export function postingRequisitionId(rawUrl: string): string | null {
 }
 
 function sameRequisitionUrl(candidateUrl: string, existingUrl: string | null): boolean {
-  if (!existingUrl || postingRequisitionId(candidateUrl) !== postingRequisitionId(existingUrl)) return false;
+  if (!existingUrl) return false;
+  const candidateKey = resolvePostingIdentity(candidateUrl).identityKey;
+  if (candidateKey && candidateKey === resolvePostingIdentity(existingUrl).identityKey) return true;
+  if (postingRequisitionId(candidateUrl) !== postingRequisitionId(existingUrl)) return false;
   const candidate = new URL(candidateUrl);
   const existing = new URL(existingUrl);
   if (/greenhouse\.io$/.test(candidate.hostname) && /greenhouse\.io$/.test(existing.hostname)) {
@@ -90,9 +104,16 @@ export function researchCandidateScore(input: {
   const host = parsed.hostname.toLowerCase();
   if (host === 'linkedin.com' || host.endsWith('.linkedin.com')) return 0;
   const allowedDomain = input.careersDomain && (host === input.careersDomain || host.endsWith(`.${input.careersDomain}`));
-  if (!isRecognizedAtsHost(host) && !allowedDomain) return 0;
+  const identity = resolvePostingIdentity(url);
+  // A registered tenant that belongs to another employer is never attached,
+  // whatever the title says (e.g. an IBRI PrismHR page for a Libris lead).
+  if (identity.tenant && attributeEmployer({ leadEmployer: input.company, identity }).status === 'mismatch') return 0;
+  if (!isRecognizedAtsHost(host) && !allowedDomain && !identity.tenant) return 0;
   // A board/search landing page is never an individual requisition.
-  if (!roleDetailPath(host, parsed.pathname)) return 0;
+  const detail = isEmployerRequisitionUrl(identity)
+    // Hosts without a tenant-aware parser (e.g. Jobvite) keep the path rule.
+    || (identity.system === 'employer_site' && isRecognizedAtsHost(host) && roleDetailPath(host, parsed.pathname));
+  if (!detail) return 0;
 
   const roleTokens = new Set((normalizeJobTitle(input.title) ?? '').split(/[\s/]+/).filter((word) => word.length > 2));
   const resultTokens = new Set((normalizeJobTitle(input.result.title) ?? '').split(/[\s/]+/));

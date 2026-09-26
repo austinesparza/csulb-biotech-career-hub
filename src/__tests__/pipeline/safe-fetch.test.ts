@@ -61,5 +61,44 @@ for (const credentials of [
   ok('rejects empty or multiline USAJOBS credentials', rejected);
 }
 
+console.log('\n=== Redirect evidence ===\n');
+{
+  const realFetch = globalThis.fetch;
+  const hops: Record<string, Response> = {
+    'https://8.8.8.8/jobs/R-1': new Response(null, { status: 301, headers: { location: '/en/jobs/R-1' } }),
+    'https://8.8.8.8/en/jobs/R-1': new Response('<h1>Role</h1>', { status: 200, headers: { 'content-type': 'text/html' } }),
+  };
+  globalThis.fetch = (async (input: string | URL) => hops[String(input)] ?? new Response('', { status: 500 })) as typeof fetch;
+  try {
+    const result = await safeFetch('https://8.8.8.8/jobs/R-1');
+    const redirects = 'body' in result ? result.redirects ?? [] : [];
+    ok('records each redirect hop with status and resolved location',
+      redirects.length === 1 && redirects[0].status === 301 && redirects[0].location === 'https://8.8.8.8/en/jobs/R-1');
+    ok('reports the final URL and content type', result.finalUrl === 'https://8.8.8.8/en/jobs/R-1'
+      && 'body' in result && result.contentType === 'text/html');
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+}
+
+console.log('\n=== Reviewed origin boundary ===\n');
+{
+  const realFetch = globalThis.fetch;
+  const requested: string[] = [];
+  globalThis.fetch = (async (input: string | URL) => {
+    requested.push(String(input));
+    return new Response(null, { status: 302, headers: { location: 'https://1.1.1.1/jobs/other' } });
+  }) as typeof fetch;
+  try {
+    let blocked = false;
+    try { await safeFetch('https://8.8.8.8/jobs/R-1', { restrictOrigin: 'https://8.8.8.8' }); }
+    catch (error) { blocked = error instanceof BlockedUrlError; }
+    ok('a reviewed origin does not follow a redirect to another host', blocked && requested.length === 1,
+      JSON.stringify(requested));
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

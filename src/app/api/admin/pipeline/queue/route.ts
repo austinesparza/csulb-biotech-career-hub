@@ -23,6 +23,7 @@ export async function POST(request: Request) {
       trigger: 'queue_recovery',
       scheduleDueSources: false,
       runDiscovery: false,
+      runVerification: false,
       runExtraction: false,
       batchLimit: 10,
     });

@@ -13,19 +13,29 @@ const ok = (name: string, condition: boolean, detail = "") => {
 const taxonomy = loadTaxonomy();
 const plans = buildLaneSearchPlans(taxonomy, 2027);
 ok("every taxonomy lane gets a plan", plans.length === taxonomy.lanes.length, `${plans.length}/${taxonomy.lanes.length}`);
-ok("every lane searches official ATS pages", plans.every((plan) => plan.queries.some((query) => query.query.includes("boards.greenhouse.io"))));
-ok("lane ATS search includes observed Workday and Jobvite hosts", plans.every((plan) => plan.queries.some((query) => (
-  query.query.includes("myworkdayjobs.com") && query.query.includes("jobs.jobvite.com")
+ok("every lane searches official ATS pages, one host per query", plans.every((plan) => (
+  plan.queries.some((query) => query.query.includes("site:myworkdayjobs.com"))
+  && plan.queries.some((query) => query.query.includes("site:job-boards.greenhouse.io"))
+  && plan.queries.every((query) => (query.query.match(/site:/g) ?? []).length <= 1)
+)));
+ok("lane queries never require a year, season or degree term", plans.every((plan) => plan.queries.every((query) => (
+  !/\b2027\b|\bsummer\b|master's|graduate student|currently enrolled/i.test(query.query)
+))));
+ok("lane queries never quote a truncated stem", plans.every((plan) => plan.queries.every((query) => (
+  !/"(oncolog|immunolog|neurodegener|neurobiolog|bioinformatic|virolog|microbiolog)"/i.test(query.query)
+))));
+ok("lane queries avoid undocumented grouping and stay short", plans.every((plan) => plan.queries.every((query) => (
+  !query.query.includes("(") && query.query.length <= 380
 ))));
 ok("observed ATS families are recognized conservatively", [
   "jobs.jobvite.com", "recruiting.ultipro.com", "example.bamboohr.com", "example.wd1.myworkdayjobs.com",
 ].every(isRecognizedAtsHost));
 ok("lookalike ATS domains are rejected", !isRecognizedAtsHost("myworkdayjobs.com.example.org")
   && !isRecognizedAtsHost("bamboohr.com.example.org"));
-ok("every lane gets LinkedIn lead discovery", plans.every((plan) => plan.queries.filter((query) => query.route === "linkedin_lead").length === 2));
+ok("every lane gets LinkedIn lead discovery", plans.every((plan) => plan.queries.some((query) => query.route === "linkedin_lead")));
 ok("queries carry lane-specific vocabulary", plans.every((plan) => plan.keywords.some((keyword) => plan.queries[0].query.includes(keyword))));
 ok("lane plans retain both internship and co-op recall", plans.every((plan) => (
-  plan.queries[0].query.includes('"internship"') && plan.queries[0].query.includes('"co-op"')
+  plan.queries[0].query.includes("internship") && plan.queries[0].query.includes("co-op")
 )));
 
 const employerPlan = buildEmployerSearchPlan({
@@ -33,9 +43,14 @@ const employerPlan = buildEmployerSearchPlan({
   careersDomain: "https://careers.jnj.com/en/jobs",
   cycleYear: 2027,
 });
-ok("employer inventory catches generic technology co-ops", employerPlan.queries.some((query) => query.query.includes('"technology co-op"')));
-ok("employer inventory searches the official careers host", employerPlan.careersDomain === "careers.jnj.com" && employerPlan.queries[0].query.startsWith("site:careers.jnj.com"));
-ok("employer inventory also searches LinkedIn leads", employerPlan.queries.filter((query) => query.route === "linkedin_lead").length === 2);
+ok("employer tenant search needs no title vocabulary, so generic technology co-ops are reachable",
+  employerPlan.queries.some((query) => /^site:www\.careers\.jnj\.com intern OR interns OR internship OR co-op$/.test(query.query)));
+ok("employer inventory also searches the configured careers host", employerPlan.careersDomain === "careers.jnj.com"
+  && employerPlan.queries.some((query) => query.query.startsWith("site:careers.jnj.com")));
+ok("employer inventory searches LinkedIn job pages and employer hiring posts", employerPlan.queries.some((query) => query.query.startsWith("site:linkedin.com/jobs/view"))
+  && employerPlan.queries.some((query) => query.query.startsWith("site:linkedin.com/posts")));
+ok("employer recall arms carry no year or degree; the graduate arm is opt-in", employerPlan.queries.every((query) => !/2027|master's/.test(query.query))
+  && buildEmployerSearchPlan({ employer: "Johnson & Johnson", cycleYear: 2027, graduateArm: true }).queries.some((query) => query.query.includes("master's")));
 
 const resolved = resolveLead({
   originalUrl: "https://www.linkedin.com/jobs/view/123",

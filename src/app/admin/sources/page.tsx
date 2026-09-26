@@ -2,10 +2,18 @@ import Link from "next/link";
 
 import { GOVERNED_STARTER_SOURCES, GREENHOUSE_POLICY_LINKS } from "@/lib/ingestion/starter-sources";
 import { createServiceClient, requireOfficer } from "@/lib/supabase/server";
-import { createJobSource, createStarterSource, runEmployerDiscoveryNow, toggleSourcePause, updateSourceGovernance } from "./actions";
+import { createJobSource, createStarterSource, runEmployerDiscoveryNow, toggleSourcePause, updateRequisitionVerification, updateSourceGovernance } from "./actions";
 import { PipelineRunForm } from "./pipeline-run-form";
 import { QueueDrainForm } from "./queue-drain-form";
 import { SourceRunForm } from "./source-run-form";
+
+function careersHostname(value: string): string {
+  try {
+    return new URL(value).hostname;
+  } catch {
+    return "this host";
+  }
+}
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -33,7 +41,7 @@ export default async function SourcesPage() {
   const db = createServiceClient();
   const [sourceResult, testRunResult, queueResult] = await Promise.all([
     db.from("job_sources")
-      .select("id, source_name, source_kind, source_identifier, careers_url, enabled, fetch_interval_hours, terms_reviewed, terms_review_date, robots_reviewed, automatic_scheduling_paused_at, last_attempted_at, last_successful_at, consecutive_failures")
+      .select("id, source_name, source_kind, source_identifier, careers_url, config_json, enabled, fetch_interval_hours, terms_reviewed, terms_review_date, robots_reviewed, automatic_scheduling_paused_at, last_attempted_at, last_successful_at, consecutive_failures")
       .order("priority")
       .order("source_name"),
     db.from("source_fetch_runs")
@@ -275,6 +283,20 @@ export default async function SourcesPage() {
               </button>
             </form>
           </div>
+          {(() => {
+            const scope = (source.config_json as Record<string, unknown> | null)?.requisition_verification as
+              { enabled?: boolean; verification_only?: boolean; path_prefixes?: string[]; hosts?: string[] } | undefined;
+            return <form action={updateRequisitionVerification} className="mt-3 flex flex-wrap items-center gap-4 text-sm">
+              <input type="hidden" name="id" value={source.id} />
+              <label><input className="mr-2" type="checkbox" name="verify_requisitions" defaultChecked={scope?.enabled === true} />Verify individual requisitions on {scope?.hosts?.[0] ?? careersHostname(source.careers_url)}</label>
+              <label><input className="mr-2" type="checkbox" name="verification_only" defaultChecked={scope?.verification_only === true} />Verification only (no list fetch)</label>
+              <label>Path prefixes <input className="ml-1 rounded-md border p-1" name="verification_path_prefixes" defaultValue={(scope?.path_prefixes ?? []).join(" ")} placeholder="/en/jobs/" /></label>
+              <button className="secondary-button" type="submit">Save verification scope</button>
+            </form>;
+          })()}
+          <p className="mt-3 text-xs" style={{ color: "var(--ink-soft)" }}>
+            Requisition verification requires a specific job path prefix and checks the recruiting tenant as well as this reviewed host. It stores a private snapshot and opens a review task only for a distinct Apply-visible candidate. It never publishes.
+          </p>
           <p className="mt-3 text-xs" style={{ color: "var(--ink-soft)" }}>
             Private tests work while a source is disabled or paused. They archive evidence and create review work, but do not enable scheduling, change source health, or publish anything.
           </p>

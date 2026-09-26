@@ -90,15 +90,25 @@ export async function assertSafePublicUrl(raw: string): Promise<URL> {
   return url;
 }
 
+/** One followed redirect hop. Recorded so evidence can show how a URL moved. */
+export interface RedirectHop {
+  url: string;
+  status: number;
+  location: string;
+}
+
 export interface SafeFetchResult {
   finalUrl: string;
   status: number;
   etag: string | null;
   lastModified: string | null;
   body: string;
+  contentType?: string | null;
+  /** Every redirect followed before the final response, in order. */
+  redirects?: RedirectHop[];
 }
 
-export type SafeFetchResponse = SafeFetchResult | { status: 304; finalUrl: string };
+export type SafeFetchResponse = SafeFetchResult | { status: 304; finalUrl: string; redirects?: RedirectHop[] };
 
 interface InternalFetchOptions {
   etag?: string | null;
@@ -117,7 +127,7 @@ interface InternalFetchOptions {
  */
 export async function safeFetch(
   raw: string,
-  opts: { etag?: string | null; lastModified?: string | null; userAgent?: string } = {},
+  opts: { etag?: string | null; lastModified?: string | null; userAgent?: string; restrictOrigin?: string } = {},
 ): Promise<SafeFetchResponse> {
   return safeFetchInternal(raw, opts);
 }
@@ -127,6 +137,7 @@ async function safeFetchInternal(raw: string, opts: InternalFetchOptions): Promi
     opts.userAgent ??
     "CSULBBiotechClubHub/1.0 (student resource; contact csubiotechclub@gmail.com)";
   let current = raw;
+  const redirects: RedirectHop[] = [];
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const url = await assertSafePublicUrl(current);
@@ -158,12 +169,13 @@ async function safeFetchInternal(raw: string, opts: InternalFetchOptions): Promi
       clearTimeout(timer);
     }
 
-    if (response.status === 304) return { status: 304, finalUrl: url.toString() };
+    if (response.status === 304) return { status: 304, finalUrl: url.toString(), redirects };
 
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get("location");
       if (!location) throw new BlockedUrlError("redirect without location", current);
       current = new URL(location, url).toString();
+      redirects.push({ url: url.toString(), status: response.status, location: current });
       continue;
     }
 
@@ -178,6 +190,8 @@ async function safeFetchInternal(raw: string, opts: InternalFetchOptions): Promi
       etag: response.headers.get("etag"),
       lastModified: response.headers.get("last-modified"),
       body: new TextDecoder().decode(buffer),
+      contentType: response.headers.get("content-type"),
+      redirects,
     };
   }
   throw new BlockedUrlError("too many redirects", raw);

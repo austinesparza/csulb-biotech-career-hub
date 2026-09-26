@@ -18,7 +18,10 @@ const sanofi = plans.find((item) => item.company === 'Sanofi')!;
 ok('an observed month raises search priority', historicalWatchPriority(sanofi, 9) > historicalWatchPriority(sanofi, 4));
 ok('sparse history is not mislabeled as prediction-ready', plans.every((item) => !item.predictionReady));
 ok('the prediction threshold is explicit', metadata.minimumCyclesForPrediction === 3);
-ok('every plan remains bounded to five queries', plans.every((item) => item.plan.queries.length === 5));
+ok('every plan remains bounded to at most eight short queries', plans.every((item) => (
+  item.plan.queries.length >= 5 && item.plan.queries.length <= 8
+  && item.plan.queries.every((query) => query.query.length <= 380 && !query.query.includes('('))
+)));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
