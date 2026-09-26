@@ -107,22 +107,18 @@ begin
   end;
 end $$;
 
--- Browser roles cannot write evidence or call the service RPC.
-set local role anon;
+-- Browser roles cannot write evidence or call the service RPC. Check the
+-- catalog grants directly; role-switching a denied function call in a nested
+-- exception block has crashed the disposable Supabase test database.
 do $$
 begin
-  begin
-    perform public.record_posting_verification('{}'::jsonb);
-    raise exception 'anon executed the service-only RPC';
-  exception when insufficient_privilege then null;
-  end;
-  begin
-    perform 1 from public.posting_verifications;
-    raise exception 'anon read private verification evidence';
-  exception when insufficient_privilege then null;
-  end;
+  if has_function_privilege('anon', 'public.record_posting_verification(jsonb)', 'EXECUTE') then
+    raise exception 'anon can execute the service-only RPC';
+  end if;
+  if has_table_privilege('anon', 'public.posting_verifications', 'SELECT') then
+    raise exception 'anon can read private verification evidence';
+  end if;
 end $$;
-reset role;
 
 set local role authenticated;
 do $$
