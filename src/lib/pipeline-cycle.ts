@@ -9,6 +9,7 @@ import type { IngestionStorageClient } from './ingestion/persistence/repository'
 import { runIngestionBatch, type SourceRunReport } from './ingestion/source-runner';
 import { createBraveSearchProvider } from './pipeline/brave-search';
 import { runEmployerDiscoveryBatch, runLaneDiscoveryBatch } from './pipeline/discovery-runner';
+import { runSourceResearchDiscoveryBatch } from './pipeline/source-research-discovery';
 import { runExtractionBatch } from './pipeline/extraction-runner';
 import { createOpenAiCompatibleExtractionModel } from './pipeline/model-openai';
 import { SupabaseExtractionStore } from './pipeline/store-supabase';
@@ -24,7 +25,7 @@ export interface PipelineStageError {
 
 export type DiscoveryCycleResult =
   | { status: 'disabled' }
-  | { status: 'completed'; employers: number; lanes: number; queries: number; results: number; archived: number; errors: number }
+  | { status: 'completed'; employers: number; lanes: number; research: number; candidates: number; existingMatches: number; queries: number; results: number; archived: number; errors: number }
   | { status: 'failed'; error: string };
 
 export type ExtractionCycleResult =
@@ -235,14 +236,23 @@ export async function runPipelineCycle(options: RunPipelineCycleOptions): Promis
         resultsPerQuery: Math.max(1, Math.min(Number(process.env.EMPLOYER_DISCOVERY_RESULTS_PER_QUERY ?? 5) || 5, 10)),
         runId: `${workerId}:lanes`,
       });
-      const discoveryErrors = [...employerReport.errors, ...laneReport.errors];
+      const researchReport = await runSourceResearchDiscoveryBatch({
+        db: options.db,
+        provider,
+        limit: Math.max(1, Math.min(Number(process.env.SOURCE_RESEARCH_DISCOVERY_BATCH_SIZE ?? 3) || 3, 5)),
+        runId: `${workerId}:source-research`,
+      });
+      const discoveryErrors = [...employerReport.errors, ...laneReport.errors, ...researchReport.errors];
       discovery = {
         status: 'completed',
         employers: employerReport.employers,
         lanes: laneReport.lanes,
-        queries: employerReport.queries + laneReport.queries,
-        results: employerReport.results + laneReport.results,
-        archived: employerReport.archived + laneReport.archived,
+        research: researchReport.searched,
+        candidates: researchReport.candidateLinks,
+        existingMatches: researchReport.existingMatches,
+        queries: employerReport.queries + laneReport.queries + researchReport.queries,
+        results: employerReport.results + laneReport.results + researchReport.results,
+        archived: employerReport.archived + laneReport.archived + researchReport.archived,
         errors: discoveryErrors.length,
       };
       if (discoveryErrors.length > 0) {

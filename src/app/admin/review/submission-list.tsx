@@ -38,6 +38,7 @@ function SubmissionCard({ row, research }: { row: UserSubmission; research: bool
   const label = research ? group : row.submission_type === 'opportunity' ? 'Opportunity suggestion' : row.submission_type;
   const suppliedUrl = safeHttpsUrl(payloadText(row, 'url'));
   const candidateUrl = safeHttpsUrl(payloadText(row, 'candidate_employer_url'));
+  const existingMatch = research && payloadText(row, 'role_url_status') === 'existing_record_match';
   const employerClosed = research && payloadText(row, 'role_url_status') === 'employer_page_closed';
   const gateNotes = payloadText(row, 'employer_gate_notes');
   const nextCheck = employerClosed
@@ -50,12 +51,13 @@ function SubmissionCard({ row, research }: { row: UserSubmission; research: bool
   const body = <>
     {suppliedUrl ? <p className="mt-2 text-sm"><a href={suppliedUrl} target="_blank" rel="noopener noreferrer">Open submitted link ↗</a></p> : !candidateUrl ? <p className="mt-2 text-sm">No individual employer posting link found yet.</p> : null}
     {research && candidateUrl && <p className="mt-2 text-sm"><a href={candidateUrl} target="_blank" rel="noopener noreferrer">Investigate possible employer requisition ↗</a> ({payloadText(row, 'role_url_status').replaceAll('_', ' ')})</p>}
+    {existingMatch && <p className="mt-2 text-sm">This requisition matches an existing opportunity or source posting. Check that record and mark this research item handled; do not create a second draft.</p>}
     {(row.submitter_name || row.submitter_email) && <p className="mt-2 text-sm">Private contact: {row.submitter_name ?? 'Name not provided'}{row.submitter_email ? ' · ' + row.submitter_email : ''}</p>}
     {research && <p className="mt-2 text-sm">Opening: {payloadText(row, 'posting_status') || 'unknown'} · MSc eligibility: {payloadText(row, 'msc_eligibility') || 'unknown'} · Officer decision: pending. <a href="https://github.com/austinesparza/csulb-biotech-career-hub/blob/main/docs/research/2026-09-24-linkedin-screenshot-audit.md" target="_blank" rel="noopener noreferrer">Screenshot audit ↗</a></p>}
     {research && gateNotes && <p className="mt-2 text-sm"><strong>Employer research:</strong> {gateNotes}</p>}
     {research && <p className="mt-2 text-sm"><strong>Next check:</strong> {nextCheck}</p>}
     {employerClosed && <p className="mt-2 text-sm">The employer page says this role is closed. Keep the source for historical tracking; do not draft it as a current opening.</p>}
-    {row.submission_type === 'opportunity' && !employerClosed ? (
+    {row.submission_type === 'opportunity' && !employerClosed && !existingMatch ? (
       <form action={convertSubmissionToDraft} className="mt-4 grid gap-3 sm:grid-cols-2">
         <input type="hidden" name="id" value={row.id} />
         <label>Company<input className={inputClass} name="company" required defaultValue={payloadText(row, 'company')} /></label>
@@ -71,7 +73,7 @@ function SubmissionCard({ row, research }: { row: UserSubmission; research: bool
     <form action={resolveSubmission} className="mt-4 flex flex-wrap items-end gap-2">
       <input type="hidden" name="id" value={row.id} />
       <input className="rounded-md border bg-white px-3 py-2" name="notes" placeholder="Officer note (optional)" />
-      {row.submission_type !== 'opportunity' && <button className="secondary-button" name="status" value="approved">Mark handled</button>}
+      {(row.submission_type !== 'opportunity' || existingMatch) && <button className="secondary-button" name="status" value="approved">Mark handled</button>}
       <button className="secondary-button" name="status" value="rejected">Reject</button>
       <button className="secondary-button" name="status" value="spam">Spam</button>
     </form>

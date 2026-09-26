@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { canonicalizeUrl } from '../ingestion/normalize';
 import { isRecognizedAtsHost } from './ats-hosts';
 import { classify, loadTaxonomy, type Taxonomy } from './classify';
-import { buildEmployerInventoryDiscoveryPlans, getEmployerInventoryMetadata } from './employer-inventory';
+import { buildCompleteEmployerInventoryPlans, getEmployerInventoryMetadata } from './employer-inventory';
 import { buildHistoricalWatchPlans, getHistoricalWatchMetadata } from './historical-watch';
 import { archiveDiscoveryLead } from './lead-store-supabase';
 import { buildLaneSearchPlans, resolveLead, type DiscoveryRoute } from './search-plan';
@@ -115,7 +115,7 @@ export async function runEmployerDiscoveryBatch(params: {
   // caused an N=5 run to repeat four of yesterday's employers and made full
   // inventory coverage roughly five times slower than intended.
   const offset = params.offset ?? discoveryOffsetForDate(now, employerLimit);
-  const inventoryPlans = buildEmployerInventoryDiscoveryPlans({ cycleYear, limit: 50, offset: 0 })
+  const inventoryPlans = buildCompleteEmployerInventoryPlans(cycleYear)
     .map((candidate) => ({
       company: candidate.company,
       plan: candidate.plan,
@@ -165,14 +165,15 @@ export async function runEmployerDiscoveryBatch(params: {
         errors.push(`${candidate.company}: search result had an invalid URL`.slice(0, 500));
         continue;
       }
-      const canonicalEmployerUrl = employerControlledUrl(normalizedUrl, candidate.plan.careersDomain);
+      const indexedEmployerUrl = employerControlledUrl(normalizedUrl, candidate.plan.careersDomain);
       // Lead identity follows the observed host, not the query family. The same
       // URL found by several search routes therefore reuses one private lead
       // while retaining every query as a separate observation.
       const resultRoute = observedRoute(normalizedUrl, candidate.plan.careersDomain);
       const resolution = resolveLead({
         originalUrl: normalizedUrl,
-        canonicalEmployerUrl,
+        // A search index can identify a candidate URL, but has not fetched the
+        // individual posting or established ownership, Apply state or gates.
         originalRoute: resultRoute,
         originalReachable: true,
       });
@@ -187,13 +188,15 @@ export async function runEmployerDiscoveryBatch(params: {
           visibleTitle: result.title,
           visibleSnippet: result.snippet,
           employerHint: candidate.company,
-          originalReachable: true,
+          originalReachable: false,
           resolution: resolution.resolution,
           canonicalEmployerUrl: resolution.canonicalEmployerUrl,
           archiveReason: resolution.archiveReason,
           rawMetadata: {
             provider: params.provider.name,
             rank: result.rank,
+            indexedEmployerUrl,
+            evidenceLevel: 'search_index_only',
             queryRoute: route,
             snippetTriage: snippetTriage({
               title: result.title ?? '',
@@ -286,11 +289,10 @@ export async function runLaneDiscoveryBatch(params: {
         errors.push(`${plan.lane}: search result had an invalid URL`.slice(0, 500));
         continue;
       }
-      const canonicalEmployerUrl = employerControlledUrl(normalizedUrl, null);
+      const indexedEmployerUrl = employerControlledUrl(normalizedUrl, null);
       const resultRoute = observedRoute(normalizedUrl, null);
       const resolution = resolveLead({
         originalUrl: normalizedUrl,
-        canonicalEmployerUrl,
         originalRoute: resultRoute,
         originalReachable: true,
       });
@@ -305,13 +307,15 @@ export async function runLaneDiscoveryBatch(params: {
           visibleTitle: result.title,
           visibleSnippet: result.snippet,
           employerHint: null,
-          originalReachable: true,
+          originalReachable: false,
           resolution: resolution.resolution,
           canonicalEmployerUrl: resolution.canonicalEmployerUrl,
           archiveReason: resolution.archiveReason,
           rawMetadata: {
             provider: params.provider.name,
             rank: result.rank,
+            indexedEmployerUrl,
+            evidenceLevel: 'search_index_only',
             queryRoute: route,
             snippetTriage: snippetTriage({
               title: result.title ?? '',

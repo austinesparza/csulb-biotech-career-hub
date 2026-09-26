@@ -2,6 +2,9 @@ const BRAVE_WEB_ENDPOINT = 'https://api.search.brave.com/res/v1/web/search';
 const MAX_QUERY_LENGTH = 2_000;
 const MAX_RESULTS = 10;
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+// Conservative default for the provider's per-second sliding window. This
+// protects the five-query employer batches, which execute concurrently.
+const MIN_REQUEST_SPACING_MS = 1_100;
 
 export interface SearchProviderResult {
   url: string;
@@ -42,6 +45,17 @@ export function createBraveSearchProvider(options: {
     throw new Error('Brave Search result storage rights have not been confirmed for this subscription');
   }
   const fetchImpl = options.fetchImpl ?? fetch;
+  let queue = Promise.resolve();
+  let nextRequestAt = 0;
+  async function acquireRequestSlot(): Promise<void> {
+    const turn = queue.then(async () => {
+      const wait = Math.max(0, nextRequestAt - Date.now());
+      if (wait > 0) await new Promise<void>((resolve) => setTimeout(resolve, wait));
+      nextRequestAt = Date.now() + MIN_REQUEST_SPACING_MS;
+    });
+    queue = turn.catch(() => undefined);
+    await turn;
+  }
   return {
     name: 'brave',
     async search(query: string, count = 5): Promise<SearchProviderResult[]> {
@@ -55,6 +69,7 @@ export function createBraveSearchProvider(options: {
       url.searchParams.set('count', String(count));
       url.searchParams.set('country', 'us');
       url.searchParams.set('search_lang', 'en');
+      await acquireRequestSlot();
       const response = await fetchImpl(url, {
         headers: {
           Accept: 'application/json',

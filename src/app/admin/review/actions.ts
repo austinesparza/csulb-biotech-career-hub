@@ -105,6 +105,10 @@ export async function convertSubmissionToDraft(formData: FormData): Promise<void
   if (submission.created_opportunity_id) throw new Error('This submission already has a review draft');
   if (!['new', 'in_review'].includes(submission.status)) throw new Error('This submission is already resolved');
   const isResearch = submission.payload?.intake_stage === 'source_research';
+  if (isResearch && (submission.payload?.role_url_status === 'existing_record_match'
+    || submission.payload?.existing_opportunity_id || submission.payload?.existing_source_posting_id)) {
+    throw new Error('This requisition already has an opportunity or source posting; review that record instead');
+  }
   let postingUrl = requiredFormText(formData, 'posting_url');
   if (isResearch) {
     if (String(formData.get('source_confirmed') ?? '') !== 'on') {
