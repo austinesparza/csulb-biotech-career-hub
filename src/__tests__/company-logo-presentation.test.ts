@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { companyLogoAsset, companyLogoPath } from '../lib/companyLogos';
@@ -102,6 +102,7 @@ describe('employer logo presentation', () => {
     const currentEmployers = [
       'Amgen',
       'Anto Bio',
+      'Boehringer Ingelheim',
       'CAS',
       'Catalent',
       'Cedars-Sinai',
@@ -110,18 +111,25 @@ describe('employer logo presentation', () => {
       'Genentech',
       'Gilead Sciences',
       'Ginkgo Bioworks',
+      'HonorHealth',
       'Johnson & Johnson',
       'Kite Pharma',
       'MD Anderson Cancer Center',
       'Merck',
+      'MTF Biologics',
       'PBS Biotech',
       'Pfizer',
       'Roche',
       'Sanofi',
+      'Stryker',
+      'Vertex Pharmaceuticals',
       'Xaira Therapeutics',
     ];
 
-    expect(currentEmployers.filter((name) => !companyLogoAsset(name))).toEqual([]);
+    expect(currentEmployers.filter((name) => {
+      const logo = companyLogoAsset(name);
+      return !logo || !existsSync(`public${logo.src}`);
+    })).toEqual([]);
   });
 
   it('opens the directory on current employers so the first view is actionable', () => {
