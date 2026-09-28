@@ -88,6 +88,21 @@ export function buildEmployerInventoryDiscoveryPlans(options: {
   }));
 }
 
+/** Search scheduling uses the entire inventory, not the 50-row UI cohort. */
+export function buildCompleteEmployerInventoryPlans(cycleYear: number): EmployerDiscoveryCandidate[] {
+  return employerInventory
+    .toSorted((a, b) => b.localAlumniCount - a.localAlumniCount || a.company.localeCompare(b.company))
+    .map((employer) => ({
+      ...employer,
+      priority: employer.localAlumniCount,
+      plan: buildEmployerSearchPlan({
+        employer: employer.company,
+        cycleYear,
+        careersDomain: careersHost(employer.website),
+      }),
+    }));
+}
+
 export function getEmployerInventoryMetadata() {
   return inventorySnapshot._meta;
 }

@@ -38,6 +38,17 @@ ok('provider sends its credential only in the required header',
 ok('provider strips markup from bounded result fields',
   braveResults[0]?.title === 'Genomics Intern' && braveResults[0]?.snippet === 'Graduate internship');
 
+const requestTimes: number[] = [];
+const bounded = createBraveSearchProvider({ apiKey: 'fixture-key', storageRightsConfirmed: true,
+  fetchImpl: async () => {
+    requestTimes.push(Date.now());
+    return new Response('{"web":{"results":[]}}', { status: 200 });
+  },
+});
+await Promise.all([bounded.search('first role'), bounded.search('second role')]);
+ok('concurrent searches are spaced across the provider rate window',
+  requestTimes.length === 2 && requestTimes[1] - requestTimes[0] >= 1_000);
+
 const employerRpcCalls: Array<Record<string, unknown>> = [];
 const employerDb = { rpc: async (_name: string, args: Record<string, unknown>) => {
   employerRpcCalls.push(args);
@@ -105,8 +116,11 @@ await runEmployerDiscoveryBatch({
   offset: 0,
   runId: 'workday-fixture',
 });
-ok('Workday results are recognized as official-source candidates',
-  workdayCalls.length === 5 && workdayCalls.every((call) => call.p_resolution === 'official_source_found'));
+ok('indexed Workday results are candidates, not verified employer postings',
+  workdayCalls.length === 5 && workdayCalls.every((call) => call.p_resolution === 'unresolved'
+    && call.p_original_reachable === false
+    && (call.p_raw_metadata as Record<string, unknown>).indexedEmployerUrl ===
+      'https://gilead.wd1.myworkdayjobs.com/gileadcareers/job/Intern-R-D_R0050000'));
 
 const laneCalls: Array<Record<string, unknown>> = [];
 const laneReport = await runLaneDiscoveryBatch({
@@ -138,10 +152,11 @@ const laneReport = await runLaneDiscoveryBatch({
 });
 ok('bounded lane discovery executes one lane and its five query families',
   laneReport.lanes === 1 && laneReport.queries === 5 && laneReport.archived === 5);
-ok('lane discovery retains lane and official ATS provenance',
+ok('lane discovery retains lane and indexed ATS provenance',
   laneCalls.every((call) => call.p_lane === 'genomics'
     && call.p_route === 'official_feed'
-    && call.p_resolution === 'official_source_found'));
+    && call.p_resolution === 'unresolved'
+    && (call.p_raw_metadata as Record<string, unknown>).evidenceLevel === 'search_index_only'));
 
 const stableCalls: Array<Record<string, unknown>> = [];
 const stableDb = { rpc: async (_name: string, args: Record<string, unknown>) => {
