@@ -511,12 +511,12 @@ export function parseIsoDate(value: string | null | undefined): string | null {
     aug: 8, august: 8, sep: 9, sept: 9, september: 9, oct: 10,
     october: 10, nov: 11, november: 11, dec: 12, december: 12,
   };
-  const monthFirst = s.match(/^([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?[,]?\s+(\d{4})$/i);
+  const monthFirst = s.match(/^([A-Za-z]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?[,]?\s+(\d{4})$/i);
   if (monthFirst) {
     const month = monthNumbers[monthFirst[1].toLowerCase()];
     return month ? toIsoDateSafe(Number(monthFirst[3]), month, Number(monthFirst[2])) : null;
   }
-  const dayFirst = s.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)[,]?\s+(\d{4})$/i);
+  const dayFirst = s.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)\.?[,]?\s+(\d{4})$/i);
   if (dayFirst) {
     const month = monthNumbers[dayFirst[2].toLowerCase()];
     return month ? toIsoDateSafe(Number(dayFirst[3]), month, Number(dayFirst[1])) : null;
@@ -533,9 +533,9 @@ export interface DeadlineEvidence {
   evidenceText: string | null;
 }
 
-const MONTH_NAME = '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)';
+const MONTH_NAME = '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\.?';
 const EXPLICIT_DATE = `(?:${MONTH_NAME}\\s+\\d{1,2}(?:st|nd|rd|th)?[,]?\\s+\\d{4}|\\d{1,2}(?:st|nd|rd|th)?\\s+${MONTH_NAME}[,]?\\s+\\d{4}|\\d{1,2}\\/\\d{1,2}\\/\\d{4}|\\d{4}-\\d{2}-\\d{2})`;
-const DEADLINE_PREFIX = '(?:application\\s+deadline(?:\\s+is)?|applications?\\s+(?:are\\s+)?due(?:\\s+by)?|apply\\s+by|(?:job\\s+)?posting\\s+is\\s+(?:anticipated|expected|scheduled)\\s+to\\s+close(?:\\s+on)?|applications?\\s+(?:will\\s+)?close(?:\\s+on)?)';
+const DEADLINE_PREFIX = '(?:application\\s+deadline(?:\\s+is)?|applications?\\s+(?:are\\s+)?due(?:\\s+by)?|apply\\s+by|closing\\s+on|time\\s+left\\s+to\\s+apply\\s+end\\s+date|job\\s+posting\\s+end\\s+date|(?:job\\s+)?posting\\s+is\\s+(?:anticipated|expected|scheduled)\\s+to\\s+close(?:\\s+on)?|applications?\\s+(?:will\\s+)?close(?:\\s+on)?)';
 
 /**
  * Extract only explicitly labelled application timing from posting text.
@@ -547,10 +547,22 @@ export function extractDeadlineEvidence(value: string | null | undefined): Deadl
 
   const hard = text.match(new RegExp(`${DEADLINE_PREFIX}[\\s:,-]{0,18}(${EXPLICIT_DATE})`, 'i'));
   if (hard) {
-    const date = parseIsoDate(hard[1]);
+    let date = parseIsoDate(hard[1]);
+    // Merck explicitly says its posting expires at 11:59:59 p.m. on the day
+    // BEFORE the listed job posting end date. Show the last actionable day.
+    const endDateLabel = /^job\s+posting\s+end\s+date/i.test(hard[0]);
+    const afterDate = text.slice((hard.index ?? 0) + hard[0].length, (hard.index ?? 0) + hard[0].length + 360);
+    const dayBefore = endDateLabel && /posting\s+is\s+effective\s+until[^.]{0,100}\bday\s+BEFORE\b[^.]{0,100}\blisted\s+job\s+posting\s+end\s+date/i.test(afterDate);
+    if (date && dayBefore) {
+      const prior = new Date(`${date}T00:00:00Z`);
+      prior.setUTCDate(prior.getUTCDate() - 1);
+      date = prior.toISOString().slice(0, 10);
+    }
     const sentenceStart = Math.max(0, text.lastIndexOf('.', hard.index ?? 0) + 1);
     const nextStop = text.indexOf('.', (hard.index ?? 0) + hard[0].length);
-    const sentenceEnd = nextStop === -1 ? Math.min(text.length, sentenceStart + 260) : nextStop + 1;
+    const sentenceEnd = dayBefore
+      ? Math.min(text.length, (hard.index ?? 0) + hard[0].length + afterDate.search(/listed\s+job\s+posting\s+end\s+date/i) + 27)
+      : nextStop === -1 ? Math.min(text.length, sentenceStart + 260) : nextStop + 1;
     return {
       date,
       kind: date ? 'hard' : 'unknown',

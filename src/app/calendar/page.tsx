@@ -9,6 +9,7 @@ import {
 } from '@/lib/recruitingCalendar';
 import { DeadlinePlanner } from './deadline-planner';
 import { CalendarWatchlist } from './watchlist';
+import { timingFallbackLabel } from '@/lib/opportunityCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,17 +62,17 @@ export default async function CalendarPage() {
           }))} />}
           {undated.length > 0 && <section className="undated-section" aria-labelledby="undated-title">
             <header>
-              <h2 id="undated-title">Open without a fixed deadline</h2>
-              <p>These roles are current, but the reviewed posting did not give us a calendar date.</p>
+              <h2 id="undated-title">No verified deadline</h2>
+              <p>We do not have a confirmed calendar date for these roles. Check the employer posting before applying.</p>
             </header>
             <ol className="undated-grid">
             {undated.map((o) => (
               <li key={o.id}>
-                <span>Deadline not stated</span>
+                <span>Check deadline</span>
                 <div>
                   <h3>{o.title}</h3>
                   <p><strong>{o.company_name}</strong>{o.location ? ` · ${o.location}` : ''}</p>
-                  <p>{o.deadline_text ?? 'No deadline stated'}</p>
+                  <p>{timingFallbackLabel(o.deadline_text)}</p>
                   {o.posting_url && <p><a href={o.posting_url} target="_blank" rel="noopener noreferrer nofollow">Official posting ↗</a></p>}
                 </div>
               </li>

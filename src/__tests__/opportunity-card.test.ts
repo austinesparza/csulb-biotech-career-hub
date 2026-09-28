@@ -132,10 +132,11 @@ describe('small public-facing labels', () => {
   });
 
   it('normalizes ambiguous deadline text without inventing a date', () => {
-    expect(timingFallbackLabel(null)).toBe('No deadline stated');
-    expect(timingFallbackLabel('Unknown')).toBe('No deadline stated');
+    expect(timingFallbackLabel(null)).toBe('Deadline not verified');
+    expect(timingFallbackLabel('Unknown')).toBe('Deadline not verified');
     expect(timingFallbackLabel('Unknown; posting was active when checked'))
-      .toBe('No deadline stated; posting was active when checked');
+      .toBe('Deadline not verified; posting was active when checked');
     expect(timingFallbackLabel('Rolling')).toBe('Rolling / no fixed deadline stated');
+    expect(timingFallbackLabel('Not stated or rolling')).toBe('Deadline not verified');
   });
 });
