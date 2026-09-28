@@ -511,6 +511,20 @@ describe('extractDeadlineEvidence', () => {
     expect(result.evidenceText).toContain('anticipated to close');
   });
 
+  it('captures Vertex and Sanofi deadline labels without confusing program dates', () => {
+    expect(extractDeadlineEvidence('Program Dates: January – July 2027. Application Deadline: November 15th, 2026.'))
+      .toMatchObject({ date: '2026-11-15', kind: 'hard' });
+    expect(extractDeadlineEvidence('Posted on Sep. 11, 2026 Closing on Dec. 11, 2026'))
+      .toMatchObject({ date: '2026-12-11', kind: 'hard' });
+  });
+
+  it('uses the last actionable day when the employer explicitly expires the posting the day before its end date', () => {
+    const text = 'Job Posting End Date: 10/19/2026 *A job posting is effective until 11:59:59PM on the day BEFORE the listed job posting end date.';
+    expect(extractDeadlineEvidence(text)).toMatchObject({ date: '2026-10-18', kind: 'hard' });
+    expect(extractDeadlineEvidence('Job Posting End Date: 10/19/2026'))
+      .toMatchObject({ date: '2026-10-19', kind: 'hard' });
+  });
+
   it('does not mistake program dates for an application deadline', () => {
     expect(extractDeadlineEvidence('The internship runs from May 18, 2027 through August 7, 2027.'))
       .toEqual({ date: null, kind: 'unknown', evidenceText: null });

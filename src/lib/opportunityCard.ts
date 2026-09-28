@@ -149,11 +149,11 @@ export function noteLabel(note: string): string {
 
 export function timingFallbackLabel(value: string | null): string {
   const text = value?.trim();
-  if (!text) return 'No deadline stated';
-  if (/^unknown$/i.test(text)) return 'No deadline stated';
-  if (/^unknown\s*;/i.test(text)) return text.replace(/^unknown/i, 'No deadline stated');
-  if (/^(?:not stated or )?rolling$/i.test(text)) return 'Rolling / no fixed deadline stated';
-  if (/^not stated$/i.test(text)) return 'No deadline stated';
+  if (!text) return 'Deadline not verified';
+  if (/^unknown$/i.test(text)) return 'Deadline not verified';
+  if (/^unknown\s*;/i.test(text)) return text.replace(/^unknown/i, 'Deadline not verified');
+  if (/^rolling$/i.test(text)) return 'Rolling / no fixed deadline stated';
+  if (/^(?:not stated|not stated or rolling)$/i.test(text)) return 'Deadline not verified';
   return text;
 }
 

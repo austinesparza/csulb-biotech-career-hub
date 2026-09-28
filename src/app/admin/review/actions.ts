@@ -25,9 +25,14 @@ function safeReviewActionError(error: unknown): string {
     'Only student-accessible records can be published',
     'Choose the student stage supported by the posting',
     'Confirm the source and public-safe fields before approval',
+    'Confirm the application deadline against the full posting before approval',
     'Add a concise evidence-based audience reason',
     'Opportunity not found',
     'An employer or ATS posting is required before publication',
+    'Check the employer posting before changing its deadline',
+    'Enter a valid application deadline',
+    'Keep the deadline note under 300 characters',
+    'Private review draft not found',
     'Invalid archive audience',
   ];
   if (allowed.includes(message)) return message;
@@ -37,7 +42,7 @@ function safeReviewActionError(error: unknown): string {
 }
 
 async function runReviewAction(
-  operation: 'approve' | 'archive' | 'reject',
+  operation: 'approve' | 'archive' | 'reject' | 'deadline',
   opportunityId: string,
   run: () => Promise<void>,
 ): Promise<ReviewActionResult> {
@@ -69,6 +74,39 @@ function requiredFormText(formData: FormData, name: string): string {
   const value = String(formData.get(name) ?? '').trim();
   if (!value) throw new Error(`${name.replaceAll('_', ' ')} is required`);
   return value;
+}
+
+/** Correct a private draft before the officer's publication decision. */
+export async function saveReviewDeadline(input: {
+  id: string;
+  deadline: string | null;
+  deadlineText: string;
+  sourceConfirmed: boolean;
+}): Promise<ReviewActionResult> {
+  return runReviewAction('deadline', input.id, async () => {
+    const { user } = await requireOfficer();
+    if (!input.sourceConfirmed) throw new Error('Check the employer posting before changing its deadline');
+    const date = input.deadline?.trim() || null;
+    const parsed = date ? new Date(`${date}T00:00:00Z`) : null;
+    if (date && (!/^\d{4}-\d{2}-\d{2}$/.test(date)
+      || !parsed || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date)) {
+      throw new Error('Enter a valid application deadline');
+    }
+    const deadlineText = input.deadlineText.trim();
+    if (deadlineText.length > 300) throw new Error('Keep the deadline note under 300 characters');
+    const db = createServiceClient();
+    const { data, error } = await db.from('opportunities').update({
+      deadline: date,
+      deadline_text: deadlineText || null,
+      date_basis: date ? 'stated' : 'unknown',
+      last_checked_at: new Date().toISOString(),
+    }).eq('id', input.id).eq('review_status', 'pending').eq('public_safe', false)
+      .select('id').maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) throw new Error('Private review draft not found');
+    console.info('[review-deadline] saved private draft', { opportunityId: input.id, officerId: user.id });
+    revalidatePath('/admin/review');
+  });
 }
 
 /** Resolve a non-opportunity submission after an officer has checked it. */
@@ -222,6 +260,7 @@ async function approveOpportunityUnsafe(input: {
   graduateStage: GraduateStage;
   finalFields: ReviewFinalFields;
   sourceConfirmed: boolean;
+  deadlineReviewed: boolean;
   publicSafeConfirmed: boolean;
 }): Promise<void> {
   const { user } = await requireOfficer();
@@ -236,6 +275,9 @@ async function approveOpportunityUnsafe(input: {
   }
   if (!input.sourceConfirmed || !input.publicSafeConfirmed) {
     throw new Error('Confirm the source and public-safe fields before approval');
+  }
+  if (!input.deadlineReviewed) {
+    throw new Error('Confirm the application deadline against the full posting before approval');
   }
   const audienceReason = input.audienceReason.trim();
   if (audienceReason.length < 8) {

@@ -125,7 +125,7 @@ export default async function HomePage() {
                     <strong>{opportunity.title}</strong>
                     <small>{opportunityDetails(opportunity)}</small>
                   </span>
-                  <time>{opportunity.deadline ? `Apply by ${formatDate(opportunity.deadline)}` : 'No fixed deadline stated'}</time>
+                  <time>{opportunity.deadline ? `Apply by ${formatDate(opportunity.deadline)}` : 'Deadline not verified'}</time>
                   <span className="featured-arrow" aria-hidden="true">→</span>
                 </a>
               </li>

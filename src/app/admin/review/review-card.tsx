@@ -9,7 +9,7 @@ import type { SheetReviewIntent } from '@/lib/sheet-review';
 import { isPublishableAudienceStage } from '@/lib/opportunityAudience';
 import { hasRecentOpenSource } from '@/lib/review-source';
 import { validateEmployerControlledSourceUrl } from '@/lib/discovery-promotion';
-import { approveOpportunity, archiveForAudience, rejectOpportunity } from './actions';
+import { approveOpportunity, archiveForAudience, rejectOpportunity, saveReviewDeadline } from './actions';
 
 interface ExtractedField {
   value: string;
@@ -193,6 +193,10 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
     ? row.audience_reason
     : row.sheet_review?.audienceReason ?? '';
   const [sourceConfirmed, setSourceConfirmed] = useState(sheetApproval && sourceRecentlyChecked);
+  const [deadlineReviewed, setDeadlineReviewed] = useState(false);
+  const [deadline, setDeadline] = useState(row.deadline ?? '');
+  const [deadlineText, setDeadlineText] = useState(row.deadline_text ?? '');
+  const [savedDeadline, setSavedDeadline] = useState({ date: row.deadline ?? '', text: row.deadline_text ?? '' });
   const [publicSafeConfirmed, setPublicSafeConfirmed] = useState(sheetApproval);
   const [publicNotes, setPublicNotes] = useState(row.public_notes ?? '');
   const [audienceBucket, setAudienceBucket] = useState<AudienceBucket>(initialAudience);
@@ -224,7 +228,8 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
   }, [row]);
 
   const audienceReady = audienceBucket !== 'unknown' && audienceReason.trim().length >= 8;
-  const canApprove = employerUrl.valid && sourceConfirmed && publicSafeConfirmed && audienceReady
+  const deadlineChanged = deadline !== savedDeadline.date || deadlineText.trim() !== savedDeadline.text;
+  const canApprove = employerUrl.valid && sourceConfirmed && deadlineReviewed && !deadlineChanged && publicSafeConfirmed && audienceReady
     && isPublishableAudienceStage(audienceBucket, graduateStage) && !pending;
   const canArchive = sourceConfirmed && publicSafeConfirmed && audienceReady
     && ['ineligible', 'adjacent', 'special'].includes(audienceBucket) && !pending;
@@ -239,7 +244,7 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
 
   const meta = [
     row.location, row.focus_area, row.eligibility,
-    row.deadline ? `deadline ${row.deadline}` : row.deadline_text,
+    deadline ? `deadline ${deadline}` : deadlineText,
     row.start_date_text, row.paid_status, row.application_type,
   ].filter(Boolean).join(' · ');
 
@@ -270,13 +275,30 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
         </details>
       )}
 
-      <details className="review-form" open={!sheetApprovalReady}>
+      <details className="review-form" open={!sheetApprovalReady || !deadlineReviewed}>
         <summary>{sheetApprovalReady ? 'Review or change imported details' : 'Complete review details'}</summary>
         <label className="review-field">
           Public note
           <textarea value={publicNotes} onChange={(event) => setPublicNotes(event.target.value)} rows={2} maxLength={500}
             placeholder="Optional. Keep it factual and student-safe." />
         </label>
+
+        <div className="review-grid">
+          <label className="review-field">
+            Application deadline from the employer posting
+            <input type="date" value={deadline} onChange={(event) => { setDeadline(event.target.value); setDeadlineReviewed(false); }} />
+          </label>
+          <label className="review-field">
+            Deadline note (for rolling review or early closure)
+            <input value={deadlineText} onChange={(event) => { setDeadlineText(event.target.value); setDeadlineReviewed(false); }} maxLength={300} />
+          </label>
+        </div>
+        {deadlineChanged && <button type="button" disabled={pending || !sourceConfirmed || !employerUrl.valid} onClick={() => startTransition(async () => {
+          setError(null);
+          const result = await saveReviewDeadline({ id: row.id, deadline: deadline || null, deadlineText, sourceConfirmed });
+          if (!result.ok) { setError(result.error); return; }
+          setSavedDeadline({ date: deadline, text: deadlineText.trim() });
+        })}>Save deadline to draft</button>}
 
         <div className="review-grid">
           <label className="review-field">
@@ -307,6 +329,10 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
             ) : 'an official source'} and it matches this record</span>
           </label>
           <label>
+            <input type="checkbox" checked={deadlineReviewed} onChange={(event) => setDeadlineReviewed(event.target.checked)} />
+            <span>I checked the application deadline in the full posting. If it gives a date missing or different above, correct the draft before approval.</span>
+          </label>
+          <label>
             <input type="checkbox" checked={publicSafeConfirmed} onChange={(event) => setPublicSafeConfirmed(event.target.checked)} />
             <span>Public fields contain no private information</span>
           </label>
@@ -319,7 +345,7 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
           try {
             const result = await approveOpportunity({
               id: row.id, status: 'open_verified', publicNotes, makeCompanyPublic: !(row.companies?.public_safe ?? false),
-              audienceBucket, audienceReason, graduateStage, finalFields, sourceConfirmed, publicSafeConfirmed,
+              audienceBucket, audienceReason, graduateStage, finalFields, sourceConfirmed, deadlineReviewed, publicSafeConfirmed,
             });
             if (!result.ok) { setError(result.error); return; }
             setDone('approved and published');
