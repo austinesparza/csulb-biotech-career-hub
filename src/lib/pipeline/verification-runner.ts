@@ -59,6 +59,8 @@ export interface VerificationRunReport {
   dryRun: boolean;
   considered: number;
   skippedRecent: number;
+  /** Waiting for a later run because this host hit a run-local limit. */
+  deferred: number;
   fetched: number;
   recorded: number;
   reviewTasks: number;
@@ -363,7 +365,7 @@ export async function runPostingVerificationBatch(params: {
   const sleep = params.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const spacing = params.hostSpacingMs ?? DEFAULT_HOST_SPACING_MS;
   const report: VerificationRunReport = {
-    runId, dryRun: !!params.dryRun, considered: 0, skippedRecent: 0, fetched: 0, recorded: 0, reviewTasks: 0,
+    runId, dryRun: !!params.dryRun, considered: 0, skippedRecent: 0, deferred: 0, fetched: 0, recorded: 0, reviewTasks: 0,
     outcomes: {}, governanceGaps: {}, decisions: [], errors: [],
   };
 
@@ -390,6 +392,15 @@ export async function runPostingVerificationBatch(params: {
         ? governVerification(identity, sources)
         : { mode: "blocked" as const, status: "no_governed_source" as const, reason: "Not an individual employer requisition URL", source: null };
       if (skipPriorVerification(existing, governance, now)) { report.skippedRecent++; continue; }
+      // A run-local host cap is not a property of the posting or its source.
+      // Do not archive an unfetched row and put it on a seven-day cooldown.
+      const preliminary = decideVerification({ lead: candidate, assessment: null, existing, retrievedAt: now.toISOString() });
+      const skipFetch = ["rejected_not_requisition", "rejected_attribution", "duplicate_existing"].includes(preliminary.outcome);
+      const host = identity.host ?? "";
+      if (!skipFetch && governance.mode === "page" && (blockedHosts.has(host) || (hostCount.get(host) ?? 0) >= MAX_PER_HOST)) {
+        report.deferred++;
+        continue;
+      }
       report.considered++;
       let assessment: PageAssessment | null = null;
       let fetched: (FetchedPage & { tier: 0 | 1; tierNote: string | null; attested: boolean }) | null = null;
@@ -401,9 +412,6 @@ export async function runPostingVerificationBatch(params: {
       let governanceReason: string | null = null;
 
       // Dedupe first: an existing opportunity or source posting needs no fetch.
-      const preliminary = decideVerification({ lead: candidate, assessment: null, existing, retrievedAt: now.toISOString() });
-      const skipFetch = ["rejected_not_requisition", "rejected_attribution", "duplicate_existing"].includes(preliminary.outcome);
-
       if (!skipFetch && governance.mode === "blocked") {
         governanceStatus = governance.status;
         governanceReason = governance.reason;
@@ -427,55 +435,49 @@ export async function runPostingVerificationBatch(params: {
         }
       } else if (!skipFetch && governance.mode === "page") {
         governanceStatus = "fetched";
-        const host = identity.host ?? "";
-        if (blockedHosts.has(host) || (hostCount.get(host) ?? 0) >= MAX_PER_HOST) {
-          governanceStatus = "source_policy_blocked";
-          governanceReason = blockedHosts.has(host) ? `${host} refused an earlier request in this run; not retried` : `Per-host cap of ${MAX_PER_HOST} verifications reached for this run`;
-        } else {
-          const wait = (hostLastFetch.get(host) ?? 0) + spacing - Date.now();
-          if (wait > 0) await sleep(wait);
-          fetched = await fetchPage(identity.url as string, fetcher, params.scrapling ?? null);
-          hostLastFetch.set(host, Date.now());
-          hostCount.set(host, (hostCount.get(host) ?? 0) + 1);
-          report.fetched++;
-          if ([401, 403, 429].includes(fetched.status)) blockedHosts.add(host);
-          // A redirect that leaves the reviewed host is not evidence from that
-          // host: nothing from the foreign page is stored or assessed.
-          const scopeHosts = verificationScope(governance.source)?.hosts ?? [];
-          let finalHost: string | null = null;
+        const wait = (hostLastFetch.get(host) ?? 0) + spacing - Date.now();
+        if (wait > 0) await sleep(wait);
+        fetched = await fetchPage(identity.url as string, fetcher, params.scrapling ?? null);
+        hostLastFetch.set(host, Date.now());
+        hostCount.set(host, (hostCount.get(host) ?? 0) + 1);
+        report.fetched++;
+        if ([401, 403, 429].includes(fetched.status)) blockedHosts.add(host);
+        // A redirect that leaves the reviewed host is not evidence from that
+        // host: nothing from the foreign page is stored or assessed.
+        const scopeHosts = verificationScope(governance.source)?.hosts ?? [];
+        let finalHost: string | null = null;
+        try {
+          const final = fetched.finalUrl ? new URL(fetched.finalUrl) : null;
+          finalHost = final?.protocol === "https:" ? final.hostname.toLowerCase() : null;
+        } catch { finalHost = null; }
+        const outsideScope = (value: string) => {
           try {
-            const final = fetched.finalUrl ? new URL(fetched.finalUrl) : null;
-            finalHost = final?.protocol === "https:" ? final.hostname.toLowerCase() : null;
-          } catch { finalHost = null; }
-          const outsideScope = (value: string) => {
-            try {
-              const target = new URL(value);
-              return target.protocol !== "https:" || !scopeHosts.includes(target.hostname.toLowerCase());
-            } catch { return true; }
-          };
-          const leftScope = fetched.redirects?.some((hop) => outsideScope(hop.url) || outsideScope(hop.location));
-          if (fetched.body && (!finalHost || !scopeHosts.includes(finalHost) || leftScope)) {
-            fetched = { ...fetched, body: null };
-            assessment = { state: "redirected_away", text: null, pageTitle: null, finalIdentity: resolvePostingIdentity(fetched.finalUrl), requisitionIdsOnPage: [],
-              gates: unknownGates(), reason: `Renderer or redirect left the reviewed host; the foreign page was not stored` };
-          } else {
-            assessment = assessFetchedPage({ page: fetched, expected: identity });
-            // A legacy renderer may return only HTML. Archive its text for
-            // investigation; only structured URL metadata can support review.
-            if (fetched.tier === 1 && !fetched.attested && assessment.state === "apply_visible") {
-              assessment = { ...assessment, state: "ambiguous", gates: unknownGates(),
-                reason: "Rendered page has no attested final URL; confirm the requisition and Apply flow manually" };
-            }
+            const target = new URL(value);
+            return target.protocol !== "https:" || !scopeHosts.includes(target.hostname.toLowerCase());
+          } catch { return true; }
+        };
+        const leftScope = fetched.redirects?.some((hop) => outsideScope(hop.url) || outsideScope(hop.location));
+        if (fetched.body && (!finalHost || !scopeHosts.includes(finalHost) || leftScope)) {
+          fetched = { ...fetched, body: null };
+          assessment = { state: "redirected_away", text: null, pageTitle: null, finalIdentity: resolvePostingIdentity(fetched.finalUrl), requisitionIdsOnPage: [],
+            gates: unknownGates(), reason: `Renderer or redirect left the reviewed host; the foreign page was not stored` };
+        } else {
+          assessment = assessFetchedPage({ page: fetched, expected: identity });
+          // A legacy renderer may return only HTML. Archive its text for
+          // investigation; only structured URL metadata can support review.
+          if (fetched.tier === 1 && !fetched.attested && assessment.state === "apply_visible") {
+            assessment = { ...assessment, state: "ambiguous", gates: unknownGates(),
+              reason: "Rendered page has no attested final URL; confirm the requisition and Apply flow manually" };
           }
-          if (fetched.body) {
-            contentHash = sha256(fetched.body);
-            snapshotPath = `verification/${governance.source.id}/${fetched.retrievedAt.slice(0, 10)}/${contentHash}.txt`;
-            if (!params.dryRun) {
-              const upload = await params.storage.from("source-payloads").upload(snapshotPath, new TextEncoder().encode(fetched.body), {
-                contentType: "text/plain; charset=utf-8", upsert: false,
-              });
-              if (upload.error && !/already exists/i.test(upload.error.message)) throw new Error(`snapshot upload: ${upload.error.message}`);
-            }
+        }
+        if (fetched.body) {
+          contentHash = sha256(fetched.body);
+          snapshotPath = `verification/${governance.source.id}/${fetched.retrievedAt.slice(0, 10)}/${contentHash}.txt`;
+          if (!params.dryRun) {
+            const upload = await params.storage.from("source-payloads").upload(snapshotPath, new TextEncoder().encode(fetched.body), {
+              contentType: "text/plain; charset=utf-8", upsert: false,
+            });
+            if (upload.error && !/already exists/i.test(upload.error.message)) throw new Error(`snapshot upload: ${upload.error.message}`);
           }
         }
       }
