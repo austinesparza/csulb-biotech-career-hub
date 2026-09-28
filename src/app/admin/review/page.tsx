@@ -6,7 +6,7 @@ import type { DiscoveryLead, DiscoveryLeadObservationRow, ReviewTask, UserSubmis
 import { readSheetReviewIntent } from '@/lib/sheet-review';
 import { ReviewList, type ReviewRow } from './review-list';
 import { SubmissionList } from './submission-list';
-import { TaskList } from './task-list';
+import { TaskList, type VerificationTaskEvidence } from './task-list';
 import { DiscoveryLeadList, type DiscoveryLeadRow } from './discovery-lead-list';
 
 export const dynamic = 'force-dynamic';
@@ -112,6 +112,14 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     const { data, error } = await db.from('review_tasks').select('*')
       .in('status', ['open', 'in_progress']).order('priority', { ascending: true }).order('created_at', { ascending: true }).limit(100);
     const rows = (data ?? []) as ReviewTask[];
+    const verificationIds = rows.filter((row) => row.entity_table === 'posting_verifications').map((row) => row.entity_id);
+    const evidence = verificationIds.length > 0
+      ? await db.from('posting_verifications')
+        .select('id,observed_url,final_url,retrieved_at,page_state,outcome,requisition_id,content_sha256,snapshot_storage_path,gates,comparison,duplicates')
+        .in('id', verificationIds)
+      : { data: [], error: null };
+    const verificationById = Object.fromEntries(((evidence.data ?? []) as VerificationTaskEvidence[])
+      .map((item) => [item.id, item]));
     return <div className="admin-page-flow">
       <ReviewHeader
         title="Review tasks"
@@ -119,7 +127,10 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
         badge={`${rows.length} active tasks`}
       />
       <TabNav selected={selected} />
-      {error ? <p role="alert">Could not load tasks: {error.message}</p> : <TaskList rows={rows} />}
+      {error ? <p role="alert">Could not load tasks: {error.message}</p> : <>
+        {evidence.error ? <p role="alert">Could not load verification evidence: {evidence.error.message}</p> : null}
+        <TaskList rows={rows} verificationById={verificationById} />
+      </>}
     </div>;
   }
 
