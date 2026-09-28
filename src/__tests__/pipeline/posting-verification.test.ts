@@ -388,13 +388,27 @@ console.log('=== Runner boundary ===');
       && calls.rpc.some((row) => row.page_state === 'redirected_away'), roundTrip);
 
   const blocked = async (url: string) => { calls.fetches.push(url); return { finalUrl: url, status: 429, etag: null, lastModified: null, body: 'Too many requests', contentType: 'text/plain', redirects: [] }; };
-  calls.fetches.length = 0;
+  calls.rpc.length = 0; calls.fetches.length = 0;
   submissions.push({ id: 'sub-jnj-2', created_at: '2026-09-24T00:00:00Z', payload: { intake_stage: 'source_research', company: 'Johnson & Johnson',
     title: 'Oncology Clinical Scientist Intern', candidate_employer_url: 'https://www.careers.jnj.com/en/jobs/r-099892/oncology-clinical-scientist-intern/' } });
-  const limited = await runPostingVerificationBatch({ db: db as never, storage, fetcher: blocked, now: new Date(AT), limit: 5, hostSpacingMs: 0, dryRun: true });
+  const limited = await runPostingVerificationBatch({ db: db as never, storage, fetcher: blocked, now: new Date(AT), limit: 5, hostSpacingMs: 0 });
   ok('a 429 is recorded as blocked and the host is not requested again in the run', calls.fetches.length === 1
     && limited.decisions.some((item) => item.pageState === 'blocked')
-    && limited.decisions.some((item) => item.url.includes('r-099892') && item.outcome === 'unresolved_governance'), limited.decisions);
+    && limited.deferred === 1 && !limited.decisions.some((item) => item.url.includes('r-099892')), limited);
+  ok('only the actual refusal is archived; the unfetched requisition remains eligible next run',
+    !calls.rpc.some((row) => String(row.observed_url).includes('r-099892')),
+    calls.rpc.map((row) => row.observed_url));
+
+  submissions.push(...['r-099893', 'r-099894'].map((id) => ({
+    id: `sub-${id}`, created_at: '2026-09-24T00:00:00Z',
+    payload: { intake_stage: 'source_research', company: 'Johnson & Johnson',
+      title: 'Oncology Clinical Scientist Intern', candidate_employer_url: `https://www.careers.jnj.com/en/jobs/${id}/oncology-clinical-scientist-intern/` },
+  })));
+  calls.rpc.length = 0; calls.fetches.length = 0;
+  const capped = await runPostingVerificationBatch({ db: db as never, storage, fetcher, now: new Date(AT), limit: 10, hostSpacingMs: 0 });
+  ok('the per-host cap defers the fourth requisition without archiving it',
+    calls.fetches.length === 3 && capped.deferred === 1 && capped.fetched === 3
+      && !calls.rpc.some((row) => String(row.observed_url).includes('r-099894')), capped);
 }
 
 console.log('=== Bounded queue progress ===');

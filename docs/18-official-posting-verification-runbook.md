@@ -57,7 +57,7 @@ Related discovery settings:
 
 ## Monitoring
 
-* In `pipeline_cycles.discovery_json.verification`, look at `considered`, `fetched`, `recorded`, `reviewTasks`, `outcomes`, `governanceGaps` and `errors`. A run with `fetched = 0` and every outcome `unresolved_governance` means no tenant has been reviewed yet. It did no verification; treat it as a gap, not a success.
+* In `pipeline_cycles.discovery_json.verification`, look at `considered`, `deferred`, `fetched`, `recorded`, `reviewTasks`, `outcomes`, `governanceGaps` and `errors`. `deferred` counts requisitions not fetched after a host refusal or its three-fetch cap; they remain eligible on the next run and have no verification row for that deferral. A run with `fetched = 0` and every outcome `unresolved_governance` means no tenant has been reviewed yet. It did no verification; treat it as a gap, not a success.
 * Useful SQL, as an officer:
   ```sql
   select outcome, page_state, count(*) from posting_verifications
@@ -71,7 +71,7 @@ Related discovery settings:
 
 ## Limits and recovery
 
-* At most 3 fetches per host per run, at least 2 seconds apart. A host that answers 401, 403 or 429 is not requested again in that run. The paid ScrapeGraph tier is never used for verification.
+* At most 3 fetches per host per run, at least 2 seconds apart. A host that answers 401, 403 or 429 is not requested again in that run. Later requisitions for that host are deferred without an archive row or seven-day cooldown. The paid ScrapeGraph tier is never used for verification.
 * Each assessed requisition is rechecked at most every 7 days. A blocked governance gap is archived once and does not occupy every subsequent batch; approving a matching source makes it eligible immediately. Non-requisition links are archived once. Retries are idempotent (`verification_key`). The evidence table rejects updates and deletes.
 * Private contact data is redacted from quotes and task notes. The raw snapshot stays in the private `source-payloads` bucket under `verification/`.
 * To roll back, unset `POSTING_VERIFICATION_ENABLED` or clear a source's scope. Do not delete evidence.

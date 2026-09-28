@@ -23,6 +23,7 @@ ok('requisition parsing does not regress', result.urlLevel.after.requisitionCorr
 ok('employer-agnostic reachability does not regress', after.discoveredEmployerAgnostic >= before.discoveredEmployerAgnostic);
 ok('every identifiable role that does not reach review has a recorded cause', after.rows.every((row) => row.cause.length > 0));
 ok('with the documented production sources nothing is auto-verified (activation blocker stays visible)', production.reachedReview === 0);
+ok('the fully scoped mechanism arm can reach private review while production remains blocked', after.reachedReview > 0, after.causes);
 ok('only readable employer pages become review candidates', after.rows.filter((row) => row.cause === 'reached_review').every((row) => row.pageState === 'apply_visible'));
 ok('gate assertions on readable pages are precise', result.gates.every((gate) => gate.asserted === 0 || gate.correct / gate.asserted >= 0.85), result.gates);
 
