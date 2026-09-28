@@ -237,7 +237,9 @@ export async function loadExistingRecords(db: SupabaseClient, identity: PostingI
     req ? db.from("source_postings").select("id,canonical_url,external_posting_id,title_raw,employer_name_raw,current_status").eq("external_posting_id", req).limit(25) : empty,
     req ? db.from("discovery_leads").select("id,normalized_url,original_url,latest_title,employer_hint,resolution").or(`normalized_url.ilike.${like(req)},original_url.ilike.${like(req)}`).limit(25) : empty,
     req ? db.from("user_submissions").select("id,payload,status").ilike("payload->>candidate_employer_url", like(req)).limit(25) : empty,
-    identity.identityKey ? db.from("posting_verifications").select("id,canonical_url,lead_title,lead_employer,outcome,created_at").eq("identity_key", identity.identityKey).order("created_at", { ascending: false }).limit(5) : empty,
+    db.from("posting_verifications").select("id,canonical_url,lead_title,lead_employer,outcome,created_at")
+      .eq(identity.identityKey ? "identity_key" : "canonical_url", identity.identityKey ?? url)
+      .order("created_at", { ascending: false }).limit(5),
   ]);
   const failure = [opps, oppsByReq, postings, postingsByReq, leads, research, prior].find((result) => result.error);
   if (failure?.error) throw new Error(`duplicate check: ${failure.error.message}`);
@@ -264,12 +266,18 @@ export async function loadExistingRecords(db: SupabaseClient, identity: PostingI
   return out;
 }
 
-function recentlyVerified(existing: ExistingRecord[], now: Date): boolean {
-  return existing.some((record) => record.table === "posting_verifications"
-    // A source can be approved after a governance gap is archived. Retry it
-    // immediately when that happens instead of hiding the candidate for a week.
-    && record.status !== "unresolved_governance"
-    && Date.parse(record.createdAt ?? "") > now.valueOf() - RECHECK_DAYS * 86_400_000);
+/** Do not let unchanged, ungoverned leads consume the bounded batch forever. */
+export function skipPriorVerification(existing: ExistingRecord[], governance: Governance, now: Date): boolean {
+  const latest = existing.find((record) => record.table === "posting_verifications");
+  if (!latest) return false;
+  if (latest.status === "unresolved_governance") {
+    // A newly approved source must make this lead eligible immediately.
+    return governance.mode === "blocked";
+  }
+  // A landing page or secondary URL can never become a requisition without
+  // changing its URL. It should be archived once, not every seven days.
+  if (latest.status === "rejected_not_requisition") return true;
+  return Date.parse(latest.createdAt ?? "") > now.valueOf() - RECHECK_DAYS * 86_400_000;
 }
 
 function taskNotes(candidate: VerificationCandidate, decision: VerificationDecision, retrievedAt: string, pageTitle: string | null): string {
@@ -378,12 +386,11 @@ export async function runPostingVerificationBatch(params: {
     seen.add(key);
     try {
       const existing = await loadExistingRecords(params.db, identity);
-      if (recentlyVerified(existing, now)) { report.skippedRecent++; continue; }
-      report.considered++;
-
       const governance = isEmployerRequisitionUrl(identity)
         ? governVerification(identity, sources)
         : { mode: "blocked" as const, status: "no_governed_source" as const, reason: "Not an individual employer requisition URL", source: null };
+      if (skipPriorVerification(existing, governance, now)) { report.skippedRecent++; continue; }
+      report.considered++;
       let assessment: PageAssessment | null = null;
       let fetched: (FetchedPage & { tier: 0 | 1; tierNote: string | null; attested: boolean }) | null = null;
       let snapshotPath: string | null = null;

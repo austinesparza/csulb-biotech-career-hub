@@ -6,7 +6,7 @@
 import { resolvePostingIdentity, attributeEmployer } from '../../lib/pipeline/posting-identity';
 import { assessFetchedPage, compareTitles, extractGates, pageText, sameRequisition, type FetchedPage } from '../../lib/pipeline/posting-evidence';
 import { decideDuplicate, decideVerification, type ExistingRecord } from '../../lib/pipeline/posting-verification';
-import { buildVerificationScope, governVerification, redactContacts, runPostingVerificationBatch, type VerificationSourceRow } from '../../lib/pipeline/verification-runner';
+import { buildVerificationScope, governVerification, redactContacts, runPostingVerificationBatch, skipPriorVerification, type VerificationSourceRow } from '../../lib/pipeline/verification-runner';
 
 let passed = 0;
 let failed = 0;
@@ -266,6 +266,25 @@ console.log('=== Governance ===');
 
 console.log('=== Runner boundary ===');
 {
+  const blockedGovernance = governVerification(resolvePostingIdentity(JNJ), []);
+  const approvedGovernance = governVerification(resolvePostingIdentity(JNJ), [{
+    id: 'src-jnj', source_name: 'J&J careers', source_kind: 'static_html', source_identifier: null,
+    careers_url: 'https://www.careers.jnj.com/en/jobs/', api_endpoint: null,
+    config_json: { requisition_verification: { enabled: true, hosts: ['www.careers.jnj.com'], tenant_key: 'www.careers.jnj.com', path_prefixes: ['/en/jobs/'] } },
+    enabled: true, terms_reviewed: true, terms_review_date: '2026-09-20', robots_reviewed: true,
+    automatic_scheduling_paused_at: null, consecutive_failures: 0, fetch_tier: 0, tier_clean_runs: 0, last_successful_at: null,
+  }]);
+  const oldGap: ExistingRecord = { table: 'posting_verifications', id: 'gap-1', url: JNJ, title: null, employer: null,
+    status: 'unresolved_governance', createdAt: '2026-09-01T00:00:00Z' };
+  ok('an unresolved governance gap is skipped while still blocked, even after seven days',
+    skipPriorVerification([oldGap], blockedGovernance, new Date(AT)));
+  ok('a newly approved source immediately retries a formerly blocked requisition',
+    !skipPriorVerification([oldGap], approvedGovernance, new Date(AT)));
+  ok('an archived non-requisition URL does not consume a later batch slot',
+    skipPriorVerification([{ ...oldGap, status: 'rejected_not_requisition' }], blockedGovernance, new Date(AT)));
+  ok('an archived page outcome is retried after the normal recheck interval',
+    !skipPriorVerification([{ ...oldGap, status: 'unresolved_page' }], approvedGovernance, new Date(AT)));
+
   const calls: { rpc: Array<Record<string, unknown>>; uploads: string[]; fetches: string[] } = { rpc: [], uploads: [], fetches: [] };
   const sources = [{
     id: 'src-jnj', source_name: 'J&J careers', source_kind: 'static_html', source_identifier: null, careers_url: 'https://www.careers.jnj.com/en/jobs/',
@@ -376,6 +395,39 @@ console.log('=== Runner boundary ===');
   ok('a 429 is recorded as blocked and the host is not requested again in the run', calls.fetches.length === 1
     && limited.decisions.some((item) => item.pageState === 'blocked')
     && limited.decisions.some((item) => item.url.includes('r-099892') && item.outcome === 'unresolved_governance'), limited.decisions);
+}
+
+console.log('=== Bounded queue progress ===');
+{
+  const next = JNJ.replace('r-099898', 'r-099899');
+  const observations: string[] = [];
+  function query(table: string) {
+    const filters: Record<string, unknown> = {};
+    const builder: Record<string, unknown> = {};
+    for (const method of ['select', 'in', 'order', 'limit', 'ilike', 'or']) builder[method] = () => builder;
+    builder.eq = (column: string, value: unknown) => { filters[column] = value; return builder; };
+    builder.then = (resolve: (value: unknown) => unknown) => {
+      const rows = table === 'user_submissions' ? [JNJ, next].map((url, i) => ({
+        id: `sub-${i}`, created_at: `2026-09-20T00:00:0${i}Z`,
+        payload: { intake_stage: 'source_research', company: 'Johnson & Johnson', title: 'Oncology Discovery Scientist Intern', candidate_employer_url: url },
+      })) : table === 'posting_verifications' && String(filters.identity_key).endsWith(':r-099898')
+        ? [{ id: 'previous-gap', canonical_url: JNJ, lead_title: null, lead_employer: null,
+          outcome: 'unresolved_governance', created_at: '2026-09-01T00:00:00Z' }] : [];
+      return Promise.resolve({ data: rows, error: null }).then(resolve);
+    };
+    return builder;
+  }
+  const db = {
+    from: query,
+    async rpc(_name: string, args: { p_row: { observed_url: string } }) {
+      observations.push(args.p_row.observed_url);
+      return { data: [{ verification_id: 'new', review_task_id: null, created: true }], error: null };
+    },
+  };
+  const report = await runPostingVerificationBatch({ db: db as never, storage: { from: () => ({ upload: async () => ({ error: null }) }) },
+    now: new Date(AT), limit: 1 });
+  ok('a blocked archived lead gives its batch slot to the next distinct candidate',
+    report.considered === 1 && report.skippedRecent === 1 && observations.length === 1 && observations[0] === next, report);
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
