@@ -1,0 +1,61 @@
+{
+  "_meta": {
+    "description": "Recruiting-tenant identity metadata used to attribute an indexed or fetched job URL to an employer. An entry here is NOT permission to fetch: only an enabled job_sources row with dated terms and robots reviews and an explicit requisition_verification scope authorizes a verification fetch.",
+    "observedAt": "2026-09-26",
+    "sources": [
+      "docs/research/2026-09-24-linkedin-screenshot-audit.md",
+      "docs/research/2026-09-24-internship-gap-review.md",
+      "docs/research/2026-09-25-employer-requisition-catalog.json"
+    ],
+    "fields": {
+      "host": "Exact lowercase hostname of the recruiting system or employer careers site.",
+      "site": "Workday site segment (lowercase), Greenhouse board token, ADP cid, or Radancy company id. Null means the whole host belongs to one tenant.",
+      "employer": "The employer that owns the tenant.",
+      "aliases": "Other names the same legal employer uses on postings or in leads.",
+      "operatingCompanies": "Subsidiaries that post through the parent tenant. A lead naming one of these requires page text naming it before attribution is accepted.",
+      "shared": "True for program or parent hosts that publish for several organizations. Attribution always requires page evidence."
+    }
+  },
+  "tenants": [
+    { "kind": "workday", "host": "gilead.wd1.myworkdayjobs.com", "site": "gileadcareers", "employer": "Gilead Sciences", "aliases": ["Gilead"], "operatingCompanies": ["Kite Pharma", "Kite"] },
+    { "kind": "yello", "host": "gilead.yello.co", "site": null, "employer": "Gilead Sciences", "aliases": ["Gilead"], "operatingCompanies": ["Kite Pharma", "Kite"] },
+    { "kind": "workday", "host": "roche.wd3.myworkdayjobs.com", "site": "roche-ext", "employer": "Roche", "aliases": ["Roche Diagnostics", "Roche Molecular Systems"], "operatingCompanies": [] },
+    { "kind": "workday", "host": "roche.wd3.myworkdayjobs.com", "site": "rog-a2o-gene", "employer": "Genentech", "aliases": ["Genentech, Inc."], "operatingCompanies": [] },
+    { "kind": "workday", "host": "danaher.wd1.myworkdayjobs.com", "site": "danaherjobs", "employer": "Danaher", "aliases": [], "operatingCompanies": ["Aldevron", "Beckman Coulter Diagnostics", "Beckman Coulter", "Cepheid", "Cytiva", "Integrated DNA Technologies", "IDT", "Leica Biosystems", "Molecular Devices", "Abcam", "Radiometer", "SCIEX", "Genedata"], "shared": true },
+    { "kind": "phenom", "host": "jobs.danaher.com", "site": null, "employer": "Danaher", "aliases": [], "operatingCompanies": ["Aldevron", "Beckman Coulter Diagnostics", "Beckman Coulter", "Cepheid", "Cytiva", "Integrated DNA Technologies", "IDT", "Leica Biosystems", "Molecular Devices", "Abcam"], "shared": true },
+    { "kind": "workday", "host": "elanco.wd5.myworkdayjobs.com", "site": "external_career", "employer": "Elanco", "aliases": ["Elanco Animal Health"], "operatingCompanies": [] },
+    { "kind": "workday", "host": "beigene.wd5.myworkdayjobs.com", "site": "beigene", "employer": "BeOne Medicines", "aliases": ["BeiGene"], "operatingCompanies": [] },
+    { "kind": "workday", "host": "agilent.wd5.myworkdayjobs.com", "site": "agilent_student_careers", "employer": "Agilent", "aliases": ["Agilent Technologies"], "operatingCompanies": [] },
+    { "kind": "workday", "host": "honorhealth.wd12.myworkdayjobs.com", "site": "honorhealth_careers", "employer": "HonorHealth", "aliases": [], "operatingCompanies": [] },
+    { "kind": "workday", "host": "sanofi.wd3.myworkdayjobs.com", "site": "sanoficareers", "employer": "Sanofi", "aliases": [], "operatingCompanies": [] },
+    { "kind": "radancy", "host": "jobs.sanofi.com", "site": null, "employer": "Sanofi", "aliases": [], "operatingCompanies": [] },
+    { "kind": "workday", "host": "vrtx.wd501.myworkdayjobs.com", "site": "vertex_careers", "employer": "Vertex", "aliases": ["Vertex Pharmaceuticals"], "operatingCompanies": [] },
+    { "kind": "workday", "host": "vhr-unither.wd5.myworkdayjobs.com", "site": "external", "employer": "United Therapeutics", "aliases": [], "operatingCompanies": [] },
+    { "kind": "workday", "host": "alcon.wd5.myworkdayjobs.com", "site": "careers_alcon", "employer": "Alcon", "aliases": [], "operatingCompanies": [] },
+    { "kind": "workday", "host": "3m.wd1.myworkdayjobs.com", "site": null, "employer": "3M", "aliases": [], "operatingCompanies": [] },
+    { "kind": "workday", "host": "bristolmyerssquibb.wd5.myworkdayjobs.com", "site": null, "employer": "Bristol Myers Squibb", "aliases": ["BMS"], "operatingCompanies": [] },
+    { "kind": "workday", "host": "cytokinetics.wd1.myworkdayjobs.com", "site": null, "employer": "Cytokinetics", "aliases": [], "operatingCompanies": [] },
+    { "kind": "jnj", "host": "www.careers.jnj.com", "site": null, "employer": "Johnson & Johnson", "aliases": ["Johnson and Johnson", "J&J", "Johnson & Johnson Innovative Medicine", "Johnson and Johnson Innovative Medicine", "Janssen"], "operatingCompanies": [] },
+    { "kind": "phenom", "host": "jobs.merck.com", "site": null, "employer": "Merck", "aliases": ["Merck & Co.", "MSD"], "operatingCompanies": [] },
+    { "kind": "phenom", "host": "careers.labcorp.com", "site": null, "employer": "Labcorp", "aliases": [], "operatingCompanies": [] },
+    { "kind": "phenom", "host": "jobs.thermofisher.com", "site": null, "employer": "Thermo Fisher Scientific", "aliases": ["Thermo Fisher"], "operatingCompanies": [] },
+    { "kind": "icims", "host": "careers-fhcrc.icims.com", "site": null, "employer": "Fred Hutch", "aliases": ["Fred Hutchinson Cancer Center"], "operatingCompanies": [] },
+    { "kind": "icims", "host": "careers-mtfbiologics.icims.com", "site": null, "employer": "MTF Biologics", "aliases": [], "operatingCompanies": [] },
+    { "kind": "prismhr", "host": "indiana-biosciences-research-institute-inc.prismhr-hire.com", "site": null, "employer": "Indiana Biosciences Research Institute", "aliases": ["IBRI"], "operatingCompanies": [] },
+    { "kind": "adp", "host": "workforcenow.adp.com", "site": "9acbf878-718b-4e5c-bdb5-7cbb9133c786", "employer": "STAQ Pharma", "aliases": [], "operatingCompanies": [] },
+    { "kind": "greenhouse", "host": "job-boards.greenhouse.io", "site": "nanopathinc", "employer": "Nanopath", "aliases": [], "operatingCompanies": [] },
+    { "kind": "greenhouse", "host": "job-boards.greenhouse.io", "site": "kyowakirinusa90", "employer": "Kyowa Kirin", "aliases": [], "operatingCompanies": [] },
+    { "kind": "greenhouse", "host": "job-boards.greenhouse.io", "site": "billiontoone", "employer": "BillionToOne", "aliases": [], "operatingCompanies": [] },
+    { "kind": "greenhouse", "host": "job-boards.greenhouse.io", "site": "ginkgobioworks", "employer": "Ginkgo Bioworks", "aliases": ["Ginkgo"], "operatingCompanies": [] },
+    { "kind": "greenhouse", "host": "job-boards.greenhouse.io", "site": "xairatherapeutics", "employer": "Xaira Therapeutics", "aliases": ["Xaira"], "operatingCompanies": [] },
+    { "kind": "greenhouse", "host": "job-boards.greenhouse.io", "site": "fspco-op012325", "employer": "Flagship Pioneering", "aliases": [], "operatingCompanies": [], "institutionRestriction": "The Flagship Pioneering Co-Op Program board is limited to current Northeastern University students." },
+    { "kind": "greenhouse_embed", "host": "kerostx.com", "site": null, "employer": "Keros Therapeutics", "aliases": ["Keros"], "operatingCompanies": [] },
+    { "kind": "employer_site", "host": "jobs.mdanderson.org", "site": null, "employer": "MD Anderson", "aliases": ["MD Anderson Cancer Center", "The University of Texas MD Anderson Cancer Center"], "operatingCompanies": [] },
+    { "kind": "program", "host": "www.zintellect.com", "site": null, "employer": "ORISE", "aliases": ["Oak Ridge Institute for Science and Education"], "operatingCompanies": ["FDA", "U.S. Food and Drug Administration", "US Army Institute of Surgical Research", "USAISR", "NIH", "CDC", "EPA"], "shared": true },
+    { "kind": "radancy", "host": "careers.cshs.org", "site": null, "employer": "Cedars-Sinai", "aliases": [], "operatingCompanies": [] },
+    { "kind": "successfactors", "host": "careers.arthrex.com", "site": null, "employer": "Arthrex", "aliases": [], "operatingCompanies": [] },
+    { "kind": "successfactors", "host": "jobs.boehringer-ingelheim.com", "site": null, "employer": "Boehringer Ingelheim", "aliases": [], "operatingCompanies": [] },
+    { "kind": "employer_site", "host": "careers.stryker.com", "site": null, "employer": "Stryker", "aliases": [], "operatingCompanies": [] },
+    { "kind": "employer_site", "host": "careers.medpace.com", "site": null, "employer": "Medpace", "aliases": [], "operatingCompanies": [] }
+  ]
+}

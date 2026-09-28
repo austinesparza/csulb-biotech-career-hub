@@ -5,7 +5,8 @@ import { classify, loadTaxonomy, type Taxonomy } from './classify';
 import { buildCompleteEmployerInventoryPlans, getEmployerInventoryMetadata } from './employer-inventory';
 import { buildHistoricalWatchPlans, getHistoricalWatchMetadata } from './historical-watch';
 import { archiveDiscoveryLead } from './lead-store-supabase';
-import { buildLaneSearchPlans, resolveLead, type DiscoveryRoute } from './search-plan';
+import { buildEmployerSearchPlan, buildLaneSearchPlans, resolveLead, type DiscoveryRoute } from './search-plan';
+import { registryEmployers, tenantHostsFor } from './query-families';
 import type { SearchProvider } from './brave-search';
 
 export interface DiscoveryRunReport {
@@ -94,6 +95,8 @@ export async function runEmployerDiscoveryBatch(params: {
   now?: Date;
   cycleYear?: number;
   employerLimit?: number;
+  /** Requisition-watch employers (tenant registry + historical watch) searched per day, 0-8. */
+  priorityLimit?: number;
   resultsPerQuery?: number;
   offset?: number;
   runId?: string;
@@ -131,15 +134,39 @@ export async function runEmployerDiscoveryBatch(params: {
       basis: 'historical_role_watch' as const,
       predictionReady: candidate.predictionReady,
     }));
+  const priorityLimit = params.priorityLimit ?? 0;
+  if (!Number.isInteger(priorityLimit) || priorityLimit < 0 || priorityLimit > 8) {
+    throw new Error('priorityLimit must be from 0 to 8');
+  }
+  // Requisition watch: employers whose recruiting tenants officers have already
+  // confirmed, plus the historical watch. They rotate on their own, faster
+  // cycle so a large alumni inventory cannot starve them.
+  const watchNames = new Set(historicalPlans.map((candidate) => candidate.company.toLowerCase()));
+  const registryPlans = registryEmployers()
+    .filter((company) => !watchNames.has(company.toLowerCase()))
+    .map((company) => ({
+      company,
+      plan: buildEmployerSearchPlan({ employer: company, cycleYear, careersDomain: tenantHostsFor(company)[0] ?? null, graduateArm: true }),
+      priority: 1_000,
+      basis: 'requisition_watch' as const,
+      predictionReady: false,
+    }));
+  const priorityUniverse = [...historicalPlans, ...registryPlans]
+    .toSorted((a, b) => a.company.localeCompare(b.company));
+  const priorityNames = new Set(priorityUniverse.map((candidate) => candidate.company.toLowerCase()));
   const universe = [...historicalPlans, ...inventoryPlans]
     .toSorted((a, b) => b.priority - a.priority || a.company.localeCompare(b.company))
     .filter((candidate, index, allCandidates) => (
       allCandidates.findIndex((other) => other.company.toLowerCase() === candidate.company.toLowerCase()) === index
-    ));
-  const plans = Array.from(
-    { length: Math.min(employerLimit, universe.length) },
-    (_, index) => universe[(offset + index) % universe.length],
-  );
+    ))
+    .filter((candidate) => priorityLimit === 0 || !priorityNames.has(candidate.company.toLowerCase()));
+  const priorityOffset = Math.floor(now.valueOf() / 86_400_000) * priorityLimit;
+  const plans = [
+    ...Array.from({ length: Math.min(priorityLimit, priorityUniverse.length) },
+      (_, index) => priorityUniverse[(priorityOffset + index) % priorityUniverse.length]),
+    ...Array.from({ length: Math.min(employerLimit, universe.length) },
+      (_, index) => universe[(offset + index) % universe.length]),
+  ];
   const runId = params.runId ?? `employer-inventory:${now.toISOString().slice(0, 10)}:${offset}`;
   const errors: string[] = [];
   let queryCount = 0;

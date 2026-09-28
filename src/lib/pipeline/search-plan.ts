@@ -1,5 +1,5 @@
 import type { Taxonomy } from "./classify";
-import { atsSearchClause } from "./ats-hosts";
+import { ATS_SEARCH_HOSTS, METHOD_TERMS, employerQueryFamilies, methodQueryFamilies, withinLimits } from "./query-families";
 
 export type DiscoveryRoute = "official_feed" | "employer_page" | "web_search" | "linkedin_lead";
 
@@ -16,97 +16,44 @@ export interface EmployerSearchPlan {
   queries: Array<{ route: DiscoveryRoute; query: string }>;
 }
 
-const OPPORTUNITY_TERMS = [
-  "intern",
-  "internship",
-  "student intern",
-  "graduate intern",
-  "graduate internship",
-  "master's intern",
-  "MSc intern",
-  "research intern",
-  "co-op",
-  "research co-op",
-  "summer scholar",
-];
-
-const LANE_OPPORTUNITY_TERMS = [
-  "intern",
-  "internship",
-  "research intern",
-  "co-op",
-  "research co-op",
-  "graduate intern",
-  "master's intern",
-  "summer scholar",
-];
-
-const ELIGIBILITY_TERMS = [
-  "undergraduate student",
-  "bachelor's student",
-  "master's student",
-  "graduate student",
-  "doctoral student",
-  "PhD student",
-  "currently enrolled",
-  "return to school",
-  "expected graduation",
-];
-
-const BROAD_PROGRAM_TERMS = [
-  ...OPPORTUNITY_TERMS,
-  "technology intern",
-  "technology co-op",
-  "data science intern",
-  "research and development intern",
-  "career programs",
-  "student programs",
-];
-
-function quotedOr(terms: string[]): string {
-  return terms.map((term) => `"${term}"`).join(" OR ");
-}
-
 /**
  * Builds small, auditable search families for every enabled scientific lane.
  * Search results are leads. They are archived even when they cannot be resolved
  * or do not belong on the graduate public board.
+ *
+ * Each lane searches its whole-word method phrases (query-families.ts) with
+ * no mandatory year, season or degree term, across one ATS host per query and
+ * LinkedIn job pages. The previous grouped form required a scientific stem,
+ * an opportunity term, "2027 OR summer" and an eligibility phrase together,
+ * which cannot match generic or off-cycle titles.
  */
 export function buildLaneSearchPlans(taxonomy: Taxonomy, cycleYear: number): LaneSearchPlan[] {
   if (!Number.isInteger(cycleYear) || cycleYear < 2020 || cycleYear > 2100) {
     throw new Error("cycleYear must be a four-digit year");
   }
   return taxonomy.lanes.map((lane) => {
-    const science = [...lane.core.slice(0, 6), ...(lane.supporting ?? []).slice(0, 4)];
-    const compactScience = quotedOr(science.slice(0, 4));
-    const compactOpportunity = quotedOr(LANE_OPPORTUNITY_TERMS);
-    const eligibility = quotedOr(ELIGIBILITY_TERMS.slice(0, 7));
+    const curated = METHOD_TERMS.filter((method) => method.lane === lane.id).map((method) => method.term);
+    // Fall back to whole-word core terms; stems such as "oncolog" never match a quoted search.
+    const fallback = lane.core.filter((term) => term.length > 3 && /^[a-z0-9 -]+$/i.test(term)
+      && lane.core.every((other) => other === term || !other.startsWith(term)));
+    const methods = (curated.length ? curated : fallback).slice(0, 6);
+    const queries: Array<{ route: DiscoveryRoute; query: string }> = [];
+    methods.forEach((term, index) => {
+      const [roles, , linkedin] = methodQueryFamilies({ term, lane: lane.id, atsHost: ATS_SEARCH_HOSTS[0] });
+      queries.push({ route: roles.route, query: roles.query });
+      if (index === 0 && linkedin) queries.push({ route: linkedin.route, query: linkedin.query });
+    });
+    // Three ATS-scoped queries per lane, one host each, cycling methods so a
+    // lane with one or two methods still reaches Workday, Greenhouse and iCIMS.
+    for (let index = 0; index < Math.min(3, ATS_SEARCH_HOSTS.length) && methods.length > 0; index++) {
+      const ats = methodQueryFamilies({ term: methods[index % methods.length], lane: lane.id, atsHost: ATS_SEARCH_HOSTS[index], linkedin: false })[1];
+      queries.push({ route: ats.route, query: ats.query });
+    }
     return {
       lane: lane.id,
       label: lane.label,
-      keywords: science,
-      queries: [
-        {
-          route: "official_feed",
-          query: `(${compactScience}) (${compactOpportunity})`,
-        },
-        {
-          route: "web_search",
-          query: `(${compactScience}) (${compactOpportunity}) (${cycleYear} OR summer) (${eligibility})`,
-        },
-        {
-          route: "web_search",
-          query: `(${atsSearchClause()}) (${compactScience}) (intern OR co-op)`,
-        },
-        {
-          route: "linkedin_lead",
-          query: `site:linkedin.com/jobs/view (${compactScience}) (intern OR co-op) (master's OR graduate)`,
-        },
-        {
-          route: "linkedin_lead",
-          query: `site:linkedin.com/posts (${compactScience}) (internship OR hiring) ${cycleYear}`,
-        },
-      ],
+      keywords: methods,
+      queries: queries.filter((item) => withinLimits(item.query)),
     };
   });
 }
@@ -122,6 +69,8 @@ export function buildEmployerSearchPlan(input: {
   cycleYear: number;
   careersDomain?: string | null;
   programTerms?: string[];
+  /** Adds the restrictive graduate precision arm; recall arms never require it. */
+  graduateArm?: boolean;
 }): EmployerSearchPlan {
   const employer = input.employer.trim();
   if (!employer) throw new Error("employer is required");
@@ -130,40 +79,19 @@ export function buildEmployerSearchPlan(input: {
   }
   const domain = input.careersDomain?.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "") || null;
   if (domain && !/^[a-z0-9.-]+$/i.test(domain)) throw new Error("careersDomain must be a hostname");
-  const namedEmployer = `"${employer.replaceAll('"', "")}"`;
-  const programs = quotedOr(BROAD_PROGRAM_TERMS);
   const historicalPrograms = (input.programTerms ?? [])
     .map((term) => term.trim().replaceAll('"', ''))
     .filter(Boolean)
     .slice(0, 4);
-  const historicalClause = historicalPrograms.length > 0 ? ` OR ${quotedOr(historicalPrograms)}` : '';
-  const eligibility = quotedOr(ELIGIBILITY_TERMS);
-  const scoped = domain ? `site:${domain} ` : "";
   return {
     employer,
     careersDomain: domain,
-    queries: [
-      {
-        route: "employer_page",
-        query: `${scoped}(${programs}${historicalClause}) (${input.cycleYear} OR summer OR spring OR fall)`,
-      },
-      {
-        route: "web_search",
-        query: `${namedEmployer} (${programs}${historicalClause})`,
-      },
-      {
-        route: "web_search",
-        query: `${namedEmployer} (intern OR internship OR co-op) (${eligibility})`,
-      },
-      {
-        route: "linkedin_lead",
-        query: `site:linkedin.com/jobs/view ${namedEmployer} (intern OR internship OR co-op)`,
-      },
-      {
-        route: "linkedin_lead",
-        query: `site:linkedin.com/posts ${namedEmployer} (internship OR co-op OR hiring) ${input.cycleYear}`,
-      },
-    ],
+    queries: employerQueryFamilies({
+      employer,
+      careersDomain: domain,
+      programTerms: historicalPrograms,
+      graduateArm: input.graduateArm ?? false,
+    }).map(({ route, query }) => ({ route, query })),
   };
 }
 

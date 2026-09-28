@@ -12,6 +12,7 @@ import { assertSafePublicUrl } from "@/lib/pipeline/safe-fetch";
 import { syncReviewQueueToGoogleSheet } from "@/lib/review-sheet-sync";
 import { createBraveSearchProvider } from "@/lib/pipeline/brave-search";
 import { runEmployerDiscoveryBatch, runLaneDiscoveryBatch } from "@/lib/pipeline/discovery-runner";
+import { buildVerificationScope } from "@/lib/pipeline/verification-runner";
 import { createServiceClient, requireOfficer } from "@/lib/supabase/server";
 
 const KINDS = new Set(["greenhouse", "ashby", "lever", "usajobs", "static_html", "schema_org"]);
@@ -173,6 +174,38 @@ export async function updateSourceGovernance(formData: FormData): Promise<void> 
     updated_by: user.id,
   }).eq("id", id);
   if (error) throw new Error(`Could not update source: ${error.message}`);
+  refresh();
+}
+
+/**
+ * Scope automatic verification of individual requisitions to one reviewed
+ * source's careers host. Requires the same terms and robots review as
+ * scheduled fetching; it never enables a source by itself.
+ */
+export async function updateRequisitionVerification(formData: FormData): Promise<void> {
+  const { user } = await requireOfficer();
+  const db = createServiceClient();
+  const id = field(formData, "id");
+  const enabled = checked(formData, "verify_requisitions");
+  if (!id) throw new Error("Source ID is required.");
+  const { data: source, error: sourceError } = await db.from("job_sources")
+    .select("careers_url, config_json, terms_reviewed, terms_review_date, robots_reviewed")
+    .eq("id", id).maybeSingle();
+  if (sourceError || !source) throw new Error("Source not found.");
+  if (enabled && (!source.terms_reviewed || !source.terms_review_date || !source.robots_reviewed)) {
+    throw new Error("Record terms and robots review for this host before verifying individual requisitions.");
+  }
+  const scope = buildVerificationScope({
+    careersUrl: source.careers_url,
+    enabled,
+    verificationOnly: checked(formData, "verification_only"),
+    pathPrefixes: field(formData, "verification_path_prefixes"),
+    reviewedBy: user.id,
+    reviewedOn: new Date().toISOString().slice(0, 10),
+  });
+  const config = { ...((source.config_json ?? {}) as Record<string, unknown>), requisition_verification: scope };
+  const { error } = await db.from("job_sources").update({ config_json: config, updated_by: user.id }).eq("id", id);
+  if (error) throw new Error(`Could not update requisition verification: ${error.message}`);
   refresh();
 }
 

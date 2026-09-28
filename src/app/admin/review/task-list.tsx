@@ -19,6 +19,7 @@ export function TaskList({ rows }: { rows: ReviewTask[] }) {
         <a href={sourceUrl} target="_blank" rel="noreferrer">Open captured source</a>
       </p> : null}
       {row.entity_table === 'user_submissions' ? <p className="mt-2 text-sm"><a href={'/admin/review?tab=submissions#submission-' + row.entity_id}>Open research record</a></p> : null}
+      {row.entity_table === 'posting_verifications' ? <p className="mt-2 text-sm">Automated verification saw an Apply control on the employer page at the time shown. Confirm the live Apply flow and every gate yourself before creating a private draft; the snapshot and quotes are archived privately.</p> : null}
       {row.entity_table === 'opportunities' && row.task_type === 'stale_record' ? <p className="mt-2 text-sm"><a href={'/admin/manage#opportunity-' + row.entity_id}>Recheck this published record</a></p> : null}
       <p className="mt-2 text-xs">{row.entity_table} · {row.entity_id}</p>
       {row.task_type !== 'stale_record' && <form action={resolveReviewTask} className="mt-3 flex gap-2">

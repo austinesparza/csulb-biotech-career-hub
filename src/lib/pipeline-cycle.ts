@@ -10,6 +10,8 @@ import { runIngestionBatch, type SourceRunReport } from './ingestion/source-runn
 import { createBraveSearchProvider } from './pipeline/brave-search';
 import { runEmployerDiscoveryBatch, runLaneDiscoveryBatch } from './pipeline/discovery-runner';
 import { runSourceResearchDiscoveryBatch } from './pipeline/source-research-discovery';
+import { runPostingVerificationBatch } from './pipeline/verification-runner';
+import { createScraplingVerificationClient } from './pipeline/scraping-clients';
 import { runExtractionBatch } from './pipeline/extraction-runner';
 import { createOpenAiCompatibleExtractionModel } from './pipeline/model-openai';
 import { SupabaseExtractionStore } from './pipeline/store-supabase';
@@ -19,13 +21,18 @@ export type PipelineCycleTrigger = 'cron' | 'officer' | 'queue_recovery' | 'shee
 export type PipelineCycleStatus = 'completed' | 'partial' | 'failed';
 
 export interface PipelineStageError {
-  stage: 'recover' | 'schedule' | 'ingestion' | 'reconciliation' | 'discovery' | 'extraction' | 'sheet_sync';
+  stage: 'recover' | 'schedule' | 'ingestion' | 'reconciliation' | 'discovery' | 'verification' | 'extraction' | 'sheet_sync';
   message: string;
 }
 
 export type DiscoveryCycleResult =
   | { status: 'disabled' }
   | { status: 'completed'; employers: number; lanes: number; research: number; candidates: number; existingMatches: number; queries: number; results: number; archived: number; errors: number }
+  | { status: 'failed'; error: string };
+
+export type VerificationCycleResult =
+  | { status: 'disabled' }
+  | { status: 'completed'; considered: number; fetched: number; recorded: number; reviewTasks: number; outcomes: Record<string, number>; governanceGaps: number; errors: number }
   | { status: 'failed'; error: string };
 
 export type ExtractionCycleResult =
@@ -58,6 +65,7 @@ export interface PipelineCycleReport {
   reviewTasksCreated: number;
   reconciliation: ReconciliationCycleResult;
   discovery: DiscoveryCycleResult;
+  verification: VerificationCycleResult;
   extraction: ExtractionCycleResult;
   sheetSync: SheetCycleResult;
   errors: PipelineStageError[];
@@ -72,6 +80,7 @@ export interface RunPipelineCycleOptions {
   scheduleDueSources?: boolean;
   recoverStaleRuns?: boolean;
   runDiscovery?: boolean;
+  runVerification?: boolean;
   runExtraction?: boolean;
   syncSheet?: boolean;
   reconcile?: boolean;
@@ -125,7 +134,9 @@ async function finishCycleRecord(params: {
     records_archived: report.recordsArchived,
     review_tasks_created: report.reviewTasksCreated,
     reconciliation_json: report.reconciliation,
-    discovery_json: report.discovery,
+    // Verification shares the discovery observability column so no schema
+    // change is needed for cycle reporting.
+    discovery_json: { ...report.discovery, verification: report.verification },
     extraction_json: report.extraction,
     sheet_sync_json: report.sheetSync,
     errors_json: report.errors,
@@ -226,6 +237,7 @@ export async function runPipelineCycle(options: RunPipelineCycleOptions): Promis
         db: options.db,
         provider,
         employerLimit: Math.max(1, Math.min(Number(process.env.EMPLOYER_DISCOVERY_BATCH_SIZE ?? 5) || 5, 5)),
+        priorityLimit: Math.max(0, Math.min(Number(process.env.PRIORITY_EMPLOYER_DISCOVERY_BATCH_SIZE ?? 5) || 0, 8)),
         resultsPerQuery: Math.max(1, Math.min(Number(process.env.EMPLOYER_DISCOVERY_RESULTS_PER_QUERY ?? 5) || 5, 10)),
         runId: `${workerId}:employers`,
       });
@@ -262,6 +274,39 @@ export async function runPipelineCycle(options: RunPipelineCycleOptions): Promis
       const message = errorMessage(error);
       errors.push({ stage: 'discovery', message });
       discovery = { status: 'failed', error: message };
+    }
+  }
+
+  // Official-posting verification: governed fetches of candidate requisitions,
+  // private evidence rows, and review tasks only for distinct candidates.
+  let verification: VerificationCycleResult = { status: 'disabled' };
+  const verificationEnabled = options.runVerification ?? process.env.POSTING_VERIFICATION_ENABLED === 'true';
+  if (verificationEnabled) {
+    try {
+      const verificationReport = await runPostingVerificationBatch({
+        db: options.db,
+        storage: options.storage,
+        limit: Math.max(1, Math.min(Number(process.env.POSTING_VERIFICATION_BATCH_SIZE ?? 5) || 5, 20)),
+        runId: `${workerId}:verification`,
+        scrapling: process.env.PIPELINE_SCRAPLING_ENABLED === 'true' ? createScraplingVerificationClient() : null,
+      });
+      verification = {
+        status: 'completed',
+        considered: verificationReport.considered,
+        fetched: verificationReport.fetched,
+        recorded: verificationReport.recorded,
+        reviewTasks: verificationReport.reviewTasks,
+        outcomes: verificationReport.outcomes,
+        governanceGaps: Object.keys(verificationReport.governanceGaps).length,
+        errors: verificationReport.errors.length,
+      };
+      if (verificationReport.errors.length > 0) {
+        errors.push({ stage: 'verification', message: `${verificationReport.errors.length} verification operations reported errors` });
+      }
+    } catch (error) {
+      const message = errorMessage(error);
+      errors.push({ stage: 'verification', message });
+      verification = { status: 'failed', error: message };
     }
   }
 
@@ -338,6 +383,7 @@ export async function runPipelineCycle(options: RunPipelineCycleOptions): Promis
     reviewTasksCreated: reports.reduce((sum, item) => sum + item.reviewTasksCreated, 0),
     reconciliation,
     discovery,
+    verification,
     extraction,
     sheetSync,
     errors,

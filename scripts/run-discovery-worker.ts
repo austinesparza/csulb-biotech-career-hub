@@ -24,6 +24,7 @@ const employer = await runEmployerDiscoveryBatch({
   db,
   provider,
   employerLimit: positiveInteger('EMPLOYER_DISCOVERY_BATCH_SIZE', 5, 5),
+  priorityLimit: positiveInteger('PRIORITY_EMPLOYER_DISCOVERY_BATCH_SIZE', 5, 8),
   resultsPerQuery: positiveInteger('EMPLOYER_DISCOVERY_RESULTS_PER_QUERY', 5, 10),
 });
 const lanes = await runLaneDiscoveryBatch({

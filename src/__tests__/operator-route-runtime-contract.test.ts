@@ -26,6 +26,7 @@ describe('browser-native operator pipeline controls', () => {
     expect(queueRoute).toContain("trigger: 'queue_recovery'");
     expect(queueRoute).toContain('scheduleDueSources: false');
     expect(queueRoute).toContain('runDiscovery: false');
+    expect(queueRoute).toContain('runVerification: false');
     expect(queueRoute).toContain('runExtraction: false');
     expect(pipelineRoute).not.toContain('decide_opportunity_review');
     expect(queueRoute).not.toContain('decide_opportunity_review');
