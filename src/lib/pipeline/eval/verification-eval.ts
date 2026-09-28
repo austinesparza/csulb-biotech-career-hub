@@ -289,8 +289,20 @@ export const PRODUCTION_SOURCES: VerificationSourceRow[] = [
 
 /** Mechanism scenario: every eval tenant has a reviewed, scoped source. */
 export function allTenantSources(): VerificationSourceRow[] {
-  const hosts = [...new Set(EVAL_CASES.map((row) => row.officialUrl && resolvePostingIdentity(row.officialUrl).host).filter((host): host is string => !!host))];
-  return hosts.map((host, index) => governedSource(`page-${index}`, "static_html", null, [host]));
+  // Mirror the actual governance contract: a host alone is insufficient.
+  // Each synthetic source covers one tenant and one observed requisition path.
+  // This grants no production fetch permission and makes the offline mechanism
+  // arm a test of verification rather than a test of missing fixture fields.
+  return EVAL_CASES.flatMap((row, index) => {
+    const identity = resolvePostingIdentity(row.officialUrl);
+    if (!identity.url || !identity.host || !identity.tenantKey) return [];
+    const source = governedSource(`page-${index}`, "static_html", null, [identity.host]);
+    source.config_json = { requisition_verification: {
+      enabled: true, hosts: [identity.host], tenant_key: identity.tenantKey,
+      path_prefixes: [new URL(identity.url).pathname],
+    } };
+    return [source];
+  });
 }
 
 /* ------------------------------------------------------------------------ */
