@@ -1,6 +1,6 @@
 # Official-posting verification runbook
 
-**Status: implemented, inactive.** Nothing runs until `POSTING_VERIFICATION_ENABLED=true` or someone runs `npm run verify:worker` by hand. For findings, evaluation and design, see [research/2026-09-27-official-posting-verification.md](research/2026-09-27-official-posting-verification.md).
+**Status: deployed, inactive as of September 28, 2026.** The discovery task-gate and verification archive migrations are applied in production. The private archive has no rows yet. Nothing runs until `POSTING_VERIFICATION_ENABLED=true` or someone runs `npm run verify:worker` by hand. For findings, evaluation and design, see [research/2026-09-27-official-posting-verification.md](research/2026-09-27-official-posting-verification.md).
 
 ## What it does
 
@@ -10,7 +10,7 @@ It takes a candidate employer URL from discovery leads or source research and tu
 
 | Outcome | Meaning | Officer action |
 |---|---|---|
-| `review_candidate` | Governed employer page, requisition consistent, Apply visible in the stored text, no duplicate | Open the task. Confirm live Apply and every gate on the employer site, then create a private draft through the existing flow. |
+| `review_candidate` | Governed employer page, requisition consistent, Apply visible in the stored text, no duplicate | Open the task's evidence panel. Confirm live Apply and every gate on the employer site, then create a private draft through the existing flow. |
 | `duplicate_existing` | Same requisition already in `opportunities` or `source_postings` (locale, location path, tracking and trailing slash ignored) | None; the existing record is authoritative |
 | `repeat_candidate` | Already sent to review | None |
 | `closed` | Employer text says closed or filled, returns 404/410, or states a past deadline | Keep it archived; do not publish |
@@ -33,6 +33,8 @@ Every gate has a value and either a quote copied from the stored page or `not_st
 4. For Workday or other script-rendered hosts, verification records `script_only` unless the approved Scrapling tier is installed and `PIPELINE_SCRAPLING_ENABLED=true`. The verification renderer now records its final URL and reported redirect history. Only a matching requisition on the reviewed HTTPS host can reach review; legacy HTML without URL metadata is archived as unresolved. Browser rendering may follow a redirect before that check, so the rendered body is discarded if it leaves the reviewed host. Stealth, CAPTCHA solving and proxy rotation remain disallowed (`config/ai-tooling.json`).
 
 Scopes require an HTTPS recruiting URL, a matching tenant key, and at least one specific job path prefix. An older host-only scope is intentionally inactive until an officer saves it again. A shared ATS hostname never authorizes every employer on that hostname. A governance gap is retried on the next cycle after a source is approved.
+
+Current coverage: Ginkgo and Xaira have reviewed Greenhouse feed sources. The paused Flagship co-op board is restricted to Northeastern students and must stay disabled. No employer-specific requisition page scopes are enabled yet. The 30 pending source-research records include 13 candidate employer URLs, which still need individual-requisition checks, and 17 unresolved records without one. The latter require exact-role discovery or officer research before verification can inspect a page. Registering a source requires a real review of that host's terms and robots policy, not just a matching domain.
 
 ## Running it
 
@@ -70,6 +72,6 @@ Related discovery settings:
 ## Limits and recovery
 
 * At most 3 fetches per host per run, at least 2 seconds apart. A host that answers 401, 403 or 429 is not requested again in that run. The paid ScrapeGraph tier is never used for verification.
-* Each requisition is rechecked at most every 7 days. Retries are idempotent (`verification_key`). The evidence table rejects updates and deletes.
+* Each assessed requisition is rechecked at most every 7 days. A blocked governance gap is archived once and does not occupy every subsequent batch; approving a matching source makes it eligible immediately. Non-requisition links are archived once. Retries are idempotent (`verification_key`). The evidence table rejects updates and deletes.
 * Private contact data is redacted from quotes and task notes. The raw snapshot stays in the private `source-payloads` bucket under `verification/`.
 * To roll back, unset `POSTING_VERIFICATION_ENABLED` or clear a source's scope. Do not delete evidence.
