@@ -10,6 +10,7 @@ const EXACT_ATS_HOSTS = new Set([
 const ATS_HOST_SUFFIXES = [
   '.bamboohr.com',
   '.myworkdayjobs.com',
+  '.yello.co',
 ];
 
 /**
