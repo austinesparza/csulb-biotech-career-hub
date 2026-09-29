@@ -126,11 +126,11 @@ export default async function IntegrationsPage() {
       />
       <StatusCard
         title="Discovery → officer tasks"
-        state={leadCount.error || reviewCount.error ? 'Attention' : 'Ready'}
-        detail={leadCount.error ? `Lead archive unavailable: ${leadCount.error.message}` : `${leadCount.count ?? 0} new discovery leads retained.`}
+        state={leadCount.error || reviewCount.error || !searchReady ? 'Attention' : 'Ready'}
+        detail={leadCount.error ? `Lead archive unavailable: ${leadCount.error.message}` : searchReady ? `${leadCount.count ?? 0} new discovery leads retained.` : 'Automated web discovery is disabled.'}
         footnote={reviewCount.error
           ? reviewCount.error.message
-          : `${reviewCount.count ?? 0} open or in-progress review tasks. Governed search is ${searchReady ? 'configured' : 'disabled pending an API key and storage rights'}.`}
+          : `${leadCount.count ?? 0} new leads retained; ${reviewCount.count ?? 0} open or in-progress review tasks.${searchReady ? '' : ' Configure the search key, rights confirmation, and enable flag to resume discovery.'}`}
       />
       <StatusCard
         title="Officer approval → public view"
