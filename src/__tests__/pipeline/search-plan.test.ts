@@ -28,10 +28,11 @@ ok("lane queries avoid undocumented grouping and stay short", plans.every((plan)
   !query.query.includes("(") && query.query.length <= 380
 ))));
 ok("observed ATS families are recognized conservatively", [
-  "jobs.jobvite.com", "recruiting.ultipro.com", "example.bamboohr.com", "example.wd1.myworkdayjobs.com",
+  "jobs.jobvite.com", "recruiting.ultipro.com", "example.bamboohr.com", "example.wd1.myworkdayjobs.com", "gilead.yello.co",
 ].every(isRecognizedAtsHost));
 ok("lookalike ATS domains are rejected", !isRecognizedAtsHost("myworkdayjobs.com.example.org")
-  && !isRecognizedAtsHost("bamboohr.com.example.org"));
+  && !isRecognizedAtsHost("bamboohr.com.example.org")
+  && !isRecognizedAtsHost("yello.co.example.org"));
 ok("every lane gets LinkedIn lead discovery", plans.every((plan) => plan.queries.some((query) => query.route === "linkedin_lead")));
 ok("queries carry lane-specific vocabulary", plans.every((plan) => plan.keywords.some((keyword) => plan.queries[0].query.includes(keyword))));
 ok("lane plans retain both internship and co-op recall", plans.every((plan) => (
