@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { companyLogoAsset, companyLogoPath } from '../lib/companyLogos';
+import historicalData from '../../data/historical-opportunities.json';
 
 const home = readFileSync('src/app/page.tsx', 'utf8');
 const directory = readFileSync('src/app/companies/company-directory.tsx', 'utf8');
@@ -102,10 +103,14 @@ describe('employer logo presentation', () => {
     const currentEmployers = [
       'Amgen',
       'Anto Bio',
+      "Beck's Hybrids",
+      'Beckman Coulter Diagnostics',
+      'BeOne Medicines',
       'Boehringer Ingelheim',
       'CAS',
       'Catalent',
       'Cedars-Sinai',
+      'Corteva Agriscience',
       'Elanco',
       'Fred Hutch',
       'Genentech',
@@ -113,14 +118,19 @@ describe('employer logo presentation', () => {
       'Ginkgo Bioworks',
       'HonorHealth',
       'Johnson & Johnson',
+      'Keros Therapeutics',
       'Kite Pharma',
       'MD Anderson Cancer Center',
       'Merck',
       'MTF Biologics',
+      'Nanopath',
+      'ORISE',
       'PBS Biotech',
       'Pfizer',
+      'PSC Biotech',
       'Roche',
       'Sanofi',
+      'STAQ Pharma',
       'Stryker',
       'Vertex Pharmaceuticals',
       'Xaira Therapeutics',
@@ -130,6 +140,17 @@ describe('employer logo presentation', () => {
       const logo = companyLogoAsset(name);
       return !logo || !existsSync(`public${logo.src}`);
     })).toEqual([]);
+  });
+
+  it('covers every named employer preserved in the historical directory', () => {
+    const employers = [...new Set(historicalData.roles.map((role) => role.company))]
+      .filter((name) => name !== 'Employer not recorded');
+
+    expect(employers.filter((name) => {
+      const logo = companyLogoAsset(name);
+      return !logo || !existsSync(`public${logo.src}`);
+    })).toEqual([]);
+    expect(companyLogoAsset('Employer not recorded')).toBeNull();
   });
 
   it('opens the directory on current employers so the first view is actionable', () => {
