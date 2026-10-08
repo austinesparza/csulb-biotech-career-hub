@@ -222,7 +222,7 @@ export function decideVerification(input: {
     reasons.push("An open verification already sent this requisition to review");
     return decision("repeat_candidate");
   }
-  const exclusion = gates.degreeLevel.value === "undergraduate_only" || gates.degreeLevel.value === "phd_only"
+  const exclusion = gates.degreeLevel.value === "phd_only"
     ? `Employer text restricts degree level: ${gates.degreeLevel.quote}`
     : gates.institutionRestriction.value === "named_institution_only"
       ? `Employer text restricts applicants to one institution: ${gates.institutionRestriction.quote}`
