@@ -44,6 +44,11 @@
     "shadow:label": "node --conditions=react-server --import tsx scripts/label-shadow-bundle.ts",
     "shadow:run": "node --conditions=react-server --import tsx scripts/run-shadow-cycle.ts"
   },
+  "overrides": {
+    "@next/eslint-plugin-next": {
+      "fast-glob": "npm:tinyglobby@0.2.17"
+    }
+  },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.47.0",

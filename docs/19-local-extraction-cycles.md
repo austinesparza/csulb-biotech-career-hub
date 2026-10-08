@@ -76,3 +76,7 @@ Run `shadow:run` with `--bundle data/private/benchmark.json`. Missing labels are
 4. Expand governed sources and add stale-role maintenance after the benchmark and import path are reliable.
 
 Keep manual cycle launch until the reports are consistently useful. Scheduling is a later operational choice and is not required for these capabilities.
+
+## Lint dependency compatibility
+
+The security gate found GHSA-vfj7-8cjw-p6xm in the existing Next lint plugin's `fast-glob` dependency chain. All published `braces` releases were affected when checked on October 8, 2026. A scoped npm override substitutes pinned `tinyglobby@0.2.17` for that plugin's `fast-glob` dependency, removing `micromatch` and `braces` from the install. Next's lint helper uses only `globSync` with `onlyDirectories`; compatibility tests exercise the installed helper with default roots, brace globs and multiple roots, plus the reported deep-brace input. The framework and lint rule versions remain unchanged. Reassess this override when the upstream plugin drops or fixes the affected chain. The ordinary security audit remains enabled.
