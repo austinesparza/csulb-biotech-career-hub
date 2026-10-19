@@ -3,10 +3,11 @@ export type CompanyLogoFit = 'wide' | 'compact';
 export interface CompanyLogoAsset {
   src: string;
   fit: CompanyLogoFit;
+  surface?: 'dark';
 }
 
 const COMPANY_LOGOS: Array<[RegExp, CompanyLogoAsset]> = [
-  [/^abbott$/i, { src: 'https://www.abbott.com/content/dam/corp/abbott/global/logos/logo.png', fit: 'wide' }],
+  [/^abbott$/i, { src: 'https://electrophysiology.abbott.com/rs/808-JQJ-642/images/abbott-logo-white-horiz.png?version=0', fit: 'wide', surface: 'dark' }],
   [/^bayer$/i, { src: 'https://idnet.bayer.com/sites/idnet/files/inline-images/web-design-image-13.png', fit: 'compact' }],
   [/^billiontoone$/i, { src: 'https://ml.globenewswire.com/media/OGEyNGE4ZDUtYzcyOS00MmY4LWI2ZTItMWUyZGFkOWRjYjlkLTEyOTc2MDEtMjAyNi0xMC0xNC1lbg%3D%3D/tiny/BillionToOne-Inc-.png', fit: 'wide' }],
   [/^national\s+cancer\s+institute(?:\s*\(nci\))?(?:,?\s+division\s+of\s+cancer\s+epidemiology\s+and\s+genetics)?$/i, { src: 'https://dceg.cancer.gov/sites/dceg/files/ncids_slim_hero/field_slim_hero_image/2024-12/DCEG-Laboratory-Translational-Genomics-1988x460_2.jpg', fit: 'wide' }],
