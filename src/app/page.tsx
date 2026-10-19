@@ -41,7 +41,7 @@ const DISCIPLINES = [
 function FeaturedCompany({ name }: { name: string }) {
   const logo = companyLogoAsset(name);
   return (
-    <span className={`featured-company${logo ? ` has-logo logo-${logo.fit}${logo.surface ? ` logo-surface-${logo.surface}` : ''}` : ' is-wordmark'}`}>
+    <span className={`featured-company${logo ? ` has-logo logo-${logo.fit}${logo.surface ? ` logo-surface-${logo.surface}` : ''}${logo.presentation ? ` image-${logo.presentation}` : ''}` : ' is-wordmark'}`}>
       {logo
         ? <Image src={logo.src} unoptimized={logo.src.startsWith('https://')} alt={`${name} logo`} width={180} height={64} />
         : <span>{name}</span>}
