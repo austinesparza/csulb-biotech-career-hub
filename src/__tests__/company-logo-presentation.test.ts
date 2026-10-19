@@ -99,13 +99,33 @@ describe('employer logo presentation', () => {
     });
   });
 
+  it('uses curated images for the October 2026 employer additions', () => {
+    expect(companyLogoAsset('Abbott')?.src).toBe('/brand/logos/abbott-nameplate.svg');
+    expect(companyLogoAsset('Bayer')?.src).toBe('/brand/logos/bayer-nameplate.svg');
+    expect(companyLogoAsset('BillionToOne')?.src).toBe('/brand/logos/billiontoone-nameplate.svg');
+    expect(companyLogoAsset('National Cancer Institute (NCI), Division of Cancer Epidemiology and Genetics')?.src)
+      .toBe('/brand/logos/nci-dceg-nameplate.svg');
+    expect(companyLogoAsset('Regeneron')?.src).toBe('/brand/logos/regeneron-nameplate.svg');
+  });
+
+  it('gives future named employers an image fallback instead of blank initials', () => {
+    expect(companyLogoAsset('Future Biotech Employer')).toEqual({
+      src: '/brand/logos/employer-fallback.svg',
+      fit: 'compact',
+    });
+    expect(existsSync('public/brand/logos/employer-fallback.svg')).toBe(true);
+  });
+
   it('covers every employer in the current public directory', () => {
     const currentEmployers = [
+      'Abbott',
       'Amgen',
       'Anto Bio',
+      'Bayer',
       "Beck's Hybrids",
       'Beckman Coulter Diagnostics',
       'BeOne Medicines',
+      'BillionToOne',
       'Boehringer Ingelheim',
       'CAS',
       'Catalent',
@@ -124,10 +144,12 @@ describe('employer logo presentation', () => {
       'Merck',
       'MTF Biologics',
       'Nanopath',
+      'National Cancer Institute (NCI), Division of Cancer Epidemiology and Genetics',
       'ORISE',
       'PBS Biotech',
       'Pfizer',
       'PSC Biotech',
+      'Regeneron',
       'Roche',
       'Sanofi',
       'STAQ Pharma',
