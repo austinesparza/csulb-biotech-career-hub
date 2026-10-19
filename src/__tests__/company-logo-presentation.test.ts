@@ -100,9 +100,11 @@ describe('employer logo presentation', () => {
   });
 
   it('uses source-faithful assets for the October 2026 employer additions', () => {
-    expect(companyLogoAsset('Abbott')?.src).toBe(
-      'https://www.abbott.com/content/dam/corp/abbott/global/logos/logo.png',
-    );
+    expect(companyLogoAsset('Abbott')).toEqual({
+      src: 'https://electrophysiology.abbott.com/rs/808-JQJ-642/images/abbott-logo-white-horiz.png?version=0',
+      fit: 'wide',
+      surface: 'dark',
+    });
     expect(companyLogoAsset('Bayer')?.src).toBe(
       'https://idnet.bayer.com/sites/idnet/files/inline-images/web-design-image-13.png',
     );
@@ -195,6 +197,7 @@ describe('employer logo presentation', () => {
     expect(layer).toContain('object-fit: contain');
     expect(layer).toContain('object-position: left center');
     expect(layer).toContain('.featured-company.logo-compact');
+    expect(layer).toContain('.featured-company.logo-surface-dark');
     expect(layer).toContain('.company-directory-card {');
     expect(layer).toContain('min-height: 0');
     expect(layer).toContain('@media (max-width: 700px)');
