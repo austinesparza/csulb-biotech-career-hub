@@ -15,7 +15,7 @@ export function buildContentSecurityPolicy(input: {
     `default-src 'self'`,
     `script-src ${scripts.join(' ')}`,
     `style-src 'self' 'unsafe-inline'`,
-    `img-src 'self' data: https://nigms.nih.gov https://www.nigms.nih.gov`,
+    `img-src 'self' data: https://nigms.nih.gov https://www.nigms.nih.gov https://www.abbott.com https://idnet.bayer.com https://ml.globenewswire.com https://regeneronpharmaceuticalsinc.gcs-web.com https://dceg.cancer.gov`,
     `font-src 'self'`,
     `connect-src 'self'${supabaseOrigin ? ` ${supabaseOrigin}` : ''}`,
     `form-action 'self'`, `frame-ancestors 'none'`, `base-uri 'none'`, `object-src 'none'`,
