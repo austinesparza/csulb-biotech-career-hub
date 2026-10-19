@@ -1078,6 +1078,13 @@ body {
   border: 0;
   background: transparent;
 }
+.featured-company.logo-surface-dark,
+.company-directory-mark.has-logo.logo-surface-dark,
+.company-mark-logo.logo-surface-dark {
+  padding: 8px 10px;
+  border-radius: 2px;
+  background: #102d4f;
+}
 
 @media (max-width: 700px) {
   .featured-list a {
