@@ -99,21 +99,23 @@ describe('employer logo presentation', () => {
     });
   });
 
-  it('uses curated images for the October 2026 employer additions', () => {
-    expect(companyLogoAsset('Abbott')?.src).toBe('/brand/logos/abbott-nameplate.svg');
-    expect(companyLogoAsset('Bayer')?.src).toBe('/brand/logos/bayer-nameplate.svg');
-    expect(companyLogoAsset('BillionToOne')?.src).toBe('/brand/logos/billiontoone-nameplate.svg');
+  it('uses source-faithful assets for the October 2026 employer additions', () => {
+    expect(companyLogoAsset('Abbott')?.src).toBe(
+      'https://www.abbott.com/content/dam/corp/abbott/global/logos/logo.png',
+    );
+    expect(companyLogoAsset('Bayer')?.src).toBe(
+      'https://idnet.bayer.com/sites/idnet/files/inline-images/web-design-image-13.png',
+    );
+    expect(companyLogoAsset('BillionToOne')?.src).toContain('ml.globenewswire.com');
     expect(companyLogoAsset('National Cancer Institute (NCI), Division of Cancer Epidemiology and Genetics')?.src)
-      .toBe('/brand/logos/nci-dceg-nameplate.svg');
-    expect(companyLogoAsset('Regeneron')?.src).toBe('/brand/logos/regeneron-nameplate.svg');
+      .toBe('https://dceg.cancer.gov/sites/dceg/files/ncids_hero/field_mobile_hero/2023-09/mobile.jpg');
+    expect(companyLogoAsset('Regeneron')?.src).toBe(
+      'https://regeneronpharmaceuticalsinc.gcs-web.com/static-files/b39477e0-886d-48f7-bba0-52cf365365ea',
+    );
   });
 
-  it('gives future named employers an image fallback instead of blank initials', () => {
-    expect(companyLogoAsset('Future Biotech Employer')).toEqual({
-      src: '/brand/logos/employer-fallback.svg',
-      fit: 'compact',
-    });
-    expect(existsSync('public/brand/logos/employer-fallback.svg')).toBe(true);
+  it('does not fabricate an employer image when no reviewed asset exists', () => {
+    expect(companyLogoAsset('Future Biotech Employer')).toBeNull();
   });
 
   it('covers every employer in the current public directory', () => {
@@ -160,7 +162,7 @@ describe('employer logo presentation', () => {
 
     expect(currentEmployers.filter((name) => {
       const logo = companyLogoAsset(name);
-      return !logo || !existsSync(`public${logo.src}`);
+      return !logo || (!logo.src.startsWith('https://') && !existsSync(`public${logo.src}`));
     })).toEqual([]);
   });
 
@@ -170,7 +172,7 @@ describe('employer logo presentation', () => {
 
     expect(employers.filter((name) => {
       const logo = companyLogoAsset(name);
-      return !logo || !existsSync(`public${logo.src}`);
+      return !logo || (!logo.src.startsWith('https://') && !existsSync(`public${logo.src}`));
     })).toEqual([]);
     expect(companyLogoAsset('Employer not recorded')).toBeNull();
   });
