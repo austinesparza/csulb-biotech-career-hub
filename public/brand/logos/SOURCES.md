@@ -59,5 +59,5 @@ The temporary Career Hub-rendered nameplates were removed. The current employer 
 | Bayer | https://idnet.bayer.com/sites/idnet/files/inline-images/web-design-image-13.png | Full-color Bayer Cross from Bayer Identity Net. |
 | BillionToOne | https://ml.globenewswire.com/media/OGEyNGE4ZDUtYzcyOS00MmY4LWI2ZTItMWUyZGFkOWRjYjlkLTEyOTc2MDEtMjAyNi0xMC0xNC1lbg%3D%3D/tiny/BillionToOne-Inc-.png | Company-supplied logo attached to BillionToOne's October 14, 2026 press release. |
 | Regeneron | https://regeneronpharmaceuticalsinc.gcs-web.com/static-files/b39477e0-886d-48f7-bba0-52cf365365ea | Regeneron wordmark hosted by the company's investor-relations site. |
-| National Cancer Institute, DCEG | https://dceg.cancer.gov/sites/dceg/files/ncids_hero/field_mobile_hero/2023-09/mobile.jpg | Official DCEG laboratory image. The NCI logo itself is intentionally not reproduced because NCI restricts independent reuse of its logo. |
+| National Cancer Institute, DCEG | https://dceg.cancer.gov/sites/dceg/files/ncids_slim_hero/field_slim_hero_image/2024-12/DCEG-Laboratory-Translational-Genomics-1988x460_2.jpg | Official DCEG laboratory image. The NCI logo itself is intentionally not reproduced because NCI restricts independent reuse of its logo. |
 
