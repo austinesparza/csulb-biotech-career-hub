@@ -61,7 +61,7 @@ function CompanyMark({ name }: { name: string }) {
   return (
     <div className={`company-mark${logo ? ` company-mark-logo logo-${logo.fit}` : ''}`}>
       {logo ? (
-        <Image src={logo.src} alt="" aria-hidden="true" width={180} height={64} />
+        <Image src={logo.src} unoptimized={logo.src.startsWith('https://')} alt="" aria-hidden="true" width={180} height={64} />
       ) : (
         <span aria-hidden="true">{companyInitials(name)}</span>
       )}
