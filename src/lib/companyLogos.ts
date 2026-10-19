@@ -6,6 +6,11 @@ export interface CompanyLogoAsset {
 }
 
 const COMPANY_LOGOS: Array<[RegExp, CompanyLogoAsset]> = [
+  [/^abbott$/i, { src: '/brand/logos/abbott-nameplate.svg', fit: 'wide' }],
+  [/^bayer$/i, { src: '/brand/logos/bayer-nameplate.svg', fit: 'wide' }],
+  [/^billiontoone$/i, { src: '/brand/logos/billiontoone-nameplate.svg', fit: 'wide' }],
+  [/^national\s+cancer\s+institute(?:\s*\(nci\))?(?:,?\s+division\s+of\s+cancer\s+epidemiology\s+and\s+genetics)?$/i, { src: '/brand/logos/nci-dceg-nameplate.svg', fit: 'wide' }],
+  [/^regeneron$/i, { src: '/brand/logos/regeneron-nameplate.svg', fit: 'wide' }],
   [/^labcorp$/i, { src: '/brand/logos/labcorp.png', fit: 'wide' }],
   [/^metrex$/i, { src: '/brand/logos/metrex.svg', fit: 'wide' }],
   [/^orange\s+county\s+coastkeeper$/i, { src: '/brand/logos/orange-county-coastkeeper.png', fit: 'wide' }],
@@ -65,8 +70,13 @@ const COMPANY_LOGOS: Array<[RegExp, CompanyLogoAsset]> = [
   [/^vertex(?:\s+pharmaceuticals)?$/i, { src: '/brand/logos/vertex-pharmaceuticals.png', fit: 'wide' }],
 ];
 
+const FALLBACK_LOGO: CompanyLogoAsset = { src: '/brand/logos/employer-fallback.svg', fit: 'compact' };
+const NO_EMPLOYER_IMAGE = new Set(['', 'employer not recorded', 'unknown employer', 'unknown company']);
+
 export function companyLogoAsset(name: string): CompanyLogoAsset | null {
-  return COMPANY_LOGOS.find(([pattern]) => pattern.test(name.trim()))?.[1] ?? null;
+  const normalized = name.trim();
+  if (NO_EMPLOYER_IMAGE.has(normalized.toLowerCase())) return null;
+  return COMPANY_LOGOS.find(([pattern]) => pattern.test(normalized))?.[1] ?? FALLBACK_LOGO;
 }
 
 /** Compatibility helper for callers that only need the local asset path. */
