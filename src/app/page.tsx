@@ -43,7 +43,7 @@ function FeaturedCompany({ name }: { name: string }) {
   return (
     <span className={`featured-company${logo ? ` has-logo logo-${logo.fit}` : ' is-wordmark'}`}>
       {logo
-        ? <Image src={logo.src} alt={`${name} logo`} width={180} height={64} />
+        ? <Image src={logo.src} unoptimized={logo.src.startsWith('https://')} alt={`${name} logo`} width={180} height={64} />
         : <span>{name}</span>}
     </span>
   );
