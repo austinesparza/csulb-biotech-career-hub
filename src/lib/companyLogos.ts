@@ -4,13 +4,14 @@ export interface CompanyLogoAsset {
   src: string;
   fit: CompanyLogoFit;
   surface?: 'dark';
+  presentation?: 'photo';
 }
 
 const COMPANY_LOGOS: Array<[RegExp, CompanyLogoAsset]> = [
   [/^abbott$/i, { src: 'https://electrophysiology.abbott.com/rs/808-JQJ-642/images/abbott-logo-white-horiz.png?version=0', fit: 'wide', surface: 'dark' }],
   [/^bayer$/i, { src: 'https://idnet.bayer.com/sites/idnet/files/inline-images/web-design-image-13.png', fit: 'compact' }],
-  [/^billiontoone$/i, { src: 'https://ml.globenewswire.com/media/OGEyNGE4ZDUtYzcyOS00MmY4LWI2ZTItMWUyZGFkOWRjYjlkLTEyOTc2MDEtMjAyNi0xMC0xNC1lbg%3D%3D/tiny/BillionToOne-Inc-.png', fit: 'wide' }],
-  [/^national\s+cancer\s+institute(?:\s*\(nci\))?(?:,?\s+division\s+of\s+cancer\s+epidemiology\s+and\s+genetics)?$/i, { src: 'https://dceg.cancer.gov/sites/dceg/files/ncids_slim_hero/field_slim_hero_image/2024-12/DCEG-Laboratory-Translational-Genomics-1988x460_2.jpg', fit: 'wide' }],
+  [/^billiontoone$/i, { src: 'https://cdn.prod.website-files.com/6880c9300eb95bb084b75b2e/69039bbac33f527c3c8fbc06_25972b953633a492e5eb39d2f1d02ab2_Menlo%20Park.jpg', fit: 'wide', presentation: 'photo' }],
+  [/^national\s+cancer\s+institute(?:\s*\(nci\))?(?:,?\s+division\s+of\s+cancer\s+epidemiology\s+and\s+genetics)?$/i, { src: 'https://dceg.cancer.gov/sites/dceg/files/styles/cgov_article/public/cgov_image/media_image/2020-10/cell%20culture%20lab%202.JPG?h=e9ed81df&itok=wVdG-zo6', fit: 'wide', presentation: 'photo' }],
   [/^regeneron$/i, { src: 'https://regeneronpharmaceuticalsinc.gcs-web.com/static-files/b39477e0-886d-48f7-bba0-52cf365365ea', fit: 'wide' }],
   [/^labcorp$/i, { src: '/brand/logos/labcorp.png', fit: 'wide' }],
   [/^metrex$/i, { src: '/brand/logos/metrex.svg', fit: 'wide' }],
