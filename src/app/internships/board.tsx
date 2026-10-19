@@ -59,7 +59,7 @@ function companyInitials(name: string): string {
 function CompanyMark({ name }: { name: string }) {
   const logo = companyLogoAsset(name);
   return (
-    <div className={`company-mark${logo ? ` company-mark-logo logo-${logo.fit}` : ''}`}>
+    <div className={`company-mark${logo ? ` company-mark-logo logo-${logo.fit}${logo.surface ? ` logo-surface-${logo.surface}` : ''}` : ''}`}>
       {logo ? (
         <Image src={logo.src} unoptimized={logo.src.startsWith('https://')} alt="" aria-hidden="true" width={180} height={64} />
       ) : (
