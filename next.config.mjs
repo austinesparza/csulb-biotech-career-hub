@@ -1,3 +1,14 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'www.abbott.com' },
+      { protocol: 'https', hostname: 'electrophysiology.abbott.com' },
+      { protocol: 'https', hostname: 'idnet.bayer.com' },
+      { protocol: 'https', hostname: 'ml.globenewswire.com' },
+      { protocol: 'https', hostname: 'regeneronpharmaceuticalsinc.gcs-web.com' },
+      { protocol: 'https', hostname: 'dceg.cancer.gov' },
+    ],
+  },
+};
 export default nextConfig;

@@ -1,6 +1,6 @@
 # Employer marks added September 2026
 
-These files are displayed only to identify the employers on their opportunity listings. Keep the local files and the `companyLogos.ts` names in sync. Verify the mark against the employer site before replacing it.
+These assets are displayed only to identify employers on their opportunity listings. Keep reviewed local files and remote employer assets in `companyLogos.ts` traceable to an employer, agency, or company-supplied source.
 
 | Local file | Source |
 | --- | --- |
@@ -10,7 +10,7 @@ These files are displayed only to identify the employers on their opportunity li
 | `stryker.png` | Header logo on [Stryker's press kit](https://www.stryker.com/us/en/about/news/press-kit.html). |
 | `vertex-pharmaceuticals.png` | Newsroom header logo on [Vertex's corporate logo page](https://news.vrtx.com/media-library/corporate-logos). |
 
-The public board uses a neutral local employer-image fallback if a company has no reviewed local mark. Run the logo coverage test after importing a new employer; the test's employer list should be updated from the public board.
+If a company has no reviewed asset, the public UI falls back to employer initials rather than inventing a logo or branded image. Run the logo coverage test after importing a new employer; the test's employer list should be updated from the public board.
 
 ## October 6, 2026 coverage update
 
@@ -49,17 +49,15 @@ Official employer assets downloaded locally for the current board and historical
 | Zymo Research | `zymo-research.svg` | [Source](https://www.zymoresearch.com/) | [Asset](https://www.zymoresearch.com/cdn/shop/t/142/assets/zymo-logo-transparent.svg?v=177650754154765810111744149024) |
 
 
-## October 19, 2026 current-employer completion
+## October 19, 2026 current-employer asset correction
 
-The October graduate-opportunity intake introduced five public employers without existing local marks. To keep every listing visually complete without implying sponsorship or recreating protected trademarks, these entries use neutral Career Hub-rendered SVG nameplates based only on the employer name. A generic fallback image now covers any future named employer until a reviewed local mark is added.
+The temporary Career Hub-rendered nameplates were removed. The current employer mappings below now use source-faithful assets from employer, agency, or company-supplied channels. Unmapped employers fall back to initials, not a fabricated mark.
 
-| Employer | Local file | Naming reference |
+| Employer | Reviewed asset | Source rationale |
 | --- | --- | --- |
-| Abbott | `abbott-nameplate.svg` | [Abbott](https://www.abbott.com/) |
-| Bayer | `bayer-nameplate.svg` | [Bayer](https://www.bayer.com/) |
-| BillionToOne | `billiontoone-nameplate.svg` | [BillionToOne](https://www.billiontoone.com/) |
-| National Cancer Institute, DCEG | `nci-dceg-nameplate.svg` | [NCI DCEG](https://dceg.cancer.gov/) |
-| Regeneron | `regeneron-nameplate.svg` | [Regeneron](https://www.regeneron.com/) |
-| Future/unmapped employer | `employer-fallback.svg` | Career Hub neutral fallback; not an employer logo |
+| Abbott | https://electrophysiology.abbott.com/rs/808-JQJ-642/images/abbott-logo-white-horiz.png?version=0 | Abbott-hosted horizontal wordmark. The Hub preserves the white mark on a dark neutral surface. |
+| Bayer | https://idnet.bayer.com/sites/idnet/files/inline-images/web-design-image-13.png | Full-color Bayer Cross from Bayer Identity Net. |
+| BillionToOne | https://ml.globenewswire.com/media/OGEyNGE4ZDUtYzcyOS00MmY4LWI2ZTItMWUyZGFkOWRjYjlkLTEyOTc2MDEtMjAyNi0xMC0xNC1lbg%3D%3D/tiny/BillionToOne-Inc-.png | Company-supplied logo attached to BillionToOne's October 14, 2026 press release. |
+| Regeneron | https://regeneronpharmaceuticalsinc.gcs-web.com/static-files/b39477e0-886d-48f7-bba0-52cf365365ea | Regeneron wordmark hosted by the company's investor-relations site. |
+| National Cancer Institute, DCEG | https://dceg.cancer.gov/sites/dceg/files/ncids_slim_hero/field_slim_hero_image/2024-12/DCEG-Laboratory-Translational-Genomics-1988x460_2.jpg | Official DCEG laboratory image. The NCI logo itself is intentionally not reproduced because NCI restricts independent reuse of its logo. |
 
-The NCI nameplate intentionally does not reproduce the NCI logo. NCI's reuse policy limits use of the NCI logo outside unchanged NCI products.
