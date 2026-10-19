@@ -10,7 +10,7 @@ These files are displayed only to identify the employers on their opportunity li
 | `stryker.png` | Header logo on [Stryker's press kit](https://www.stryker.com/us/en/about/news/press-kit.html). |
 | `vertex-pharmaceuticals.png` | Newsroom header logo on [Vertex's corporate logo page](https://news.vrtx.com/media-library/corporate-logos). |
 
-The public board uses initials if a company has no reviewed local mark. Run the logo coverage test after importing a new employer; the test's employer list should be updated from the public board.
+The public board uses a neutral local employer-image fallback if a company has no reviewed local mark. Run the logo coverage test after importing a new employer; the test's employer list should be updated from the public board.
 
 ## October 6, 2026 coverage update
 
@@ -47,3 +47,19 @@ Official employer assets downloaded locally for the current board and historical
 | Terasaki Institute | `terasaki-institute.png` | [Source](https://terasaki.org/) | [Asset](https://terasaki.org/institute/images/Logo/tibi-logo-1200x630.png) |
 | Varda Space Industries | `varda-space-industries.svg` | [Source](https://www.varda.com/) | [Asset](https://www.varda.com/) |
 | Zymo Research | `zymo-research.svg` | [Source](https://www.zymoresearch.com/) | [Asset](https://www.zymoresearch.com/cdn/shop/t/142/assets/zymo-logo-transparent.svg?v=177650754154765810111744149024) |
+
+
+## October 19, 2026 current-employer completion
+
+The October graduate-opportunity intake introduced five public employers without existing local marks. To keep every listing visually complete without implying sponsorship or recreating protected trademarks, these entries use neutral Career Hub-rendered SVG nameplates based only on the employer name. A generic fallback image now covers any future named employer until a reviewed local mark is added.
+
+| Employer | Local file | Naming reference |
+| --- | --- | --- |
+| Abbott | `abbott-nameplate.svg` | [Abbott](https://www.abbott.com/) |
+| Bayer | `bayer-nameplate.svg` | [Bayer](https://www.bayer.com/) |
+| BillionToOne | `billiontoone-nameplate.svg` | [BillionToOne](https://www.billiontoone.com/) |
+| National Cancer Institute, DCEG | `nci-dceg-nameplate.svg` | [NCI DCEG](https://dceg.cancer.gov/) |
+| Regeneron | `regeneron-nameplate.svg` | [Regeneron](https://www.regeneron.com/) |
+| Future/unmapped employer | `employer-fallback.svg` | Career Hub neutral fallback; not an employer logo |
+
+The NCI nameplate intentionally does not reproduce the NCI logo. NCI's reuse policy limits use of the NCI logo outside unchanged NCI products.
