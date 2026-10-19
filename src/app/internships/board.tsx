@@ -20,6 +20,7 @@ import {
   type OpportunityAudienceFilter,
 } from '@/lib/opportunityAudience';
 import type { PublicOpportunity } from '@/lib/types';
+import { compensationLabel } from '@/lib/compensation';
 
 const PREFS_KEY = 'career-hub-prefs-v1';
 interface Prefs { focus: string[]; paid: boolean; remote: boolean; local: boolean; term: string; }
@@ -67,12 +68,6 @@ function CompanyMark({ name }: { name: string }) {
       )}
     </div>
   );
-}
-
-function payLabel(value: PublicOpportunity['paid_status']): string {
-  if (value === 'unknown') return 'Pay not stated';
-  if (value === 'stipend') return 'Stipend';
-  return value[0].toUpperCase() + value.slice(1);
 }
 
 export function Board({ opportunities, sorted, initialAudience, referenceTime }: {
@@ -275,7 +270,7 @@ function OpportunityRecord({ opportunity: o, bonus, referenceTime, relatedPostin
         </div>
         <div>
           <dt>Pay</dt>
-          <dd>{payLabel(o.paid_status)}</dd>
+          <dd>{compensationLabel(o.paid_status, o.public_notes)}</dd>
         </div>
       </dl>
       <details className="record-details">

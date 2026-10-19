@@ -279,7 +279,7 @@ export function ReviewCard({ row }: { row: ReviewRow }) {
         <summary>{sheetApprovalReady ? 'Review or change imported details' : 'Complete review details'}</summary>
         <label className="review-field">
           Public note
-          <textarea value={publicNotes} onChange={(event) => setPublicNotes(event.target.value)} rows={2} maxLength={500}
+          <textarea value={publicNotes} onChange={(event) => setPublicNotes(event.target.value)} rows={3} maxLength={2000}
             placeholder="Optional. Keep it factual and student-safe." />
         </label>
 

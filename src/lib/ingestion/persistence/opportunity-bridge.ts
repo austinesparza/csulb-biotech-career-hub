@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { makeFamilyKey, makeStrictKey } from '../../csvImport';
+import { inferCompensationStatus } from '../../compensation';
 import {
   changedFlaggedFields,
   decideUpdatePolicy,
@@ -94,11 +95,7 @@ function mapAudienceBucket(
 }
 
 function inferPaidStatus(text: string | null): PaidStatus {
-  if (!text) return 'unknown';
-  if (/\bunpaid\b/i.test(text)) return 'unpaid';
-  if (/\bstipend(?:ed)?\b/i.test(text)) return 'stipend';
-  if (/\bpaid (?:internship|co-op|position|opportunity)\b|\b(?:hourly|salary|pay|compensation) (?:rate|range)\b|\$\s?\d/i.test(text)) return 'paid';
-  return 'unknown';
+  return inferCompensationStatus(text);
 }
 
 export function deriveOpportunityEnrichment(posting: NormalizedSourcePosting) {
