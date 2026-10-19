@@ -118,7 +118,7 @@ export function CompanyDirectory({
             return (
               <li key={company.id} className="company-directory-card">
                 <div className="company-directory-topline">
-                  <div className={`company-directory-mark${logo ? ` has-logo logo-${logo.fit}` : ''}`}>
+                  <div className={`company-directory-mark${logo ? ` has-logo logo-${logo.fit}${logo.surface ? ` logo-surface-${logo.surface}` : ''}` : ''}`}>
                     {logo
                       ? <Image src={logo.src} unoptimized={logo.src.startsWith('https://')} alt="" aria-hidden="true" width={180} height={64} />
                       : <span aria-hidden="true">{initials(company.name)}</span>}
