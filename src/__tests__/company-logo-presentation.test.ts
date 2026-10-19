@@ -108,7 +108,7 @@ describe('employer logo presentation', () => {
     );
     expect(companyLogoAsset('BillionToOne')?.src).toContain('ml.globenewswire.com');
     expect(companyLogoAsset('National Cancer Institute (NCI), Division of Cancer Epidemiology and Genetics')?.src)
-      .toBe('https://dceg.cancer.gov/sites/dceg/files/ncids_hero/field_mobile_hero/2023-09/mobile.jpg');
+      .toBe('https://dceg.cancer.gov/sites/dceg/files/ncids_slim_hero/field_slim_hero_image/2024-12/DCEG-Laboratory-Translational-Genomics-1988x460_2.jpg');
     expect(companyLogoAsset('Regeneron')?.src).toBe(
       'https://regeneronpharmaceuticalsinc.gcs-web.com/static-files/b39477e0-886d-48f7-bba0-52cf365365ea',
     );
