@@ -57,7 +57,7 @@ The temporary Career Hub-rendered nameplates were removed. The current employer 
 | --- | --- | --- |
 | Abbott | https://electrophysiology.abbott.com/rs/808-JQJ-642/images/abbott-logo-white-horiz.png?version=0 | Abbott-hosted horizontal wordmark. The Hub preserves the white mark on a dark neutral surface. |
 | Bayer | https://idnet.bayer.com/sites/idnet/files/inline-images/web-design-image-13.png | Full-color Bayer Cross from Bayer Identity Net. |
-| BillionToOne | https://cdn.prod.website-files.com/6880c9300eb95bb084b75b2e/69039bbac33f527c3c8fbc06_25972b953633a492e5eb39d2f1d02ab2_Menlo%20Park.jpg | Official Menlo Park workplace image used on BillionToOne's Careers page. Rendered as photography rather than a logo. |
+| BillionToOne | `billiontoone.png` | Official BillionToOne wordmark supplied for Career Hub use; stored locally to prevent remote asset failures. |
 | Regeneron | https://regeneronpharmaceuticalsinc.gcs-web.com/static-files/b39477e0-886d-48f7-bba0-52cf365365ea | Regeneron wordmark hosted by the company's investor-relations site. |
-| National Cancer Institute, DCEG | https://dceg.cancer.gov/sites/dceg/files/styles/cgov_article/public/cgov_image/media_image/2020-10/cell%20culture%20lab%202.JPG?h=e9ed81df&itok=wVdG-zo6 | Official DCEG image of an LTG fellow preparing samples in the cell-culture laboratory. Rendered as photography rather than a logo. |
+| National Cancer Institute, DCEG | `national-cancer-institute.png` | Official National Cancer Institute mark supplied for Career Hub use; stored locally for consistent employer identification. |
 
