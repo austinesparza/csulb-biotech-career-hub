@@ -55,7 +55,7 @@ The temporary Career Hub-rendered nameplates were removed. The current employer 
 
 | Employer | Reviewed asset | Source rationale |
 | --- | --- | --- |
-| Abbott | https://www.abbott.com/content/dam/corp/abbott/global/logos/logo.png | Abbott corporate logo asset on abbott.com. |
+| Abbott | https://electrophysiology.abbott.com/rs/808-JQJ-642/images/abbott-logo-white-horiz.png?version=0 | Abbott-hosted horizontal wordmark. The Hub preserves the white mark on a dark neutral surface. |
 | Bayer | https://idnet.bayer.com/sites/idnet/files/inline-images/web-design-image-13.png | Full-color Bayer Cross from Bayer Identity Net. |
 | BillionToOne | https://ml.globenewswire.com/media/OGEyNGE4ZDUtYzcyOS00MmY4LWI2ZTItMWUyZGFkOWRjYjlkLTEyOTc2MDEtMjAyNi0xMC0xNC1lbg%3D%3D/tiny/BillionToOne-Inc-.png | Company-supplied logo attached to BillionToOne's October 14, 2026 press release. |
 | Regeneron | https://regeneronpharmaceuticalsinc.gcs-web.com/static-files/b39477e0-886d-48f7-bba0-52cf365365ea | Regeneron wordmark hosted by the company's investor-relations site. |
