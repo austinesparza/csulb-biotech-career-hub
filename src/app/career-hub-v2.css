@@ -1053,6 +1053,19 @@ body {
 .company-mark.logo-compact img {
   object-position: center;
 }
+.featured-company.image-photo,
+.company-directory-mark.has-logo.image-photo,
+.company-mark-logo.image-photo {
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--paper-2);
+}
+.featured-company.image-photo img,
+.company-directory-mark.image-photo img,
+.company-mark.image-photo img {
+  object-fit: cover;
+  object-position: center;
+}
 
 .company-directory-mark {
   width: 56px;
