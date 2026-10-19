@@ -109,14 +109,12 @@ describe('employer logo presentation', () => {
       'https://idnet.bayer.com/sites/idnet/files/inline-images/web-design-image-13.png',
     );
     expect(companyLogoAsset('BillionToOne')).toEqual({
-      src: 'https://cdn.prod.website-files.com/6880c9300eb95bb084b75b2e/69039bbac33f527c3c8fbc06_25972b953633a492e5eb39d2f1d02ab2_Menlo%20Park.jpg',
+      src: '/brand/logos/billiontoone.png',
       fit: 'wide',
-      presentation: 'photo',
     });
     expect(companyLogoAsset('National Cancer Institute (NCI), Division of Cancer Epidemiology and Genetics')).toEqual({
-      src: 'https://dceg.cancer.gov/sites/dceg/files/styles/cgov_article/public/cgov_image/media_image/2020-10/cell%20culture%20lab%202.JPG?h=e9ed81df&itok=wVdG-zo6',
+      src: '/brand/logos/national-cancer-institute.png',
       fit: 'wide',
-      presentation: 'photo',
     });
     expect(companyLogoAsset('Regeneron')?.src).toBe(
       'https://regeneronpharmaceuticalsinc.gcs-web.com/static-files/b39477e0-886d-48f7-bba0-52cf365365ea',
@@ -205,8 +203,6 @@ describe('employer logo presentation', () => {
     expect(layer).toContain('object-position: left center');
     expect(layer).toContain('.featured-company.logo-compact');
     expect(layer).toContain('.featured-company.logo-surface-dark');
-    expect(layer).toContain('.featured-company.image-photo');
-    expect(layer).toContain('object-fit: cover');
     expect(layer).toContain('.company-directory-card {');
     expect(layer).toContain('min-height: 0');
     expect(layer).toContain('@media (max-width: 700px)');
