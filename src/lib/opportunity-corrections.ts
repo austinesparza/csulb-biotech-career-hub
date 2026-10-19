@@ -83,7 +83,7 @@ export function buildPublishedCorrection(
     paid_status: draft.paidStatus,
     application_type: boundedText(draft.applicationType, 'Application type', 500),
     status: draft.status,
-    public_notes: boundedText(draft.publicNotes, 'Public note', 500),
+    public_notes: boundedText(draft.publicNotes, 'Public note', 2000),
     audience_bucket: draft.audienceBucket,
     audience_reason: audienceReason,
     graduate_stage: draft.graduateStage,

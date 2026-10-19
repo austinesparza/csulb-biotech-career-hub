@@ -12,11 +12,12 @@ import {
   parsePaidStatus,
 } from './normalize';
 import { deriveSheetAudienceDefaults } from './sheet-review';
+import { inferCompensationStatus } from './compensation';
 
 /** Canonical fields the importer knows about. */
 export type CanonicalField =
   | 'company_name' | 'title' | 'posting_url' | 'location' | 'eligibility'
-  | 'focus_area' | 'deadline' | 'start_date_text' | 'paid_status'
+  | 'focus_area' | 'deadline' | 'start_date_text' | 'paid_status' | 'compensation'
   | 'application_type' | 'source_status_raw' | 'notes' | 'date_added'
   | 'candidate_id' | 'requisition' | 'work_pattern' | 'graduate_access'
   | 'continued_enrollment' | 'work_authorization' | 'key_evidence' | 'application_opened_at'
@@ -32,7 +33,8 @@ const HEADER_ALIASES: Record<CanonicalField, string[]> = {
   focus_area: ['field focus area', 'focus area', 'field', 'area', 'category', 'career area'],
   deadline: ['application deadline', 'deadline', 'due date', 'apply by', 'stated close date'],
   start_date_text: ['start date duration', 'start date', 'duration', 'term', 'dates'],
-  paid_status: ['paid unpaid', 'paid', 'compensation', 'pay'],
+  paid_status: ['paid unpaid', 'paid status', 'paid'],
+  compensation: ['compensation', 'pay rate', 'pay range', 'pay', 'salary', 'hourly rate', 'stipend', 'wage'],
   application_type: ['application type', 'apply via', 'application method', 'program type'],
   source_status_raw: ['status', 'posting status', 'state', 'open status'],
   notes: ['notes', 'comments', 'additional info', 'officer notes'],
@@ -120,6 +122,7 @@ export function rowToDraft(
   const url = urlRaw ? normalizeUrl(urlRaw) : null;
 
   const officerContext = [
+    ['Compensation (source column)', get('compensation')],
     ['Candidate ID', get('candidate_id')],
     ['Requisition', get('requisition')],
     ['Work pattern', get('work_pattern')],
@@ -151,7 +154,9 @@ export function rowToDraft(
     deadline: parseDeadline(deadlineRaw),
     deadline_text: cleanText(deadlineRaw),
     start_date_text: cleanText(get('start_date_text')),
-    paid_status: parsePaidStatus(get('paid_status')),
+    paid_status: get('paid_status').trim()
+      ? parsePaidStatus(get('paid_status'))
+      : inferCompensationStatus(`Employer compensation: ${get('compensation')}`),
     application_type: cleanText(get('application_type')),
     source_status_raw: cleanText(get('source_status_raw')),
     audience_bucket: audienceDefaults.audienceBucket,

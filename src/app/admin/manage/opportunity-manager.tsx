@@ -154,7 +154,7 @@ function ManagedCard({ row }: { row: ManagedOpportunity }) {
           <textarea rows={2} value={draft.workAuthorization} onChange={(event) => update('workAuthorization', event.target.value)} />
         </label>
         <label className="review-field">Public note
-          <textarea rows={2} maxLength={500} value={draft.publicNotes} onChange={(event) => update('publicNotes', event.target.value)} />
+          <textarea rows={3} maxLength={2000} value={draft.publicNotes} onChange={(event) => update('publicNotes', event.target.value)} />
         </label>
         <label className="review-field">Reason for this change
           <input value={reason} maxLength={500} placeholder="Required for save, removal, or restore" onChange={(event) => setReason(event.target.value)} />

@@ -60,6 +60,13 @@ describe('published opportunity corrections', () => {
     expect(validateRevisionReason('Corrected the deadline from the source.')).toContain('Corrected');
   });
 
+  it('preserves a full compensation tier schedule and bounds very long notes', () => {
+    const notes = 'Employer compensation: Graduate $34/hour; '.repeat(20);
+    expect(buildPublishedCorrection({ ...validDraft, publicNotes: notes }, 'Example Biotech').public_notes).toBe(notes.trim());
+    expect(() => buildPublishedCorrection({ ...validDraft, publicNotes: 'x'.repeat(2001) }, 'Example Biotech'))
+      .toThrow('2000');
+  });
+
   it('keeps history append-only and mutations service-only', () => {
     expect(migration).toContain('create table if not exists public.opportunity_revisions');
     expect(migration).toContain("action in ('correction', 'unpublish', 'restore')");
