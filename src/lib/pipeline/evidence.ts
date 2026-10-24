@@ -59,7 +59,9 @@ export function bindField(field: ExtractedField, normalizedSource: string): Boun
   if (field.value.trim() === "Unknown") {
     // "Unknown" is a legitimate answer and needs no quote. This is what keeps
     // the pipeline from inventing values to fill a schema.
-    return { ...base, ok: true };
+    return field.quote === null
+      ? { ...base, ok: true }
+      : { ...base, ok: false, reason: "Unknown must have a null quote" };
   }
   if (!field.quote || !field.quote.trim()) {
     return { ...base, ok: false, reason: "value asserted with no supporting quote" };
@@ -90,7 +92,7 @@ export interface BindingResult {
 }
 
 export function bindExtraction(
-  extracted: Partial<Record<FieldName, ExtractedField>>,
+  extracted: Record<string, ExtractedField>,
   rawText: string,
 ): BindingResult {
   const source = normalize(rawText);
@@ -98,7 +100,25 @@ export function bindExtraction(
   const failures: string[] = [];
   for (const [name, field] of Object.entries(extracted)) {
     if (!field) continue;
-    const bound = bindField(field, source);
+    let bound = bindField(field, source);
+    if (bound.ok && field.value !== "Unknown" && field.quote) {
+      // Targeted contradictions only. A bound quote does not prove entailment.
+      const preferenceFields = ["gpa_requirement", "degree_fields", "enrollment_rule", "required_materials", "recommendation_letters"];
+      if (preferenceFields.includes(name) && /\bpreferred\b/i.test(field.quote)
+        && !/\brequired\b|\bmust\b/i.test(field.quote)
+        && /\brequired\b|\bmust\b|\bmandatory\b/i.test(field.value)) {
+        bound = { ...bound, ok: false, reason: "preferred qualification asserted as required" };
+      }
+      if (["pay_range", "pay_basis"].includes(name)) {
+        const units = (text: string) => [...text.matchAll(/\b(hour(?:ly)?|week(?:ly)?|month(?:ly)?|year(?:ly)?|annual(?:ly)?)\b/gi)]
+          .map(([unit]) => /^annual|^year/i.test(unit) ? "year" : unit.toLowerCase().replace(/ly$/, ""));
+        const quoted = units(field.quote);
+        const asserted = units(field.value);
+        if (asserted.some(unit => !quoted.includes(unit))) {
+          bound = { ...bound, ok: false, reason: "compensation unit is absent from supporting quote" };
+        }
+      }
+    }
     fields[name] = bound;
     if (!bound.ok) failures.push(`${name}: ${bound.reason}`);
   }

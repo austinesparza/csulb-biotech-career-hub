@@ -31,6 +31,8 @@ import { isEmployerRequisitionUrl, resolvePostingIdentity, type PostingIdentity 
 import { decideVerification, type ExistingRecord, type VerificationDecision, type VerificationLead } from "./posting-verification";
 import { safeFetch, type SafeFetchResponse } from "./safe-fetch";
 import type { RenderedRequisition } from "./scraping-clients";
+import { redactContacts } from "./contact-redaction";
+export { redactContacts } from "./contact-redaction";
 
 export interface VerificationCandidate extends VerificationLead {
   discoveryLeadId: string | null;
@@ -77,14 +79,6 @@ const FEED_KINDS = new Set(["greenhouse", "lever", "ashby"]);
 const RECHECK_DAYS = 7;
 const DEFAULT_HOST_SPACING_MS = 2_000;
 const MAX_PER_HOST = 3;
-
-const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
-const PHONE = /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/g;
-
-/** Private contact data never enters task notes or stored quotes. */
-export function redactContacts(value: string): string {
-  return value.replace(EMAIL, "[email removed]").replace(PHONE, "[phone removed]");
-}
 
 function sha256(value: string): string {
   return crypto.createHash("sha256").update(value).digest("hex");

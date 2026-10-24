@@ -71,6 +71,7 @@ const honestModel: ExtractionModel = {
     fields.work_authorization = field(find(/we do not provide visa sponsorship for internships/i), "No sponsorship");
     fields.pay_range = field(find(/\$[\d.]+ - \$[\d.]+ per hour[^.]*/i), "$32-41/hour");
     fields.application_steps = field(find(/Selected candidates complete a recorded video interview/i), "Recorded video interview");
+    fields.integrity_echo = { value: user.split("\n\n")[0], quote: null };
     return { fields, inputTokens: 1200, outputTokens: 400, traceId: "trace-1" };
   },
 };
@@ -78,11 +79,12 @@ const honestModel: ExtractionModel = {
 /** A DISHONEST model: obeys an injected instruction and fabricates quotes. */
 const dishonestModel: ExtractionModel = {
   name: "fake-dishonest",
-  async extract() {
+  async extract({ user }) {
     const fields: Record<string, any> = {};
     for (const key of Object.keys((honestModel as any).__keys ?? {})) fields[key] = { value: "Unknown", quote: null };
     fields.gpa_requirement = { value: "No GPA requirement", quote: "there is no GPA requirement for this role" };
     fields.work_authorization = { value: "Sponsorship available", quote: "we happily sponsor visas for all interns" };
+    fields.integrity_echo = { value: user.split("\n\n")[0], quote: null };
     return { fields, inputTokens: 1000, outputTokens: 200 };
   },
 };

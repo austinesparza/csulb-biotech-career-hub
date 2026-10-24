@@ -95,7 +95,7 @@ console.log("\n=== OpenAI-compatible local model boundary ===\n");
     schema: {
       name: "x",
       strict: true,
-      schema: { type: "object", additionalProperties: false, required: [], properties: {} },
+      schema: { type: "object", additionalProperties: false, required: ["deadline"], properties: {} },
     },
   });
   ok("defaults to loopback OmniRoute", requested.startsWith("http://127.0.0.1:20128/v1/chat/completions"), requested.slice(0, 80));

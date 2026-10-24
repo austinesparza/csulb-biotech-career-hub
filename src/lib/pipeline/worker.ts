@@ -22,7 +22,7 @@ import { withSentinel, checkEcho, INTEGRITY_FIELD } from "./integrity";
 import { extractDeadlineEvidence } from "../ingestion/normalize";
 
 export const SCHEMA_VERSION = 1;
-export const PROMPT_VERSION = "extract-v1";
+export const PROMPT_VERSION = "extract-v2";
 
 export const sha256 = (text: string) => crypto.createHash("sha256").update(text).digest("hex");
 
@@ -233,13 +233,13 @@ async function processPosting(
   }
 
   // --- 6. Bind evidence in code, never trusting the model --------------------
-  const binding = bindExtraction(result.fields as never, posting.rawText);
+  const binding = bindExtraction(result.fields, posting.rawText);
   if (!binding.ok) report.bindingFailures += 1;
 
   const extractionId = await deps.store.saveExtraction({
     candidateId, model: deps.model.name, promptVersion: PROMPT_VERSION, schemaVersion: SCHEMA_VERSION,
-    fields: result.fields, bindings: binding.fields, evidenceOk: binding.ok,
-    bindingFailures: binding.failures, injectionFlags: injection.hits,
+    fields: result.fields, bindings: binding.fields, evidenceOk: binding.ok && echo.ok && !injection.flagged,
+    bindingFailures: [...binding.failures, ...(!echo.ok ? [`transit integrity check failed: ${echo.reason}`] : [])], injectionFlags: injection.hits,
     inputTokens: result.inputTokens, outputTokens: result.outputTokens, traceId: result.traceId,
   });
 

@@ -196,6 +196,11 @@ console.log('=== Outcomes ===');
   const assessment = assessFetchedPage({ page: page(JNJ, jnjBody), expected: resolvePostingIdentity(JNJ) });
   const candidate = decideVerification({ lead, assessment, existing: [], retrievedAt: AT });
   ok('a distinct, attributed, apply-visible requisition is a review candidate', candidate.outcome === 'review_candidate', candidate.reasons);
+  const undergraduateAssessment = assessFetchedPage({ page: page(JNJ, jnjBody.replace(/Master's or PhD/g, 'undergraduate') + '<p>Candidates must be currently enrolled in an undergraduate degree program.</p>'), expected: resolvePostingIdentity(JNJ) });
+  ok('undergraduate policy regression exercises an undergraduate-only gate', undergraduateAssessment.gates.degreeLevel.value === 'undergraduate_only', undergraduateAssessment.gates.degreeLevel);
+  ok('undergraduate-only roles remain eligible for officer review', decideVerification({ lead, assessment: undergraduateAssessment, existing: [], retrievedAt: AT }).outcome === 'review_candidate');
+  const doctoralAssessment = assessFetchedPage({ page: page(JNJ, jnjBody.replace(/Master's or PhD/g, 'PhD') + '<p>PhD students only.</p>'), expected: resolvePostingIdentity(JNJ) });
+  ok('doctoral-only roles retain the board exclusion', decideVerification({ lead, assessment: doctoralAssessment, existing: [], retrievedAt: AT }).outcome === 'gate_excluded');
   ok('identity comparison records requisition, location and cycle agreement',
     candidate.comparison.requisition === 'match' && candidate.comparison.location === 'match' && candidate.comparison.cycle === 'match', candidate.comparison);
   const indexOnly = decideVerification({ lead, assessment: null, governanceReason: 'no reviewed source', existing: [], retrievedAt: AT });
